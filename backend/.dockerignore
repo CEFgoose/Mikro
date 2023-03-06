@@ -1,0 +1,7 @@
+**/.DS_Store
+**/.git
+**/venv
+.dockerignore
+mikro-d3mo
+test_db
+venv

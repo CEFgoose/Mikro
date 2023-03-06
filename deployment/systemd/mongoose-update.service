@@ -1,0 +1,6 @@
+[Unit]
+Description=mikro update service
+OnFailure=status_email_user@%n.service
+
+[Service]
+ExecStart=%h/bin/update-mikro.sh

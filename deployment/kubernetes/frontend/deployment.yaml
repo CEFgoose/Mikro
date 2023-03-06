@@ -1,0 +1,24 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: frontend-deployment
+  labels:
+    app: mikro-frontend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mikro-frontend
+  template:
+    metadata:
+      labels:
+        app: mikro-frontend
+    spec:
+      containers:
+        - name: mikro-frontend
+          image: registry.gitlab.com/gokaart/mikro/mikro-frontend:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 80
+      imagePullSecrets:
+        - name: regcred

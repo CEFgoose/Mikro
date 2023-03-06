@@ -1,0 +1,10 @@
+[tool.pytest.ini_options]
+minversion = "6.0"
+testpaths = [
+    "tests",
+]
+
+[tool.coverage.run]
+command_line = "-m pytest"
+[tool.coverage.report]
+omit = [ "*/venv/*", "*dist-packages*", "*/tests/*" ]

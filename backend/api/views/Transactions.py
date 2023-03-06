@@ -1,0 +1,256 @@
+#!/usr/bin/env python3
+from ..utils import requires_admin
+import requests
+from ..database import User, PayRequests, Payments,UserTasks,Task
+from flask.views import MethodView
+from flask import g, request
+from flask_jwt_extended import (
+    jwt_required,
+)
+from ..static_variables import SSO_BASE_URL
+
+
+class TransactionAPI(MethodView):
+    @jwt_required()
+    def post(self, path: str):
+        if path == "fetch_org_transactions":
+            return self.fetch_org_transactions()
+        if path == "fetch_user_transactions":
+            return self.fetch_user_transactions()    
+        elif path == "create_transaction":
+            return self.create_transaction()
+        elif path == "delete_transaction":
+            return self.delete_transaction()
+        elif path == "process_payment_request":
+            return self.process_payment_request()
+        elif path == "fetch_user_payable":
+            return self.fetch_user_payable()
+        elif path == "submit_payment_request":
+            return self.submit_payment_request()
+        return {
+            "message": "Only /project/{fetch_users,fetch_user_projects} is permitted with GET",  # noqa: E501
+        }, 405
+
+
+
+    @requires_admin
+    def fetch_org_transactions(self):
+        # Check if user is logged in
+        if not g.user:
+            return {"message": "User not found", "status": 304}
+        # Get all payment requests and payments for the user's organization
+        org_payment_requests = PayRequests.query.filter_by(org_id=g.user.org_id).all()
+        org_payments_made = Payments.query.filter_by(org_id=g.user.org_id).all()
+        # Create a list of dictionaries containing payment request information
+        requests = [
+            {
+                "id": request.id,
+                "amount_requested": request.amount_requested,
+                "user": request.user_name,
+                "user_id":request.user_id,
+                "payment_email": request.payment_email,
+                "task_ids": request.task_ids,
+                "date_requested": request.date_requested,
+                "notes": request.notes
+            }
+            for request in org_payment_requests
+        ]
+        # Create a list of dictionaries containing payment information
+        payments = [
+            {
+                "id": payment.id,
+                "payoneer_id": payment.payoneer_id,
+                "amount_paid": payment.amount_paid,
+                "user": payment.user_name,
+                "user_id":payment.user_id,
+                "payment_email": payment.payment_email,
+                "task_ids": payment.task_ids,
+                "date_paid": payment.date_paid,
+                "notes": payment.notes
+            }
+            for payment in org_payments_made
+        ]
+        # Return the list of payment requests and payments along with a success message
+        return {"message": "Payments and requests found", "requests": requests, "payments": payments, "status": 200}
+
+
+
+    def fetch_user_transactions(self):
+        # Check if user is logged in
+        if not g.user:
+            return {"message": "User not found", "status": 304}
+        # Get all payment requests and payments for the user's organization
+        org_payment_requests = PayRequests.query.filter_by(org_id=g.user.org_id,user_id=g.user.id).all()
+        org_payments_made = Payments.query.filter_by(org_id=g.user.org_id,user_id=g.user.id).all()
+        # Create a list of dictionaries containing payment request information
+        requests = [
+            {
+                "id": request.id,
+                "amount_requested": request.amount_requested,
+                "user": request.user_name,
+                "user_id":request.user_id,
+                "payment_email": request.payment_email,
+                "task_ids": request.task_ids,
+                "date_requested": request.date_requested,
+                "notes": request.notes
+            }
+            for request in org_payment_requests
+        ]
+        # Create a list of dictionaries containing payment information
+        payments = [
+            {
+                "id": payment.id,
+                "payoneer_id": payment.payoneer_id,
+                "amount_paid": payment.amount_paid,
+                "user": payment.user_name,
+                "user_id":payment.user_id,
+                "payment_email": payment.payment_email,
+                "task_ids": payment.task_ids,
+                "date_paid": payment.date_paid,
+                "notes": payment.notes
+            }
+            for payment in org_payments_made
+        ]
+        # Return the list of payment requests and payments along with a success message
+        return {"message": "Payments and requests found", "requests": requests, "payments": payments, "status": 200}
+
+
+
+    @requires_admin
+    def create_transaction(self):
+        # Check if user is authenticated
+        if not g.user:
+            return {"message": "User not found", "status": 304}
+        # Get required fields from request payload
+        user_id = request.json.get("user_id")
+        pay_email = request.json.get("payment_email")
+        task_ids = request.json.get("task_ids")
+        amount = request.json.get("amount")
+        transaction_type = request.json.get("transaction_type")
+        # Validate required fields
+        if not all([ user_id, task_ids, amount, transaction_type]):
+            return {"message": "All fields are required", "status": 400}
+        target_user=User.query.filter_by(org_id = g.user.org_id,id=user_id).first()
+        if not target_user:
+            return {"message": "User %s not found"%(user_id), "status": 400}
+        # Create username from first_name and last_name
+        user_name = "%s %s"%(target_user.first_name.capitalize(),target_user.last_name.capitalize())
+        payment_email=target_user.payment_email
+        # Split task_ids by comma and convert to int list
+        task_ids = [int(id) for id in task_ids.split(',')]
+        # Create transaction based on type
+        if transaction_type == 'request':
+            amount_requested = float(amount)
+            PayRequests.create(
+                org_id=g.user.org_id,
+                amount_requested=amount_requested,
+                user_name=user_name,
+                user_id=user_id,
+                payment_email=payment_email,
+                task_ids=task_ids
+            )
+        return {"message": "Transaction created", "status": 200}
+
+
+
+
+    @requires_admin
+    def delete_transaction(self):
+        # Check if user is authenticated
+        if not g.user:
+            return {"message": "User not found", "status": 304}
+        # Get transaction_id from request payload
+        transaction_id = request.json.get("transaction_id")
+        if not transaction_id:
+            return {"message": "transaction_id required", "status": 400}
+        # Get transaction_type from request payload
+        transaction_type = request.json.get("transaction_type")
+        if not transaction_type:
+            return {"message": "transaction_type required", "status": 400}
+        # Delete transaction based on type and ID
+        if transaction_type == "request":
+            target_request = PayRequests.query.filter_by(id=transaction_id).first()
+            if not target_request:
+                return {"message": f"Request {transaction_id} not found", "status": 400}
+            target_request.delete(soft=False)
+            return {"message": f"Request {transaction_id} deleted", "status": 200}
+        else:
+            target_payment = Payments.query.filter_by(id=transaction_id).first()
+            if not target_payment:
+                return {"message": f"Payment {transaction_id} not found", "status": 400}
+            target_payment.delete(soft=False)
+            return {"message": f"Payment {transaction_id} deleted", "status": 200}
+
+
+
+    @requires_admin
+    def process_payment_request(self):
+        if not g.user:
+            return {"message": "User not found", "status": 304}
+        # Get required fields from request payload
+        request_id = request.json.get("request_id")
+        user_id = request.json.get("user_id")
+        task_ids = request.json.get("task_ids")
+        request_amount = request.json.get("request_amount")
+        payoneer_id = request.json.get("payoneer_id")
+        notes= request.json.get("notes")
+        # Validate required fields
+        if not all([task_ids,user_id, request_amount, payoneer_id, request_id]):
+            return {"message": "All fields are required", "status": 400}
+        target_user=User.query.filter_by(org_id=g.user.org_id,id=user_id).first()
+        user_name ="%s %s"%(target_user.first_name.capitalize(), target_user.last_name.capitalize())
+        payment_email=target_user.payment_email
+        target_request = PayRequests.query.filter_by(org_id=g.user.org_id,id=request_id).first()
+        if not target_request:
+            return {"message": "Payment Request %s not found", "status": 400}
+        target_request.delete(soft=False)
+        new_payment=Payments.create(
+            user_name= user_name,
+            user_id = user_id,
+            org_id=g.user.org_id,
+            amount_paid=request_amount,
+            payoneer_id=payoneer_id,
+            payment_email=payment_email,
+            task_ids=task_ids
+        )
+        if notes:
+            new_payment.update(
+                notes=notes
+            )
+        return {"message": f"Payment Request {request_id} has been processed", "status": 200}
+    
+
+    def submit_payment_request(self):
+        if not g.user:
+            return {"message": "User not found", "status": 304}
+        notes= request.json.get("notes")
+        user_task_ids=UserTasks.query.filter_by(user_id=g.user.id).all()
+        user_validated_task_ids=[task.id for task in Task.query.filter_by(org_id=g.user.org_id,validated=True,mapped=True).all()if task.id in user_task_ids]
+        user_name ="%s %s"%(g.user.first_name.capitalize(), g.user.last_name.capitalize())
+        new_request=PayRequests.create(
+            org_id=g.user.org_id,
+            amount_requested=g.user.payable_total,
+            user_id=g.user.id,
+            user_name=user_name,
+            payment_email=g.user.payment_email,
+            task_ids=user_validated_task_ids,
+        )
+        if notes:
+            new_request.update(
+                notes=notes
+            )
+        g.user.update(
+            requested_total=g.user.payable_total,
+            payable_total=0.0
+        )
+        return {"message": f"Payment Request {new_request.id} has been submitted", "status": 200}
+    
+
+    def fetch_user_payable(self):
+        if not g.user:
+            return {"message": "User not found", "status": 304}
+        target_user=User.query.filter_by(id=g.user.id).first()
+        if not target_user:
+            return {"message": "User not found", "status": 400}
+        payable_total=target_user.payable_total
+        return {"message": f"payable total fetched",'payable_total':payable_total, "status": 200}

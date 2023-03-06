@@ -1,0 +1,61 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backend-deployment
+  labels:
+    app: mikro-backend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mikro-backend
+  template:
+    metadata:
+      labels:
+        app: mikro-backend
+    spec:
+      containers:
+        - name: mikro-backend
+          image: registry.gitlab.com/gokaart/mikro/mikro-backend:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8000
+          env:
+            - name: APP_BASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: mikro-backend-secrets
+                  key: APP_BASE_URL
+            # mikro database information
+            - name: POSTGRES_DB
+              valueFrom:
+                secretKeyRef:
+                  name: mikro-backend-secrets
+                  key: POSTGRES_DB
+            - name: POSTGRES_USER
+              valueFrom:
+                secretKeyRef:
+                  name: mikro-backend-secrets
+                  key: POSTGRES_USER
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: mikro-backend-secrets
+                  key: POSTGRES_PASSWORD
+            - name: POSTGRES_ENDPOINT
+              valueFrom:
+                secretKeyRef:
+                  name: mikro-backend-secrets
+                  key: POSTGRES_ENDPOINT
+            - name: POSTGRES_PORT
+              valueFrom:
+                secretKeyRef:
+                  name: mikro-backend-secrets
+                  key: POSTGRES_PORT
+            - name: JWT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: mikro-backend-secrets
+                  key: JWT_SECRET
+      imagePullSecrets:
+        - name: regcred

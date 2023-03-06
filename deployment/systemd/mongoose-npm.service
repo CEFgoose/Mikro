@@ -1,0 +1,9 @@
+[Unit]
+Description=Run mikro frontend
+OnFailure=status_email_user@%n.service
+[Service]
+ExecStart=%h/bin/npm-mikro.sh
+Restart=always
+RestartSec=30
+[Install]
+WantedBy=default.target

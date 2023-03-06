@@ -1,0 +1,7 @@
+[Unit]
+Description=status email for %i to %u
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/systemd-email %u %i
+Group=systemd-journal
