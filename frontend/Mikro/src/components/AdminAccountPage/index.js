@@ -1,18 +1,12 @@
 import React, { useContext, useState, useEffect } from "react";
-import { InteractionContext } from "common/InteractionContext";
+import { Redirect } from "react-router-dom";
 import { DataContext } from "common/DataContext";
 import { AuthContext } from "common/AuthContext";
-import { Table, TableBody, TablePagination, Divider } from "@mui/material";
+import {  Divider } from "@mui/material";
 import useToggle from "../../hooks/useToggle.js";
-import { styled } from "@mui/material/styles";
 import Sidebar from "../sidebar/sidebar";
 import {
-  ListHead,
-  USERS_TABLE_HEADERS,
-  ProjectRow,
-  ProjectCell,
   TableCard,
-  ButtonDivComponent,
   CardMediaStyle,
   SectionTitle,
   StyledButton,
@@ -21,7 +15,7 @@ import {
 import "./styles.css";
 
 export const AdminAccountPage = () => {
-  const {} = useContext(InteractionContext);
+
   const {
     firstName,
     lastName,
@@ -38,11 +32,19 @@ export const AdminAccountPage = () => {
   } = useContext(DataContext);
 
   const { refresh, user } = useContext(AuthContext);
-  const [page, setPage] = useState(0);
-  const [rowsPerPage, setRowsPerPage] = useState(10);
+  const [redirect, setRedirect] = useState(false);
   const [modalOpen, toggleModalOpen] = useToggle(false);
 
   useEffect(() => {
+    if (user) {
+      refresh();
+    }
+    if (user === null) {
+      setRedirect(true);
+    }
+    if (user !== null && user.role !== "admin") {
+      setRedirect(true);
+    }
     fetchUserDetails();
     // eslint-disable-next-line
   }, []);
@@ -75,7 +77,7 @@ export const AdminAccountPage = () => {
         button_2_text="Cancel"
         button_2_action={handleModalOpen}
       />
-      <div style={{ width: "100%", float: "left", backgroundColor: "Beige" }}>
+      <div style={{ width: "100%", float: "left"}}>
         <Sidebar isOpen={sidebarOpen} toggleSidebar={handleViewSidebar} />
         <div
           style={{
@@ -124,12 +126,10 @@ export const AdminAccountPage = () => {
           >
             <TableCard style={{ boxShadow: "1px 1px 6px 2px gray" }}>
               <CardMediaStyle />
-
               <div
                 style={{
                   display: "flex",
                   flexDirection: "row",
-                  backgroundColor: "lightgray",
                   height: "15vh",
                   marginTop: "2vh",
                   marginBottom: "2vh",
@@ -166,7 +166,6 @@ export const AdminAccountPage = () => {
                     style={{ height: "5vh", marginRight: "2vw" }}
                   />
                 </div>
-
                 <div
                   style={{
                     display: "flex",
@@ -188,7 +187,6 @@ export const AdminAccountPage = () => {
                 style={{
                   display: "flex",
                   flexDirection: "row",
-                  backgroundColor: "lightgray",
                   height: "15vh",
                   marginTop: "2vh",
                   marginBottom: "2vh",
@@ -210,7 +208,6 @@ export const AdminAccountPage = () => {
                     style={{ height: "5vh", marginRight: "5vw" }}
                   />
                 </div>
-
                 <div
                   style={{
                     display: "flex",
@@ -232,7 +229,6 @@ export const AdminAccountPage = () => {
                 style={{
                   display: "flex",
                   flexDirection: "row",
-                  backgroundColor: "lightgray",
                   height: "15vh",
                   marginTop: "2vh",
                   marginBottom: "2vh",
@@ -254,7 +250,6 @@ export const AdminAccountPage = () => {
                     style={{ height: "5vh", marginRight: "5vw" }}
                   />
                 </div>
-
                 <div
                   style={{
                     display: "flex",
@@ -275,6 +270,7 @@ export const AdminAccountPage = () => {
           </div>
         </div>
       </div>
+      {!redirect ? <></> : <Redirect push to="/login" />}
     </>
   );
 };

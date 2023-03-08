@@ -3,10 +3,8 @@ import { DataContext } from "../../common/DataContext";
 import { AuthContext } from "../../common/AuthContext";
 import Sidebar from "../sidebar/sidebar";
 import { Redirect } from "react-router-dom";
-import { Divider } from "@mui/material";
 import { Tab, TabList, TabPanel, Tabs } from "react-tabs";
 import useToggle from "../../hooks/useToggle.js";
-import { Table, TableBody, TablePagination } from "@mui/material";
 import {
   ButtonDivComponent,
   AdminPayRequestsTable,
@@ -14,15 +12,11 @@ import {
 } from "components/commonComponents/commonComponents";
 import { 
   RequestModal,
-  DeleteModal,
-  ProcessRequestModal,
   DetailsModal,
-  CSVExport
 } from "./paymentComponents";
 import "./styles.css";
 
 export const UserPaymentsPage = () => {
-  // DATA CONTEXT STATES AND FUNCTIONS //
 
   const { 
     sidebarOpen,
@@ -30,7 +24,6 @@ export const UserPaymentsPage = () => {
     orgPayments,
     orgRequests, 
     CSVdata,
-    setCSVdata,
     submitPayRequest,
     fetchUserPayable, 
     fetchUserTransactions
@@ -41,8 +34,6 @@ export const UserPaymentsPage = () => {
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [requestOpen, toggleRequestOpen] = useToggle(false);
-  const [deleteOpen, toggleDeleteOpen] = useToggle(false);
-  const [processOpen, toggleProcessOpen] = useToggle(false);
   const [detailsOpen, toggleDetailsOpen] = useToggle(false);
   const [userName,setUserName]=useState(null)
   const [userID,setUserID]=useState(null)
@@ -54,8 +45,8 @@ export const UserPaymentsPage = () => {
   const [requestSelected,setRequestSelected]=useState(null)
   const [paymentSelected,setPaymentSelected]=useState(null)
   const [requestDate,setRequestDate]=useState(null)
-
   const [activeTab,setActiveTab]=useState(1)
+
 
   useEffect(() => {
     if (user) {
@@ -64,15 +55,22 @@ export const UserPaymentsPage = () => {
     if (user === null) {
       setRedirect(true);
     }
-    if (user !== null && user.role !== "admin") {
+    if (user !== null && user.role !== "user") {
       setRedirect(true);
     }
     fetchUserPayable(handleSetRequestAmount)
     fetchUserTransactions()
-
     // eslint-disable-next-line
   }, []);
 
+
+  useEffect(() => {
+    setPayEmail(null)
+    setRequestAmount(null)
+    setUserName(null)
+    setTaskIDs(null)
+    // eslint-disable-next-line
+  }, [activeTab]);
 
   const handleChangeRowsPerPage = (e)=>{
     setRowsPerPage(e.target.value)
@@ -84,22 +82,6 @@ export const UserPaymentsPage = () => {
 
   const handleRequestOpen = () => {
     toggleRequestOpen(!requestOpen);
-    // setPayEmail(null)
-    // setRequestAmount(null)
-    // setUserName(null)
-    // setTaskIDs(null)
-  };
-
-  const handleDeleteOpen = () => {
-    if (requestSelected !== null) {
-      toggleDeleteOpen();
-    }
-  };
-
-  const handleProcessOpen = () => {
-    if (requestSelected !== null) {
-      toggleProcessOpen();
-    }
   };
 
   const handleDetailsOpen = () => {
@@ -107,7 +89,6 @@ export const UserPaymentsPage = () => {
       toggleDetailsOpen();
     }
   };
-
 
   const handleSetPaymentSelected=(id,user,user_id,amount_paid,date_paid,payment_email,task_ids,payoneer_id)=>{
     setPaymentSelected(id)
@@ -120,8 +101,6 @@ export const UserPaymentsPage = () => {
     setTaskIDs(task_ids)
     setPayoneerID(payoneer_id)
   }
-
-
 
   const handleSetRequestSelected=(id,name,user_id,amount,date,pay_email,task_ids)=>{
     setUserID(user_id)
@@ -141,14 +120,9 @@ export const UserPaymentsPage = () => {
     setNotes(e.target.value)
   }
 
-
   const handleSetRequestAmount=(e)=>{
     setRequestAmount(e)
   }
-
-
-
-
 
   const handleSubmitPayRequest=()=>{
     submitPayRequest(notes)
@@ -167,8 +141,6 @@ export const UserPaymentsPage = () => {
       requestAmount={requestAmount}
       confirm_action={handleSubmitPayRequest}
     />
-
-
     <DetailsModal
       detailsOpen={detailsOpen}
       handleDetailsOpen={handleDetailsOpen}
@@ -181,8 +153,7 @@ export const UserPaymentsPage = () => {
       task_ids={taskIDs}
       notes={notes}
     />
-
-    <div style={{ width: "100%", float: "left", backgroundColor: "Beige" }}>
+    <div style={{ width: "100%", float: "left" }}>
       <Sidebar isOpen={sidebarOpen} toggleSidebar={handleViewSidebar} />
       <div
         style={{
@@ -197,36 +168,27 @@ export const UserPaymentsPage = () => {
           style={{ display: "flex", marginLeft: "6vh", flexDirection: "row" }}
         >
           <h1 style={{ marginTop: "1vw", paddingBottom: "2vh" }}>Payments:</h1>
-
           <div
             style={activeTab===1?{ marginTop: "1vw", position: "relative", left: "58svw" }:{ marginTop: "1vw", position: "relative", left: "48.5vw" }}
-
           >
             <ButtonDivComponent
               data={CSVdata}
-              // button1={true}
               csv={activeTab===1 ?false : true}
               button2={true}
-              // button3={true}
               button1_text={"CSV Report"}
               button2_text={activeTab===1?'Request Pay':'View Details'}
               button_2_width={'25%'}
-              button3_text={"Delete"}
-              // button1_action={activeTab===1?handleAddOpen:null}
               button2_action={activeTab===1?handleRequestOpen:handleDetailsOpen}
-              button3_action={handleDeleteOpen}
             />
           </div>
         </div>
         <Tabs >
           <TabList
-
             style={{ marginLeft: "3vw", marginTop: "0vh", paddingTop: "0vh" }}
           >
             <Tab value={1} onClick={(e)=>handleSetActiveTab(e)} >Pay Requests</Tab>
             <Tab value={2} onClick={(e)=>handleSetActiveTab(e)}>Completed Payouts</Tab>
           </TabList>
-
           <TabPanel >
             <AdminPayRequestsTable 
               rowsPerPage={rowsPerPage}
@@ -252,6 +214,7 @@ export const UserPaymentsPage = () => {
         </Tabs>
       </div>
     </div>
+    {!redirect ? <></> : <Redirect push to="/login" />}
     </>
   );
 };

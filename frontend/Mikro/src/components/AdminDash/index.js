@@ -3,7 +3,6 @@ import { DataContext } from "../../common/DataContext";
 import { AuthContext } from "../../common/AuthContext";
 import Sidebar from "../sidebar/sidebar";
 import { Redirect } from "react-router-dom";
-import { Divider } from "@mui/material";
 import { Table, TableBody, TablePagination } from "@mui/material";
 import {
   ListHead,
@@ -12,7 +11,6 @@ import {
   ProjectRow,
   ProjectCell,
   TableCard,
-  ButtonDivComponent,
   CardMediaStyle,
 } from "components/commonComponents/commonComponents";
 
@@ -29,7 +27,6 @@ export const AdminDash = () => {
     goToSource,
     fetchAdminDashStats,
     activeProjects,
-    inactiveProjects,
     completedProjects,
     tasksMapped,
     tasksValidated,
@@ -39,9 +36,7 @@ export const AdminDash = () => {
     paidTotal,
     activeProjectsCount, 
     inactiveProjectsCount, 
-    setActiveProjectsCount,
-    setInactiveProjectsCount,
-
+    admin_update_all_user_tasks,
   } =useContext(DataContext);
 
   const { refresh, user } = useContext(AuthContext);
@@ -65,17 +60,21 @@ export const AdminDash = () => {
     }
     fetchOrgProjects()
     fetchAdminDashStats()
+    admin_update_all_user_tasks()
     // eslint-disable-next-line
   }, []);
-
 
   const handleSetProjectSelected =(e)=>{
     setProjectSelected(e)
   }
 
+  const handleChangeRowsPerPage=(e)=>{
+    setRowsPerPage(e.target.value)
+  }
 
   return (
-    <div style={{ width: "100%", float: "left", backgroundColor: "Beige" }}>
+    <>
+    <div style={{ width: "100%", float: "left"}}>
       <Sidebar isOpen={sidebarOpen} toggleSidebar={handleViewSidebar} />
       <div
         style={{
@@ -90,28 +89,15 @@ export const AdminDash = () => {
           style={{ display: "flex", marginLeft: "6vh", flexDirection: "row" }}
         >
           <h1 style={{ marginTop: "1vw", paddingBottom: "2vh" }}>Dashboard:</h1>
-
           <div
             style={{ marginTop: "1vw", position: "relative", left: "37.5vw" }}
           >
-            {/* <ButtonDivComponent
-              role={"admin"}
-              // handleAddOpen={handleAddOpen}
-              // handleDeleteOpen={handleDeleteOpen}
-              // modify_action={handleModifyOpen}
-              // assign_action={handleShareOpen}
-              assignText={"Share"}
-              modifyText={"Edit"}
-              userText={"Sequences"}
-              page={"projects"}
-            /> */}
           </div>
         </div>
         <div
           style={{
             display: "flex",
             flexDirection: "row",
-            backgroundColor: "ghostwhite",
             height: "44vh",
           }}
         >
@@ -138,7 +124,7 @@ export const AdminDash = () => {
             subtitle_text_1={"Payable Total:"}
             subtitle_text_2={"Payout Requests:"}
             subtitle_text_3={"Payouts to Date:"}
-            value_1={`$${payableTotal/100}`}
+            value_1={`$${payableTotal}`}
             value_2={`$${requestsTotal}`}
             value_3={`$${paidTotal}`}
           />
@@ -165,11 +151,7 @@ export const AdminDash = () => {
                         id,
                         name,
                         difficulty,
-                        visibility,
-                        total_payout,
                         rate_per_task,
-                        max_editors,
-                        total_editors,
                         total_tasks,
                         tasks_mapped,
                         tasks_validated,
@@ -195,11 +177,11 @@ export const AdminDash = () => {
                           onDoubleClick={() => goToSource(url)}
                         >
                           <ProjectCell entry={name} />
-                          <ProjectCell entry={`$${rate_per_task/100}`} />
+                          <ProjectCell entry={`$${rate_per_task}`} />
                           <ProjectCell entry={total_tasks} />
                           <ProjectCell entry={difficulty} />
-                          <ProjectCell entry={`$${max_payment/100}`} />
-                          <ProjectCell entry={`$${payment_due/100}`} />
+                          <ProjectCell entry={`$${max_payment}`} />
+                          <ProjectCell entry={`$${payment_due}`} />
                           <ProjectCell entry={`${tasks_validated}/${tasks_mapped}`} />
                           <ProjectCell entry={tasks_invalidated} />
                         </ProjectRow>
@@ -207,19 +189,21 @@ export const AdminDash = () => {
                     })}
               </TableBody>
             </Table>
-          </TableCard>
-          {/* <TablePagination
+            <TablePagination
             style={{ width: "100%" }}
             rowsPerPageOptions={[5, 10, 15]}
             component="div"
             count={orgProjects ? orgProjects.length : 5}
             rowsPerPage={rowsPerPage}
             page={page}
-            // onPageChange={(e, page) => setPage(page)}
-            // onRowsPerPageChange={(e) => handleChangeRowsPerPage(e)}
-          /> */}
+            onPageChange={(e, page) => setPage(page)}
+            onRowsPerPageChange={(e) => handleChangeRowsPerPage(e)}
+          />
+          </TableCard>
         </div>
       </div>
     </div>
+    {!redirect ? <></> : <Redirect push to="/login" />}
+    </>
   );
 };

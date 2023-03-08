@@ -1,15 +1,12 @@
 import { useHistory } from "react-router-dom";
 import { InteractionContext } from "common/InteractionContext";
 import { AuthContext } from "common/AuthContext";
-import { API_URL } from "components/constants";
 import { fetcher, poster } from "../../calls";
 import useToggle from "../../hooks/useToggle";
 import React, {
   createContext,
   useContext,
   useState,
-  useEffect,
-  useRef,
 } from "react";
 
 // CONTEXT IMPORTS //
@@ -34,13 +31,11 @@ export const DataProvider = ({ children }) => {
   const [fetching, setFetching] = useState(false);
   const history = useHistory();
   const [userSelected, setUserSelected] = useState(null);
-
   const [orgRequests, setOrgRequests] = useState([]);
   const [orgPayments, setOrgPayments] = useState([]);
   const [orgProjects, setorgProjects] = useState([]);
   const [activeProjects, setActiveProjects] = useState(null);
   const [inactiveProjects, setInactiveProjects] = useState(null);
-
   const [activeProjectsCount, setActiveProjectsCount] = useState(null);
   const [inactiveProjectsCount, setInactiveProjectsCount] = useState(null);
   const [completedProjects, setCompletedProjects] = useState(null);
@@ -61,19 +56,17 @@ export const DataProvider = ({ children }) => {
   };
 
   const handleAdminDashStates = (e) => {
-    console.log(e)
     setActiveProjectsCount(e.active_projects);
     setInactiveProjectsCount(e.inactive_projects);
     setCompletedProjects(e.completed_projects);
     setTasksMapped(e.mapped_tasks);
     setTasksValidated(e.validated_tasks);
     setTasksInvalidated(e.invalidated_tasks);
-    setPayableTotal(e.validated_tasks_amounts > 0 ? e.validated_tasks_amounts : 0);
+    setPayableTotal(e.payable_total > 0 ? e.payable_total : 0);
     setRequestsTotal(e.requests_total > 0 ? e.requests_total : 0);
     setPaidTotal(e.payouts_total > 0 ? e.payouts_total : 0);
   };
   
-
   //USER ORIENTED API CALLS AND HANDLERS
   const handleUserDetailsStates = (state, e) => {
     switch (state) {
@@ -113,7 +106,6 @@ export const DataProvider = ({ children }) => {
     }
   };
   
-
   const fetchUserDetails = () => {
     let fetchUserDetailsURL = "user/fetch_user_details";
     fetcher(fetchUserDetailsURL).then((response) => {
@@ -161,7 +153,6 @@ export const DataProvider = ({ children }) => {
       }
     });
   };
-
 
   const fetchProjectUsers = (project_id) => {
     let fetchProjectUsersURL = "user/fetch_project_users";
@@ -309,64 +300,29 @@ export const DataProvider = ({ children }) => {
     });
   };
 
-    const updateProject = (
-      projectSelected,
-      rateMethod,
-      rate,
-      maxEditors,
-      visibility,
-      projectDifficulty,
-      projectStatus
-    ) => {
-      let updateProjectURL = "project/update_project";
-      let outpack = {
-        project_id: projectSelected,
-        rate_type: rateMethod,
-        rate: rate,
-        max_editors: maxEditors,
-        visibility: visibility,
-        difficulty: projectDifficulty,
-        project_status: projectStatus
-      };
-      poster(outpack, updateProjectURL).then((response) => {
-        if (response.status === 200) {
-          alert(`Project ${projectSelected} has been Updated.`);
-          fetchOrgProjects();
-          return;
-        } else if (response.status === 304) {
-          history.push("/login");
-        } else {
-          alert(response.message);
-        }
-      });
+  const updateProject = (
+    projectSelected,
+    rateMethod,
+    rate,
+    maxEditors,
+    visibility,
+    projectDifficulty,
+    projectStatus
+  ) => {
+    let updateProjectURL = "project/update_project";
+    let outpack = {
+      project_id: projectSelected,
+      rate_type: rateMethod,
+      rate: rate,
+      max_editors: maxEditors,
+      visibility: visibility,
+      difficulty: projectDifficulty,
+      project_status: projectStatus
     };
-
-    const calculateProjectBudget = (url, rate_type, rate, project_id = null) => {
-      let calculateProjectBudgetURL = "project/calculate_budget";
-      let outpack = {
-        url: url,
-        rate_type: rate_type,
-        rate: rate,
-        project_id: project_id,
-      };
-      poster(outpack, calculateProjectBudgetURL).then((response) => {
-        if (response.status === 200) {
-          setOutputRate(response.calculation);
-          return;
-        } else if (response.status === 304) {
-          history.push("/login");
-        } else {
-          alert(response.message);
-        }
-      });
-    };
-
-  const fetchOrgProjects = () => {
-    let fetchProjectsURL = "project/fetch_org_projects";
-    fetcher(fetchProjectsURL).then((response) => {
+    poster(outpack, updateProjectURL).then((response) => {
       if (response.status === 200) {
-        setActiveProjects(response.org_active_projects);
-        setInactiveProjects(response.org_inactive_projects);
+        alert(`Project ${projectSelected} has been Updated.`);
+        fetchOrgProjects();
         return;
       } else if (response.status === 304) {
         history.push("/login");
@@ -375,6 +331,41 @@ export const DataProvider = ({ children }) => {
       }
     });
   };
+
+  const calculateProjectBudget = (url, rate_type, rate, project_id = null) => {
+    let calculateProjectBudgetURL = "project/calculate_budget";
+    let outpack = {
+      url: url,
+      rate_type: rate_type,
+      rate: rate,
+      project_id: project_id,
+    };
+    poster(outpack, calculateProjectBudgetURL).then((response) => {
+      if (response.status === 200) {
+        setOutputRate(response.calculation);
+        return;
+      } else if (response.status === 304) {
+        history.push("/login");
+      } else {
+        alert(response.message);
+      }
+    });
+  };
+
+const fetchOrgProjects = () => {
+  let fetchProjectsURL = "project/fetch_org_projects";
+  fetcher(fetchProjectsURL).then((response) => {
+    if (response.status === 200) {
+      setActiveProjects(response.org_active_projects);
+      setInactiveProjects(response.org_inactive_projects);
+      return;
+    } else if (response.status === 304) {
+      history.push("/login");
+    } else {
+      alert(response.message);
+    }
+  });
+};
 
   const fetchUserProjects = () => {
     let fetchUserURL = "project/fetch_user_projects";
@@ -481,7 +472,6 @@ const checkUserStats = () => {
     });
   };
 
-
   const processPayRequest = (request_id,  user_id, request_amount, task_ids, payoneer_id,notes) => {
     let processPayRequestURL = "transaction/process_payment_request";
     let outpack = {
@@ -523,7 +513,6 @@ const checkUserStats = () => {
     });
   };
 
-
   const fetchUserPayable = (setter) => {
     let fetchUserPayableURL = "transaction/fetch_user_payable";
     fetcher(fetchUserPayableURL).then((response) => {
@@ -538,10 +527,6 @@ const checkUserStats = () => {
     });
   };
   
-
-
-
-
   const fetchAdminDashStats = () => {
     let adminDashStats= "project/fetch_admin_dash_stats";
     fetcher(adminDashStats).then((response) => {
@@ -555,7 +540,6 @@ const checkUserStats = () => {
       }
     });
   };
-
 
   const fetchUserDashStats = () => {
     let userDashStats= "project/fetch_user_dash_stats";
@@ -571,48 +555,66 @@ const checkUserStats = () => {
     });
   };
 
+  const update_user_tasks = (project_id) => {
+    let userTaskStatsURL= "task/update_user_tasks";
+    fetcher(userTaskStatsURL).then((response) => {
+      if (response.status === 200) {
+        return;
+      } else if (response.status === 304) {
+        history.push("/login");
+      } else {
+        alert(response.message);
+      }
+    });
+  };
 
-
-
-
-
+  const admin_update_all_user_tasks = (project_id) => {
+    let userTaskStatsURL= "task/admin_update_all_user_tasks";
+    fetcher(userTaskStatsURL).then((response) => {
+      if (response.status === 200) {
+        return;
+      } else if (response.status === 304) {
+        history.push("/login");
+      } else {
+        alert(response.message);
+      }
+    });
+  };
 
   const generateRandomKey = () => {
     return Math.random().toString(36).substr(2, 9);
   };
 
-  function goToSource(project_url) {
+  const goToSource=(project_url)=>{
     window.open(project_url, "_blank")?.focus()
  }
 
-  function findObjectById(array, id) {
+  const findObjectById = (array, id)=>{
     return array.find((obj) => obj.id === id);
   }
 
-
   const handleSetCSVdata = (e) => {
     const csvData = [];
-    const headers = Object.keys(e[0]);
-    csvData.push(headers);
-
-    e.forEach((item) => {
-
-      const row = [];
-      headers.forEach((header) => {
-        row.push(item[header]);
+    if(Object.keys(e).length>0){
+      const headers = Object.keys(e[0]);
+      csvData.push(headers);
+      e.forEach((item) => {
+        const row = [];
+        headers.forEach((header) => {
+          row.push(item[header]);
+        });
+        csvData.push(row);
       });
-      csvData.push(row);
-    });
-    setCSVdata(csvData)
-  }
+      setCSVdata(csvData)
+    }
 
+  }
 
   const value = {
     //REFS
     history,
     //STATES
     userSelected,
-
     orgUsers,
     sidebarOpen,
     fetching,
@@ -694,6 +696,8 @@ const checkUserStats = () => {
     submitPayRequest,
     fetchUserPayable,
     fetchUserTransactions,
+    update_user_tasks,
+    admin_update_all_user_tasks,
     //Task
     checkUserStats,
     //general functions

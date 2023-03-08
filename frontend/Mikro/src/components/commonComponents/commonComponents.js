@@ -1,3 +1,12 @@
+import { CSVLink } from "react-csv"
+import { styled } from "@mui/material/styles";
+import React from "react";
+import close_icon from "../../images/close_icon.png";
+import {
+  Button,
+  ButtonLabel,
+  Container,
+} from "./styles";
 import {
   Card,
   TableCell,
@@ -11,20 +20,7 @@ import {
   TableBody,
   TablePagination,
 } from "@mui/material";
-import { CSVLink } from "react-csv"
-import { styled } from "@mui/material/styles";
-import React from "react";
-import close_icon from "../../images/close_icon.png";
-import {
-  Button,
-  ButtonLabel,
-  CloseButtonImg,
-  Container,
-  RegisterButton,
-} from "./styles";
-import { Input, TextArea } from "./styles";
-import { name } from "store/storages/cookieStorage";
-// STYLED COMPONENTS
+
 
 export const TopDiv = styled("div")(({ theme }) => ({
   display: "flex",
@@ -49,8 +45,6 @@ export const CardMediaStyle = styled("div")(({ theme }) => ({
     fontWeight: "400",
   },
 }));
-
-
 
 export const TableCard = styled(Card)(() => ({
   width: "100%",
@@ -83,6 +77,61 @@ export const ButtonDiv = styled("div")(({ theme }) => ({
   justifyContent: "center",
 }));
 
+export const ProjectRow = styled(TableRow)(() => ({
+  width: "100%",
+  marginLeft: "2vw",
+}));
+
+//TABLE HEADERS
+
+export const PROJECTS_TABLE_HEADERS = [
+
+  { id: "name", label: "Name", alignLeft: true },
+  { id: "Rate", label: "Rate", alignLeft: true },
+  { id: "Tasks", label: "Tasks", alignLeft: true },
+  { id: "Difficulty", label: "Difficulty", alignLeft: true },
+  { id: "Budget", label: "Budget", alignLeft: true },
+  { id: "Current Payout", label: "Current Payout", alignLeft: true },
+  { id: "Validated/Mapped", label: "Validated/Mapped", alignLeft: true },
+  { id: "Invalidated", label: "Invalidated", alignLeft: true },
+];
+
+export const USERS_TABLE_HEADERS = [
+  { id: "name", label: "Username", alignRight: false },
+  { id: "role", label: "Role", alignRight: false },
+  { id: "assinged projects", label: "Assinged Projects", alignRight: false },
+  { id: "tasks Mapped", label: "Tasks Mapped", alignRight: false },
+  { id: "tasks validated", label: "Tasks Validated", alignRight: false },
+  { id: "tasks invalidated", label: "Tasks Invalidated", alignRight: false },
+  { id: "awaiting payment", label: "Awaiting Payment", alignRight: false },
+  { id: "total payout", label: "Total Payout", alignRight: false },
+];
+
+export const ASSIGN_USERS_TABLE_HEADERS = [
+  { id: "name", label: "Username", alignRight: false },
+  { id: "role", label: "Role", alignRight: false },
+  { id: "Currently assigned", label: "Currently Assigned", alignRight: false },
+  { id: "Total Projects", label: "Total Projects", alignRight: false },
+];
+
+export const PAYOUT_TABLE_HEADERS = [
+  { id: "name", label: "User", alignRight: false },
+  { id: "Payment Email", label: "Role", alignRight: false },
+  { id: "Amount Paid", label: "Amount Paid", alignRight: false },
+  { id: "Request ID", label: "Request ID", alignRight: false },
+  { id: "Date Requested", label: "Date Requested", alignRight: false },
+  { id: "Date Paid", label: "Date Paid", alignRight: false },
+];
+
+
+export const REQUEST_TABLE_HEADERS = [
+  { id: "name", label: "User", alignRight: false },
+  { id: "Request ID", label: "Request ID", alignRight: false },
+  { id: "Amount Requested", label: "Amount Requested", alignRight: false },
+  { id: "Date Requested", label: "Date Requested", alignRight: false },
+];
+
+
 // COMPONENTS
 
 export const DashboardCard = (props) => {
@@ -100,7 +149,6 @@ export const DashboardCard = (props) => {
           height: "40vh",
           display: "flex",
           flexDirection: "column",
-          backgroundColor: "lightgray",
         }}
       >
         <CardMediaStyle />
@@ -158,58 +206,6 @@ export const ProjectCell = (props) => {
   );
 };
 
-export const ProjectRow = styled(TableRow)(() => ({
-  width: "100%",
-  marginLeft: "2vw",
-}));
-
-export const PROJECTS_TABLE_HEADERS = [
-  // { id: "id", label: "Project ID", alignLeft: true },
-  { id: "name", label: "Name", alignLeft: true },
-  { id: "Rate", label: "Rate", alignLeft: true },
-  { id: "Tasks", label: "Tasks", alignLeft: true },
-  { id: "Difficulty", label: "Difficulty", alignLeft: true },
-  { id: "Budget", label: "Budget", alignLeft: true },
-  { id: "Current Payout", label: "Current Payout", alignLeft: true },
-  { id: "Validated/Mapped", label: "Validated/Mapped", alignLeft: true },
-  { id: "Invalidated", label: "Invalidated", alignLeft: true },
-];
-
-export const USERS_TABLE_HEADERS = [
-  { id: "name", label: "Username", alignRight: false },
-  { id: "role", label: "Role", alignRight: false },
-  { id: "assinged projects", label: "Assinged Projects", alignRight: false },
-  { id: "tasks Mapped", label: "Tasks Mapped", alignRight: false },
-  { id: "tasks validated", label: "Tasks Validated", alignRight: false },
-  { id: "tasks invalidated", label: "Tasks Invalidated", alignRight: false },
-  { id: "awaiting payment", label: "Awaiting Payment", alignRight: false },
-  { id: "total payout", label: "Total Payout", alignRight: false },
-];
-
-export const ASSIGN_USERS_TABLE_HEADERS = [
-  { id: "name", label: "Username", alignRight: false },
-  { id: "role", label: "Role", alignRight: false },
-  { id: "Currently assigned", label: "Currently Assigned", alignRight: false },
-  { id: "Total Projects", label: "Total Projects", alignRight: false },
-];
-
-export const PAYOUT_TABLE_HEADERS = [
-  { id: "name", label: "User", alignRight: false },
-  { id: "Payment Email", label: "Role", alignRight: false },
-  { id: "Amount Paid", label: "Amount Paid", alignRight: false },
-  { id: "Request ID", label: "Request ID", alignRight: false },
-  { id: "Date Requested", label: "Date Requested", alignRight: false },
-  { id: "Date Paid", label: "Date Paid", alignRight: false },
-];
-
-
-export const REQUEST_TABLE_HEADERS = [
-  { id: "name", label: "User", alignRight: false },
-  { id: "Request ID", label: "Request ID", alignRight: false },
-  { id: "Amount Requested", label: "Amount Requested", alignRight: false },
-  { id: "Date Requested", label: "Date Requested", alignRight: false },
-
-];
 //GENERIC CONFIRM & CANCEL BUTTONS - USED ON MOST VIEWER MODALS - CHANGE TEXT AND ACTION PROP FOR EACH BUTTON
 export const CancelConfirmButtons = (props) => {
   return (
@@ -347,7 +343,6 @@ export const StyledButton = (props) => {
 export const ButtonDivComponent = (props) => {
   return (
     <Container>
-
       {props.csv ? (
           <CSVLink
             data={props.data}
@@ -363,8 +358,6 @@ export const ButtonDivComponent = (props) => {
       ) : (
         <></>
       )}
-
-
       {props.button1 ? (
             <StyledButton 
             button_action={props.button1_action} 
@@ -372,7 +365,6 @@ export const ButtonDivComponent = (props) => {
       ) : (
         <></>
       )}
-
       {props.button2 ? (
         <StyledButton
 
@@ -394,10 +386,8 @@ export const ButtonDivComponent = (props) => {
   );
 };
 
-//TABLE HEADER COMPNENT
+//TABLE HEADER COMPONENT
 export const ListHead = (props) => {
-  // order,
-  //TABLE HEADER COMPONENT RENDER
   return (
     <TableHead>
       <TableRow style={{ margin: "0", textAlign: "center" }}>
@@ -424,8 +414,6 @@ export const ListHead = (props) => {
 };
 
 export const ProjectHead = (props) => {
-  //PROJECTS TABLE HEADER COMPONENT RENDER
-  //EXCLUDES CHECKBOX CELL
   return (
     <TableHead>
       <TableRow style={{ margin: "0", textAlign: "center" }}>
@@ -484,6 +472,7 @@ export const ConfirmModalCommon = (props) => {
       </Card>
     </ModalWrapper>
   );
+
   //COMPONENT RENDER
   return (
     <Modal
@@ -496,7 +485,6 @@ export const ConfirmModalCommon = (props) => {
     </Modal>
   );
 };
-
 
 export const AdminPayRequestsTable = (props) => {
   return (
@@ -529,7 +517,6 @@ export const AdminPayRequestsTable = (props) => {
                     amount_requested,
                     task_ids,
                     date_requested,
-                    notes,
                   } = row;
                   return (
                     <ProjectRow
@@ -544,13 +531,11 @@ export const AdminPayRequestsTable = (props) => {
                       tabIndex={-1}
                       onClick={() => props.handleSetRequestSelected(id,user,user_id,amount_requested,date_requested,payment_email,task_ids)}
                       selected={props.requestSelected === id}
-                      // onDoubleClick={() => view_all_project_sequences(value)}
                     >
                       <ProjectCell entry={user} />
                       <ProjectCell entry={id} />
                       <ProjectCell entry={amount_requested} />
                       <ProjectCell entry={date_requested} />
-                      {/* <ProjectCell entry={notes} /> */}
                     </ProjectRow>
                   );
                 })}
@@ -567,12 +552,9 @@ export const AdminPayRequestsTable = (props) => {
           onRowsPerPageChange={(e) => props.handleChangeRowsPerPage(e)}
         />
       </TableCard>
-
     </div>
   );
 };
-
-
 
 export const AdminPaymentsTable = (props) => {
   return (
@@ -606,7 +588,6 @@ export const AdminPaymentsTable = (props) => {
                     task_ids,
                     date_paid,
                     payoneer_id,
-                    notes,
                   } = row;
                   return (
                     <ProjectRow
@@ -621,13 +602,11 @@ export const AdminPaymentsTable = (props) => {
                       tabIndex={-1}
                       onClick={() => props.handleSetPaymentSelected(id,user,user_id,amount_paid,date_paid,payment_email,task_ids,payoneer_id)}
                       selected={props.paymentSelected === id}
-                      // onDoubleClick={() => view_all_project_sequences(value)}
                     >
                       <ProjectCell entry={user} />
                       <ProjectCell entry={id} />
                       <ProjectCell entry={`$${amount_paid}`} />
                       <ProjectCell entry={date_paid} />
-                      {/* <ProjectCell entry={notes} /> */}
                     </ProjectRow>
                   );
                 })}
@@ -644,7 +623,6 @@ export const AdminPaymentsTable = (props) => {
           onRowsPerPageChange={(e) => props.handleChangeRowsPerPage(e)}
         />
       </TableCard>
-
     </div>
   );
 };

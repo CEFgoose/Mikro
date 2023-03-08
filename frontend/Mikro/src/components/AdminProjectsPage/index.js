@@ -1,6 +1,7 @@
 import React, { useContext, useState, useEffect } from "react";
 import { DataContext } from "common/DataContext";
-import { Grid } from "@mui/material";
+import { AuthContext } from "../../common/AuthContext";
+import { Redirect } from "react-router-dom";
 import useToggle from "../../hooks/useToggle.js";
 import Sidebar from "../sidebar/sidebar";
 import "./styles.css";
@@ -13,12 +14,12 @@ import {
 } from "./projectComponents";
 
 import {
-  AdminProjectCard,
   ButtonDivComponent,
-  ConfirmModalCommon
 } from "components/commonComponents/commonComponents";
 
 export const AdminProjectsPage = () => {
+  const { refresh, user } = useContext(AuthContext);
+
   const {
     calculateProjectBudget,
     createProject,
@@ -39,9 +40,11 @@ export const AdminProjectsPage = () => {
     userSelected,
     setUserSelected,
     generateRandomKey,
-    assignUser
+    assignUser,
+    goToSource
   } = useContext(DataContext);
 
+  const [redirect, setRedirect] = useState(false);
   const [url, setUrl] = useState(null);
   const [rate, setRate] = useState(0.0);
   const [maxEditors, setMaxEditors] = useState(1);
@@ -53,16 +56,23 @@ export const AdminProjectsPage = () => {
   const [projectSelected, setProjectSelected] = useState(null);
   const [projectDifficulty, setProjectDifficulty] = useState(null);
   const [assignmentStatus,setAssignmentStatus] = useState(null);
-  const [confrimOpen,toggleConfirmOpen]= useToggle(null);
   const [projectStatus,toggleProjectStatus]=useToggle(false)
   const [activeTab,setActiveTab] = useState(1)
   const [assignmentButtonText,setAssignmentButtonText] = useState("Assign");
+
   useEffect(() => {
+    if (user) {
+      refresh();
+    }
+    if (user === null) {
+      setRedirect(true);
+    }
+    if (user !== null && user.role !== "admin") {
+      setRedirect(true);
+    }
     fetchOrgProjects();
     // eslint-disable-next-line
   }, []);
-
-
 
   const handleSetActiveTab=(e)=>{
     setActiveTab(e.target.value)
@@ -79,7 +89,6 @@ export const AdminProjectsPage = () => {
   };
 
   const handleModifyOpen = () => {
-    console.log()
     let selectedProject
     if (projectSelected !== null) {
       if(activeTab===1){
@@ -89,14 +98,13 @@ export const AdminProjectsPage = () => {
          selectedProject = findObjectById(inactiveProjects, projectSelected);
       }
       handleSetProjectStatus(selectedProject.status)
-      setRate(selectedProject.rate_per_task / 100);
+      setRate(selectedProject.rate_per_task);
       setMaxEditors(selectedProject.max_editors);
       setProjectDifficulty(selectedProject.difficulty);
       setProjectSelectedDetails(selectedProject);
       toggleModifyOpen();
     }
   };
-
 
   const handleSetUserSelected=(user_id,assignment_status)=>{
     setUserSelected(user_id)
@@ -166,7 +174,6 @@ export const AdminProjectsPage = () => {
   };
 
   const handleModifyProject = () => {
-    console.log(projectStatus)
     updateProject(
       projectSelected,
       rateMethod,
@@ -241,7 +248,7 @@ export const AdminProjectsPage = () => {
         projectStatus={projectStatus}
         handleSetProjectStatus={handleSetProjectStatus}
       />
-      <div style={{ width: "100%", float: "left", backgroundColor: "Beige" }}>
+      <div style={{ width: "100%", float: "left"}}>
         <Sidebar isOpen={sidebarOpen} toggleSidebar={handleViewSidebar} />
         <div
           style={{
@@ -258,7 +265,6 @@ export const AdminProjectsPage = () => {
             <h1 style={{ marginTop: "1vw", paddingBottom: "2vh" }}>
               Projects:
             </h1>
-
             <div
               style={{ marginTop: "1vw", position: "relative", left: "41.5vw" }}
             >
@@ -276,41 +282,33 @@ export const AdminProjectsPage = () => {
               />
             </div>
           </div>
-
           <Tabs>
-
           <TabList style={{ marginLeft: "3vw", marginTop: "0vh", paddingTop: "0vh" }}>
             <Tab value={1} onClick={(e)=>handleSetActiveTab(e)} >Active</Tab>
             <Tab value={2} onClick={(e)=>handleSetActiveTab(e)}>Inactive</Tab>
           </TabList>
-
           <TabPanel  >
             <ProjectCardGrid
               key={1}
+              goToSource={goToSource}
               projects={activeProjects}
               handleSetProjectSelected={handleSetProjectSelected}
               projectSelected={projectSelected}
             />
           </TabPanel>
-
-
           <TabPanel  >
             <ProjectCardGrid
               key={1}
+              goToSource={goToSource}
               projects={inactiveProjects}
               handleSetProjectSelected={handleSetProjectSelected}
               projectSelected={projectSelected}
             />
           </TabPanel>
-
-
           </Tabs>
-
-
-
         </div>
-
       </div>
+      {!redirect ? <></> : <Redirect push to="/login" />}
     </>
   );
 };

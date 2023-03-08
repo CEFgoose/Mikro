@@ -5,9 +5,8 @@ import { API_URL, SSO_URL } from "components/constants";
 import { PreloaderIcon } from "components/Preloader";
 import { SSOControl } from "components/SSOControl";
 import Cookie from "js-cookie";
-import React, { useContext, useEffect, useState } from "react";
+import React, { useContext, useState } from "react";
 import kaartLogo from "../../images/20-KAART-Color.svg";
-
 import {
   LoginButton,
   LoginForm,
@@ -26,7 +25,7 @@ export const Login = () => {
   const [password, setPassword] = useState("");
 
   //STATES FROM DATA CONTEXT
-  const { fetching, setFetching, showAlert, history } = useContext(DataContext);
+  const { fetching, setFetching, history } = useContext(DataContext);
 
   //STATES FROM AUTH CONTEXT
   const { setUser } = useContext(AuthContext);
@@ -63,15 +62,6 @@ export const Login = () => {
       .then(() =>
         history.push(checkrole === "admin" ? "/admindash" : "/dashboard")
       );
-    // .catch((error) => {
-    //   setFetching(false);
-    //   if (error.status && error.status === 400) {
-    //     return error.json();
-    //   } else alert("danger", "Failed to log in", "An error occurred");
-    // })
-    // .then((err) => {
-    //   if (err) alert("danger", "Failed to log in", err["message"]);
-    // });
   };
 
   //COMPONENT RENDER
@@ -100,20 +90,9 @@ export const Login = () => {
                 return response;
               })
               .then(() => {
-                // successfully logged into SSO, now login to Viewer
+                // successfully logged into SSO, now login to Mikro
                 login();
               });
-            // .catch((error) => {
-            //   setFetching(false);
-            //   if (error.status && error.status === 400) {
-            //     return error.json();
-            //   } else
-            //     showAlert("danger", "Failed to log in", "An error occurred");
-            // })
-            // .then((err) => {
-            //   if (err)
-            //     showAlert("danger", "Failed to log in", err["message"]);
-            // });
           }}
         >
           <LoginImage src={kaartLogo} alt="Kaart Logo" />

@@ -1,8 +1,9 @@
 import React, { useContext, useState, useEffect } from "react";
 import { DataContext } from "common/DataContext";
-import { Grid } from "@mui/material";
+import { AuthContext } from "../../common/AuthContext";
 import useToggle from "../../hooks/useToggle.js";
 import Sidebar from "../sidebar/sidebar";
+import { Redirect } from "react-router-dom";
 import {ButtonDivComponent} from "components/commonComponents/commonComponents";
 import "./styles.css";
 import { Tab, TabList, TabPanel, Tabs } from "react-tabs";
@@ -10,7 +11,6 @@ import {
   ProjectCardGrid,
   UserProjectModal
 } from "./projectComponents";
-
 
 export const UserProjectsPage = () => {
   const {
@@ -21,15 +21,26 @@ export const UserProjectsPage = () => {
     inactiveProjects,
     userJoinProject,
     userLeaveProject,
+    goToSource,
   } = useContext(DataContext);
 
+  const { refresh, user } = useContext(AuthContext);
   const [modalOpen,toggleModalOpen] = useToggle(false)
   const [projectSelected, setProjectSelected] = useState(null);
   const [projectName,setProjectName]=useState(null)
-
+  const [redirect, setRedirect] = useState(false);
   const [activeTab,setActiveTab] = useState(1)
 
   useEffect(() => {
+    if (user) {
+      refresh();
+    }
+    if (user === null) {
+      setRedirect(true);
+    }
+    if (user !== null && user.role !== "user") {
+      setRedirect(true);
+    }
     fetchUserProjects();
     // eslint-disable-next-line
   }, []);
@@ -44,12 +55,9 @@ export const UserProjectsPage = () => {
     }
   }
 
-
-
   const handleViewSidebar = () => {
     handleSetSidebarState();
   };
-
 
   const handleSetProjectSelected = (projectID,projectName) => {
     setProjectSelected(parseInt(projectID));
@@ -61,7 +69,6 @@ export const UserProjectsPage = () => {
     userLeaveProject(projectSelected)
     toggleModalOpen()
   }
-
 
   const handleUserJoinProject =()=>{
     userJoinProject(projectSelected)
@@ -81,7 +88,7 @@ export const UserProjectsPage = () => {
       confirm_action={activeTab===1? handleUserLeaveProject:handleUserJoinProject}
 
     />
-      <div style={{ width: "100%", float: "left", backgroundColor: "Beige" }}>
+      <div style={{ width: "100%", float: "left" }}>
         <Sidebar isOpen={sidebarOpen} toggleSidebar={handleViewSidebar} />
         <div
           style={{
@@ -98,7 +105,6 @@ export const UserProjectsPage = () => {
             <h1 style={{ marginTop: "1vw", paddingBottom: "2vh" }}>
               Projects:
             </h1>
-
             <div
               style={{ marginTop: "1vw", position: "relative", left: "60vw" }}
             >
@@ -110,46 +116,36 @@ export const UserProjectsPage = () => {
                 button2_text={"Edit"}
                 button3_text={"Delete"}
                 button1_action={handleSetModalOpen}
-                // button2_action={handleModifyOpen}
-                // button3_action={handleDeleteOpen}
               />
             </div>
           </div>
-
           <Tabs>
-
           <TabList style={{ marginLeft: "3vw", marginTop: "0vh", paddingTop: "0vh" }}>
             <Tab value={1} onClick={(e)=>handleSetActiveTab(e)} >Joined</Tab>
             <Tab value={2} onClick={(e)=>handleSetActiveTab(e)}>Available</Tab>
           </TabList>
-
           <TabPanel  >
             <ProjectCardGrid
               key={1}
+              goToSource={goToSource}
               projects={activeProjects}
               handleSetProjectSelected={handleSetProjectSelected}
               projectSelected={projectSelected}
             />
           </TabPanel>
-
-
           <TabPanel  >
             <ProjectCardGrid
-              key={1}
+              key={2}
+              goToSource={goToSource}
               projects={inactiveProjects}
               handleSetProjectSelected={handleSetProjectSelected}
               projectSelected={projectSelected}
             />
           </TabPanel>
-
-
           </Tabs>
-
-
-
         </div>
-
       </div>
+      {!redirect ? <></> : <Redirect push to="/login" />}
     </>
   );
 };

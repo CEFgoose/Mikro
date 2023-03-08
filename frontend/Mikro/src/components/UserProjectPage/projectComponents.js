@@ -1,27 +1,13 @@
-import React, { useContext, useState, useEffect } from "react";
-import { DataContext } from "common/DataContext";
-import Select from "react-select";
+import React from "react";
 import { styled } from "@mui/material/styles";
-import { Input, SelectWrapper } from "./styles";
-import { Modal, Divider,Table, TableBody, Card,Grid } from "@mui/material";
-import { Tab, TabList, TabPanel, Tabs } from "react-tabs";
+import { Modal, Divider,Card,Grid } from "@mui/material";
 import {
   CancelButton,
   CloseButton,
   ConfirmButton,
   SectionTitle,
   SectionSubtitle,
-  ButtonDiv,
   ModalWrapper,
-  StyledButton,
-  USERS_TABLE_HEADERS,
-  ASSIGN_USERS_TABLE_HEADERS,
-  ProjectRow,
-  ProjectCell,
-  TableCard,
-  ListHead,
-  CardMediaStyle,
-
 } from "../commonComponents/commonComponents";
 
 
@@ -32,13 +18,10 @@ export const AdminCardMediaStyle = styled("div")(({ theme }) => ({
   paddingTop: "1vh",
   "&:before": {
     top: 0,
-
     width: "100%",
     height: "100%",
     position: "absolute",
-
     WebkitBackdropFilter: "blur(3px)", // Fix on Mobile
-
     fontWeight: "400",
   },
 }));
@@ -115,7 +98,7 @@ export const ModifyProjectButtons = (props) => {
 export const ProjectCardGrid = (props) => {
   return (
 
-<div style={{ overflowY: "scroll", width: "85vw", height: "83vh" }}>
+    <div style={{ overflowY: "scroll", width: "85vw", height: "83vh" }}>
             <Grid
               sx={{
                 height: "auto",
@@ -144,12 +127,13 @@ export const ProjectCardGrid = (props) => {
                     url,
                     source,
                     max_payment,
-                    payment_due,
                   } = card;
                   return (
                     <UserProjectCard
                       id={id}
                       name={name}
+                      url={url}
+                      goToSource={props.goToSource}
                       difficulty={difficulty}
                       visibility={visibility}
                       max_editors={max_editors}
@@ -162,6 +146,7 @@ export const ProjectCardGrid = (props) => {
                       total_payout={total_payout}
                       projectSelected={props.projectSelected}
                       source={source}
+                      max_payment={max_payment}
                       handleSetProjectSelected={props.handleSetProjectSelected}
                     />
                   );
@@ -175,18 +160,17 @@ export const ProjectCardGrid = (props) => {
 
 
 export const UserProjectCard = (props) => {
-
   return (
     <Card
       key={props.id}
       style={{
         boxShadow: "1px 1px 6px 2px gray",
         width: "25vw",
-        height: "55vh",
-        backgroundColor: "lightgray",
+        height: "56vh",
         marginLeft: "2vw",
         marginTop: "2vh",
       }}
+      onDoubleClick={()=>props.goToSource(props.url)}
     >
       <AdminCardMediaStyle>
         <input
@@ -198,7 +182,6 @@ export const UserProjectCard = (props) => {
           style={{ marginLeft: "1vw", marginBottom: "1vh" }}
         />
       </AdminCardMediaStyle>
-
       <div
         style={{
           display: "flex",
@@ -207,7 +190,7 @@ export const UserProjectCard = (props) => {
           height: "10vh",
         }}
       >
-        <SectionTitle title_text={props.name} />
+      <SectionTitle title_text={props.name} />
       </div>
       <Divider />
       <div
@@ -321,6 +304,7 @@ export const UserProjectCard = (props) => {
           display: "flex",
           flexDirection: "row",
           justifyContent: "center",
+
         }}
       >
         <div
@@ -328,6 +312,7 @@ export const UserProjectCard = (props) => {
             display: "flex",
             flexDirection: "column",
             justifyContent: "center",
+            
           }}
         >
           <SectionSubtitle subtitle_text={"Total Tasks:"} />
@@ -341,17 +326,18 @@ export const UserProjectCard = (props) => {
           }}
         >
           <SectionSubtitle subtitle_text={"Rate/Task:"} />
-          <SectionSubtitle subtitle_text={`$${props.rate_per_task / 100}`} />
+          <SectionSubtitle subtitle_text={`$${props.rate_per_task}`} />
         </div>
         <div
           style={{
             display: "flex",
             flexDirection: "column",
             justifyContent: "center",
+            
           }}
         >
           <SectionSubtitle subtitle_text={"Total Budget:"} />
-          <SectionSubtitle subtitle_text={"$20.00"} />
+          <SectionSubtitle subtitle_text={`$${props.max_payment}`} />
         </div>
       </div>
     </Card>

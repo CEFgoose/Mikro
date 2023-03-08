@@ -1,4 +1,3 @@
-///// IMPORTS /////
 import React from "react";
 import Select from "react-select";
 import { styled } from "@mui/material/styles";
@@ -235,7 +234,6 @@ export const SelectTeamArea = (props) => {
         title_text={"Assigned Teams"}
         style={{ marginBottom: "2vh" }}
       />
-
       <SelectWrapper style={{ marginBottom: "2vh" }}>
         <Select
           isClearable

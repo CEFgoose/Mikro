@@ -1,16 +1,16 @@
 import React, { useContext, useState, useEffect } from "react";
-import { InteractionContext } from "common/InteractionContext";
+import { Redirect } from "react-router-dom";
 import { DataContext } from "common/DataContext";
 import { AuthContext } from "common/AuthContext";
+import Sidebar from "../sidebar/sidebar";
+import useToggle from "../../hooks/useToggle.js";
+import "./styles.css";
 import { Table, TableBody, TablePagination } from "@mui/material";
-import { styled } from "@mui/material/styles";
 import {
   AddUserModal,
   DeleteUserModal,
   ModifyUserModal,
 } from "./userComponents";
-import Sidebar from "../sidebar/sidebar";
-import useToggle from "../../hooks/useToggle.js";
 import {
   ListHead,
   USERS_TABLE_HEADERS,
@@ -20,9 +20,9 @@ import {
   ButtonDivComponent,
   CardMediaStyle,
 } from "../commonComponents/commonComponents";
-import "./styles.css";
 
 export const AdminUsersPage = () => {
+
   const { 
     orgUsers, 
     fetchOrgUsers, 
@@ -35,6 +35,7 @@ export const AdminUsersPage = () => {
   const { refresh, user } = useContext(AuthContext);
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
+  const [redirect, setRedirect] = useState(false);
   const [addOpen, toggleAddOpen] = useToggle(false);
   const [deleteOpen, toggleDeleteOpen] = useToggle(false);
   const [modifyOpen, toggleModifyOpen] = useToggle(false);
@@ -44,18 +45,26 @@ export const AdminUsersPage = () => {
   const [form, setForm] = useState({ name: "", desc: "" });
 
   useEffect(() => {
+    if (user) {
+      refresh();
+    }
+    if (user === null) {
+      setRedirect(true);
+    }
+    if (user !== null && user.role !== "admin") {
+      setRedirect(true);
+    }
     fetchOrgUsers();
     // eslint-disable-next-line
   }, []);
+
 
   const handleChangeRowsPerPage = (e)=>{
     setRowsPerPage(e.target.value)
   }
 
-
   const handleAddOpen = () => {
     toggleAddOpen(!addOpen);
-    // setForm({ name: "", desc: "" });
   };
 
   const handleDeleteOpen = () => {
@@ -131,7 +140,7 @@ export const AdminUsersPage = () => {
         handleRoleSelected={handleRoleSelected}
         do_modify_user={do_modify_user}
       />
-      <div style={{ width: "100%", float: "left", backgroundColor: "Beige" }}>
+      <div style={{ width: "100%", float: "left" }}>
         <Sidebar isOpen={sidebarOpen} toggleSidebar={handleViewSidebar} />
         <div
           style={{
@@ -154,21 +163,9 @@ export const AdminUsersPage = () => {
             >
               Users:
             </h1>
-
             <div
               style={{ marginTop: "1vw", position: "relative", left: "44vw" }}
             >
-              {/* <ButtonDivComponent
-                role={"admin"}
-                handleAddOpen={handleAddOpen}
-                handleDeleteOpen={handleDeleteOpen}
-                modify_action={handleModifyOpen}
-                // assign_action={handleShareOpen}
-                assignText={"Share"}
-                modifyText={"Edit"}
-                userText={"Sequences"}
-                page={"projects"}
-              /> */}
               <ButtonDivComponent
                 role={"admin"}
                 button1={true}
@@ -181,10 +178,8 @@ export const AdminUsersPage = () => {
                 button2_action={handleModifyOpen}
                 button3_action={handleDeleteOpen}
               />
-
             </div>
           </div>
-
           <div
             style={{
               display: "flex",
@@ -231,7 +226,6 @@ export const AdminUsersPage = () => {
                             tabIndex={-1}
                             onClick={() => handleSetUserSelected(id)}
                             selected={userSelected === id}
-                            // onDoubleClick={() => view_all_project_sequences(value)}
                           >
                             <ProjectCell entry={name} />
                             <ProjectCell entry={role} />
@@ -257,10 +251,10 @@ export const AdminUsersPage = () => {
                 onRowsPerPageChange={(e) => handleChangeRowsPerPage(e)}
               />
             </TableCard>
-
           </div>
         </div>
       </div>
+      {!redirect ? <></> : <Redirect push to="/login" />}
     </>
   );
 };

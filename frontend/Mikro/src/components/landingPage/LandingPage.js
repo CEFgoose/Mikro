@@ -1,6 +1,8 @@
 import React, { useState } from "react";
 import { Redirect } from "react-router-dom";
 import useToggle from "hooks/useToggle";
+import laptop_image from "../../images/laptop.png";
+import "./styles.css";
 import {
   styled,
   Button,
@@ -10,6 +12,10 @@ import {
   Stack,
   StackProps,
 } from "@mui/material";
+import{
+ProjectIcon,
+} from "./styles.js";
+
 
 export const LandingPage = (props) => {
   const [redirect, setRedirect] = useToggle(false);
@@ -18,27 +24,10 @@ export const LandingPage = (props) => {
   };
   return (
     <>
-      <div
-        style={{ backgroundColor: "darkGrey", width: "100%", height: "100%" }}
-      >
-        <div>
-          <Typography
-            component="span"
-            variant="h1"
-            sx={{ color: "primary.main" }}
-          >
-            Mikro
-          </Typography>
-        </div>
-
-        <div>
-          <Typography sx={{ color: "common.white" }}>
-            A micro-payments platform for OSM
-          </Typography>
-        </div>
-
-        <div>
+      <div style={{ backgroundColor: "black", width: "100%", height: "100%", display:'flex',flexDirection:'column'}}>
+        <div style={{display:'flex',flexDirection:'row', justifyContent:'right',height:'auto'}}>
           <Button
+            style={{marginRight:'9vw',marginTop:'4vh',backgroundColor:'#f4753c',color:'black'}}
             size="large"
             variant="contained"
             onClick={() => handleSetRedirect()}
@@ -46,8 +35,76 @@ export const LandingPage = (props) => {
             Login
           </Button>
         </div>
+
+        <div style={{display:'flex',flexDirection:'row'}}>
+
+
+          <div style={{display:'flex',flexDirection:'column',marginLeft:'10vw',marginTop:'13vh'}}>
+          <Typography variant="h2" sx={{ color: "common.white" }}>
+                Make Maps
+                <br />
+                Make Money
+                <br />
+                Make a Difference
+                <br />
+                with
+                <Typography
+                  component="span"
+                  variant="h1"
+                  sx={{ color: "#f4753c" }}
+                >
+                  &nbsp;Mikro
+                </Typography>
+              </Typography>
+              <div style={{marginTop:'4vh'}}>
+              <Typography variant="h6"sx={{ color: "common.white" }}>
+                Micro-payments platform for Open Street Map©
+              </Typography>
+              </div>
+              <div>
+              <Button
+                size="large"
+                variant="contained"
+                style={{marginRight:'1vw',marginTop:'5vh',backgroundColor:'#f4753c',color:'black'}}
+                // to={PATH_AUTH.login}
+                // component={RouterLink}
+              >
+                Start Mapping Today
+              </Button>
+            </div>
+          </div>
+          <div style={{display:'flex',flexDirection:'row',justifyContent:'center', width:'50%',height:'100%',marginLeft:'18vh',marginTop:'12vh'}}>
+          <ProjectIcon style={{marginTop:'5vh'}} src={laptop_image}/>
+          </div>
+
+
+        </div>
+
       </div>
       {!redirect ? <></> : <Redirect push to="/login" />}
     </>
   );
 };
+// 
+        
+
+// <div>
+// <Typography
+//   component="span"
+//   variant="h1"
+//   sx={{ color: "primary.main" }}
+// >
+//   Mikro
+// </Typography>
+// </div>
+
+// <div>
+// <Typography sx={{ color: "common.white" }}>
+//   A micro-payments platform for OSM
+// </Typography>
+// </div>
+
+
+// <div>
+
+// </div>

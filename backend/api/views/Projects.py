@@ -1,7 +1,7 @@
 from ..utils import requires_admin
 import requests
 import re
-from ..database import Project,Task,PayRequests,Payments,ProjectUser,UserTasks
+from ..database import Project,Task,PayRequests,Payments,ProjectUser,UserTasks,User
 from flask.views import MethodView
 from flask import g, request
 from flask_jwt_extended import (
@@ -86,30 +86,26 @@ class ProjectAPI(MethodView):
             totalTasks = project_data["totalTasks"]
         else:
             totalTasks = len(project_data["tasks"]["features"])
+
         if rateType == True:
-            if "." in str(rate):
-                dollars, cents = map(float, str(rate).split("."))
-                rate = int(dollars * 100 + cents)
-            else:
-                rate = int(rate) * 100
+            rate = float(rate)
             calculation = rate * totalTasks
+
+
         elif rateType == False:
-            if "." in str(rate):
-                dollars, cents = map(float, str(rate).split("."))
-                dollarcents = dollars * 100 + cents
-                rate = int(dollarcents / totalTasks)
-                calculation = dollarcents
-            else:
-                rate = int(rate) * 100 / totalTasks
-                calculation = rate * totalTasks
+            rate = float(rate)
+            rate = rate / totalTasks
+            calculation = rate 
+
+
         # Create new project
-        if rate >= 1:
+        if rate >= .01:
             Project.create(
                 id=project_id,
                 org_id=g.user.org_id,
                 name=project_name,
                 total_tasks=totalTasks,
-                max_payment=int(calculation),
+                max_payment=float(calculation),
                 url=url,
                 rate_per_task=rate,
                 max_editors=max_editors,
@@ -153,25 +149,16 @@ class ProjectAPI(MethodView):
         # Calculate payment rate and rate based on rate type
         if rate != 0:
             if rate_type == True:
-                if "." in str(rate):
-                    dollars, cents = map(float, str(rate).split("."))
-                    rate = int(dollars * 100 + cents)
-                else:
-                    rate = int(rate) * 100
+                rate = float(rate)
                 calculation = rate * target_project.total_tasks
-
             elif rate_type == False:
-                if "." in str(rate):
-                    dollars, cents = map(float, str(rate).split("."))
-                    dollarcents = dollars * 100 + cents
-                    rate = int(dollarcents / target_project.total_tasks)
-                    calculation = dollarcents
-                else:
-                    rate = int(rate) * 100 / target_project.total_tasks
-                    calculation = rate * target_project.total_tasks
+                rate = float(rate)
+                rate = rate / target_project.total_tasks
+                calculation = rate 
+
             target_project.update(
                 rate_per_task=rate,
-                max_payment=int(calculation)
+                max_payment=float(calculation)
             )
         target_project.update(
             visibility=visibility,
@@ -357,13 +344,16 @@ class ProjectAPI(MethodView):
         all_tasks = Task.query.filter_by(org_id=g.user.org_id).all()
         all_requests = PayRequests.query.filter_by(org_id=g.user.org_id).all()
         all_payments = Payments.query.filter_by(org_id=g.user.org_id).all()
+        total_payable=sum([user.payable_total for user in User.query.filter_by(org_id=g.user.org_id).all()])
         # Compute various statistics
         active_projects_count = sum(project.status for project in all_projects)
         inactive_projects_count = sum(not project.status for project in all_projects)
         completed_projects_count = sum(project.completed for project in all_projects)
         mapped_tasks_count = sum(task.mapped and not task.validated for task in all_tasks)
         validated_tasks_count = sum(task.mapped and task.validated for task in all_tasks)
+
         validated_tasks_amounts = sum(task.rate for task in all_tasks if task.mapped and task.validated)
+
         invalidated_tasks_count = sum(task.invalidated for task in all_tasks)
         all_requests_total = sum(request.amount_requested for request in all_requests)
         payouts_total = sum(payment.amount_paid for payment in all_payments)
@@ -375,7 +365,7 @@ class ProjectAPI(MethodView):
             'mapped_tasks': mapped_tasks_count,
             'validated_tasks': validated_tasks_count,
             'invalidated_tasks': invalidated_tasks_count,
-            'payable_total': validated_tasks_amounts,
+            'payable_total': total_payable,
             'requests_total': all_requests_total,
             'payouts_total': payouts_total,
             'message': 'Stats Fetched',
@@ -394,10 +384,14 @@ class ProjectAPI(MethodView):
         # Retrieve all projects and tasks for the organization
         all_projects = Project.query.filter_by(org_id=g.user.org_id).all()
         all_tasks= Task.query.filter_by(org_id=g.user.org_id).all()
+
         all_user_task_ids = [relation.task_id for relation in UserTasks.query.filter_by(user_id=g.user.id).all()]
+
         user_mapped_tasks=[task for task in all_tasks if task.id in all_user_task_ids if task.mapped == True and task.validated == False and task.invalidated == False]
+
         user_mapped_tasks_count=len(user_mapped_tasks)
         user_validated_tasks=[task for task in all_tasks if task.id in all_user_task_ids if task.mapped == True and task.validated == True]
+        print(user_validated_tasks)
         user_validated_tasks_count=len(user_validated_tasks)
         user_invalidated_tasks_count=len([task for task in all_tasks if task.id in all_user_task_ids if task.mapped == True and task.invalidated == True])
         all_user_requests = PayRequests.query.filter_by(org_id=g.user.org_id,user_id=g.user.id).all()
@@ -405,7 +399,7 @@ class ProjectAPI(MethodView):
         # Compute various statistics
         active_projects_count = sum(project.status for project in all_projects)
         completed_projects_count = sum(project.completed for project in all_projects if project.id in all_user_assignment_ids)
-        validated_tasks_amounts = sum(task.rate for task in user_validated_tasks)
+        # validated_tasks_amounts = sum(task.rate for task in user_validated_tasks)
         all_requests_total = sum(request.amount_requested for request in all_user_requests)
         payouts_total = sum(payment.amount_paid for payment in all_user_payments)
         # Construct response dictionary
@@ -416,7 +410,7 @@ class ProjectAPI(MethodView):
             'mapped_tasks': user_mapped_tasks_count,
             'validated_tasks': user_validated_tasks_count,
             'invalidated_tasks': user_invalidated_tasks_count,
-            'payable_total': validated_tasks_amounts,
+            'payable_total': g.user.payable_total,
             'requests_total': all_requests_total,
             'payouts_total': payouts_total,
             'message': 'Stats Fetched',

@@ -85,8 +85,8 @@ export const ProjectIconContainer = styled.span`
 `;
 
 export const ProjectIcon = styled.img`
-  width: 35px;
-  height: 35px;
+  width: 74%;
+  height: 70%;
 `;
 
 export const OpenMenuIconContainer = styled.div`

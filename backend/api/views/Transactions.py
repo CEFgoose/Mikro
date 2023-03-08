@@ -197,6 +197,7 @@ class TransactionAPI(MethodView):
         # Validate required fields
         if not all([task_ids,user_id, request_amount, payoneer_id, request_id]):
             return {"message": "All fields are required", "status": 400}
+        task_ids=task_ids.split(',')
         target_user=User.query.filter_by(org_id=g.user.org_id,id=user_id).first()
         user_name ="%s %s"%(target_user.first_name.capitalize(), target_user.last_name.capitalize())
         payment_email=target_user.payment_email

@@ -1,42 +1,17 @@
+import { CSVLink } from "react-csv"
+import React from "react";
 import {
-    Card,
-    TableCell,
-    TableHead,
-    TableRow,
-    TableSortLabel,
-    Typography,
-    Modal,
-    Divider,
-    Table,
-    TableBody,
-    TablePagination,
-  } from "@mui/material";
-  import {
-    CancelButton,
-    CloseButton,
-    ConfirmButton,
-    SectionTitle,
-    SectionSubtitle,
-    ButtonDiv,
-    ModalWrapper,
-    StyledButton,
-    USERS_TABLE_HEADERS,
-    ASSIGN_USERS_TABLE_HEADERS,
-    ProjectRow,
-    ProjectCell,
-    TableCard,
-    ListHead,
-    CardMediaStyle,
-  
-  } from "../commonComponents/commonComponents";
-  import { CSVLink } from "react-csv"
-  import { styled } from "@mui/material/styles";
-  import React from "react";
-  import close_icon from "../../images/close_icon.png";
-  import { Input, TextArea } from "./styles";
-
-
-
+  Modal,
+  Divider,
+} from "@mui/material";
+import {
+  CancelButton,
+  CloseButton,
+  ConfirmButton,
+  SectionTitle,
+  SectionSubtitle,
+  ModalWrapper,
+} from "../commonComponents/commonComponents";
 
   export const AddTransactionModal = (props) => {
     return (
@@ -81,7 +56,6 @@ import {
               width: "100%",
             }}
           >
-
             <SectionTitle title_text={"Request Amount:"} />
             <input
               type="number"
@@ -92,9 +66,7 @@ import {
               style={{ height: "5vh", marginRight: "3vw", width: "95%" }}
             />
           </div>
-
           <Divider />
-
           <div
             style={{
               display: "flex",
@@ -112,9 +84,7 @@ import {
               style={{ height: "5vh", marginRight: "3vw", width: "95%" }}
               placeholder="Task IDS separated by commas"
             />
-
           </div>
-
           </div>
           <ModalButtons 
             confirm_text={'Add'}
@@ -168,9 +138,6 @@ import {
     );
   };
 
-
-
-
   export const DetailsModal = (props) => {
     return (
       <Modal open={props.detailsOpen} key="delete">
@@ -180,10 +147,7 @@ import {
             title_text={props.title_text}
           />
           <div style={{ display: "flex", flexDirection: "column" }}>
-
-
           <Divider />
-
           <div
             style={{
               display: "flex",
@@ -205,12 +169,8 @@ import {
               value={`$${props.amount_paid}`}
               style={{ height: "5vh", marginRight: "3vw", width: "95%" }}
             />
-
           </div>
-
-
           <Divider />
-
           <div
             style={{
               display: "flex",
@@ -233,10 +193,7 @@ import {
               style={{ height: "5vh", marginRight: "3vw", width: "35%" }}
             />
           </div>
-
-
           <Divider />
-
           <div
             style={{
               display: "flex",
@@ -251,12 +208,9 @@ import {
               type="text"
               value={props.payment_email}
               style={{ height: "5vh", marginRight: "3vw", width: "95%" }}
-            />
-            
+            /> 
           </div>
-
           <Divider />
-
           <div
             style={{
               display: "flex",
@@ -272,11 +226,8 @@ import {
               value={props.task_ids}
               style={{ height: "5vh", marginRight: "3vw", width: "95%" }}
             />
-            
           </div>
-
           <Divider />
-
             <div
               style={{
                 display: "flex",
@@ -292,11 +243,8 @@ import {
                 type="text"
                 value={props.notes}
                 style={{ height: "5vh", marginRight: "3vw", width: "95%" }}
-              />
-              
+              />  
             </div>
-
-
           </div>
         </ModalWrapper>
       </Modal>
@@ -313,9 +261,6 @@ import {
             title_text={props.title_text}
           />
           <div style={{ display: "flex", flexDirection: "column" }}>
-
-
-
           <Divider />
           <div
             style={{
@@ -332,10 +277,7 @@ import {
               value={props.userName}
               style={{ height: "5vh", marginRight: "3vw", width: "95vw" }}
             />
-
           </div>
-
-
           <Divider />
           <div
             style={{
@@ -358,10 +300,7 @@ import {
               value={props.requestDate}
               style={{ height: "5vh", marginRight: "3vw", width: "20vw" }}
             />
-
           </div>
-
-
           <Divider />
           <div
             style={{
@@ -382,14 +321,10 @@ import {
             <input
               type="text"
               value={props.taskIDs}
+              onChange={(e) => props.handleSetTaskIds(e)}
               style={{ height: "5vh", marginRight: "3vw", width: "20vw" }}
             />
-
           </div>
-
-
-
-
           <Divider />
           <div
             style={{
@@ -407,9 +342,7 @@ import {
               onChange={(e) => props.handleSetPayoneerID(e)}
               style={{ height: "5vh", marginRight: "3vw", width: "95%" }}
             />
-
           </div>
-
           <Divider />
           <div
             style={{
@@ -428,12 +361,8 @@ import {
               placeholder="Limit 100 Characters"
               style={{ height: "5vh", marginRight: "3vw", width: "95%" }}
             />
-
           </div>
-
-
           </div>
-
           <ModalButtons
             confirm_text={"Process"}
             cancel_action={props.handleProcessOpen}
@@ -444,9 +373,6 @@ import {
     );
   };
 
-
-
-
   export const CSVExport = (data) => {
     return (
        <>
@@ -455,7 +381,6 @@ import {
              filename={"payment-report.csv"}
              style={{ textDecoration: "none" }}
           >
-
           </CSVLink>
        </>
     )

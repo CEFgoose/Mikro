@@ -1,18 +1,13 @@
 import { DataContext } from "common/DataContext";
 import { AuthContext } from "common/AuthContext";
-import useToggle from "hooks/useToggle";
 import { useLocalStorageState } from "common/useLocalStorageState";
-import { SectionSubtitle } from "components/commonComponents/commonComponents";
 import { SSO_URL } from "components/constants";
 import React, { useContext, useEffect, useState } from "react";
 import { NavLink } from "react-router-dom";
 import styled, { css } from "styled-components";
-import { fetcher } from "../../calls";
 import dashicon from "../../images/bullet-list-50.png";
 import leftArrow from "../../images/left-arrow-50.png";
 import logouticon from "../../images/log-out-50.png";
-import tools_icon from "../../images/tools_icon.png";
-import page_icon from "../../images/page-icon.png";
 import projects_icon from "../../images/project_icon.png";
 import users_icon from "../../images/users_icon.png";
 import payments_icon from "../../images/payments_icon.png";
@@ -37,6 +32,7 @@ import {
   SidebarClosedContainer,
   SidebarOpenedContainer,
 } from "./styles.js";
+import { Divider } from "@mui/material";
 let map_url = "https://kaart.com/dev/viewer/";
 
 export const ListItems = styled.li`
@@ -77,12 +73,9 @@ const Sidebar = (props) => {
   const [projectPageLink, setProjectPageLink] = useState("/UserProjectsPage");
   const [accountPageLink, setAccountPageLink] = useState("/UserAccountPage");
   const [paymentsPageLink, setPaymentsPageLink] = useState("/UserPaymentsPage");
-  const [toolbarExpanded, toggleToolbarExpanded] = useToggle(false);
-  const [daysExpanded, toggleDaysExpanded] = useToggle(false);
   const [localUser, setLocalUser] = useLocalStorageState("viewer.user", null);
-  // DATA CONTEXT STATES AND FUNCTIONS //
-  const { history, sidebarOpen } = useContext(DataContext);
 
+  const { history, sidebarOpen } = useContext(DataContext);
   const { user, refresh } = useContext(AuthContext);
 
   useEffect(() => {
@@ -97,16 +90,13 @@ const Sidebar = (props) => {
     if (user.role==='admin'){
       setDashboardLink('/admindash')
       setProjectPageLink("/AdminProjectsPage")
-      setAccountPageLink('/UserAccountPage')
+      setAccountPageLink('/AdminAccountPage')
       setPaymentsPageLink("/AdminPaymentsPage")
     }
-
         // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const handleToolbar = (e) => {
-    toggleToolbarExpanded();
-  };
+
 
   // LOG THE CURRENT USER OUT & REDIRECT TO LOGIN PAGE //
   const logout = () => {
@@ -118,17 +108,17 @@ const Sidebar = (props) => {
     });
   };
 
-  // COMPONENT RENDER - COULD USE SOME WORK GENERALIZING,COMPARTMENTALIZING & REUSING INDIVIDUAL COMPONENTS //
+  
   return (
     <div>
       {sidebarOpen ? (
         <SidebarOpenedContainer>
           <MenuItemTop>
             <KaartLogoOpen onClick={props.toggleSidebar} />
-
             <CollapseMenuIcon onClick={props.toggleSidebar} />
           </MenuItemTop>
-          <SectionTitle title_text={"Mikro"} />
+          <SectionTitle title_text={"Welcome to Mikro"} />
+          <Divider/>
           <MenuItemTop>
             <RoleBarWrapper>
               <RoleHeader>{name}</RoleHeader>

@@ -1,8 +1,5 @@
-import React, { useContext, useState, useEffect } from "react";
-import { DataContext } from "common/DataContext";
-import Select from "react-select";
+import React, { useState, useEffect } from "react";
 import { styled } from "@mui/material/styles";
-import { Input, SelectWrapper } from "./styles";
 import { Modal, Divider,Table, TableBody, Card,Grid } from "@mui/material";
 import { Tab, TabList, TabPanel, Tabs } from "react-tabs";
 import {
@@ -11,17 +8,13 @@ import {
   ConfirmButton,
   SectionTitle,
   SectionSubtitle,
-  ButtonDiv,
   ModalWrapper,
   StyledButton,
-  USERS_TABLE_HEADERS,
   ASSIGN_USERS_TABLE_HEADERS,
   ProjectRow,
   ProjectCell,
   TableCard,
   ListHead,
-  CardMediaStyle,
-
 } from "../commonComponents/commonComponents";
 
 
@@ -32,18 +25,15 @@ export const AdminCardMediaStyle = styled("div")(({ theme }) => ({
   paddingTop: "1vh",
   "&:before": {
     top: 0,
-
     width: "100%",
     height: "100%",
     position: "absolute",
-
     WebkitBackdropFilter: "blur(3px)", // Fix on Mobile
-
     fontWeight: "400",
   },
 }));
 
-// ADD PROJECT MODAL//
+
 export const AddProjectModal = (props) => {
   return (
     <Modal open={props.addOpen} key="add">
@@ -153,7 +143,6 @@ export const AddProjectModal = (props) => {
               display: "flex",
               flexDirection: "row",
               alignItems: "center",
-              marginLeft: "0vw",
               marginBottom: "2vh",
               marginLeft: "1vw",
             }}
@@ -222,12 +211,10 @@ export const DeleteProjectButtons = (props) => {
 export const ModifyProjectModal = (props) => {
     const [page, setPage] = useState(0);
     const [rowsPerPage, setRowsPerPage] = useState(10);
-
     useEffect(() => {
         if (props.projectSelected !== null){
             props.fetchProjectUsers(props.projectSelected);
         }
-
         // eslint-disable-next-line
       }, [props.projectSelected]);
     return (
@@ -555,59 +542,61 @@ export const ModifyProjectButtons = (props) => {
 export const ProjectCardGrid = (props) => {
   return (
 
-<div style={{ overflowY: "scroll", width: "85vw", height: "83vh" }}>
-            <Grid
-              sx={{
-                height: "auto",
-                position: "relative",
-                top: "3vh",
-                left: "3vw",
-              }}
-              container
-              spacing={3}
-            >
-              {props.projects &&
-                props.projects.slice().map((card) => {
-                  const {
-                    id,
-                    name,
-                    difficulty,
-                    visibility,
-                    total_payout,
-                    rate_per_task,
-                    max_editors,
-                    total_editors,
-                    total_tasks,
-                    tasks_mapped,
-                    tasks_validated,
-                    tasks_invalidated,
-                    url,
-                    source,
-                    max_payment,
-                    payment_due,
-                  } = card;
-                  return (
-                    <AdminProjectCard
-                      id={id}
-                      name={name}
-                      difficulty={difficulty}
-                      visibility={visibility}
-                      max_editors={max_editors}
-                      total_editors={total_editors}
-                      total_tasks={total_tasks}
-                      rate_per_task={rate_per_task}
-                      tasks_mapped={tasks_mapped}
-                      tasks_validated={tasks_validated}
-                      tasks_invalidated={tasks_invalidated}
-                      total_payout={total_payout}
-                      projectSelected={props.projectSelected}
-                      source={source}
-                      handleSetProjectSelected={props.handleSetProjectSelected}
-                    />
-                  );
-                })}
-            </Grid>
-            </div>
+  <div style={{ overflowY: "scroll", width: "85vw", height: "83vh" }}>
+              <Grid
+                sx={{
+                  height: "auto",
+                  position: "relative",
+                  top: "3vh",
+                  left: "3vw",
+                }}
+                container
+                spacing={3}
+              >
+                {props.projects &&
+                  props.projects.slice().map((card) => {
+                    const {
+                      id,
+                      name,
+                      difficulty,
+                      visibility,
+                      total_payout,
+                      rate_per_task,
+                      max_editors,
+                      total_editors,
+                      total_tasks,
+                      tasks_mapped,
+                      tasks_validated,
+                      tasks_invalidated,
+                      url,
+                      source,
+                      max_payment,
+                    } = card;
+                    return (
+                      <AdminProjectCard
+                        id={id}
+                        url={url}
+                        name={name}
+                        difficulty={difficulty}
+                        visibility={visibility}
+                        max_editors={max_editors}
+                        total_editors={total_editors}
+                        total_tasks={total_tasks}
+                        rate_per_task={rate_per_task}
+                        tasks_mapped={tasks_mapped}
+                        tasks_validated={tasks_validated}
+                        tasks_invalidated={tasks_invalidated}
+                        total_payout={total_payout}
+                        max_payment={max_payment}
+                        projectSelected={props.projectSelected}
+                        source={source}
+                        goToSource={props.goToSource}
+                        handleSetProjectSelected={props.handleSetProjectSelected}
+                      />
+                    );
+                  })}
+              </Grid>
+              </div>
   );
 };
 
@@ -622,11 +611,11 @@ export const AdminProjectCard = (props) => {
       style={{
         boxShadow: "1px 1px 6px 2px gray",
         width: "25vw",
-        height: "55vh",
-        backgroundColor: "lightgray",
+        height: "56vh",
         marginLeft: "2vw",
         marginTop: "2vh",
       }}
+      onDoubleClick={() => props.goToSource(props.url)}
     >
       <AdminCardMediaStyle>
         <input
@@ -752,7 +741,7 @@ export const AdminProjectCard = (props) => {
           }}
         >
           <SectionSubtitle subtitle_text={"Current Payout:"} />
-          <SectionSubtitle subtitle_text={`$${props.total_payout / 100}`} />
+          <SectionSubtitle subtitle_text={`$${props.total_payout}`} />
         </div>
       </div>
       <Divider />
@@ -781,7 +770,7 @@ export const AdminProjectCard = (props) => {
           }}
         >
           <SectionSubtitle subtitle_text={"Rate/Task:"} />
-          <SectionSubtitle subtitle_text={`$${props.rate_per_task / 100}`} />
+          <SectionSubtitle subtitle_text={`$${props.rate_per_task}`} />
         </div>
         <div
           style={{
@@ -791,7 +780,7 @@ export const AdminProjectCard = (props) => {
           }}
         >
           <SectionSubtitle subtitle_text={"Total Budget:"} />
-          <SectionSubtitle subtitle_text={"$20.00"} />
+          <SectionSubtitle subtitle_text={`$${props.max_payment}`} />
         </div>
       </div>
     </Card>

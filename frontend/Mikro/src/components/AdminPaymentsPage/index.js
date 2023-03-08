@@ -3,10 +3,9 @@ import { DataContext } from "../../common/DataContext";
 import { AuthContext } from "../../common/AuthContext";
 import Sidebar from "../sidebar/sidebar";
 import { Redirect } from "react-router-dom";
-import { Divider } from "@mui/material";
+import "./styles.css";
 import { Tab, TabList, TabPanel, Tabs } from "react-tabs";
 import useToggle from "../../hooks/useToggle.js";
-import { Table, TableBody, TablePagination } from "@mui/material";
 import {
   ButtonDivComponent,
   AdminPayRequestsTable,
@@ -17,9 +16,8 @@ import {
   DeleteModal,
   ProcessRequestModal,
   DetailsModal,
-  CSVExport
 } from "./paymentComponents";
-import "./styles.css";
+
 
 export const AdminPaymentsPage = () => {
   // DATA CONTEXT STATES AND FUNCTIONS //
@@ -34,7 +32,6 @@ export const AdminPaymentsPage = () => {
     deleteTransaction,
     processPayRequest,
     CSVdata,
-    setCSVdata,
    } =useContext(DataContext);
 
   const { refresh, user } = useContext(AuthContext);
@@ -55,7 +52,6 @@ export const AdminPaymentsPage = () => {
   const [requestSelected,setRequestSelected]=useState(null)
   const [paymentSelected,setPaymentSelected]=useState(null)
   const [requestDate,setRequestDate]=useState(null)
-
   const [activeTab,setActiveTab]=useState(1)
 
   useEffect(() => {
@@ -69,7 +65,6 @@ export const AdminPaymentsPage = () => {
       setRedirect(true);
     }
     fetchOrgTransactions()
-
     // eslint-disable-next-line
   }, []);
 
@@ -108,7 +103,6 @@ export const AdminPaymentsPage = () => {
     }
   };
 
-
   const handleSetPaymentSelected=(id,user,user_id,amount_paid,date_paid,payment_email,task_ids,payoneer_id)=>{
     setPaymentSelected(id)
     setUserID(user_id)
@@ -120,8 +114,6 @@ export const AdminPaymentsPage = () => {
     setTaskIDs(task_ids)
     setPayoneerID(payoneer_id)
   }
-
-
 
   const handleSetRequestSelected=(id,name,user_id,amount,date,pay_email,task_ids)=>{
     setUserID(user_id)
@@ -153,14 +145,9 @@ export const AdminPaymentsPage = () => {
     setTaskIDs(e.target.value)
   }
 
-  const handleSetPayEmail=(e)=>{
-    setPayEmail(e.target.value)
-  }
-
   const handleSetRequestAmount=(e)=>{
     setRequestAmount(e.target.value)
   }
-
 
   const handleCreateTransactions=()=>{
     createTransaction(userID,requestAmount,payEmail,taskIDs)
@@ -199,7 +186,6 @@ export const AdminPaymentsPage = () => {
       deleteOpen={deleteOpen}
       handleDeleteOpen={handleDeleteOpen}
       title_text = {activeTab===1?`Are you sure you want to delete Pay Request ${requestSelected}?`:`Are you sure you want to delete Payment ${requestSelected}?`}
-      
       handleDeleteRequest={handleDeleteRequest}
     />
     <ProcessRequestModal
@@ -211,6 +197,7 @@ export const AdminPaymentsPage = () => {
       requestDate={requestDate}
       payEmail={payEmail}
       taskIDs={taskIDs}
+      handleSetTaskIds={handleSetTaskIds}
       handleProcessPayRequest={handleProcessPayRequest}
       payoneerID={payoneerID}
       handleSetPayoneerID={handleSetPayoneerID}
@@ -230,7 +217,7 @@ export const AdminPaymentsPage = () => {
       notes={notes}
     />
 
-    <div style={{ width: "100%", float: "left", backgroundColor: "Beige" }}>
+    <div style={{ width: "100%", float: "left"}}>
       <Sidebar isOpen={sidebarOpen} toggleSidebar={handleViewSidebar} />
       <div
         style={{
@@ -266,13 +253,11 @@ export const AdminPaymentsPage = () => {
         </div>
         <Tabs >
           <TabList
-
             style={{ marginLeft: "3vw", marginTop: "0vh", paddingTop: "0vh" }}
           >
             <Tab value={1} onClick={(e)=>handleSetActiveTab(e)} >Pay Requests</Tab>
             <Tab value={2} onClick={(e)=>handleSetActiveTab(e)}>Completed Payouts</Tab>
           </TabList>
-
           <TabPanel >
             <AdminPayRequestsTable 
               rowsPerPage={rowsPerPage}
@@ -298,6 +283,7 @@ export const AdminPaymentsPage = () => {
         </Tabs>
       </div>
     </div>
+    {!redirect ? <></> : <Redirect push to="/login" />}
     </>
   );
 };

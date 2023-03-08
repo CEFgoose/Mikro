@@ -1,6 +1,4 @@
-import { style } from "@mui/system";
 import styled from "styled-components";
-import LayerImage from "../../images/icn-topographic-white.svg";
 
 export const DirectionImage = styled.img`
   width: 5%;
@@ -30,22 +28,6 @@ export const MapLayerToggleButton = styled.div`
   pointer-events: auto;
   background-color: rgba(145, 165, 172, 0.5);
   cursor: pointer;
-`;
-
-export const MapLayerToggleIcon = styled.div`
-  background-image: url(${LayerImage});
-  position: relative;
-  top: 0;
-  left: 0;
-  background-size: contain;
-  background-repeat: no-repeat;
-  /* opacity: 1; */
-  width: 24px;
-  height: 24px;
-  &:hover {
-    cursor: pointer;
-    opacity: 0.7;
-  }
 `;
 
 export const LayerToggle = styled.div`

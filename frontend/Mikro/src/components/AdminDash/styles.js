@@ -1,6 +1,4 @@
-import React, { useState } from "react";
-import { Tab, TabList, TabPanel, Tabs } from "react-tabs";
-import styled, { css } from "styled-components";
+import styled from "styled-components";
 
 export const FormWrapper = styled.div`
   font-weight: bold;

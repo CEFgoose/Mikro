@@ -1,10 +1,12 @@
 import React, { useState } from "react";
+import { Redirect } from "react-router-dom";
 import {
   RegisterAsUserButton,
   RegisterCompanyButton,
   RegisterWrapper,
 } from "./styles";
-import { Redirect } from "react-router-dom";
+
+
 //COMPONENT DECLARATION & EXPORT - SSO CONTROLS ON VIEWER LOGIN PAGE- SENDS INVITE INFO TO KAART SSO FOR NE USERS
 export const SSOControl = (props) => {
   const [redirect, setRedirect] = useState(false);
@@ -12,16 +14,6 @@ export const SSOControl = (props) => {
     <>
       <RegisterWrapper>
         <RegisterAsUserButton
-          // style={{
-          //   display: "inline-block",
-          //   position: "relative",
-          //   backgroundColor: "transparent",
-          //   cursor: "pointer",
-          //   border: 0,
-          //   paddingLeft: "0.25rem",
-          //   color: "#4183c4",
-          //   textDecoration: "none",
-          // }}
           onClick={() => setRedirect(true)}
         >
           Register as user

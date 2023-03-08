@@ -1,5 +1,4 @@
 import React, { useState } from "react";
-import { poster } from "calls";
 import useToggle from "../../hooks/useToggle.js";
 import { Redirect } from "react-router-dom";
 import { SSO_URL } from "components/constants.js";
@@ -7,7 +6,6 @@ import {
   ConfirmButton,
   SectionSubtitle,
 } from "../commonComponents/commonComponents.js";
-
 import {
   RegisterPage,
   RegisterForm,
