@@ -1,16 +1,12 @@
 import React, { useState } from "react";
 import { Redirect } from "react-router-dom";
 import useToggle from "hooks/useToggle";
+import { NavLink } from "react-router-dom";
 import laptop_image from "../../images/laptop.png";
 import "./styles.css";
 import {
-  styled,
   Button,
-  Box,
-  Container,
   Typography,
-  Stack,
-  StackProps,
 } from "@mui/material";
 import{
 ProjectIcon,
@@ -26,6 +22,7 @@ export const LandingPage = (props) => {
     <>
       <div style={{ backgroundColor: "black", width: "100%", height: "100%", display:'flex',flexDirection:'column'}}>
         <div style={{display:'flex',flexDirection:'row', justifyContent:'right',height:'auto'}}>
+        <NavLink to={'/login'} style={{ textDecoration: "none" }}>
           <Button
             style={{marginRight:'9vw',marginTop:'4vh',backgroundColor:'#f4753c',color:'black'}}
             size="large"
@@ -34,6 +31,7 @@ export const LandingPage = (props) => {
           >
             Login
           </Button>
+          </NavLink>
         </div>
 
         <div style={{display:'flex',flexDirection:'row'}}>
@@ -62,6 +60,7 @@ export const LandingPage = (props) => {
               </Typography>
               </div>
               <div>
+              <NavLink to={'/login'} style={{ textDecoration: "none" }}>
               <Button
                 size="large"
                 variant="contained"
@@ -71,6 +70,7 @@ export const LandingPage = (props) => {
               >
                 Start Mapping Today
               </Button>
+              </NavLink>
             </div>
           </div>
           <div style={{display:'flex',flexDirection:'row',justifyContent:'center', width:'50%',height:'100%',marginLeft:'18vh',marginTop:'12vh'}}>

@@ -1,0 +1,277 @@
+#############################
+# Various additional Checks #
+#############################
+# include:
+#   - template: Code-Quality.gitlab-ci.yml
+#   - template: SAST.gitlab-ci.yml
+#   - template: Dependency-Scanning.gitlab-ci.yml
+#   - template: Container-Scanning.gitlab-ci.yml
+
+######################################
+# Setup scripts for frontend/backend #
+######################################
+.backend_before_script: &backend_before_script
+  image: registry.gitlab.com/gokaart/docker-images/gdal-python-git-postgres
+  variables:
+    APP_BASE_URL: "http://127.0.0.1"
+    POSTGRES_DB: test_database
+    POSTGRES_USER: runner
+    POSTGRES_PASSWORD: "completely random password here!"
+    POSTGRES_ENDPOINT: test_database
+    TESTING_DB: test_database
+    TESTING_USER: runner
+    TESTING_PASSWORD: "completely random password here!"
+    TESTING_ENDPOINT: test_database
+    TESTING_PORT: 5432
+  before_script:
+    - echo "APP_BASE_URL=\"${APP_BASE_URL}\"" > backend/mongoose.env
+    - echo "POSTGRES_DB=\"${POSTGRES_DB}\"" >> backend/mongoose.env
+    - echo "POSTGRES_USER=\"${POSTGRES_USER}\"" >> backend/mongoose.env
+    - echo "POSTGRES_PASSWORD=\"${POSTGRES_PASSWORD}\"" >> backend/mongoose.env
+    - echo "POSTGRES_ENDPOINT=\"${POSTGRES_ENDPOINT}\"" >> backend/mongoose.env
+    - echo "TESTING_DB=\"${TESTING_DB}\"" >> backend/mongoose.env
+    - echo "TESTING_USER=\"${TESTING_USER}\"" >> backend/mongoose.env
+    - cat backend/mongoose.env
+    - ls -lh /dev/null
+    - echo "Test" > /dev/null
+    - echo $(pwd)
+    - ls
+    - source backend/mongoose.env
+    - cd backend
+    - pip3 --cache-dir ${PIP_CACHE_DIR} install -r requirements.txt
+
+.backend_db_setup: &backend_db_setup
+  - |
+    commands=("\\c \"${POSTGRES_DB}\";"
+            "CREATE EXTENSION postgis;")
+    for command in "${commands[@]}"; do
+        psql --host=${POSTGRES_ENDPOINT} --dbname="${POSTGRES_DB}" --command="${command}" || echo "${command} didn't work"
+    done
+    export MONGOOSE_DB="postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${POSTGRES_ENDPOINT}/${POSTGRES_DB}"
+
+.frontend_before_script: &frontend_before_script
+  image: registry.gitlab.com/gokaart/docker-images/node
+  before_script:
+    - cd front-end/viewer
+    - npm ci --prefer-offline --cache "${npm_config_cache}"
+  retry: 2
+
+########################
+# Global configuration #
+########################
+
+variables:
+  PIP_CACHE_DIR: "${CI_PROJECT_DIR}/.cache/pip"
+  npm_config_cache: "${CI_PROJECT_DIR}/.cache/npm"
+cache:
+  key: ${CI_JOB_NAME}-${CI_COMMIT_REF_SLUG}
+  paths:
+    - .cache/pip
+    - .cache/npm
+    - backend/venv
+
+###############
+# Build stage #
+###############
+
+# code_navigation_backend:
+#   image: registry.gitlab.com/gokaart/docker-images/gdal-python-git-postgres
+#   stage: build
+#   script:
+#     - CURRENT_DIR="$(pwd)"
+#     - cd ..
+#     - git clone https://github.com/sourcegraph/lsif-py.git || echo "ok"
+#     - cd lsif-py
+#     - git pull
+#     - sed -i 's/jedi==0.16.0/jedi==0.17.2/g' requirements.txt
+#     - pip3 --cache-dir ${PIP_CACHE_DIR} install -r requirements.txt
+#     - cd "${CURRENT_DIR}"
+#     - python3 ../lsif-py/lsif-py "${CURRENT_DIR}"
+#   artifacts:
+#     reports:
+#       lsif: data.lsif
+#   allow_failure: true
+#   interruptible: true
+
+# code_navigation_frontend:
+#   stage: build
+#   <<: *frontend_before_script
+#   script:
+#     - cd ../../ # currently in front-end/viewer
+#     - npm install --prefer-offline -g @sourcegraph/lsif-tsc --cache "${npm_config_cache}"
+#     - lsif-tsc front-end/viewer/src/**/*.js --allowJs --checkJs
+#   artifacts:
+#     reports:
+#       lsif: dump.lsif
+#   allow_failure: true
+#   interruptible: true
+
+# black_backend:
+#   image: python:latest
+#   stage: build
+#   script:
+#     - cat backend/mongoose.env
+#     - source backend/mongoose.env
+#     - cd backend
+#     - pip install $(cat requirements.txt | grep black || echo black)
+#     - black -l 79 . --check
+#   interruptible: true
+
+flake8_backend:
+  image: python:latest
+  stage: build
+  script:
+    - cat backend/mongoose.env
+    - source backend/mongoose.env
+    - cd backend
+    - pip install $(cat requirements.txt | grep flake8 || echo flake8)
+    - flake8 .
+  interruptible: true
+
+# prettier_frontend:
+#   image: node:latest
+#   stage: build
+#   script:
+#     - cd front-end/viewer
+#     - npm install --prefer-offline --global prettier --cache "${npm_config_cache}"
+#     - npx prettier --check .
+#   allow_failure: true
+#   interruptible: true
+
+##############
+# Test Stage #
+##############
+
+# database_migrations_ok:
+#   stage: test
+#   services:
+#     - name: registry.gitlab.com/gokaart/docker-images/postgis:latest
+#       alias: test_database
+#   <<: *backend_before_script
+#   script:
+#     - *backend_db_setup
+#     - FLASK_APP=app.py FLASK_ENV=development flask db upgrade
+#   needs: ["black_backend", "flake8_backend"]
+#   interruptible: true
+
+# database_backend_models_ok:
+#   stage: test
+#   services:
+#     - name: registry.gitlab.com/gokaart/docker-images/postgis:latest
+#       alias: test_database
+#   <<: *backend_before_script
+#   script:
+#     - *backend_db_setup
+#     - rm -rf migrations
+#     - FLASK_APP=app.py FLASK_ENV=development flask db init
+#     - FLASK_APP=app.py FLASK_ENV=development flask db migrate
+#   needs: ["black_backend", "flake8_backend"]
+#   interruptible: true
+
+# backend_test:
+#   stage: test
+#   image: registry.gitlab.com/gokaart/docker-images/gdal-python-git-postgres
+#   services:
+#     - name: registry.gitlab.com/gokaart/docker-images/postgis:latest
+#       alias: test_database
+#   <<: *backend_before_script
+#   script:
+#     - *backend_db_setup
+#     - pip3 --cache-dir ${PIP_CACHE_DIR} install coverage[toml] pytest
+#     - flask db upgrade
+#     - coverage run -m pytest
+#     - coverage report
+#     - coverage xml
+#     # GitLab doesn't currently support the source directive in coverage.xml
+#     - sed -i 's=<source>.*backend</source>=<source>./backend</source>=g' coverage.xml
+#     - sed -i 's/filename="/filename="backend\//g' coverage.xml
+#   needs: ["black_backend", "flake8_backend"]
+#   artifacts:
+#     reports:
+#       coverage_report:
+#         coverage_format: cobertura
+#         path: server/coverage.xml
+#   interruptible: true
+
+# frontend_test:
+#   stage: test
+#   <<: *frontend_before_script
+#   script:
+#     - apt-get update && apt-get install -y libpango1.0-dev
+#     - npm install canvas
+#     - npm test --cache "${npm_config_cache}" -- --coverage --coverageReporters=cobertura --coverageReporters=text --coverageReporters=lcov --coverageReporters=clover --coverageReporters=json
+#     # current relative directory is front-end/viewer
+#     - sed -i 's=<source>.*front-end/viewer</source>=<source>./front-end/viewer</source>=g' coverage/cobertura-coverage.xml
+#     - sed -i 's/filename="/filename="front-end\/viewer\//g' coverage/cobertura-coverage.xml
+#   needs: ["prettier_frontend"]
+#   artifacts:
+#     reports:
+#       coverage_report:
+#         coverage_format: cobertura
+#         path: server/coverage.xml
+#   interruptible: true
+
+# npm run start currently exits on CI
+# npm_frontend_ok:
+#   stage: test
+#   <<: *frontend_before_script
+#   script:
+#     - echo
+#     - npm --cache "${npm_config_cache}" --prefer-offline run build
+#   needs: ["prettier_frontend"]
+#   interruptible: true
+
+#################
+# Docker images #
+#################
+
+docker:
+  stage: build
+  image:
+    name: gcr.io/kaniko-project/executor:debug
+    entrypoint: [""]
+  before_script:
+    - if [ -z "${CI_COMMIT_TAG}" ];then tag="${CI_COMMIT_REF_SLUG}-${CI_COMMIT_SHORT_SHA}"; else tag="${CI_COMMIT_TAG}"; fi
+    - tag="${CI_COMMIT_REF_SLUG}-${CI_COMMIT_SHORT_SHA}" # in order to make helm work properly (no sh)
+  script:
+    - mkdir -p /kaniko/.docker
+    - mkdir -p ./.cache
+    - echo "{\"auths\":{\"$CI_REGISTRY\":{\"username\":\"$CI_REGISTRY_USER\",\"password\":\"$CI_REGISTRY_PASSWORD\"}}}" > /kaniko/.docker/config.json
+    - /kaniko/executor --cache --cache-dir .cache --context $CI_PROJECT_DIR/backend --dockerfile $CI_PROJECT_DIR/backend/Dockerfile --destination $CI_REGISTRY_IMAGE/mongoose-backend:${tag} --destination $CI_REGISTRY_IMAGE/mongoose-backend:latest
+    - /kaniko/executor --cache --cache-dir .cache --context $CI_PROJECT_DIR/front-end --dockerfile $CI_PROJECT_DIR/front-end/Dockerfile --destination $CI_REGISTRY_IMAGE/mongoose-frontend:${tag} --destination $CI_REGISTRY_IMAGE/mongoose-frontend:latest
+  rules:
+    - if: $CI_COMMIT_TAG
+    - if: "$CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH"
+  tags:
+    - amd64
+  cache:
+    key: ${CI_JOB_NAME}-${CI_COMMIT_REF_SLUG}-docker
+    paths:
+      - .cache
+
+##########
+# Deploy #
+##########
+
+kubernetes_cluster_viewer_kaart_com:
+  stage: deploy
+  environment:
+    name: production
+    url: https://viewer.kaart.com
+  image:
+    name: alpine/k8s:1.18.2
+  before_script:
+    - if [ -z "${CI_COMMIT_TAG}" ];then tag="${CI_COMMIT_REF_SLUG}-${CI_COMMIT_SHORT_SHA}"; else tag="${CI_COMMIT_TAG}"; fi
+  script:
+    - cd deployment/kubernetes
+    - sed -i "s/\(registry.gitlab.com\/gokaart\/mongoose\/mongoose-.*\):latest/\1:$tag/" backend/deployment.yaml
+    - sed -i "s/\(registry.gitlab.com\/gokaart\/mongoose\/mongoose-.*\):latest/\1:$tag/" frontend/deployment.yaml
+    #- kubectl apply -f namespace.yaml # This only needs to be run once, and should probably be run by itself.
+    - kubectl apply -f backend/deployment.yaml
+    - kubectl apply -f backend/service.yaml
+    - kubectl apply -f frontend/deployment.yaml
+    - kubectl apply -f frontend/service.yaml
+    - kubectl apply -f ingress.yaml
+  rules:
+    - if: $CI_COMMIT_TAG
+    - if: "$CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH"
