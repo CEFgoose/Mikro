@@ -225,7 +225,6 @@ export const DataProvider = ({ children }) => {
     let outpack = {
       project_id:project_id,
     };
-    console.log(outpack)
     poster(outpack, assignUserURL).then((response) => {
       if (response.status === 200) {
         alert(response.message);
@@ -244,7 +243,6 @@ export const DataProvider = ({ children }) => {
     let outpack = {
       project_id:project_id,
     };
-    console.log(outpack)
     poster(outpack, unassignUserURL).then((response) => {
       if (response.status === 200) {
         alert(response.message);
@@ -258,6 +256,43 @@ export const DataProvider = ({ children }) => {
     });
   };
 
+  const assignUserProject = (project_id,user_id) => {
+    let assignUserURL = "project/assign_user_project";
+    let outpack = {
+      project_id:project_id,
+      user_id:user_id
+    };
+    poster(outpack, assignUserURL).then((response) => {
+      if (response.status === 200) {
+        alert(response.message);
+        fetchProjectUsers(project_id)
+        return;
+      } else if (response.status === 304) {
+        history.push("/login");
+      } else {
+        alert(response.message);
+      }
+    });
+  };
+
+  const unassignUserProject = (project_id,user_id) => {
+    let unassignUserURL = "project/unassign_user_project";
+    let outpack = {
+      project_id:project_id,
+      user_id:user_id
+    };
+    poster(outpack, unassignUserURL).then((response) => {
+      if (response.status === 200) {
+        alert(response.message);
+        fetchProjectUsers(project_id)
+        return;
+      } else if (response.status === 304) {
+        history.push("/login");
+      } else {
+        alert(response.message);
+      }
+    });
+  };
   //PROJECT ORIENTED API CALLS AND HANDLERS
 
   const createProject = (url, rate_type, rate, max_editors, visibility) => {
@@ -678,6 +713,8 @@ const checkUserStats = () => {
     modifyUser,
     userJoinProject,
     userLeaveProject,
+    assignUserProject,
+    unassignUserProject, 
     fetchUserProjects,
     //project
     fetchProjectUsers,

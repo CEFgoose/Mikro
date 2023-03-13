@@ -502,11 +502,6 @@ export const ModifyProjectModal = (props) => {
                     </TabPanel>
                 </div>
                 </Tabs>
-                {/* <ModifyProjectButtons
-                handleModifyOpen={props.handleModifyOpen}
-                handleModifyProject={props.handleModifyProject}
-                confirm_text={'Assign'}
-                /> */}
             </ModalWrapper>
             </Modal>
         ) : (

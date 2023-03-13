@@ -40,8 +40,9 @@ export const AdminProjectsPage = () => {
     userSelected,
     setUserSelected,
     generateRandomKey,
-    assignUser,
-    goToSource
+    goToSource,
+    assignUserProject,
+    unassignUserProject, 
   } = useContext(DataContext);
 
   const [redirect, setRedirect] = useState(false);
@@ -115,6 +116,7 @@ export const AdminProjectsPage = () => {
     else{
       setAssignmentButtonText("Assign")
     }
+    console.log(assignment_status)
   }
 
   const handleSetProjectStatus =(e)=>{
@@ -187,8 +189,20 @@ export const AdminProjectsPage = () => {
   };
 
   const handleAssignUser =()=>{
-    assignUser(userSelected,projectSelected)
+
+    if (assignmentStatus ==='No'){
+      assignUserProject(projectSelected,userSelected)
+    }
+    else{
+      console.log('unassign')
+      unassignUserProject(projectSelected,userSelected)
+    }
+
   }
+
+
+
+
 
   return (
     <>
@@ -241,10 +255,10 @@ export const AdminProjectsPage = () => {
         userSelected={userSelected}
         handleSetUserSelected={handleSetUserSelected}
         generateRandomKey={generateRandomKey}
-        assignUser={assignUser}
         assignmentButtonText={assignmentButtonText}
         assignmentStatus={assignmentStatus}
         handleAssignUser={handleAssignUser}
+
         projectStatus={projectStatus}
         handleSetProjectStatus={handleSetProjectStatus}
       />

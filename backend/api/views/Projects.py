@@ -32,6 +32,12 @@ class ProjectAPI(MethodView):
             return self.user_join_project() 
         elif path == "user_leave_project":
             return self.user_leave_project() 
+        elif path == "assign_user_project":
+            return self.assign_user_project()         
+        elif path == "unassign_user_project":
+            return self.unassign_user_project()         
+
+
         return {
             "message": "Only /project/{fetch_users,fetch_user_projects} is permitted with GET",  # noqa: E501
         }, 405
@@ -211,9 +217,11 @@ class ProjectAPI(MethodView):
             return response
         url = request.json.get("url")
         rate_type = request.json.get("rate_type")
+        if not rate_type:
+            rate_type=False
         rate = float(request.json.get("rate"))
         project_id = request.json.get("project_id")
-        required_args = ["rate_type", "rate"]
+        required_args = ["rate"]
         # Check required inputs
         for arg in required_args:
             if not request.json.get(arg):
@@ -351,9 +359,7 @@ class ProjectAPI(MethodView):
         completed_projects_count = sum(project.completed for project in all_projects)
         mapped_tasks_count = sum(task.mapped and not task.validated for task in all_tasks)
         validated_tasks_count = sum(task.mapped and task.validated for task in all_tasks)
-
         validated_tasks_amounts = sum(task.rate for task in all_tasks if task.mapped and task.validated)
-
         invalidated_tasks_count = sum(task.invalidated for task in all_tasks)
         all_requests_total = sum(request.amount_requested for request in all_requests)
         payouts_total = sum(payment.amount_paid for payment in all_payments)
@@ -474,6 +480,57 @@ class ProjectAPI(MethodView):
         return {'org_active_projects': org_active_projects,"org_inactive_projects":org_inactive_projects, 'message': 'Projects found', 'status': 200}
 
 
+
+    @requires_admin
+    def assign_user_project(self):
+        # Check if user is authenticated
+        if not g:
+            return {'message': 'User not found', 'status': 304}
+        project_id = request.json.get("project_id")
+        user_id = request.json.get("user_id")
+        if not user_id:
+            return {"message": "user_id required", "status": 400}
+        if not project_id:
+            return {"message": "project_id required", "status": 400}
+        target_project=Project.query.filter_by(id=project_id).first()
+        if target_project.total_editors == target_project.max_editors:
+            return {"message": "Editor limit reached", "status": 400}
+        ProjectUser.create(
+            project_id=project_id,
+            user_id=user_id
+        )
+        if not target_project:
+            return {"message": "project %s not found"%(project_id), "status": 400}
+        new_editor_count = target_project.total_editors +1
+        target_project.update(
+            total_editors=new_editor_count
+        )
+        return {'message': 'User %s has joined project %s'%(user_id,project_id), 'status': 200}
+       
+    @requires_admin
+    def unassign_user_project(self):
+        # Check if user is authenticated
+        if not g:
+            return {'message': 'User not found', 'status': 304}
+        project_id = request.json.get("project_id")
+        user_id = request.json.get("user_id")
+        if not user_id:
+            return {"message": "user_id required", "status": 400}
+        if not project_id:
+            return {"message": "project_id required", "status": 400}
+        target_relation=ProjectUser.query.filter_by(project_id=project_id, user_id = user_id).first()
+        if not target_relation:
+            return {"message": "project assignment not found", "status": 400}
+        target_relation.delete(soft=False)
+        target_project=Project.query.filter_by(id=project_id).first()
+        if not target_project:
+            return {"message": "project %s not found"%(project_id), "status": 400}
+        new_editor_count = target_project.total_editors -1
+        target_project.update(
+            total_editors=new_editor_count
+        )
+        return {'message': 'User %s has left project %s'%(user_id,project_id), 'status': 200}
+            
 
 
     def user_join_project(self):
