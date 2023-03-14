@@ -95,6 +95,7 @@ export const RegisterUser = () => {
               setEmail(e.target.value);
             }}
           />
+
           <RegisterInput
             type="text"
             name="Password"

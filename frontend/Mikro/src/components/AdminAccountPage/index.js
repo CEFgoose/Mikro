@@ -2,7 +2,7 @@ import React, { useContext, useState, useEffect } from "react";
 import { Redirect } from "react-router-dom";
 import { DataContext } from "common/DataContext";
 import { AuthContext } from "common/AuthContext";
-import {  Divider } from "@mui/material";
+import { Divider } from "@mui/material";
 import useToggle from "../../hooks/useToggle.js";
 import Sidebar from "../sidebar/sidebar";
 import {
@@ -15,7 +15,6 @@ import {
 import "./styles.css";
 
 export const AdminAccountPage = () => {
-
   const {
     firstName,
     lastName,
@@ -77,7 +76,7 @@ export const AdminAccountPage = () => {
         button_2_text="Cancel"
         button_2_action={handleModalOpen}
       />
-      <div style={{ width: "100%", float: "left"}}>
+      <div style={{ width: "100%", float: "left" }}>
         <Sidebar isOpen={sidebarOpen} toggleSidebar={handleViewSidebar} />
         <div
           style={{

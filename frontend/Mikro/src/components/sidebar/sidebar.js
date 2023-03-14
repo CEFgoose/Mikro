@@ -69,7 +69,7 @@ const Sidebar = (props) => {
   // COMPONENT STATES & SETTERS //
   const [role, setRole] = useState("");
   const [name, setName] = useState("");
-  const [dashboardLink, setDashboardLink] = useState('/dashboard');
+  const [dashboardLink, setDashboardLink] = useState("/dashboard");
   const [projectPageLink, setProjectPageLink] = useState("/UserProjectsPage");
   const [accountPageLink, setAccountPageLink] = useState("/UserAccountPage");
   const [paymentsPageLink, setPaymentsPageLink] = useState("/UserPaymentsPage");
@@ -87,16 +87,14 @@ const Sidebar = (props) => {
     }
     setRole(user.role);
     setName(user.name);
-    if (user.role==='admin'){
-      setDashboardLink('/admindash')
-      setProjectPageLink("/AdminProjectsPage")
-      setAccountPageLink('/AdminAccountPage')
-      setPaymentsPageLink("/AdminPaymentsPage")
+    if (user.role === "admin") {
+      setDashboardLink("/admindash");
+      setProjectPageLink("/AdminProjectsPage");
+      setAccountPageLink("/AdminAccountPage");
+      setPaymentsPageLink("/AdminPaymentsPage");
     }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-
-
 
   // LOG THE CURRENT USER OUT & REDIRECT TO LOGIN PAGE //
   const logout = () => {
@@ -108,7 +106,6 @@ const Sidebar = (props) => {
     });
   };
 
-  
   return (
     <div>
       {sidebarOpen ? (
@@ -118,7 +115,7 @@ const Sidebar = (props) => {
             <CollapseMenuIcon onClick={props.toggleSidebar} />
           </MenuItemTop>
           <SectionTitle title_text={"Welcome to Mikro"} />
-          <Divider/>
+          <Divider />
           <MenuItemTop>
             <RoleBarWrapper>
               <RoleHeader>{name}</RoleHeader>
@@ -144,19 +141,18 @@ const Sidebar = (props) => {
             </MenuItem>
           </NavLink>
 
-          { role==='admin'?
-          <NavLink to="/AdminUsersPage" style={{ textDecoration: "none" }}>
-          <MenuItem>
-            <ProjectIconContainer>
-              <ProjectIcon src={users_icon} />
-            </ProjectIconContainer>
-            <Header>Users</Header>
-          </MenuItem>
-        </NavLink>
-        :
-        <></>
-          }
-
+          {role === "admin" ? (
+            <NavLink to="/AdminUsersPage" style={{ textDecoration: "none" }}>
+              <MenuItem>
+                <ProjectIconContainer>
+                  <ProjectIcon src={users_icon} />
+                </ProjectIconContainer>
+                <Header>Users</Header>
+              </MenuItem>
+            </NavLink>
+          ) : (
+            <></>
+          )}
 
           <NavLink to={paymentsPageLink} style={{ textDecoration: "none" }}>
             <MenuItem>
@@ -191,7 +187,6 @@ const Sidebar = (props) => {
               Kaart.com
             </Header>
           </MenuItem>
-
         </SidebarOpenedContainer>
       ) : (
         <SidebarClosedContainer>

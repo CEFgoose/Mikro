@@ -17,6 +17,7 @@ class LoginAPI(MethodView):
     def post(self, path: str):
         if path == "login":
             return self.do_login()
+
         return jsonify({"message": "Only auth/login is permitted!"}), 405
 
     def do_login(self):
@@ -50,6 +51,7 @@ class LoginAPI(MethodView):
                         id=jwt_user["id"],
                         role=jwt_user["role"],
                         org_id=org_id,
+                        osm_username=None,
                         first_name=user_info["first_name"],
                         last_name=user_info["last_name"],
                         email=user_info["email"],
@@ -63,8 +65,17 @@ class LoginAPI(MethodView):
                     return_obj["status"] = 400
                     return return_obj
         # Return the user information if the login was successful
-        return_obj["name"] = g.user.first_name.capitalize() + " " + g.user.last_name.capitalize()
+        return_obj["name"] = (
+            g.user.first_name.capitalize()
+            + " "
+            + g.user.last_name.capitalize()
+        )
         return_obj["email"] = g.user.email
+        # return_obj["terms_agreement"] = g.user.terms_agreement
+        return_obj["osm_username"] = g.user.osm_username
+        return_obj["payment_email"] = g.user.payment_email
+        return_obj["city"] = g.user.city
+        return_obj["country"] = g.user.country
         return_obj["role"] = g.user.role
         return_obj["id"] = g.user.id
         return_obj["status"] = 200

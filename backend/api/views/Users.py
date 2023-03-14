@@ -33,7 +33,8 @@ class UserAPI(MethodView):
             return self.do_remove_users()
         elif path == "modify_users":
             return self.do_modify_users()
-            
+        elif path == "first_login_update":
+            return self.first_login_update()
         return {
             "message": "Only /project/{fetch_users,fetch_user_projects} is permitted with GET",  # noqa: E501
         }, 405
@@ -59,6 +60,52 @@ class UserAPI(MethodView):
             response["status"] = 200
             return response
 
+    def first_login_update(self):
+        # Check if the user is already logged in
+        if not g:
+            # If user is not logged in, return appropriate error message and status code  # noqa: E501
+            return {"message": "User not found", "status": 304}
+        # Get required fields from the JSON request, returning appropriate error messages if missing  # noqa: E501
+        osm_username = request.json.get("osm_username") or {
+            "message": "osm_username required",
+            "status": 400,
+        }
+        payment_email = request.json.get("payment_email") or {
+            "message": "payment_email required",
+            "status": 400,
+        }
+        terms_agreement = request.json.get("terms_agreement") or {
+            "message": "terms_agreement required",
+            "status": 400,
+        }
+        city = request.json.get("city") or {
+            "message": "city required",
+            "status": 400,
+        }
+        country = request.json.get("country") or {
+            "message": "country required",
+            "status": 400,
+        }
+        # If any required fields are missing, return the error message and status code  # noqa: E501
+        if isinstance(osm_username, dict):
+            return osm_username
+        if isinstance(payment_email, dict):
+            return payment_email
+        if isinstance(terms_agreement, dict):
+            return terms_agreement
+        if isinstance(city, dict):
+            return city
+        if isinstance(country, dict):
+            return country
+        # Update the user's details
+        g.user.update(
+            osm_username=osm_username,
+            payment_email=payment_email,
+            city=city,
+            country=country,
+        )
+        # Return success message and status code
+        return {"message": "User Updated", "status": 200}
 
     # FETCH USER DETAILS FOR ACCOUNT PAGE
     def fetch_user_details(self):
@@ -71,11 +118,10 @@ class UserAPI(MethodView):
             return response
         else:
             # extract the role, first name, and last name from the user information # noqa: E501
-
             first_name = g.user.first_name.capitalize()
             last_name = g.user.last_name.capitalize()
-            osm_username=g.user.osm_username
-            role=g.user.role
+            osm_username = g.user.osm_username
+            role = g.user.role
             city = g.user.city
             country = g.user.country
             email = g.user.email
@@ -93,10 +139,6 @@ class UserAPI(MethodView):
             response["payment_email"] = payment_email
             response["status"] = 200
             return response
-
-
-
-
 
     @requires_admin
     def do_fetch_users(self):
@@ -117,10 +159,10 @@ class UserAPI(MethodView):
             first_name = user.first_name.title()
             last_name = user.last_name.title()
             full_name = first_name + " " + last_name
-            if user.assigned_projects != None:
-                assigned_projects_count=len(user.assigned_projects)
+            if user.assigned_projects is not None:
+                assigned_projects_count = len(user.assigned_projects)
             else:
-                assigned_projects_count=0
+                assigned_projects_count = 0
             # Append the user information to the org_users list
             org_users.append(
                 {
@@ -128,14 +170,14 @@ class UserAPI(MethodView):
                     "name": full_name,
                     "role": user.role,
                     "joined": user.create_time,
-                    "total_payout":user.paid_total,
-                    "awaiting_payment":user.requested_total,
-                    "validated_tasks_amounts":user.payable_total,
-                    "total_tasks_mapped":user.total_tasks_mapped,
-                    "total_tasks_validated":user.total_tasks_validated,
-                    "total_tasks_invalidated":user.total_tasks_invalidated,
-                    "requesting_payment":user.requesting_payment,
-                    "assigned_projects":assigned_projects_count
+                    "total_payout": user.paid_total,
+                    "awaiting_payment": user.requested_total,
+                    "validated_tasks_amounts": user.payable_total,
+                    "total_tasks_mapped": user.total_tasks_mapped,
+                    "total_tasks_validated": user.total_tasks_validated,
+                    "total_tasks_invalidated": user.total_tasks_invalidated,
+                    "requesting_payment": user.requesting_payment,
+                    "assigned_projects": assigned_projects_count,
                 }
             )
         # Add the list of users to the return_obj dictionary
@@ -143,8 +185,6 @@ class UserAPI(MethodView):
         return_obj["status"] = 200
         # Return the final response
         return return_obj
-
-
 
     @requires_admin
     def fetch_project_users(self):
@@ -156,7 +196,9 @@ class UserAPI(MethodView):
             return_obj["status"] = 304
             return return_obj
         project_id = (
-            request.json["project_id"] if "project_id" in request.json else None
+            request.json["project_id"]
+            if "project_id" in request.json
+            else None
         )
         # Check if the email address is not provided or is an empty string
         if not project_id or project_id == "":
@@ -165,10 +207,14 @@ class UserAPI(MethodView):
             return return_obj
         # Get all the users from the database that belong to the same organization as the current user  # noqa: E501
         users_in_org = User.query.filter_by(org_id=g.user.org_id).all()
-        all_assigned_user_relations = ProjectUser.query.filter_by(project_id=project_id).all()
+        all_assigned_user_relations = ProjectUser.query.filter_by(
+            project_id=project_id
+        ).all()
         assigned_user_ids = [r.user_id for r in all_assigned_user_relations]
         assigned_users = [u for u in users_in_org if u.id in assigned_user_ids]
-        unassigned_users = [u for u in users_in_org if u.id not in assigned_user_ids]
+        unassigned_users = [
+            u for u in users_in_org if u.id not in assigned_user_ids
+        ]
         # Initialize an empty list to store information about the users
         org_users = []
         # Loop over each user and extract relevant information
@@ -178,13 +224,13 @@ class UserAPI(MethodView):
             last_name = user.last_name.title()
             full_name = first_name + " " + last_name
             if user in assigned_users:
-                assigned="Yes"
+                assigned = "Yes"
             if user in unassigned_users:
-                assigned="No"
-            if user.assigned_projects != None:
-                assigned_projects_count=len(user.assigned_projects)
+                assigned = "No"
+            if user.assigned_projects is not None:
+                assigned_projects_count = len(user.assigned_projects)
             else:
-                assigned_projects_count=0
+                assigned_projects_count = 0
             # Append the user information to the org_users list
             org_users.append(
                 {
@@ -192,14 +238,14 @@ class UserAPI(MethodView):
                     "name": full_name,
                     "role": user.role,
                     "joined": user.create_time,
-                    "total_payout":user.paid_total,
-                    "awaiting_payment":user.requested_total,
-                    "total_tasks_mapped":user.total_tasks_mapped,
-                    "total_tasks_validated":user.total_tasks_validated,
-                    "total_tasks_invalidated":user.total_tasks_invalidated,
-                    "requesting_payment":user.requesting_payment,
-                    "assigned_projects":assigned_projects_count,
-                    "assigned":assigned
+                    "total_payout": user.paid_total,
+                    "awaiting_payment": user.requested_total,
+                    "total_tasks_mapped": user.total_tasks_mapped,
+                    "total_tasks_validated": user.total_tasks_validated,
+                    "total_tasks_invalidated": user.total_tasks_invalidated,
+                    "requesting_payment": user.requesting_payment,
+                    "assigned_projects": assigned_projects_count,
+                    "assigned": assigned,
                 }
             )
         # Add the list of users to the return_obj dictionary
@@ -208,36 +254,38 @@ class UserAPI(MethodView):
         # Return the final response
         return return_obj
 
-
-
     # UPDATE USER DETAILS FROM ACCOUNT PAGE
     def update_user_details(self):
         # initialize an empty dictionary to store the response
         response = {}
         # check if the user information is available in the global context
         if not g:
-            response = {
-                "message": "User not found",
-                "status": 304
-            }
+            response = {"message": "User not found", "status": 304}
             return response
         # Update user details based on provided fields
-        fields = ["first_name", "last_name", "osm_username", "city", "country", "email", "payment_email"]
+        fields = [
+            "first_name",
+            "last_name",
+            "osm_username",
+            "city",
+            "country",
+            "email",
+            "payment_email",
+        ]
         for field in fields:
             value = request.json.get(field)
             print(getattr(g.user, field))
-            if value is not None and value != "" and value != getattr(g.user, field):
+            if (
+                value is not None
+                and value != ""
+                and value != getattr(g.user, field)
+            ):
                 print(value)
                 setattr(g.user, field, value)
                 g.user.update()
         # Return success response
-        response = {
-            "message": "User details updated",
-            "status": 200
-        }
+        response = {"message": "User details updated", "status": 200}
         return response
-
-
 
     # ADMIN ONLY ROUTE - SEND EMAIL INVITE TO USER FOR JOINING VIEWER UNDER THE ADMINS ORG # noqa: E501
     @requires_admin
@@ -263,7 +311,6 @@ class UserAPI(MethodView):
         return_obj["status"] = 200
         # Return the response
         return return_obj
-        
 
     @requires_admin
     def do_remove_users(self):
@@ -333,15 +380,18 @@ class UserAPI(MethodView):
         # If relation exists, update deleted field to False
         if user_relation:
             user_relation.delete(soft=False)
-            response["message"] = f"User {user_id} unassigned from Project {project_id}"
+            response[
+                "message"
+            ] = f"User {user_id} unassigned from Project {project_id}"
         # If relation doesn't exist, create a new one
         else:
             ProjectUser.create(user_id=user_id, project_id=project_id)
-            response["message"] = f"User {user_id} assigned to Project {project_id}"
+            response[
+                "message"
+            ] = f"User {user_id} assigned to Project {project_id}"
         # Set status code for response
         response["status"] = 200
         return response
-
 
     # # ADMIN ONLY ROUTE - UNASSIGN CURRENT SELECTED USER FROM CURRENT SELECTED TEAM # noqa: E501
     # @requires_admin

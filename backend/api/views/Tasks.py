@@ -1,13 +1,18 @@
 from ..utils import requires_admin
 import requests
-import re
-from ..database import Project,Task,PayRequests,Payments,ProjectUser,UserTasks,User
+from ..database import (
+    Project,
+    Task,
+    ProjectUser,
+    UserTasks,
+    User,
+)
 from flask.views import MethodView
-from flask import g, request
+from flask import g
 from flask_jwt_extended import (
     jwt_required,
 )
-from ..static_variables import TASKING_KEY
+
 
 class TaskAPI(MethodView):
     @jwt_required()
@@ -16,21 +21,13 @@ class TaskAPI(MethodView):
         if path == "update_user_tasks":
             return self.update_user_tasks()
         elif path == "admin_update_all_user_tasks":
-            return self.admin_update_all_user_tasks()               
+            return self.admin_update_all_user_tasks()
 
-        
         return {
             "message": "Only /project/{fetch_users,fetch_user_projects} is permitted with GET",  # noqa: E501
         }, 405
 
-
-
-
-
-
-
-
-    def getMappedTM3Tasks(self,inMapped, projectID):
+    def getMappedTM3Tasks(self, inMapped, projectID):
         outMapped = []
         users = User.query.all()  # noqa: E501
         usernames = [x.osm_username for x in users]
@@ -60,16 +57,16 @@ class TaskAPI(MethodView):
                             validated=False,
                             deleted=False,
                         )
-                        user.update(total_tasks_mapped=user.total_tasks_mapped + 1)
+                        user.update(
+                            total_tasks_mapped=user.total_tasks_mapped + 1
+                        )
                     else:
                         pass
         return {"response": "Updated!"}
 
-
     # --------------------------------GET ALL MIKRO VALIDATED TASKS FROM TM3------  # noqa: E501
 
-
-    def getValidatedTM3Tasks(self,inStatus, projectID):
+    def getValidatedTM3Tasks(self, inStatus, projectID):
         outValidated = []
         validatedIDs = [
             x["properties"]["taskId"]
@@ -115,11 +112,9 @@ class TaskAPI(MethodView):
                 pass
         return {"response": "complete"}
 
-
     # --------------------------------GET ALL MIKRO INVALIDATED TASKS FROM TM3------  # noqa: E501
 
-
-    def getInvalidatedTM3Tasks(self,inStatus, projectID):
+    def getInvalidatedTM3Tasks(self, inStatus, projectID):
         validatedIDs = [
             x["properties"]["taskId"]
             for x in inStatus["features"]
@@ -147,7 +142,8 @@ class TaskAPI(MethodView):
                     )
 
                     user.update(
-                        total_tasks_invalidated=user.total_tasks_invalidated + 1,
+                        total_tasks_invalidated=user.total_tasks_invalidated
+                        + 1,
                     )
                 else:
                     pass
@@ -155,23 +151,7 @@ class TaskAPI(MethodView):
                 pass
         return {"response": "complete"}
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-    def get_validated_TM4_tasks(self,data, projectID):
+    def get_validated_TM4_tasks(self, data, projectID):
         users = User.query.all()
         usernames = [x.osm_username for x in users]
         contributions = data["userContributions"]
@@ -198,7 +178,9 @@ class TaskAPI(MethodView):
                                 validated_by=c["username"],
                                 validated=True,
                             )
-                            oldValidatedTotal = int(mapper.total_tasks_validated)
+                            oldValidatedTotal = int(
+                                mapper.total_tasks_validated
+                            )
                             newTasksValidated = oldValidatedTotal + 1
                             oldAwaitingPayment = float(
                                 mapper.payable_total
@@ -245,80 +227,48 @@ class TaskAPI(MethodView):
                             )
         return {"response": "complete"}
 
-
     # --------------------------------GET ALL MIKRO INVALIDATED TASKS FROM TM4------  # noqa: E501
 
+    # def get_invalidated_TM4_tasks(self, project_id, user):
+    #     user_tasks = UserTasks.query.filter_by(user_id=user.id).all()
+    #     user_task_ids = [relation.task_id for relation in user_tasks]
+    #     # print(user_task_ids)
+    #     headers = {
+    #         "Authorization": "Bearer TVRBME1qSTBNek0uWkFkbWJ3LnA0aFZZVXZ0bl9RZWRJTVpaaHpTcE5vbVRMZw==",  # noqa: E501
+    #         "Accept-Language": "en-US",
+    #     }
+    #     for task_id in user_task_ids:
+    #         invalid_tasks_url = (
+    #             "https://tasks.kaart.com/api/v2/projects/%s/tasks/%s/"
+    #             % (project_id, task_id)
+    #         )
+    #         tasksInvalidatedCall = requests.request(
+    #             "GET", invalid_tasks_url, headers=headers
+    #         )
+    #         if tasksInvalidatedCall.ok:
+    #             taskData = tasksInvalidatedCall.json()
+    #             # invalidated=[]
+    #             # for task in taskData['features']:
+    #             #     if task['properties']['taskStatus']=='INVALIDATED':
+    #             #         invalidated.append(task)
+    #             print(taskData["taskStatus"])
+    #     # else:
+    #     #     return {"request": "tm3 tasks mapped call failed"}
 
-    def get_invalidated_TM4_tasks(self,project_id,user):
-        user_tasks=UserTasks.query.filter_by(user_id=user.id).all()
-        user_task_ids=[relation.task_id for relation in user_tasks]
-        # print(user_task_ids)
-        headers = {
-            "Authorization": "Bearer TVRBME1qSTBNek0uWkFkbWJ3LnA0aFZZVXZ0bl9RZWRJTVpaaHpTcE5vbVRMZw==",  # noqa: E501
-            "Accept-Language": "en-US",
-        }
-        for task_id in user_task_ids:
-            invalid_tasks_url='https://tasks.kaart.com/api/v2/projects/%s/tasks/%s/'%(project_id,task_id)
-            tasksInvalidatedCall = requests.request("GET", invalid_tasks_url,headers=headers)
-            if tasksInvalidatedCall.ok:
-                taskData = tasksInvalidatedCall.json()
-                # invalidated=[]
-                # for task in taskData['features']:
-                #     if task['properties']['taskStatus']=='INVALIDATED':
-                #         invalidated.append(task)
-                print(taskData['taskStatus'])
-        # else:
-        #     return {"request": "tm3 tasks mapped call failed"}
+    #     return {"taskData": taskData}
+    #     return {"response": "complete"}
 
-        return{'taskData':taskData}
-            # print(c)
-            # if "invalidatedTasks" in c.keys():
-            #     validator_exists = User.query.filter_by(
-            #         osm_username=c["username"]
-            #     ).first()
-            #     if validator_exists is not None:
-            #         for task in c["invalidatedTasks"]:
-            #             task_exists = Task.query.filter_by(
-            #                 task_id=task, project_id=projectID, deleted=False
-            #             ).first()
-            #             if task_exists is not None:
-            #                 if (
-            #                     task_exists.mapped_by in usernames
-            #                     and not task_exists.validated
-            #                     and task_exists.validated_by != "tasks - INVALIDATED"
-            #                 ):
-            #                     mapper = task_exists.mapped_by
-            #                     mapper = User.query.filter_by(
-            #                         osm_username=mapper
-            #                     ).first()
-            #                     task_exists.update(
-            #                         validated_by="tasks - INVALIDATED",
-            #                         validated=False,
-            #                     )
-            #                     oldInvalidatedTotal = int(mapper.total_tasks_validated)
-            #                     newTasksInvalidated = oldInvalidatedTotal + 1
-            #                     mapper.update(
-            #                         total_tasks_invalidated=newTasksInvalidated,
-            #                     )
-            #                 else:
-            #                     pass
-            #             else:
-            #                 pass
-        return {"response": "complete"}
-
-
-
-    def get_mapped_TM4_tasks(self,data, projectID):
+    def get_mapped_TM4_tasks(self, data, projectID):
         newMappedTasks = []
         users = User.query.all()
         usernames = [x.osm_username for x in users]
-        target_project=Project.query.filter_by(id=projectID).first()
+        target_project = Project.query.filter_by(id=projectID).first()
         for contributor in data["userContributions"]:
             if contributor["username"] in usernames:
                 mapper = User.query.filter_by(
                     osm_username=contributor["username"]
                 ).first()
-                print("mappedTasks",contributor)
+                print("mappedTasks", contributor)
                 for task in contributor["mappedTasks"]:
 
                     task_exists = Task.query.filter_by(
@@ -328,7 +278,7 @@ class TaskAPI(MethodView):
                     ).first()
                     if task_exists is None:
                         newMappedTasks.append(task)
-                        new_task=Task.create(
+                        new_task = Task.create(
                             id=task,
                             org_id=g.user.org_id,
                             project_id=projectID,
@@ -340,8 +290,7 @@ class TaskAPI(MethodView):
                             validated=False,
                         )
                         UserTasks.create(
-                            user_id=g.user.id,
-                            task_id=new_task.id
+                            user_id=g.user.id, task_id=new_task.id
                         )
                         mapper.update(
                             total_tasks_mapped=mapper.total_tasks_mapped + 1
@@ -350,26 +299,31 @@ class TaskAPI(MethodView):
                         pass
         return {"message": "complete"}
 
-
-    def TM3PaymentCall(self,project_id):
+    def TM3PaymentCall(self, project_id):
         headers = {
             "Authorization": "Bearer TVRBek5ERTBNalEuWVFzUXJRLm5HX0ZuaURJb2tlRjNzV1g4cXA2TExBOUVMRQ==",  # noqa: E501
             "Accept-Language": "en-US",
         }
         TM3tasksMapped = (
             "https://tm3.kaart.com/api/v1/project/%s/mapped-tasks-by-user"  # noqa: E501
-            % (project_id))
+            % (project_id)
+        )
 
         TM3tasksStatus = (
             "https://tm3.kaart.com/api/v1/project/%s/tasks"  # noqa: E501
-            % (project_id))
-        
-        tasksMappedCall = requests.request("GET", TM3tasksMapped, headers=headers)
+            % (project_id)
+        )
+
+        tasksMappedCall = requests.request(
+            "GET", TM3tasksMapped, headers=headers
+        )
         if tasksMappedCall.ok:
             taskData = tasksMappedCall.json()
         else:
             return {"request": "tm3 tasks mapped call failed"}
-        tasksStatusCall = requests.request("GET", TM3tasksStatus, headers=headers)
+        tasksStatusCall = requests.request(
+            "GET", TM3tasksStatus, headers=headers
+        )
         if tasksStatusCall.ok:
             taskStatusData = tasksStatusCall.json()
         else:
@@ -379,9 +333,7 @@ class TaskAPI(MethodView):
         self.getInvalidatedTM3Tasks(taskStatusData, project_id)
         return {"response": "complete"}
 
-
-
-    def TM4_payment_call(self,project_id,user):
+    def TM4_payment_call(self, project_id, user):
         payload = {}
         headers = {
             "Authorization": "Bearer TVRBek5ERTBNalEuWVFzUXJRLm5HX0ZuaURJb2tlRjNzV1g4cXA2TExBOUVMRQ==",  # noqa: E501
@@ -391,45 +343,80 @@ class TaskAPI(MethodView):
             "https://tasks.kaart.com/api/v2/projects/%s/contributions/"  # noqa: E501
             % (project_id)
         )
-        response = requests.request("GET", TM4url, headers=headers, data=payload)
+        response = requests.request(
+            "GET", TM4url, headers=headers, data=payload
+        )
         if response.ok:
             data = response.json()
             # print(data)
             self.get_mapped_TM4_tasks(data, project_id)
             self.get_validated_TM4_tasks(data, project_id)
-            self.get_invalidated_TM4_tasks(project_id,user)
+            self.get_invalidated_TM4_tasks(project_id, user)
             return {"message": "updated!"}
-        
 
     def update_user_tasks(self):
         # Check if user is authenticated
         if not g:
-            return {'message': 'User not found', 'status': 304}
-        user_project_ids=[relation.project_id for relation in ProjectUser.query.filter_by(user_id=g.user.id).all()]
-        user_projects =[project for project in Project.query.filter_by(org_id=g.user.org_id).all() if project.id in user_project_ids]
-        user_tm4_project_ids=[project.id for project in user_projects if project.source == 'tasks']
-        user_tm3_project_ids=[project.id for project in user_projects if project.source != 'tasks']
+            return {"message": "User not found", "status": 304}
+        user_project_ids = [
+            relation.project_id
+            for relation in ProjectUser.query.filter_by(
+                user_id=g.user.id
+            ).all()
+        ]
+        user_projects = [
+            project
+            for project in Project.query.filter_by(org_id=g.user.org_id).all()
+            if project.id in user_project_ids
+        ]
+        user_tm4_project_ids = [
+            project.id
+            for project in user_projects
+            if project.source == "tasks"
+        ]
+        user_tm3_project_ids = [
+            project.id
+            for project in user_projects
+            if project.source != "tasks"
+        ]
         for project_id in user_tm4_project_ids:
-            self.TM4_payment_call(project_id,g.user)
+            self.TM4_payment_call(project_id, g.user)
         for project_id in user_tm3_project_ids:
             self.TM3PaymentCall(project_id)
-        return {"message": "updated","status":200}
-    
+        return {"message": "updated", "status": 200}
 
     @requires_admin
     def admin_update_all_user_tasks(self):
         # Check if user is authenticated
         if not g:
-            return {'message': 'User not found', 'status': 304}
+            return {"message": "User not found", "status": 304}
         org_users = User.query.filter_by(org_id=g.user.org_id).all()
         for user in org_users:
-            user_project_ids=[relation.project_id for relation in ProjectUser.query.filter_by(user_id=user.id).all()]
-            user_projects =[project for project in Project.query.filter_by(org_id=user.org_id).all() if project.id in user_project_ids]
-            user_tm4_project_ids=[project.id for project in user_projects if project.source == 'tasks']
-            user_tm3_project_ids=[project.id for project in user_projects if project.source != 'tasks']
+            user_project_ids = [
+                relation.project_id
+                for relation in ProjectUser.query.filter_by(
+                    user_id=user.id
+                ).all()
+            ]
+            user_projects = [
+                project
+                for project in Project.query.filter_by(
+                    org_id=user.org_id
+                ).all()
+                if project.id in user_project_ids
+            ]
+            user_tm4_project_ids = [
+                project.id
+                for project in user_projects
+                if project.source == "tasks"
+            ]
+            user_tm3_project_ids = [
+                project.id
+                for project in user_projects
+                if project.source != "tasks"
+            ]
             for project_id in user_tm4_project_ids:
-                self.TM4_payment_call(project_id,user)
+                self.TM4_payment_call(project_id, user)
             for project_id in user_tm3_project_ids:
                 self.TM3PaymentCall(project_id)
-            return {"message": "updated","status":200}
-    
+            return {"message": "updated", "status": 200}

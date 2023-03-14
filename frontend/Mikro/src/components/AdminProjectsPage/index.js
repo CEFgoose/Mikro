@@ -10,12 +10,10 @@ import {
   AddProjectModal,
   DeleteProjectModal,
   ModifyProjectModal,
-  ProjectCardGrid
+  ProjectCardGrid,
 } from "./projectComponents";
 
-import {
-  ButtonDivComponent,
-} from "components/commonComponents/commonComponents";
+import { ButtonDivComponent } from "components/commonComponents/commonComponents";
 
 export const AdminProjectsPage = () => {
   const { refresh, user } = useContext(AuthContext);
@@ -42,7 +40,7 @@ export const AdminProjectsPage = () => {
     generateRandomKey,
     goToSource,
     assignUserProject,
-    unassignUserProject, 
+    unassignUserProject,
   } = useContext(DataContext);
 
   const [redirect, setRedirect] = useState(false);
@@ -56,10 +54,10 @@ export const AdminProjectsPage = () => {
   const [rateMethod, toggleRateMethod] = useToggle(true);
   const [projectSelected, setProjectSelected] = useState(null);
   const [projectDifficulty, setProjectDifficulty] = useState(null);
-  const [assignmentStatus,setAssignmentStatus] = useState(null);
-  const [projectStatus,toggleProjectStatus]=useToggle(false)
-  const [activeTab,setActiveTab] = useState(1)
-  const [assignmentButtonText,setAssignmentButtonText] = useState("Assign");
+  const [assignmentStatus, setAssignmentStatus] = useState(null);
+  const [projectStatus, toggleProjectStatus] = useToggle(false);
+  const [activeTab, setActiveTab] = useState(1);
+  const [assignmentButtonText, setAssignmentButtonText] = useState("Assign");
 
   useEffect(() => {
     if (user) {
@@ -75,9 +73,9 @@ export const AdminProjectsPage = () => {
     // eslint-disable-next-line
   }, []);
 
-  const handleSetActiveTab=(e)=>{
-    setActiveTab(e.target.value)
-  }
+  const handleSetActiveTab = (e) => {
+    setActiveTab(e.target.value);
+  };
 
   const handleAddOpen = () => {
     toggleAddOpen(!addOpen);
@@ -90,15 +88,14 @@ export const AdminProjectsPage = () => {
   };
 
   const handleModifyOpen = () => {
-    let selectedProject
+    let selectedProject;
     if (projectSelected !== null) {
-      if(activeTab===1){
-         selectedProject = findObjectById(activeProjects, projectSelected);
+      if (activeTab === 1) {
+        selectedProject = findObjectById(activeProjects, projectSelected);
+      } else {
+        selectedProject = findObjectById(inactiveProjects, projectSelected);
       }
-      else{
-         selectedProject = findObjectById(inactiveProjects, projectSelected);
-      }
-      handleSetProjectStatus(selectedProject.status)
+      handleSetProjectStatus(selectedProject.status);
       setRate(selectedProject.rate_per_task);
       setMaxEditors(selectedProject.max_editors);
       setProjectDifficulty(selectedProject.difficulty);
@@ -107,27 +104,23 @@ export const AdminProjectsPage = () => {
     }
   };
 
-  const handleSetUserSelected=(user_id,assignment_status)=>{
-    setUserSelected(user_id)
-    setAssignmentStatus(assignment_status)
-    if (assignment_status==="Yes"){
-      setAssignmentButtonText("Unassign")
+  const handleSetUserSelected = (user_id, assignment_status) => {
+    setUserSelected(user_id);
+    setAssignmentStatus(assignment_status);
+    if (assignment_status === "Yes") {
+      setAssignmentButtonText("Unassign");
+    } else {
+      setAssignmentButtonText("Assign");
     }
-    else{
-      setAssignmentButtonText("Assign")
-    }
-    console.log(assignment_status)
-  }
+  };
 
-  const handleSetProjectStatus =(e)=>{
-    if (e !== null){
-      toggleProjectStatus(e)
+  const handleSetProjectStatus = (e) => {
+    if (e !== null) {
+      toggleProjectStatus(e);
+    } else {
+      toggleProjectStatus();
     }
-    else{
-      toggleProjectStatus()
-    }
-
-  }
+  };
 
   const handleViewSidebar = () => {
     handleSetSidebarState();
@@ -188,21 +181,14 @@ export const AdminProjectsPage = () => {
     handleModifyOpen();
   };
 
-  const handleAssignUser =()=>{
-
-    if (assignmentStatus ==='No'){
-      assignUserProject(projectSelected,userSelected)
+  const handleAssignUser = () => {
+    if (assignmentStatus === "No") {
+      assignUserProject(projectSelected, userSelected);
+    } else {
+      console.log("unassign");
+      unassignUserProject(projectSelected, userSelected);
     }
-    else{
-      console.log('unassign')
-      unassignUserProject(projectSelected,userSelected)
-    }
-
-  }
-
-
-
-
+  };
 
   return (
     <>
@@ -258,11 +244,10 @@ export const AdminProjectsPage = () => {
         assignmentButtonText={assignmentButtonText}
         assignmentStatus={assignmentStatus}
         handleAssignUser={handleAssignUser}
-
         projectStatus={projectStatus}
         handleSetProjectStatus={handleSetProjectStatus}
       />
-      <div style={{ width: "100%", float: "left"}}>
+      <div style={{ width: "100%", float: "left" }}>
         <Sidebar isOpen={sidebarOpen} toggleSidebar={handleViewSidebar} />
         <div
           style={{
@@ -297,28 +282,34 @@ export const AdminProjectsPage = () => {
             </div>
           </div>
           <Tabs>
-          <TabList style={{ marginLeft: "3vw", marginTop: "0vh", paddingTop: "0vh" }}>
-            <Tab value={1} onClick={(e)=>handleSetActiveTab(e)} >Active</Tab>
-            <Tab value={2} onClick={(e)=>handleSetActiveTab(e)}>Inactive</Tab>
-          </TabList>
-          <TabPanel  >
-            <ProjectCardGrid
-              key={1}
-              goToSource={goToSource}
-              projects={activeProjects}
-              handleSetProjectSelected={handleSetProjectSelected}
-              projectSelected={projectSelected}
-            />
-          </TabPanel>
-          <TabPanel  >
-            <ProjectCardGrid
-              key={1}
-              goToSource={goToSource}
-              projects={inactiveProjects}
-              handleSetProjectSelected={handleSetProjectSelected}
-              projectSelected={projectSelected}
-            />
-          </TabPanel>
+            <TabList
+              style={{ marginLeft: "3vw", marginTop: "0vh", paddingTop: "0vh" }}
+            >
+              <Tab value={1} onClick={(e) => handleSetActiveTab(e)}>
+                Active
+              </Tab>
+              <Tab value={2} onClick={(e) => handleSetActiveTab(e)}>
+                Inactive
+              </Tab>
+            </TabList>
+            <TabPanel>
+              <ProjectCardGrid
+                key={1}
+                goToSource={goToSource}
+                projects={activeProjects}
+                handleSetProjectSelected={handleSetProjectSelected}
+                projectSelected={projectSelected}
+              />
+            </TabPanel>
+            <TabPanel>
+              <ProjectCardGrid
+                key={1}
+                goToSource={goToSource}
+                projects={inactiveProjects}
+                handleSetProjectSelected={handleSetProjectSelected}
+                projectSelected={projectSelected}
+              />
+            </TabPanel>
           </Tabs>
         </div>
       </div>
@@ -326,7 +317,3 @@ export const AdminProjectsPage = () => {
     </>
   );
 };
-
-
-
-

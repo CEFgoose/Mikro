@@ -18,6 +18,7 @@ import { UserDashboard } from "components/UserDashboard";
 import { UserProjectsPage } from "components/UserProjectPage";
 import { UserAccountPage } from "components/UserAccountPage";
 import { UserPaymentsPage } from "components/UserPaymentsPage";
+import { WelcomeUserPage } from "components/WelcomeUserPage";
 import "bootstrap/dist/css/bootstrap.min.css";
 import "./App.css";
 import { BrowserRouter as Router, Switch, Route } from "react-router-dom";
@@ -53,6 +54,10 @@ function App() {
                 <Login />
               </Route>
 
+              <Route path="/welcome">
+                <WelcomeUserPage />
+              </Route>
+
               <PrivateRoute path="/dashboard">
                 <UserDashboard />
               </PrivateRoute>
@@ -77,10 +82,9 @@ function App() {
                 <AdminPaymentsPage />
               </PrivateRoute>
 
-              <PrivateRoute path="/UserPaymentsPage" >
+              <PrivateRoute path="/UserPaymentsPage">
                 <UserPaymentsPage />
               </PrivateRoute>
-
 
               <PrivateRoute path="/AdminAccountPage" admin>
                 <AdminAccountPage />

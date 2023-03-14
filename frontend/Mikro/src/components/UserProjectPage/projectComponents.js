@@ -1,6 +1,6 @@
 import React from "react";
 import { styled } from "@mui/material/styles";
-import { Modal, Divider,Card,Grid } from "@mui/material";
+import { Modal, Divider, Card, Grid } from "@mui/material";
 import {
   CancelButton,
   CloseButton,
@@ -9,7 +9,6 @@ import {
   SectionSubtitle,
   ModalWrapper,
 } from "../commonComponents/commonComponents";
-
 
 export const AdminCardMediaStyle = styled("div")(({ theme }) => ({
   display: "flex",
@@ -26,19 +25,18 @@ export const AdminCardMediaStyle = styled("div")(({ theme }) => ({
   },
 }));
 
-
 // DELETE PROJECT MODAL //
 export const UserProjectModal = (props) => {
   return (
     <Modal open={props.modalOpen} key="user">
       <ModalWrapper>
         <CloseButton close_action={props.cancel_action} />
-        <SectionTitle
-          title_text={props.title_text}
+        <SectionTitle title_text={props.title_text} />
+        <SectionSubtitle
+          subtitle_text={`Are you sure you want to ${props.confirm_text} Project # ${props.projectSelected}-${props.projectName}?`}
         />
-        <SectionSubtitle subtitle_text={`Are you sure you want to ${props.confirm_text} Project # ${props.projectSelected}-${props.projectName}?`} />
         <ModalButtons
-          cancel_text={'Cancel'}
+          cancel_text={"Cancel"}
           cancel_action={props.cancel_action}
           confirm_text={props.confirm_text}
           confirm_action={props.confirm_action}
@@ -71,7 +69,6 @@ export const ModalButtons = (props) => {
   );
 };
 
-
 export const ModifyProjectButtons = (props) => {
   return (
     <div
@@ -94,70 +91,65 @@ export const ModifyProjectButtons = (props) => {
   );
 };
 
-
 export const ProjectCardGrid = (props) => {
   return (
-
     <div style={{ overflowY: "scroll", width: "85vw", height: "83vh" }}>
-            <Grid
-              sx={{
-                height: "auto",
-                position: "relative",
-                top: "3vh",
-                left: "3vw",
-              }}
-              container
-              spacing={3}
-            >
-              {props.projects &&
-                props.projects.slice().map((card) => {
-                  const {
-                    id,
-                    name,
-                    difficulty,
-                    visibility,
-                    total_payout,
-                    rate_per_task,
-                    max_editors,
-                    total_editors,
-                    total_tasks,
-                    tasks_mapped,
-                    tasks_validated,
-                    tasks_invalidated,
-                    url,
-                    source,
-                    max_payment,
-                  } = card;
-                  return (
-                    <UserProjectCard
-                      id={id}
-                      name={name}
-                      url={url}
-                      goToSource={props.goToSource}
-                      difficulty={difficulty}
-                      visibility={visibility}
-                      max_editors={max_editors}
-                      total_editors={total_editors}
-                      total_tasks={total_tasks}
-                      rate_per_task={rate_per_task}
-                      tasks_mapped={tasks_mapped}
-                      tasks_validated={tasks_validated}
-                      tasks_invalidated={tasks_invalidated}
-                      total_payout={total_payout}
-                      projectSelected={props.projectSelected}
-                      source={source}
-                      max_payment={max_payment}
-                      handleSetProjectSelected={props.handleSetProjectSelected}
-                    />
-                  );
-                })}
-            </Grid>
-            </div>
+      <Grid
+        sx={{
+          height: "auto",
+          position: "relative",
+          top: "3vh",
+          left: "3vw",
+        }}
+        container
+        spacing={3}
+      >
+        {props.projects &&
+          props.projects.slice().map((card) => {
+            const {
+              id,
+              name,
+              difficulty,
+              visibility,
+              total_payout,
+              rate_per_task,
+              max_editors,
+              total_editors,
+              total_tasks,
+              tasks_mapped,
+              tasks_validated,
+              tasks_invalidated,
+              url,
+              source,
+              max_payment,
+            } = card;
+            return (
+              <UserProjectCard
+                id={id}
+                name={name}
+                url={url}
+                goToSource={props.goToSource}
+                difficulty={difficulty}
+                visibility={visibility}
+                max_editors={max_editors}
+                total_editors={total_editors}
+                total_tasks={total_tasks}
+                rate_per_task={rate_per_task}
+                tasks_mapped={tasks_mapped}
+                tasks_validated={tasks_validated}
+                tasks_invalidated={tasks_invalidated}
+                total_payout={total_payout}
+                projectSelected={props.projectSelected}
+                source={source}
+                max_payment={max_payment}
+                handleSetProjectSelected={props.handleSetProjectSelected}
+              />
+            );
+          })}
+      </Grid>
+    </div>
   );
 };
-
-
-
 
 export const UserProjectCard = (props) => {
   return (
@@ -170,7 +162,7 @@ export const UserProjectCard = (props) => {
         marginLeft: "2vw",
         marginTop: "2vh",
       }}
-      onDoubleClick={()=>props.goToSource(props.url)}
+      onDoubleClick={() => props.goToSource(props.url)}
     >
       <AdminCardMediaStyle>
         <input
@@ -178,7 +170,7 @@ export const UserProjectCard = (props) => {
           id={props.id}
           value={props.id}
           checked={props.id === props.projectSelected}
-          onChange={(e) => props.handleSetProjectSelected(props.id,props.name)}
+          onChange={(e) => props.handleSetProjectSelected(props.id, props.name)}
           style={{ marginLeft: "1vw", marginBottom: "1vh" }}
         />
       </AdminCardMediaStyle>
@@ -190,7 +182,7 @@ export const UserProjectCard = (props) => {
           height: "10vh",
         }}
       >
-      <SectionTitle title_text={props.name} />
+        <SectionTitle title_text={props.name} />
       </div>
       <Divider />
       <div
@@ -208,10 +200,8 @@ export const UserProjectCard = (props) => {
         />
       </div>
       <SectionSubtitle
-          subtitle_text={`Source: ${
-            props.source === 'tasks' ? `TM4` : `TM3`
-          }`}
-        />
+        subtitle_text={`Source: ${props.source === "tasks" ? `TM4` : `TM3`}`}
+      />
       <Divider />
       <div
         style={{
@@ -304,7 +294,6 @@ export const UserProjectCard = (props) => {
           display: "flex",
           flexDirection: "row",
           justifyContent: "center",
-
         }}
       >
         <div
@@ -312,7 +301,6 @@ export const UserProjectCard = (props) => {
             display: "flex",
             flexDirection: "column",
             justifyContent: "center",
-            
           }}
         >
           <SectionSubtitle subtitle_text={"Total Tasks:"} />
@@ -333,7 +321,6 @@ export const UserProjectCard = (props) => {
             display: "flex",
             flexDirection: "column",
             justifyContent: "center",
-            
           }}
         >
           <SectionSubtitle subtitle_text={"Total Budget:"} />

@@ -3,6 +3,7 @@ import { AuthContext } from "common/AuthContext";
 import { DataContext } from "common/DataContext";
 import { API_URL, SSO_URL } from "components/constants";
 import { PreloaderIcon } from "components/Preloader";
+import { Redirect } from "react-router-dom";
 import { SSOControl } from "components/SSOControl";
 import Cookie from "js-cookie";
 import React, { useContext, useState } from "react";
@@ -23,7 +24,7 @@ export const Login = () => {
   //COMPONENT STATES
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-
+  const [redirect, setRedirect] = useState(false);
   //STATES FROM DATA CONTEXT
   const { fetching, setFetching, history } = useContext(DataContext);
 
@@ -42,6 +43,10 @@ export const Login = () => {
   //LOGIN FUNCTION - CHANGE URL FOR DEPLOYMENT
   const login = () => {
     let url = API_URL.concat("login");
+    let osm_username;
+    let payment_email;
+    let country;
+    let city;
     fetch(url, {
       method: "post",
       mode: "cors",
@@ -56,12 +61,20 @@ export const Login = () => {
       })
       .then((data) => {
         setFetching(false);
+        osm_username = data.osm_username;
+        payment_email = data.payment_email;
+        city = data.city;
+        country = data.country;
         setUser(data);
         checkrole = data.role;
       })
-      .then(() =>
-        history.push(checkrole === "admin" ? "/admindash" : "/dashboard")
-      );
+      .then(() => {
+        if (!osm_username || !payment_email || !city || !country) {
+          setRedirect(true);
+        } else {
+          history.push(checkrole === "admin" ? "/admindash" : "/dashboard");
+        }
+      });
   };
 
   //COMPONENT RENDER
@@ -119,6 +132,7 @@ export const Login = () => {
         <div>---------------------- or ----------------------</div>
         <SSOControl integrations="viewer" />
       </LoginPage>
+      {!redirect ? <></> : <Redirect push to="/welcome" />}
     </>
   );
 };

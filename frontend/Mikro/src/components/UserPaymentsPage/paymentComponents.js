@@ -1,9 +1,6 @@
-import { CSVLink } from "react-csv"
+import { CSVLink } from "react-csv";
 import React from "react";
-import {
-  Modal,
-  Divider,
-} from "@mui/material";
+import { Modal, Divider } from "@mui/material";
 import {
   CancelButton,
   CloseButton,
@@ -13,21 +10,19 @@ import {
   ModalWrapper,
 } from "../commonComponents/commonComponents";
 
-
-
-  export const AddTransactionModal = (props) => {
-    return (
-      <Modal open={props.addOpen} key="add">
-        <ModalWrapper>
-          <CloseButton close_action={props.handleAddOpen} />
-          <SectionTitle title_text={"Add New Pay Request"} />
-          <SectionSubtitle
-            subtitle_text={
-              "Enter the Username, payment email request amount and task IDs for this request."
-            }
-          />
-          <Divider />
-          <div style={{ display: "flex", flexDirection: "column" }}>
+export const AddTransactionModal = (props) => {
+  return (
+    <Modal open={props.addOpen} key="add">
+      <ModalWrapper>
+        <CloseButton close_action={props.handleAddOpen} />
+        <SectionTitle title_text={"Add New Pay Request"} />
+        <SectionSubtitle
+          subtitle_text={
+            "Enter the Username, payment email request amount and task IDs for this request."
+          }
+        />
+        <Divider />
+        <div style={{ display: "flex", flexDirection: "column" }}>
           <div
             style={{
               display: "flex",
@@ -45,9 +40,9 @@ import {
               style={{ height: "5vh", marginRight: "3vw", width: "95%" }}
             />
           </div>
-          </div>
-          <Divider />
-          <div style={{ display: "flex", flexDirection: "column" }}>
+        </div>
+        <Divider />
+        <div style={{ display: "flex", flexDirection: "column" }}>
           <div
             style={{
               display: "flex",
@@ -86,44 +81,40 @@ import {
               placeholder="Task IDS separated by commas"
             />
           </div>
-          </div>
-          <ModalButtons 
-            confirm_text={'Add'}
-            confirm_action={props.handleCreateTransactions}
-            cancel_action={props.handleAddOpen}
-          />
-        </ModalWrapper>
-      </Modal>
-    );
-  };
+        </div>
+        <ModalButtons
+          confirm_text={"Add"}
+          confirm_action={props.handleCreateTransactions}
+          cancel_action={props.handleAddOpen}
+        />
+      </ModalWrapper>
+    </Modal>
+  );
+};
 
-  export const DeleteModal = (props) => {
-    return (
-      <Modal open={props.deleteOpen} key="delete">
-        <ModalWrapper>
-          <CloseButton close_action={props.handleDeleteOpen} />
-          <SectionTitle
-            title_text={props.title_text}
-          />
-          <ModalButtons
-            confirm_text={"Delete"}
-            cancel_action={props.handleDeleteOpen}
-            confirm_action={props.handleDeleteRequest}
-          />
-        </ModalWrapper>
-      </Modal>
-    );
-  };
+export const DeleteModal = (props) => {
+  return (
+    <Modal open={props.deleteOpen} key="delete">
+      <ModalWrapper>
+        <CloseButton close_action={props.handleDeleteOpen} />
+        <SectionTitle title_text={props.title_text} />
+        <ModalButtons
+          confirm_text={"Delete"}
+          cancel_action={props.handleDeleteOpen}
+          confirm_action={props.handleDeleteRequest}
+        />
+      </ModalWrapper>
+    </Modal>
+  );
+};
 
-  export const DetailsModal = (props) => {
-    return (
-      <Modal open={props.detailsOpen} key="delete">
-        <ModalWrapper>
-          <CloseButton close_action={props.handleDetailsOpen} />
-          <SectionTitle
-            title_text={props.title_text}
-          />
-          <div style={{ display: "flex", flexDirection: "column" }}>
+export const DetailsModal = (props) => {
+  return (
+    <Modal open={props.detailsOpen} key="delete">
+      <ModalWrapper>
+        <CloseButton close_action={props.handleDetailsOpen} />
+        <SectionTitle title_text={props.title_text} />
+        <div style={{ display: "flex", flexDirection: "column" }}>
           <Divider />
           <div
             style={{
@@ -202,42 +193,39 @@ import {
               type="text"
               value={props.task_ids}
               style={{ height: "5vh", marginRight: "3vw", width: "95%" }}
-            />  
+            />
           </div>
           <Divider />
-            <div
-              style={{
-                display: "flex",
-                flexDirection: "row",
-                alignItems: "center",
-                marginLeft: "1vw",
-                width: "100%",
-                marginBottom:'2vh'
-              }}
-            >
-              <SectionTitle title_text={"Notes:"} />
-              <input
-                type="text"
-                value={props.notes}
-                style={{ height: "5vh", marginRight: "3vw", width: "95%" }}
-              /> 
-            </div>
+          <div
+            style={{
+              display: "flex",
+              flexDirection: "row",
+              alignItems: "center",
+              marginLeft: "1vw",
+              width: "100%",
+              marginBottom: "2vh",
+            }}
+          >
+            <SectionTitle title_text={"Notes:"} />
+            <input
+              type="text"
+              value={props.notes}
+              style={{ height: "5vh", marginRight: "3vw", width: "95%" }}
+            />
           </div>
-        </ModalWrapper>
-      </Modal>
-    );
-  };
+        </div>
+      </ModalWrapper>
+    </Modal>
+  );
+};
 
-
-  export const ProcessRequestModal = (props) => {
-    return (
-      <Modal open={props.processOpen} key="process">
-        <ModalWrapper>
-          <CloseButton close_action={props.handleProcessOpen} />
-          <SectionTitle
-            title_text={props.title_text}
-          />
-          <div style={{ display: "flex", flexDirection: "column" }}>
+export const ProcessRequestModal = (props) => {
+  return (
+    <Modal open={props.processOpen} key="process">
+      <ModalWrapper>
+        <CloseButton close_action={props.handleProcessOpen} />
+        <SectionTitle title_text={props.title_text} />
+        <div style={{ display: "flex", flexDirection: "column" }}>
           <Divider />
           <div
             style={{
@@ -338,45 +326,36 @@ import {
               style={{ height: "5vh", marginRight: "3vw", width: "95%" }}
             />
           </div>
-          </div>
-          <ModalButtons
-            confirm_text={"Process"}
-            cancel_action={props.handleProcessOpen}
-            confirm_action={props.handleProcessPayRequest}
-          />
-        </ModalWrapper>
-      </Modal>
-    );
-  };
+        </div>
+        <ModalButtons
+          confirm_text={"Process"}
+          cancel_action={props.handleProcessOpen}
+          confirm_action={props.handleProcessPayRequest}
+        />
+      </ModalWrapper>
+    </Modal>
+  );
+};
 
+export const CSVExport = (data) => {
+  return (
+    <>
+      <CSVLink
+        data={data}
+        filename={"payment-report.csv"}
+        style={{ textDecoration: "none" }}
+      ></CSVLink>
+    </>
+  );
+};
 
-
-
-  export const CSVExport = (data) => {
-    return (
-       <>
-          <CSVLink
-             data={data}
-             filename={"payment-report.csv"}
-             style={{ textDecoration: "none" }}
-          >
-          </CSVLink>
-       </>
-    )
- }
-
-
-
-
- export const RequestModal = (props) => {
+export const RequestModal = (props) => {
   return (
     <Modal open={props.requestOpen} key="request">
       <ModalWrapper>
         <CloseButton close_action={props.handleRequestOpen} />
-        <SectionTitle
-          title_text={props.title_text}
-        />
-          <div style={{ display: "flex", flexDirection: "column" }}>
+        <SectionTitle title_text={props.title_text} />
+        <div style={{ display: "flex", flexDirection: "column" }}>
           <Divider />
           <div
             style={{
@@ -411,7 +390,7 @@ import {
               style={{ height: "5vh", marginRight: "3vw", width: "95%" }}
             />
           </div>
-          </div>
+        </div>
         <ModalButtons
           confirm_text={"Submit"}
           cancel_text={"Cancel"}

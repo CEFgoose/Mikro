@@ -19,7 +19,7 @@ POSTGRES_ENDPOINT = os.getenv("POSTGRES_ENDPOINT", "postgresql")
 POSTGRES_PASSWORD = os.getenv("POSTGRES_PASSWORD", None)
 POSTGRES_PORT = os.getenv("POSTGRES_PORT", "5432")
 POSTGRES_USER = os.getenv("POSTGRES_USER", None)
-TASKING_KEY= os.getenv("TASKING_KEY")
+TASKING_KEY = os.getenv("TASKING_KEY")
 APP_BASE_URL = os.getenv("APP_BASE_URL", "https://viewer.kaart.com")
 
 ASCII_RECORD_SEPARATOR = b"\x1E"

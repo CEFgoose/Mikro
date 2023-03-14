@@ -14,9 +14,7 @@ import {
   ConfirmModalCommon,
 } from "components/commonComponents/commonComponents";
 
-
 export const UserAccountPage = () => {
-
   const {
     firstName,
     lastName,
@@ -78,7 +76,7 @@ export const UserAccountPage = () => {
         button_2_text="Cancel"
         button_2_action={handleModalOpen}
       />
-      <div style={{ width: "100%", float: "left"}}>
+      <div style={{ width: "100%", float: "left" }}>
         <Sidebar isOpen={sidebarOpen} toggleSidebar={handleViewSidebar} />
         <div
           style={{
@@ -131,7 +129,7 @@ export const UserAccountPage = () => {
               <div
                 style={{
                   display: "flex",
-                  flexDirection: "row", 
+                  flexDirection: "row",
                   height: "15vh",
                   marginTop: "2vh",
                   marginBottom: "2vh",

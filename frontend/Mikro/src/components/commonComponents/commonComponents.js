@@ -1,12 +1,8 @@
-import { CSVLink } from "react-csv"
+import { CSVLink } from "react-csv";
 import { styled } from "@mui/material/styles";
 import React from "react";
 import close_icon from "../../images/close_icon.png";
-import {
-  Button,
-  ButtonLabel,
-  Container,
-} from "./styles";
+import { Button, ButtonLabel, Container } from "./styles";
 import {
   Card,
   TableCell,
@@ -20,7 +16,6 @@ import {
   TableBody,
   TablePagination,
 } from "@mui/material";
-
 
 export const TopDiv = styled("div")(({ theme }) => ({
   display: "flex",
@@ -85,7 +80,6 @@ export const ProjectRow = styled(TableRow)(() => ({
 //TABLE HEADERS
 
 export const PROJECTS_TABLE_HEADERS = [
-
   { id: "name", label: "Name", alignLeft: true },
   { id: "Rate", label: "Rate", alignLeft: true },
   { id: "Tasks", label: "Tasks", alignLeft: true },
@@ -123,14 +117,12 @@ export const PAYOUT_TABLE_HEADERS = [
   { id: "Date Paid", label: "Date Paid", alignRight: false },
 ];
 
-
 export const REQUEST_TABLE_HEADERS = [
   { id: "name", label: "User", alignRight: false },
   { id: "Request ID", label: "Request ID", alignRight: false },
   { id: "Amount Requested", label: "Amount Requested", alignRight: false },
   { id: "Date Requested", label: "Date Requested", alignRight: false },
 ];
-
 
 // COMPONENTS
 
@@ -332,7 +324,7 @@ export const StyledButton = (props) => {
   return (
     <Button
       onClick={props.button_action}
-      style={{ boxShadow: "1px 1px 6px 2px gray" }}
+      style={{ boxShadow: "1px 1px 6px 2px gray", textAlign: "center" }}
     >
       <ButtonLabel>{props.button_text}</ButtonLabel>
     </Button>
@@ -344,30 +336,29 @@ export const ButtonDivComponent = (props) => {
   return (
     <Container>
       {props.csv ? (
-          <CSVLink
-            data={props.data}
-            filename={"payment-report.csv"}
-            style={{ textDecoration: "none" }}
-          >
-     
-            <StyledButton 
-            button_action={props.button1_action} 
+        <CSVLink
+          data={props.data}
+          filename={"payment-report.csv"}
+          style={{ textDecoration: "none" }}
+        >
+          <StyledButton
+            button_action={props.button1_action}
             button_text={props.button1_text}
-            />
-          </CSVLink>
+          />
+        </CSVLink>
       ) : (
         <></>
       )}
       {props.button1 ? (
-            <StyledButton 
-            button_action={props.button1_action} 
-            button_text={props.button1_text} />
+        <StyledButton
+          button_action={props.button1_action}
+          button_text={props.button1_text}
+        />
       ) : (
         <></>
       )}
       {props.button2 ? (
         <StyledButton
-
           button_action={props.button2_action}
           button_text={props.button2_text}
         />
@@ -375,10 +366,10 @@ export const ButtonDivComponent = (props) => {
         <></>
       )}
       {props.button3 ? (
-      <StyledButton
-        button_action={props.button3_action}
-        button_text={props.button3_text}
-      />
+        <StyledButton
+          button_action={props.button3_action}
+          button_text={props.button3_text}
+        />
       ) : (
         <></>
       )}
@@ -529,7 +520,17 @@ export const AdminPayRequestsTable = (props) => {
                       align="center"
                       key={row}
                       tabIndex={-1}
-                      onClick={() => props.handleSetRequestSelected(id,user,user_id,amount_requested,date_requested,payment_email,task_ids)}
+                      onClick={() =>
+                        props.handleSetRequestSelected(
+                          id,
+                          user,
+                          user_id,
+                          amount_requested,
+                          date_requested,
+                          payment_email,
+                          task_ids
+                        )
+                      }
                       selected={props.requestSelected === id}
                     >
                       <ProjectCell entry={user} />
@@ -542,7 +543,7 @@ export const AdminPayRequestsTable = (props) => {
           </TableBody>
         </Table>
         <TablePagination
-          style={{ width: 'auto'}}
+          style={{ width: "auto" }}
           rowsPerPageOptions={[5, 10, 15]}
           component="div"
           count={props.pay_requests ? props.pay_requests.length : 5}
@@ -600,7 +601,18 @@ export const AdminPaymentsTable = (props) => {
                       align="center"
                       key={row}
                       tabIndex={-1}
-                      onClick={() => props.handleSetPaymentSelected(id,user,user_id,amount_paid,date_paid,payment_email,task_ids,payoneer_id)}
+                      onClick={() =>
+                        props.handleSetPaymentSelected(
+                          id,
+                          user,
+                          user_id,
+                          amount_paid,
+                          date_paid,
+                          payment_email,
+                          task_ids,
+                          payoneer_id
+                        )
+                      }
                       selected={props.paymentSelected === id}
                     >
                       <ProjectCell entry={user} />
@@ -613,7 +625,7 @@ export const AdminPaymentsTable = (props) => {
           </TableBody>
         </Table>
         <TablePagination
-          style={{ width: 'auto'}}
+          style={{ width: "auto" }}
           rowsPerPageOptions={[5, 10, 15]}
           component="div"
           count={props.pay_requests ? props.pay_requests.length : 5}

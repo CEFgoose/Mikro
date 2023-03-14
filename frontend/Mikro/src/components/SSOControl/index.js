@@ -6,16 +6,13 @@ import {
   RegisterWrapper,
 } from "./styles";
 
-
 //COMPONENT DECLARATION & EXPORT - SSO CONTROLS ON VIEWER LOGIN PAGE- SENDS INVITE INFO TO KAART SSO FOR NE USERS
 export const SSOControl = (props) => {
   const [redirect, setRedirect] = useState(false);
   return (
     <>
       <RegisterWrapper>
-        <RegisterAsUserButton
-          onClick={() => setRedirect(true)}
-        >
+        <RegisterAsUserButton onClick={() => setRedirect(true)}>
           Register as user
         </RegisterAsUserButton>
         <RegisterCompanyButton

@@ -8,7 +8,7 @@ from flask_jwt_extended import JWTManager, get_jwt_identity, jwt_required
 from flask import Flask, request
 import requests
 from dotenv import load_dotenv
-from flask import (g)
+from flask import g
 
 
 # SSO_BASE_URL = "http://127.0.0.1:5001/api/"
@@ -34,7 +34,7 @@ try:
         UserAPI,
         ProjectAPI,
         TransactionAPI,
-        TaskAPI
+        TaskAPI,
     )
 except ImportError:
     from .api.database import db, User
@@ -50,7 +50,7 @@ except ImportError:
         UserAPI,
         ProjectAPI,
         TransactionAPI,
-        TaskAPI
+        TaskAPI,
     )
 app = Flask(__name__)
 cors = CORS(app)
@@ -86,9 +86,14 @@ migrate = Migrate(app, db)
 
 app.add_url_rule("/api/<path>", view_func=LoginAPI.as_view("auth"))
 app.add_url_rule("/api/user/<path>", view_func=UserAPI.as_view("user"))
-app.add_url_rule("/api/project/<path>", view_func=ProjectAPI.as_view("project"))
-app.add_url_rule("/api/transaction/<path>", view_func=TransactionAPI.as_view("transaction"))
+app.add_url_rule(
+    "/api/project/<path>", view_func=ProjectAPI.as_view("project")
+)
+app.add_url_rule(
+    "/api/transaction/<path>", view_func=TransactionAPI.as_view("transaction")
+)
 app.add_url_rule("/api/task/<path>", view_func=TaskAPI.as_view("task"))
+
 
 @app.before_request
 @jwt_required(optional=True)
@@ -126,7 +131,3 @@ def load_user():
             if resp["code"] == 2:
                 message = "Your Kaart account has been created with Mikro integration, press the button below to activate your account!"  # noqa: E501
             return {"message": message, "code": resp["code"]}
-
-
-
-

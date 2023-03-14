@@ -22,14 +22,8 @@ import {
 } from "../commonComponents/commonComponents";
 
 export const AdminUsersPage = () => {
-
-  const { 
-    orgUsers, 
-    fetchOrgUsers, 
-    inviteUser, 
-    removeUser, 
-    modifyUser 
-  } = useContext(DataContext);
+  const { orgUsers, fetchOrgUsers, inviteUser, removeUser, modifyUser } =
+    useContext(DataContext);
 
   const { sidebarOpen, handleSetSidebarState } = useContext(DataContext);
   const { refresh, user } = useContext(AuthContext);
@@ -58,10 +52,9 @@ export const AdminUsersPage = () => {
     // eslint-disable-next-line
   }, []);
 
-
-  const handleChangeRowsPerPage = (e)=>{
-    setRowsPerPage(e.target.value)
-  }
+  const handleChangeRowsPerPage = (e) => {
+    setRowsPerPage(e.target.value);
+  };
 
   const handleAddOpen = () => {
     toggleAddOpen(!addOpen);

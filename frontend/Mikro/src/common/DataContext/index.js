@@ -3,11 +3,7 @@ import { InteractionContext } from "common/InteractionContext";
 import { AuthContext } from "common/AuthContext";
 import { fetcher, poster } from "../../calls";
 import useToggle from "../../hooks/useToggle";
-import React, {
-  createContext,
-  useContext,
-  useState,
-} from "react";
+import React, { createContext, useContext, useState } from "react";
 
 // CONTEXT IMPORTS //
 export const DataContext = createContext({});
@@ -45,7 +41,7 @@ export const DataProvider = ({ children }) => {
   const [payableTotal, setPayableTotal] = useState(null);
   const [requestsTotal, setRequestsTotal] = useState(null);
   const [paidTotal, setPaidTotal] = useState(null);
-  const [CSVdata,setCSVdata]=useState([])
+  const [CSVdata, setCSVdata] = useState([]);
 
   const handleSetSidebarState = () => {
     toggleSidebarOpen();
@@ -66,7 +62,7 @@ export const DataProvider = ({ children }) => {
     setRequestsTotal(e.requests_total > 0 ? e.requests_total : 0);
     setPaidTotal(e.payouts_total > 0 ? e.payouts_total : 0);
   };
-  
+
   //USER ORIENTED API CALLS AND HANDLERS
   const handleUserDetailsStates = (state, e) => {
     switch (state) {
@@ -105,7 +101,7 @@ export const DataProvider = ({ children }) => {
         break;
     }
   };
-  
+
   const fetchUserDetails = () => {
     let fetchUserDetailsURL = "user/fetch_user_details";
     fetcher(fetchUserDetailsURL).then((response) => {
@@ -141,6 +137,32 @@ export const DataProvider = ({ children }) => {
     });
   };
 
+  const firstLoginUpdate = (
+    osm_username,
+    payment_email,
+    country,
+    city,
+    terms_agreement
+  ) => {
+    let outpack = {
+      osm_username: osm_username,
+      payment_email: payment_email,
+      country: country,
+      city: city,
+      terms_agreement: terms_agreement,
+    };
+    let firstLoginURL = "user/first_login_update";
+    poster(outpack, firstLoginURL).then((response) => {
+      if (response.status === 200) {
+        return;
+      } else if (response.status === 304) {
+        history.push("/login");
+      } else {
+        alert(response.message);
+      }
+    });
+  };
+
   const fetchOrgUsers = () => {
     let fetchUsersURL = "user/fetch_users";
     fetcher(fetchUsersURL).then((response) => {
@@ -158,9 +180,8 @@ export const DataProvider = ({ children }) => {
     let fetchProjectUsersURL = "user/fetch_project_users";
     let outpack = {
       project_id: project_id,
-
     };
-    poster(outpack,fetchProjectUsersURL).then((response) => {
+    poster(outpack, fetchProjectUsersURL).then((response) => {
       if (response.status === 200) {
         setProjectUsers(response.users);
       } else if (response.status === 304) {
@@ -223,12 +244,12 @@ export const DataProvider = ({ children }) => {
   const userJoinProject = (project_id) => {
     let assignUserURL = "project/user_join_project";
     let outpack = {
-      project_id:project_id,
+      project_id: project_id,
     };
     poster(outpack, assignUserURL).then((response) => {
       if (response.status === 200) {
         alert(response.message);
-        fetchUserProjects()
+        fetchUserProjects();
         return;
       } else if (response.status === 304) {
         history.push("/login");
@@ -241,12 +262,12 @@ export const DataProvider = ({ children }) => {
   const userLeaveProject = (project_id) => {
     let unassignUserURL = "project/user_leave_project";
     let outpack = {
-      project_id:project_id,
+      project_id: project_id,
     };
     poster(outpack, unassignUserURL).then((response) => {
       if (response.status === 200) {
         alert(response.message);
-        fetchUserProjects()
+        fetchUserProjects();
         return;
       } else if (response.status === 304) {
         history.push("/login");
@@ -256,16 +277,16 @@ export const DataProvider = ({ children }) => {
     });
   };
 
-  const assignUserProject = (project_id,user_id) => {
+  const assignUserProject = (project_id, user_id) => {
     let assignUserURL = "project/assign_user_project";
     let outpack = {
-      project_id:project_id,
-      user_id:user_id
+      project_id: project_id,
+      user_id: user_id,
     };
     poster(outpack, assignUserURL).then((response) => {
       if (response.status === 200) {
         alert(response.message);
-        fetchProjectUsers(project_id)
+        fetchProjectUsers(project_id);
         return;
       } else if (response.status === 304) {
         history.push("/login");
@@ -275,16 +296,16 @@ export const DataProvider = ({ children }) => {
     });
   };
 
-  const unassignUserProject = (project_id,user_id) => {
+  const unassignUserProject = (project_id, user_id) => {
     let unassignUserURL = "project/unassign_user_project";
     let outpack = {
-      project_id:project_id,
-      user_id:user_id
+      project_id: project_id,
+      user_id: user_id,
     };
     poster(outpack, unassignUserURL).then((response) => {
       if (response.status === 200) {
         alert(response.message);
-        fetchProjectUsers(project_id)
+        fetchProjectUsers(project_id);
         return;
       } else if (response.status === 304) {
         history.push("/login");
@@ -352,7 +373,7 @@ export const DataProvider = ({ children }) => {
       max_editors: maxEditors,
       visibility: visibility,
       difficulty: projectDifficulty,
-      project_status: projectStatus
+      project_status: projectStatus,
     };
     poster(outpack, updateProjectURL).then((response) => {
       if (response.status === 200) {
@@ -387,20 +408,20 @@ export const DataProvider = ({ children }) => {
     });
   };
 
-const fetchOrgProjects = () => {
-  let fetchProjectsURL = "project/fetch_org_projects";
-  fetcher(fetchProjectsURL).then((response) => {
-    if (response.status === 200) {
-      setActiveProjects(response.org_active_projects);
-      setInactiveProjects(response.org_inactive_projects);
-      return;
-    } else if (response.status === 304) {
-      history.push("/login");
-    } else {
-      alert(response.message);
-    }
-  });
-};
+  const fetchOrgProjects = () => {
+    let fetchProjectsURL = "project/fetch_org_projects";
+    fetcher(fetchProjectsURL).then((response) => {
+      if (response.status === 200) {
+        setActiveProjects(response.org_active_projects);
+        setInactiveProjects(response.org_inactive_projects);
+        return;
+      } else if (response.status === 304) {
+        history.push("/login");
+      } else {
+        alert(response.message);
+      }
+    });
+  };
 
   const fetchUserProjects = () => {
     let fetchUserURL = "project/fetch_user_projects";
@@ -416,33 +437,33 @@ const fetchOrgProjects = () => {
       }
     });
   };
-//Task oriented functions
+  //Task oriented functions
 
-const checkUserStats = () => {
-  let fetchUserURL = "project/TM4_payment_call";
-  fetcher(fetchUserURL).then((response) => {
-    if (response.status === 200) {
-      // setActiveProjects(response.org_active_projects);
-      // setInactiveProjects(response.org_inactive_projects);
-      return;
-    } else if (response.status === 304) {
-      history.push("/login");
-    } else {
-      alert(response.message);
-    }
-  });
-};
+  const checkUserStats = () => {
+    let fetchUserURL = "project/TM4_payment_call";
+    fetcher(fetchUserURL).then((response) => {
+      if (response.status === 200) {
+        // setActiveProjects(response.org_active_projects);
+        // setInactiveProjects(response.org_inactive_projects);
+        return;
+      } else if (response.status === 304) {
+        history.push("/login");
+      } else {
+        alert(response.message);
+      }
+    });
+  };
 
-// TRANSACTION ORIENTED FUNCTIONS
+  // TRANSACTION ORIENTED FUNCTIONS
 
   const fetchOrgTransactions = () => {
     let fetchTransactionsURL = "transaction/fetch_org_transactions";
-    fetcher(fetchTransactionsURL ).then((response) => {
+    fetcher(fetchTransactionsURL).then((response) => {
       if (response.status === 200) {
-        console.log(response.payments)
-        setOrgRequests(response.requests)
-        setOrgPayments(response.payments)
-        handleSetCSVdata(response.payments)
+        console.log(response.payments);
+        setOrgRequests(response.requests);
+        setOrgPayments(response.payments);
+        handleSetCSVdata(response.payments);
         return;
       } else if (response.status === 304) {
         history.push("/login");
@@ -454,12 +475,12 @@ const checkUserStats = () => {
 
   const fetchUserTransactions = () => {
     let fetchUserTransactionsURL = "transaction/fetch_user_transactions";
-    fetcher(fetchUserTransactionsURL ).then((response) => {
+    fetcher(fetchUserTransactionsURL).then((response) => {
       if (response.status === 200) {
-        console.log(response.payments)
-        setOrgRequests(response.requests)
-        setOrgPayments(response.payments)
-        handleSetCSVdata(response.payments)
+        console.log(response.payments);
+        setOrgRequests(response.requests);
+        setOrgPayments(response.payments);
+        handleSetCSVdata(response.payments);
         return;
       } else if (response.status === 304) {
         history.push("/login");
@@ -469,17 +490,17 @@ const checkUserStats = () => {
     });
   };
 
-  const createTransaction = (user_id, amount, payment_email,task_ids) => {
+  const createTransaction = (user_id, amount, payment_email, task_ids) => {
     let createTransactionsURL = "transaction/create_transaction";
     let outpack = {
       user_id: user_id,
       amount: amount,
-      task_ids:task_ids,
-      transaction_type:'request'
+      task_ids: task_ids,
+      transaction_type: "request",
     };
     poster(outpack, createTransactionsURL).then((response) => {
       if (response.status === 200) {
-        fetchOrgTransactions()
+        fetchOrgTransactions();
         return;
       } else if (response.status === 304) {
         history.push("/login");
@@ -497,7 +518,7 @@ const checkUserStats = () => {
     };
     poster(outpack, deleteTransactionsURL).then((response) => {
       if (response.status === 200) {
-        fetchOrgTransactions()
+        fetchOrgTransactions();
         return;
       } else if (response.status === 304) {
         history.push("/login");
@@ -507,7 +528,14 @@ const checkUserStats = () => {
     });
   };
 
-  const processPayRequest = (request_id,  user_id, request_amount, task_ids, payoneer_id,notes) => {
+  const processPayRequest = (
+    request_id,
+    user_id,
+    request_amount,
+    task_ids,
+    payoneer_id,
+    notes
+  ) => {
     let processPayRequestURL = "transaction/process_payment_request";
     let outpack = {
       request_id,
@@ -515,12 +543,12 @@ const checkUserStats = () => {
       request_amount,
       task_ids,
       payoneer_id,
-      notes
+      notes,
     };
     poster(outpack, processPayRequestURL).then((response) => {
       if (response.status === 200) {
         alert(response.message);
-        fetchOrgTransactions()
+        fetchOrgTransactions();
         return;
       } else if (response.status === 304) {
         history.push("/login");
@@ -533,12 +561,12 @@ const checkUserStats = () => {
   const submitPayRequest = (notes) => {
     let submitPayRequestURL = "transaction/submit_payment_request";
     let outpack = {
-      notes
+      notes,
     };
     poster(outpack, submitPayRequestURL).then((response) => {
       if (response.status === 200) {
         alert(response.message);
-        fetchUserTransactions()
+        fetchUserTransactions();
         return;
       } else if (response.status === 304) {
         history.push("/login");
@@ -552,7 +580,7 @@ const checkUserStats = () => {
     let fetchUserPayableURL = "transaction/fetch_user_payable";
     fetcher(fetchUserPayableURL).then((response) => {
       if (response.status === 200) {
-        setter(response.payable_total)
+        setter(response.payable_total);
         return;
       } else if (response.status === 304) {
         history.push("/login");
@@ -561,12 +589,12 @@ const checkUserStats = () => {
       }
     });
   };
-  
+
   const fetchAdminDashStats = () => {
-    let adminDashStats= "project/fetch_admin_dash_stats";
+    let adminDashStats = "project/fetch_admin_dash_stats";
     fetcher(adminDashStats).then((response) => {
       if (response.status === 200) {
-        handleAdminDashStates(response)
+        handleAdminDashStates(response);
         return;
       } else if (response.status === 304) {
         history.push("/login");
@@ -577,10 +605,10 @@ const checkUserStats = () => {
   };
 
   const fetchUserDashStats = () => {
-    let userDashStats= "project/fetch_user_dash_stats";
+    let userDashStats = "project/fetch_user_dash_stats";
     fetcher(userDashStats).then((response) => {
       if (response.status === 200) {
-        handleAdminDashStates(response)
+        handleAdminDashStates(response);
         return;
       } else if (response.status === 304) {
         history.push("/login");
@@ -591,7 +619,7 @@ const checkUserStats = () => {
   };
 
   const update_user_tasks = (project_id) => {
-    let userTaskStatsURL= "task/update_user_tasks";
+    let userTaskStatsURL = "task/update_user_tasks";
     fetcher(userTaskStatsURL).then((response) => {
       if (response.status === 200) {
         return;
@@ -604,7 +632,7 @@ const checkUserStats = () => {
   };
 
   const admin_update_all_user_tasks = (project_id) => {
-    let userTaskStatsURL= "task/admin_update_all_user_tasks";
+    let userTaskStatsURL = "task/admin_update_all_user_tasks";
     fetcher(userTaskStatsURL).then((response) => {
       if (response.status === 200) {
         return;
@@ -620,17 +648,24 @@ const checkUserStats = () => {
     return Math.random().toString(36).substr(2, 9);
   };
 
-  const goToSource=(project_url)=>{
-    window.open(project_url, "_blank")?.focus()
- }
+  const goToSource = (project_url) => {
+    window.open(project_url, "_blank")?.focus();
+  };
 
-  const findObjectById = (array, id)=>{
+  const findObjectById = (array, id) => {
     return array.find((obj) => obj.id === id);
-  }
+  };
+
+  const isValidEmail = (email) => {
+    // Regex pattern for validating email addresses
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    // Test if input matches the email regex pattern
+    return emailRegex.test(email);
+  };
 
   const handleSetCSVdata = (e) => {
     const csvData = [];
-    if(Object.keys(e).length>0){
+    if (Object.keys(e).length > 0) {
       const headers = Object.keys(e[0]);
       csvData.push(headers);
       e.forEach((item) => {
@@ -640,10 +675,9 @@ const checkUserStats = () => {
         });
         csvData.push(row);
       });
-      setCSVdata(csvData)
+      setCSVdata(csvData);
     }
-
-  }
+  };
 
   const value = {
     //REFS
@@ -674,12 +708,12 @@ const checkUserStats = () => {
     paidTotal,
     projectSelectedDetails,
     orgPayments,
-    orgRequests, 
+    orgRequests,
     CSVdata,
     orgProjects,
-    activeProjectsCount, 
-    inactiveProjectsCount, 
-  //STATE SETTERS
+    activeProjectsCount,
+    inactiveProjectsCount,
+    //STATE SETTERS
     setActiveProjectsCount,
     setInactiveProjectsCount,
     setorgProjects,
@@ -696,7 +730,6 @@ const checkUserStats = () => {
     setCountry,
     setEmail,
     setPayEmail,
-
     setUserSelected,
     setFetching,
     //HANDLERS
@@ -705,6 +738,7 @@ const checkUserStats = () => {
     handleOutputRate,
     //API CALLS:
     //user
+    firstLoginUpdate,
     fetchOrgUsers,
     fetchUserDetails,
     updateUserDetails,
@@ -714,7 +748,7 @@ const checkUserStats = () => {
     userJoinProject,
     userLeaveProject,
     assignUserProject,
-    unassignUserProject, 
+    unassignUserProject,
     fetchUserProjects,
     //project
     fetchProjectUsers,
@@ -728,7 +762,7 @@ const checkUserStats = () => {
     //Transaction
     fetchOrgTransactions,
     createTransaction,
-    deleteTransaction, 
+    deleteTransaction,
     processPayRequest,
     submitPayRequest,
     fetchUserPayable,
@@ -741,6 +775,7 @@ const checkUserStats = () => {
     generateRandomKey,
     findObjectById,
     goToSource,
+    isValidEmail,
   };
 
   return value ? (

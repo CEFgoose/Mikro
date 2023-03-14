@@ -5,10 +5,5 @@ from .Users import UserAPI
 from .Projects import ProjectAPI
 from .Transactions import TransactionAPI
 from .Tasks import TaskAPI
-__all__ = {
-    "UserAPI",
-    "LoginAPI",
-    "ProjectAPI",
-    "TransactionAPI",
-    "TaskAPI"
-}
+
+__all__ = {"UserAPI", "LoginAPI", "ProjectAPI", "TransactionAPI", "TaskAPI"}

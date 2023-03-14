@@ -8,7 +8,7 @@ from .core import (
     Task,
     PayRequests,
     Payments,
-    UserTasks
+    UserTasks,
 )
 
 __all__ = [
@@ -21,5 +21,5 @@ __all__ = [
     "Task",
     "PayRequests",
     "Payments",
-    "UserTasks"
+    "UserTasks",
 ]
