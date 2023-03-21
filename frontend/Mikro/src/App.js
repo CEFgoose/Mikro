@@ -19,6 +19,8 @@ import { UserProjectsPage } from "components/UserProjectPage";
 import { UserAccountPage } from "components/UserAccountPage";
 import { UserPaymentsPage } from "components/UserPaymentsPage";
 import { WelcomeUserPage } from "components/WelcomeUserPage";
+import { UserTrainingPage } from "components/UserTrainingPage";
+import { AdminTrainingPage } from "components/AdminTrainingPage";
 import "bootstrap/dist/css/bootstrap.min.css";
 import "./App.css";
 import { BrowserRouter as Router, Switch, Route } from "react-router-dom";
@@ -84,6 +86,14 @@ function App() {
 
               <PrivateRoute path="/UserPaymentsPage">
                 <UserPaymentsPage />
+              </PrivateRoute>
+
+              <PrivateRoute path="/AdminTrainingPage" admin>
+                <AdminTrainingPage />
+              </PrivateRoute>
+
+              <PrivateRoute path="/UserTrainingPage">
+                <UserTrainingPage />
               </PrivateRoute>
 
               <PrivateRoute path="/AdminAccountPage" admin>

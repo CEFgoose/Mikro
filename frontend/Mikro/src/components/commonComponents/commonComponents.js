@@ -427,6 +427,28 @@ export const ProjectHead = (props) => {
   );
 };
 
+export const ModalButtons = (props) => {
+  return (
+    <div
+      style={{
+        display: "flex",
+        flexDirection: "row",
+        textAlign: "center",
+        justifyContent: "center",
+      }}
+    >
+      <CancelButton
+        cancel_action={props.cancel_action}
+        cancel_text={props.cancel_text}
+      />
+      <ConfirmButton
+        confirm_action={props.confirm_action}
+        confirm_text={props.confirm_text}
+      />
+    </div>
+  );
+};
+
 export const ConfirmModalCommon = (props) => {
   const modal_body = (
     <ModalWrapper>

@@ -42,5 +42,5 @@ spec:
                   number: 80
   tls:
     - hosts:
-        - "viewer.kaart.com"
+        - "mikro.kaart.com"
       secretName: viewer-ingress-cert

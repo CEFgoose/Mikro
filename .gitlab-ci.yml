@@ -24,19 +24,19 @@
     TESTING_ENDPOINT: test_database
     TESTING_PORT: 5432
   before_script:
-    - echo "APP_BASE_URL=\"${APP_BASE_URL}\"" > backend/mongoose.env
-    - echo "POSTGRES_DB=\"${POSTGRES_DB}\"" >> backend/mongoose.env
-    - echo "POSTGRES_USER=\"${POSTGRES_USER}\"" >> backend/mongoose.env
-    - echo "POSTGRES_PASSWORD=\"${POSTGRES_PASSWORD}\"" >> backend/mongoose.env
-    - echo "POSTGRES_ENDPOINT=\"${POSTGRES_ENDPOINT}\"" >> backend/mongoose.env
-    - echo "TESTING_DB=\"${TESTING_DB}\"" >> backend/mongoose.env
-    - echo "TESTING_USER=\"${TESTING_USER}\"" >> backend/mongoose.env
-    - cat backend/mongoose.env
+    - echo "APP_BASE_URL=\"${APP_BASE_URL}\"" > backend/mikro.env
+    - echo "POSTGRES_DB=\"${POSTGRES_DB}\"" >> backend/mikro.env
+    - echo "POSTGRES_USER=\"${POSTGRES_USER}\"" >> backend/mikro.env
+    - echo "POSTGRES_PASSWORD=\"${POSTGRES_PASSWORD}\"" >> backend/mikro.env
+    - echo "POSTGRES_ENDPOINT=\"${POSTGRES_ENDPOINT}\"" >> backend/mikro.env
+    - echo "TESTING_DB=\"${TESTING_DB}\"" >> backend/mikro.env
+    - echo "TESTING_USER=\"${TESTING_USER}\"" >> backend/mikro.env
+    - cat backend/mikro.env
     - ls -lh /dev/null
     - echo "Test" > /dev/null
     - echo $(pwd)
     - ls
-    - source backend/mongoose.env
+    - source backend/mikro.env
     - cd backend
     - pip3 --cache-dir ${PIP_CACHE_DIR} install -r requirements.txt
 
@@ -47,7 +47,7 @@
     for command in "${commands[@]}"; do
         psql --host=${POSTGRES_ENDPOINT} --dbname="${POSTGRES_DB}" --command="${command}" || echo "${command} didn't work"
     done
-    export MONGOOSE_DB="postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${POSTGRES_ENDPOINT}/${POSTGRES_DB}"
+    export mikro_DB="postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${POSTGRES_ENDPOINT}/${POSTGRES_DB}"
 
 .frontend_before_script: &frontend_before_script
   image: registry.gitlab.com/gokaart/docker-images/node
@@ -110,8 +110,8 @@ cache:
 #   image: python:latest
 #   stage: build
 #   script:
-#     - cat backend/mongoose.env
-#     - source backend/mongoose.env
+#     - cat backend/mikro.env
+#     - source backend/mikro.env
 #     - cd backend
 #     - pip install $(cat requirements.txt | grep black || echo black)
 #     - black -l 79 . --check
@@ -121,8 +121,8 @@ flake8_backend:
   image: python:latest
   stage: build
   script:
-    - cat backend/mongoose.env
-    - source backend/mongoose.env
+    - cat backend/mikro.env
+    - source backend/mikro.env
     - cd backend
     - pip install $(cat requirements.txt | grep flake8 || echo flake8)
     - flake8 .
@@ -237,8 +237,8 @@ docker:
     - mkdir -p /kaniko/.docker
     - mkdir -p ./.cache
     - echo "{\"auths\":{\"$CI_REGISTRY\":{\"username\":\"$CI_REGISTRY_USER\",\"password\":\"$CI_REGISTRY_PASSWORD\"}}}" > /kaniko/.docker/config.json
-    - /kaniko/executor --cache --cache-dir .cache --context $CI_PROJECT_DIR/backend --dockerfile $CI_PROJECT_DIR/backend/Dockerfile --destination $CI_REGISTRY_IMAGE/mongoose-backend:${tag} --destination $CI_REGISTRY_IMAGE/mongoose-backend:latest
-    - /kaniko/executor --cache --cache-dir .cache --context $CI_PROJECT_DIR/front-end --dockerfile $CI_PROJECT_DIR/front-end/Dockerfile --destination $CI_REGISTRY_IMAGE/mongoose-frontend:${tag} --destination $CI_REGISTRY_IMAGE/mongoose-frontend:latest
+    - /kaniko/executor --cache --cache-dir .cache --context $CI_PROJECT_DIR/backend --dockerfile $CI_PROJECT_DIR/backend/Dockerfile --destination $CI_REGISTRY_IMAGE/mikro-backend:${tag} --destination $CI_REGISTRY_IMAGE/mikro-backend:latest
+    - /kaniko/executor --cache --cache-dir .cache --context $CI_PROJECT_DIR/front-end --dockerfile $CI_PROJECT_DIR/front-end/Dockerfile --destination $CI_REGISTRY_IMAGE/mikro-frontend:${tag} --destination $CI_REGISTRY_IMAGE/mikro-frontend:latest
   rules:
     - if: $CI_COMMIT_TAG
     - if: "$CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH"
@@ -264,8 +264,8 @@ kubernetes_cluster_viewer_kaart_com:
     - if [ -z "${CI_COMMIT_TAG}" ];then tag="${CI_COMMIT_REF_SLUG}-${CI_COMMIT_SHORT_SHA}"; else tag="${CI_COMMIT_TAG}"; fi
   script:
     - cd deployment/kubernetes
-    - sed -i "s/\(registry.gitlab.com\/gokaart\/mongoose\/mongoose-.*\):latest/\1:$tag/" backend/deployment.yaml
-    - sed -i "s/\(registry.gitlab.com\/gokaart\/mongoose\/mongoose-.*\):latest/\1:$tag/" frontend/deployment.yaml
+    - sed -i "s/\(registry.gitlab.com\/gokaart\/mikro\/mikro-.*\):latest/\1:$tag/" backend/deployment.yaml
+    - sed -i "s/\(registry.gitlab.com\/gokaart\/mikro\/mikro-.*\):latest/\1:$tag/" frontend/deployment.yaml
     #- kubectl apply -f namespace.yaml # This only needs to be run once, and should probably be run by itself.
     - kubectl apply -f backend/deployment.yaml
     - kubectl apply -f backend/service.yaml

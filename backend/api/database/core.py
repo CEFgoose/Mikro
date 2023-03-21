@@ -27,6 +27,7 @@ class User(ModelWithSoftDeleteAndCRUD, SurrogatePK):
     create_time = Column(DateTime, default=func.now())
     role = Column(String, default="user")
     assigned_projects = Column(MutableList.as_mutable(ARRAY(Integer)))
+    mapper_level = db.Column(db.Integer, default=0, nullable=True)
 
     payable_total = db.Column(
         db.Float, nullable=True, default=0, server_default="0"
@@ -76,17 +77,63 @@ class Project(ModelWithSoftDeleteAndCRUD, SurrogatePK):
     completed = db.Column(db.Boolean, nullable=True, server_default="False")
 
 
+class Training(ModelWithSoftDeleteAndCRUD, SurrogatePK):
+    __tablename__ = "training"
+    id = db.Column(db.Integer, primary_key=True, autoincrement=False)
+    type = db.Column(db.String, nullable=True)
+    point_value = db.Column(db.Integer, nullable=True)
+    link = db.Column(db.String, nullable=True)
+    question_1 = db.Column(db.String, nullable=True)
+
+    answer_question_1 = db.Column(db.String, nullable=True)
+    false_1_question_1 = db.Column(db.String, nullable=True)
+    false_2_question_1 = db.Column(db.String, nullable=True)
+    false_3_question_1 = db.Column(db.String, nullable=True)
+
+    question_2 = db.Column(db.String, nullable=True)
+    answer_question_2 = db.Column(db.String, nullable=True)
+    false_1_question_2 = db.Column(db.String, nullable=True)
+    false_2_question_2 = db.Column(db.String, nullable=True)
+    false_3_question_2 = db.Column(db.String, nullable=True)
+
+    question_3 = db.Column(db.String, nullable=True)
+    answer_question_3 = db.Column(db.String, nullable=True)
+    false_1_question_3 = db.Column(db.String, nullable=True)
+    false_2_question_3 = db.Column(db.String, nullable=True)
+    false_3_question_3 = db.Column(db.String, nullable=True)
+
+    question_4 = db.Column(db.String, nullable=True)
+    answer_question_4 = db.Column(db.String, nullable=True)
+    false_1_question_4 = db.Column(db.String, nullable=True)
+    false_2_question_4 = db.Column(db.String, nullable=True)
+    false_3_question_4 = db.Column(db.String, nullable=True)
+
+
+
+class TrainingCompleted(CRUDMixin, SurrogatePK, db.Model):
+    __tablename__ = "training_completed"
+    user_id = db.Column(
+        db.Integer,
+        db.ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=True,
+    )
+    training_id = db.Column(
+        db.BigInteger,
+        db.ForeignKey("training.id", ondelete="CASCADE"),
+        nullable=True,
+    )
+
 class ProjectUser(CRUDMixin, SurrogatePK, db.Model):
     __tablename__ = "project_users"
     user_id = db.Column(
         db.Integer,
         db.ForeignKey("users.id", ondelete="CASCADE"),
-        nullable=False,
+        nullable=True,
     )
     project_id = db.Column(
         db.BigInteger,
         db.ForeignKey("projects.id", ondelete="CASCADE"),
-        nullable=False,
+        nullable=True,
     )
 
 

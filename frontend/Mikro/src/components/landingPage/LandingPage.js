@@ -6,7 +6,7 @@ import laptop_image from "../../images/laptop.png";
 import "./styles.css";
 import { Button, Typography } from "@mui/material";
 import { ProjectIcon } from "./styles.js";
-
+import mikro_icon from "../../images/5.png";
 export const LandingPage = (props) => {
   const [redirect, setRedirect] = useToggle(false);
   const handleSetRedirect = () => {
@@ -72,12 +72,14 @@ export const LandingPage = (props) => {
               >
                 &nbsp;Mikro
               </Typography>
+
             </Typography>
             <div style={{ marginTop: "4vh" }}>
               <Typography variant="h6" sx={{ color: "common.white" }}>
                 Micro-payments platform for Open Street Map©
               </Typography>
             </div>
+
             <div>
               <NavLink to={"/login"} style={{ textDecoration: "none" }}>
                 <Button
@@ -97,6 +99,10 @@ export const LandingPage = (props) => {
               </NavLink>
             </div>
           </div>
+
+          <div style={{position:'absolute',top:'47%',left:'33vw',height:"15vh"}}>
+          <img style={{height:'9vh'}} src={mikro_icon}></img>
+          </div>
           <div
             style={{
               display: "flex",
@@ -108,6 +114,7 @@ export const LandingPage = (props) => {
               marginTop: "12vh",
             }}
           >
+            
             <ProjectIcon style={{ marginTop: "5vh" }} src={laptop_image} />
           </div>
         </div>

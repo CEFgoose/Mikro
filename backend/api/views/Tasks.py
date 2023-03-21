@@ -229,34 +229,47 @@ class TaskAPI(MethodView):
 
     # --------------------------------GET ALL MIKRO INVALIDATED TASKS FROM TM4------  # noqa: E501
 
-    # def get_invalidated_TM4_tasks(self, project_id, user):
-    #     user_tasks = UserTasks.query.filter_by(user_id=user.id).all()
-    #     user_task_ids = [relation.task_id for relation in user_tasks]
-    #     # print(user_task_ids)
-    #     headers = {
-    #         "Authorization": "Bearer TVRBME1qSTBNek0uWkFkbWJ3LnA0aFZZVXZ0bl9RZWRJTVpaaHpTcE5vbVRMZw==",  # noqa: E501
-    #         "Accept-Language": "en-US",
-    #     }
-    #     for task_id in user_task_ids:
-    #         invalid_tasks_url = (
-    #             "https://tasks.kaart.com/api/v2/projects/%s/tasks/%s/"
-    #             % (project_id, task_id)
-    #         )
-    #         tasksInvalidatedCall = requests.request(
-    #             "GET", invalid_tasks_url, headers=headers
-    #         )
-    #         if tasksInvalidatedCall.ok:
-    #             taskData = tasksInvalidatedCall.json()
-    #             # invalidated=[]
-    #             # for task in taskData['features']:
-    #             #     if task['properties']['taskStatus']=='INVALIDATED':
-    #             #         invalidated.append(task)
-    #             print(taskData["taskStatus"])
-    #     # else:
-    #     #     return {"request": "tm3 tasks mapped call failed"}
+    def get_invalidated_TM4_tasks(self, project_id, user):
+        user_tasks = UserTasks.query.filter_by(user_id=user.id).all()
+        user_task_ids = [relation.task_id for relation in user_tasks]
+        headers = {
+            "Authorization": "Bearer TVRBME1qSTBNek0uWkFkbWJ3LnA0aFZZVXZ0bl9RZWRJTVpaaHpTcE5vbVRMZw==",  # noqa: E501
+            "Accept-Language": "en-US",
+        }
+        for task_id in user_task_ids:
+            target_user=User.query.filter_by(id=user.id).first()
+            target_task=Task.query.filter_by(id=task_id).first()
+            invalid_tasks_url = (
+                "https://tasks.kaart.com/api/v2/projects/%s/tasks/%s/"
+                % (project_id, task_id)
+            )
+            tasksInvalidatedCall = requests.request(
+                "GET", invalid_tasks_url, headers=headers
+            )
+            if tasksInvalidatedCall.ok:
+                taskData = tasksInvalidatedCall.json()
+                invalidated=[]
+                print(taskData)
 
-    #     return {"taskData": taskData}
-    #     return {"response": "complete"}
+                if taskData['taskStatus']=='BADIMAGERY':
+                    invalidated.append(task_id)
+
+                    target_task.update(
+                        invalidated=True,
+                        validated=False,
+                    )
+                    invalidated_count=target_user.total_tasks_invalidated
+                    invalidated_count+=1
+                    target_user.update(
+                        total_tasks_invalidated=invalidated_count
+                    )
+                print("STATUS",taskData["taskStatus"])
+
+            else:
+                return {"request": "tm3 tasks mapped call failed"}
+
+        # return {"taskData": taskData}
+        return {"response": "complete"}
 
     def get_mapped_TM4_tasks(self, data, projectID):
         newMappedTasks = []
@@ -268,7 +281,7 @@ class TaskAPI(MethodView):
                 mapper = User.query.filter_by(
                     osm_username=contributor["username"]
                 ).first()
-                print("mappedTasks", contributor)
+                # print("mappedTasks", contributor)
                 for task in contributor["mappedTasks"]:
 
                     task_exists = Task.query.filter_by(

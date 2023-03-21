@@ -158,7 +158,7 @@ export const RoleBarWrapper = styled.div`
   margin-bottom: 1rem;
   height: 4rem;
   width: 16rem;
-  background: rgba(145, 165, 172, 0.2);
+  // background: rgba(145, 165, 172, 0.2);
   border-radius: 6px;
 `;
 

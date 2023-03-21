@@ -3,6 +3,7 @@ import React, { useContext, useState } from "react";
 import useToggle from "hooks/useToggle";
 import { Redirect } from "react-router-dom";
 import kaartLogo from "../../images/20-KAART-Color.svg";
+import mikro_icon from "../../images/5.png";
 import {
   SectionTitle,
   SectionSubtitle,
@@ -124,7 +125,7 @@ export const WelcomeUserPage = () => {
           alignItems: "center",
         }}
       >
-        <LoginImage src={kaartLogo} alt="Kaart Logo" />
+        <LoginImage style={{marginTop:'10vh'}}src={mikro_icon} alt="Kaart Logo" />
         <Typography component="span" variant="h1" sx={{ color: "#000000" }}>
           Welcome to Mikro!
         </Typography>

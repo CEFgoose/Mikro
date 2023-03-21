@@ -16,7 +16,7 @@ spec:
     spec:
       containers:
         - name: mikro-frontend
-          image: registry.gitlab.com/gokaart/mikro/mikro-frontend:latest
+          image: registry.gitlab.com/mikro/mikro-frontend:latest
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 80

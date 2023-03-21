@@ -1,1 +1,15 @@
+.vscode/
+backend/.coverage
+backend/htmlcov/
+backend/vector_tile_cache/
+front-end/viewer/.eslintcache
+venv
+test_db/
+*.pyc
+logfile
+<<<<<<< HEAD
+.flaskenv
+<<<<<<< HEAD
+*.env
 node_modules
+
