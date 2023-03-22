@@ -1,0 +1,34 @@
+{
+  "files": {
+    "main.css": "/static/css/main.6b9ef29a.chunk.css",
+    "main.js": "/static/js/main.5fe4fd84.chunk.js",
+    "main.js.map": "/static/js/main.5fe4fd84.chunk.js.map",
+    "runtime-main.js": "/static/js/runtime-main.a13f075a.js",
+    "runtime-main.js.map": "/static/js/runtime-main.a13f075a.js.map",
+    "static/css/2.56e5a7fb.chunk.css": "/static/css/2.56e5a7fb.chunk.css",
+    "static/js/2.971f3971.chunk.js": "/static/js/2.971f3971.chunk.js",
+    "static/js/2.971f3971.chunk.js.map": "/static/js/2.971f3971.chunk.js.map",
+    "index.html": "/index.html",
+    "static/css/2.56e5a7fb.chunk.css.map": "/static/css/2.56e5a7fb.chunk.css.map",
+    "static/css/main.6b9ef29a.chunk.css.map": "/static/css/main.6b9ef29a.chunk.css.map",
+    "static/js/2.971f3971.chunk.js.LICENSE.txt": "/static/js/2.971f3971.chunk.js.LICENSE.txt",
+    "static/media/20-KAART-Color.e9de1cd3.svg": "/static/media/20-KAART-Color.e9de1cd3.svg",
+    "static/media/20-KAART-White.e05880a7.svg": "/static/media/20-KAART-White.e05880a7.svg",
+    "static/media/25.1d89ed52.svg": "/static/media/25.1d89ed52.svg",
+    "static/media/5.7b3d84fd.png": "/static/media/5.7b3d84fd.png",
+    "static/media/account_icon.b47a1afd.png": "/static/media/account_icon.b47a1afd.png",
+    "static/media/semantic.min.css": "/static/media/outline-icons.ddae9b1b.woff",
+    "static/media/close-icon.4096f55d.svg": "/static/media/close-icon.4096f55d.svg",
+    "static/media/laptop.12a3457e.png": "/static/media/laptop.12a3457e.png",
+    "static/media/logo-kaart-standard.b009d971.svg": "/static/media/logo-kaart-standard.b009d971.svg",
+    "static/media/payments_icon.24f38677.png": "/static/media/payments_icon.24f38677.png",
+    "static/media/users_icon.bc089ee5.png": "/static/media/users_icon.bc089ee5.png"
+  },
+  "entrypoints": [
+    "static/js/runtime-main.a13f075a.js",
+    "static/css/2.56e5a7fb.chunk.css",
+    "static/js/2.971f3971.chunk.js",
+    "static/css/main.6b9ef29a.chunk.css",
+    "static/js/main.5fe4fd84.chunk.js"
+  ]
+}
