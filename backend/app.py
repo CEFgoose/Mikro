@@ -125,7 +125,7 @@ def load_user():
         if response.status_code == 200:
             resp = response.json()
             if resp["code"] == 0:
-                message = "Viewer integration added to your Kaart account, you may log into Mikro any time."  # noqa: E501
+                message = "Mikro integration added to your Kaart account, you may log into Mikro any time."  # noqa: E501
             if resp["code"] == 1:
                 message = "Account already exists with Mikro integration, you may log into Mikro any time."  # noqa: E501
             if resp["code"] == 2:

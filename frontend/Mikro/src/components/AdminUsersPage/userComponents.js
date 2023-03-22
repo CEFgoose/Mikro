@@ -39,7 +39,7 @@ export const AddUserModal = (props) => {
         <SectionTitle title_text={"Invite a new user"} />
         <SectionSubtitle
           subtitle_text={
-            "An invitation to join Viewer under your organization will be sent to the email address entered below"
+            "An invitation to join Mikro under your organization will be sent to the email address entered below"
           }
         />
         <Divider />
@@ -80,7 +80,7 @@ export const EnterEmailArea = (props) => {
         style={{ marginLeft: "2.5vw", marginBottom: "2vh" }}
         type="text"
         name="name"
-        placeholder="InviteUser@viewer.com"
+        placeholder="InviteUser@mikro.com"
         onChange={(e) => {
           props.handleSetInviteEmail(e.target.value);
         }}

@@ -198,7 +198,7 @@ export const ProjectCell = (props) => {
   );
 };
 
-//GENERIC CONFIRM & CANCEL BUTTONS - USED ON MOST VIEWER MODALS - CHANGE TEXT AND ACTION PROP FOR EACH BUTTON
+//GENERIC CONFIRM & CANCEL BUTTONS - USED ON MOST MIKRO MODALS - CHANGE TEXT AND ACTION PROP FOR EACH BUTTON
 export const CancelConfirmButtons = (props) => {
   return (
     <div

@@ -6,7 +6,7 @@ import { DataContext } from "common/DataContext";
 export const AuthContext = createContext({});
 
 export const AuthProvider = ({ children }) => {
-  const [user, setUser] = useLocalStorageState("viewer.user", null);
+  const [user, setUser] = useLocalStorageState("mikro.user", null);
 
   const { history } = useContext(DataContext);
 

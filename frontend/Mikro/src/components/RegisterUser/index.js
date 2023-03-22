@@ -46,7 +46,7 @@ export const RegisterUser = () => {
       setResponseCode(code);
       if (code === 0) {
         setResponseMessage(
-          "Viewer integration added to your Kaart account, you may log into Mikro any time."
+          "Mikro integration added to your Kaart account, you may log into Mikro any time."
         );
       } else if (code === 1) {
         setResponseMessage(

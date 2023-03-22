@@ -7,7 +7,7 @@ from flask import g, request
 
 """
 If these enums/intflags are modified, please update relevant
-enums in front-end/viewer/src/components/constants.js
+enums in frontend/Mikro/src/components/constants.js
 """
 
 

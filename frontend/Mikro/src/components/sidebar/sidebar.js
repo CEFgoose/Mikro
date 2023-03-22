@@ -22,13 +22,8 @@ import "./styles.css";
 import {
   CollapseMenuIcon,
   Header,
-  KaartLogoClosed,
-  KaartLogoOpen,
   MenuItem,
   MenuItemTop,
-  OpenMenuIcon,
-  OpenMenuIconButton,
-  OpenMenuIconContainer,
   ProjectIcon,
   ProjectIconContainer,
   RoleBarWrapper,
@@ -37,8 +32,7 @@ import {
   SidebarClosedContainer,
   SidebarOpenedContainer,
 } from "./styles.js";
-import { Divider } from "@mui/material";
-let map_url = "https://kaart.com/dev/viewer/";
+let map_url = "https://kaart.com/dev/mikro/";
 
 export const ListItems = styled.li`
   margin-right: 6%;
@@ -79,7 +73,7 @@ const Sidebar = (props) => {
   const [accountPageLink, setAccountPageLink] = useState("/UserAccountPage");
   const [paymentsPageLink, setPaymentsPageLink] = useState("/UserPaymentsPage");
   const [trainingPageLink, setTrainingPageLink] = useState("/UserTrainingPage");
-  const [localUser, setLocalUser] = useLocalStorageState("viewer.user", null);
+  const [localUser, setLocalUser] = useLocalStorageState("mikro.user", null);
 
   const { history, sidebarOpen } = useContext(DataContext);
   const { user, refresh } = useContext(AuthContext);

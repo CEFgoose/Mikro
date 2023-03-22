@@ -287,7 +287,7 @@ class UserAPI(MethodView):
         response = {"message": "User details updated", "status": 200}
         return response
 
-    # ADMIN ONLY ROUTE - SEND EMAIL INVITE TO USER FOR JOINING VIEWER UNDER THE ADMINS ORG # noqa: E501
+    # ADMIN ONLY ROUTE - SEND EMAIL INVITE TO USER FOR JOINING MIKRO UNDER THE ADMINS ORG # noqa: E501
     @requires_admin
     def invite_user(self):
         # Initialize an empty dictionary to store the response

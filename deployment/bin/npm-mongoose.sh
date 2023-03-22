@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-cd ${HOME}/mikro/front-end/viewer
+cd ${HOME}/mikro/frontend/Mikro
 npm install
 #npm run start
 #npx react-scripts start

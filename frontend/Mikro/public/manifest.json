@@ -1,6 +1,6 @@
 {
-  "short_name": "Viewer",
-  "name": "Viewer: A Web-based image server",
+  "short_name": "mikro",
+  "name": "Mikro: A micro-payments platform for OpenStreetMap",
   "icons": [
     {
       "src": "/android-icon-36x36.png",

@@ -20,7 +20,7 @@ POSTGRES_PASSWORD = os.getenv("POSTGRES_PASSWORD", None)
 POSTGRES_PORT = os.getenv("POSTGRES_PORT", "5432")
 POSTGRES_USER = os.getenv("POSTGRES_USER", None)
 TASKING_KEY = os.getenv("TASKING_KEY")
-APP_BASE_URL = os.getenv("APP_BASE_URL", "https://viewer.kaart.com")
+APP_BASE_URL = os.getenv("APP_BASE_URL", "https://mikro.kaart.com")
 
 ASCII_RECORD_SEPARATOR = b"\x1E"
 ASCII_LINE_FEED = b"\x0A"
@@ -28,7 +28,7 @@ ASCII_LINE_FEED = b"\x0A"
 # PROD
 
 # SSO_BASE_URL = "https://my.kaart.com/api/"
-# API_BASE_URL = "https://viewer.kaart.com/api"
+# API_BASE_URL = "https://mikro.kaart.com/api"
 
 # DEV
 

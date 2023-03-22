@@ -28,9 +28,9 @@ class LoginAPI(MethodView):
         if not g.user:
             # Get the JWT user information
             jwt_user = get_jwt()
-            # Check if the "viewer" integration is missing
+            # Check if the "Mikro" integration is missing
             if "micro" not in jwt_user["integrations"]:
-                return_obj["message"] = "Micro Integration Missing"
+                return_obj["message"] = "Mikro Integration Missing"
                 return_obj["status"] = 400
                 return return_obj
             # Get the access token cookie

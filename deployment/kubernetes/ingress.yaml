@@ -9,7 +9,7 @@ metadata:
     app: mikro
 spec:
   rules:
-    - host: "viewer.kaart.com"
+    - host: "mikro.kaart.com"
       http:
         paths:
           - path: /(.*)
@@ -43,4 +43,4 @@ spec:
   tls:
     - hosts:
         - "mikro.kaart.com"
-      secretName: viewer-ingress-cert
+      secretName: mikro-ingress-cert

@@ -130,7 +130,7 @@ export const Login = () => {
           </LoginButton>
         </LoginForm>
         <div>---------------------- or ----------------------</div>
-        <SSOControl integrations="viewer" />
+        <SSOControl integrations="mikro" />
       </LoginPage>
       {!redirect ? <></> : <Redirect push to="/welcome" />}
     </>

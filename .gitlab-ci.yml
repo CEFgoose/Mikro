@@ -257,7 +257,7 @@ kubernetes_cluster_viewer_kaart_com:
   stage: deploy
   environment:
     name: production
-    url: https://viewer.kaart.com
+    url: https://Mikro.kaart.com
   image:
     name: alpine/k8s:1.18.2
   before_script:

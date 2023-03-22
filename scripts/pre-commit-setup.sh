@@ -25,7 +25,7 @@ cat >>"${PRE_COMMIT}" << EOL
 FILES=\$(git diff --cached --name-only --diff-filter=ACMR "*.js" "*.jsx" | sed 's| |\\\\ |g')
 if [ ! -z "\${FILES}" ]; then
     # Prettify all selected files
-    echo "\${FILES}" | xargs ./front-end/viewer/node_modules/.bin/prettier --write
+    echo "\${FILES}" | xargs ./frontend/mikro/node_modules/.bin/prettier --write
     if [ \$? -ne 0 ]; then exit 1; fi
 
     # Add back the modified/prettified files to staging

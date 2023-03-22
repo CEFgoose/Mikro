@@ -3,7 +3,7 @@
 backend/.coverage
 backend/htmlcov/
 backend/vector_tile_cache/
-front-end/viewer/.eslintcache
+frontend/Mikro/.eslintcache
 venv
 test_db/
 *.pyc
