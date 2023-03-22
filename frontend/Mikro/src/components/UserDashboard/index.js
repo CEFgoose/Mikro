@@ -2,7 +2,7 @@ import React, { useContext, useEffect, useState } from "react";
 import { DataContext } from "../../common/DataContext";
 import { AuthContext } from "../../common/AuthContext";
 import Sidebar from "../sidebar/sidebar";
-import { Redirect } from "react-router-dom";
+import { Navigate } from "react-router-dom";
 import { Table, TableBody, TablePagination } from "@mui/material";
 import "./styles.css";
 import {
@@ -37,7 +37,7 @@ export const UserDashboard = () => {
   } = useContext(DataContext);
 
   const { refresh, user } = useContext(AuthContext);
-  const [redirect, setRedirect] = useState(false);
+  const [Navigate, setRedirect] = useState(false);
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [projectSelected, setProjectSelected] = useState(null);
@@ -207,7 +207,7 @@ export const UserDashboard = () => {
           </div>
         </div>
       </div>
-      {!redirect ? <></> : <Redirect push to="/login" />}
+      {!Navigate ? <></> : <Navigate push to="/login" />}
     </>
   );
 };

@@ -1,7 +1,7 @@
 import React, { useContext, useState, useEffect } from "react";
 import { DataContext } from "common/DataContext";
 import { AuthContext } from "../../common/AuthContext";
-import { Redirect } from "react-router-dom";
+import { Navigate } from "react-router-dom";
 import useToggle from "../../hooks/useToggle.js";
 import Sidebar from "../sidebar/sidebar";
 import "./styles.css";
@@ -43,7 +43,7 @@ export const AdminProjectsPage = () => {
     unassignUserProject,
   } = useContext(DataContext);
 
-  const [redirect, setRedirect] = useState(false);
+  const [Navigate, setRedirect] = useState(false);
   const [url, setUrl] = useState(null);
   const [rate, setRate] = useState(0.0);
   const [maxEditors, setMaxEditors] = useState(1);
@@ -313,7 +313,7 @@ export const AdminProjectsPage = () => {
           </Tabs>
         </div>
       </div>
-      {!redirect ? <></> : <Redirect push to="/login" />}
+      {!Navigate ? <></> : <Navigate push to="/login" />}
     </>
   );
 };

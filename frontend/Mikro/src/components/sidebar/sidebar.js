@@ -97,7 +97,7 @@ const Sidebar = (props) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // LOG THE CURRENT USER OUT & REDIRECT TO LOGIN PAGE //
+  // LOG THE CURRENT USER OUT & Navigate TO LOGIN PAGE //
   const logout = () => {
     fetch(SSO_URL.concat("auth/logout"), {
       method: "POST",

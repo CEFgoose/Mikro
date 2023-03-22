@@ -3,7 +3,7 @@ import { DataContext } from "common/DataContext";
 import { AuthContext } from "../../common/AuthContext";
 import useToggle from "../../hooks/useToggle.js";
 import Sidebar from "../sidebar/sidebar";
-import { Redirect } from "react-router-dom";
+import { Navigate } from "react-router-dom";
 import { ButtonDivComponent } from "components/commonComponents/commonComponents";
 import "./styles.css";
 import { Tab, TabList, TabPanel, Tabs } from "react-tabs";
@@ -25,7 +25,7 @@ export const UserProjectsPage = () => {
   const [modalOpen, toggleModalOpen] = useToggle(false);
   const [projectSelected, setProjectSelected] = useState(null);
   const [projectName, setProjectName] = useState(null);
-  const [redirect, setRedirect] = useState(false);
+  const [Navigate, setRedirect] = useState(false);
   const [activeTab, setActiveTab] = useState(1);
 
   useEffect(() => {
@@ -147,7 +147,7 @@ export const UserProjectsPage = () => {
           </Tabs>
         </div>
       </div>
-      {!redirect ? <></> : <Redirect push to="/login" />}
+      {!Navigate ? <></> : <Navigate push to="/login" />}
     </>
   );
 };

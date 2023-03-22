@@ -1,5 +1,5 @@
 import React, { useContext } from "react";
-import { Redirect, Route } from "react-router-dom";
+import { Navigate, Route } from "react-router-dom";
 import { AuthContext } from "common/AuthContext";
 
 export const PrivateRoute = ({ children, role, admin, ...rest }) => {
@@ -13,7 +13,7 @@ export const PrivateRoute = ({ children, role, admin, ...rest }) => {
         loggedIn() && (admin ? user.role === "admin" : true) ? (
           children
         ) : (
-          <Redirect
+          <Navigate
             to={{
               pathname: loggedIn() ? "/dashboard" : "/login",
               state: { from: location },

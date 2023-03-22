@@ -2,7 +2,7 @@ import React, { useContext, useEffect, useState } from "react";
 import { DataContext } from "../../common/DataContext";
 import { AuthContext } from "../../common/AuthContext";
 import Sidebar from "../sidebar/sidebar";
-import { Redirect } from "react-router-dom";
+import { Navigate } from "react-router-dom";
 import { Tab, TabList, TabPanel, Tabs } from "react-tabs";
 import useToggle from "../../hooks/useToggle.js";
 import { AdminTrainingTable } from "components/AdminTrainingPage/trainingComponents";
@@ -27,7 +27,7 @@ export const UserTrainingPage = () => {
   } = useContext(DataContext);
 
   const { refresh, user } = useContext(AuthContext);
-  const [redirect, setRedirect] = useState(false);
+  const [Navigate, setRedirect] = useState(false);
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [requestOpen, toggleRequestOpen] = useToggle(false);
@@ -228,7 +228,7 @@ export const UserTrainingPage = () => {
           </Tabs>
         </div>
       </div>
-      {!redirect ? <></> : <Redirect push to="/login" />}
+      {!Navigate ? <></> : <Navigate push to="/login" />}
     </>
   );
 };

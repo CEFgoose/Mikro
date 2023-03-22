@@ -3,7 +3,7 @@ import { AuthContext } from "common/AuthContext";
 import { DataContext } from "common/DataContext";
 import { API_URL, SSO_URL } from "components/constants";
 import { PreloaderIcon } from "components/Preloader";
-import { Redirect } from "react-router-dom";
+import { Navigate } from "react-router-dom";
 import { SSOControl } from "components/SSOControl";
 import Cookie from "js-cookie";
 import React, { useContext, useState } from "react";
@@ -24,7 +24,7 @@ export const Login = () => {
   //COMPONENT STATES
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [redirect, setRedirect] = useState(false);
+  const [Navigate, setRedirect] = useState(false);
   //STATES FROM DATA CONTEXT
   const { fetching, setFetching, history } = useContext(DataContext);
 
@@ -72,7 +72,7 @@ export const Login = () => {
         if (!osm_username || !payment_email || !city || !country) {
           setRedirect(true);
         } else {
-          history.push(checkrole === "admin" ? "/admindash" : "/dashboard");
+          history(checkrole === "admin" ? "/admindash" : "/dashboard");
         }
       });
   };
@@ -132,7 +132,7 @@ export const Login = () => {
         <div>---------------------- or ----------------------</div>
         <SSOControl integrations="mikro" />
       </LoginPage>
-      {!redirect ? <></> : <Redirect push to="/welcome" />}
+      {!Navigate ? <></> : <Navigate push to="/welcome" />}
     </>
   );
 };

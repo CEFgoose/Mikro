@@ -23,12 +23,17 @@ import { UserTrainingPage } from "components/UserTrainingPage";
 import { AdminTrainingPage } from "components/AdminTrainingPage";
 import "bootstrap/dist/css/bootstrap.min.css";
 import "./App.css";
-import { BrowserRouter as Router, Switch, Route } from "react-router-dom";
+import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 import { RegisterUser } from "components/RegisterUser";
 
 // APP DECLARATION
 function App() {
   const { refresh, user } = useContext(AuthContext);
+  const Private = ({Component}) => {
+    const auth = user.role ==='admin'
+
+    return auth ? <Component /> : <Navigate to="/login" />
+}
 
   //INITIAL USE EFFECT
   useEffect(() => {
@@ -47,71 +52,114 @@ function App() {
       <Router>
         <InteractionProvider>
           <DataProvider>
-            <Switch>
-              <Route exact={true} path="/">
-                <LandingPage />
-              </Route>
+            <Routes>
 
-              <Route path="/login">
-                <Login />
-              </Route>
+              <Route 
+                path="/"
+                exact={true} 
+                element={
+                  <LandingPage />
+                }
+              />
 
-              <Route path="/welcome">
-                <WelcomeUserPage />
-              </Route>
+              <Route 
+                path="/login"
+                element={
+                  <Login />
+                }
+              />
 
-              <PrivateRoute path="/dashboard">
-                <UserDashboard />
-              </PrivateRoute>
+              <Route 
+                path="/welcome"
+                element={<WelcomeUserPage />}
+              />
+                
 
-              <PrivateRoute path="/admindash" admin>
-                <AdminDash />
-              </PrivateRoute>
+              <Route 
+                path="/dashboard"
+                element={
+                  <UserDashboard />
+                }
+              />
 
-              <PrivateRoute path="/AdminProjectsPage" admin>
-                <AdminProjectsPage />
-              </PrivateRoute>
+              <Route 
+                path="/admindash"
+                element={
+                  <Private Component={AdminDash} />
+                }
+              />
 
-              <PrivateRoute path="/UserProjectsPage">
-                <UserProjectsPage />
-              </PrivateRoute>
+              <Route 
+                path="/AdminProjectsPage" 
+                element={
+                  <Private Component={AdminProjectsPage} />
+                }
+              />
+                
+              <Route 
+                path="/UserProjectsPage"
+                element={
+                  <UserProjectsPage />
+                }
+              />
 
-              <PrivateRoute path="/AdminUsersPage" admin>
-                <AdminUsersPage />
-              </PrivateRoute>
+              <Route 
+                path="/AdminUsersPage" 
+                element={
+                  <Private Component={AdminUsersPage} />
+                }
+              />
 
-              <PrivateRoute path="/AdminPaymentsPage" admin>
-                <AdminPaymentsPage />
-              </PrivateRoute>
+              <Route 
+                path="/AdminPaymentsPage" 
+                element={
+                  <Private Component={AdminPaymentsPage} />
+                }
+              />
+              <Route 
+                path="/AdminTrainingPage" 
+                element={
+                  <Private Component={AdminTrainingPage} />
+                }
+              />
 
-              <PrivateRoute path="/UserPaymentsPage">
-                <UserPaymentsPage />
-              </PrivateRoute>
+              <Route 
+                path="/AdminAccountPage" 
+                element={
+                  <Private Component={AdminAccountPage} />
+                }
+              />
 
-              <PrivateRoute path="/AdminTrainingPage" admin>
-                <AdminTrainingPage />
-              </PrivateRoute>
+              <Route 
+                path="/UserPaymentsPage"
+                element={<UserPaymentsPage />}
+              />
 
-              <PrivateRoute path="/UserTrainingPage">
-                <UserTrainingPage />
-              </PrivateRoute>
+              <Route 
+                path="/UserTrainingPage"
+                element={<UserTrainingPage />}
+              />
+                
+              <Route 
+                path="/UserAccountPage"
+                element={<UserAccountPage />}
+              />
 
-              <PrivateRoute path="/AdminAccountPage" admin>
-                <AdminAccountPage />
-              </PrivateRoute>
+              <Route 
+                path="/registerUser"
+                element={<RegisterUser />}
+              />
 
-              <PrivateRoute path="/UserAccountPage">
-                <UserAccountPage />
-              </PrivateRoute>
+              <Route  
+                path="/hotkeys" 
+                element={HotkeysTable} 
+              />
 
-              <Route path="/registerUser">
-                <RegisterUser />
-              </Route>
-
-              <Route exact={true} path="/hotkeys" component={HotkeysTable} />
-
-              <Route component={PageNotFound} />
-            </Switch>
+              <Route 
+                element={PageNotFound} 
+              />
+              
+            </Routes>
           </DataProvider>
         </InteractionProvider>
       </Router>

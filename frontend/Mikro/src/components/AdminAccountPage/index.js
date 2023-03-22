@@ -1,5 +1,5 @@
 import React, { useContext, useState, useEffect } from "react";
-import { Redirect } from "react-router-dom";
+import { Navigate } from "react-router-dom";
 import { DataContext } from "common/DataContext";
 import { AuthContext } from "common/AuthContext";
 import { Divider } from "@mui/material";
@@ -31,7 +31,7 @@ export const AdminAccountPage = () => {
   } = useContext(DataContext);
 
   const { refresh, user } = useContext(AuthContext);
-  const [redirect, setRedirect] = useState(false);
+  const [Navigate, setRedirect] = useState(false);
   const [modalOpen, toggleModalOpen] = useToggle(false);
 
   useEffect(() => {
@@ -269,7 +269,7 @@ export const AdminAccountPage = () => {
           </div>
         </div>
       </div>
-      {!redirect ? <></> : <Redirect push to="/login" />}
+      {!Navigate ? <></> : <Navigate push to="/login" />}
     </>
   );
 };

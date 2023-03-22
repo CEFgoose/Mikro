@@ -1,5 +1,5 @@
 import React, { useContext, useState, useEffect } from "react";
-import { Redirect } from "react-router-dom";
+import { Navigate } from "react-router-dom";
 import { DataContext } from "common/DataContext";
 import { AuthContext } from "common/AuthContext";
 import Sidebar from "../sidebar/sidebar";
@@ -29,7 +29,7 @@ export const AdminUsersPage = () => {
   const { refresh, user } = useContext(AuthContext);
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
-  const [redirect, setRedirect] = useState(false);
+  const [Navigate, setRedirect] = useState(false);
   const [addOpen, toggleAddOpen] = useToggle(false);
   const [deleteOpen, toggleDeleteOpen] = useToggle(false);
   const [modifyOpen, toggleModifyOpen] = useToggle(false);
@@ -247,7 +247,7 @@ export const AdminUsersPage = () => {
           </div>
         </div>
       </div>
-      {!redirect ? <></> : <Redirect push to="/login" />}
+      {!Navigate ? <></> : <Navigate push to="/login" />}
     </>
   );
 };

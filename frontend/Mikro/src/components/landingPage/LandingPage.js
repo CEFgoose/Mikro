@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Redirect } from "react-router-dom";
+import { Navigate } from "react-router-dom";
 import useToggle from "hooks/useToggle";
 import { NavLink } from "react-router-dom";
 import laptop_image from "../../images/laptop.png";
@@ -8,7 +8,7 @@ import { Button, Typography } from "@mui/material";
 import { ProjectIcon } from "./styles.js";
 import mikro_icon from "../../images/5.png";
 export const LandingPage = (props) => {
-  const [redirect, setRedirect] = useToggle(false);
+  const [Navigate, setRedirect] = useToggle(false);
   const handleSetRedirect = () => {
     setRedirect();
   };
@@ -124,7 +124,7 @@ export const LandingPage = (props) => {
           </div>
         </div>
       </div>
-      {!redirect ? <></> : <Redirect push to="/login" />}
+      {!Navigate ? <></> : <Navigate push to="/login" />}
     </>
   );
 };

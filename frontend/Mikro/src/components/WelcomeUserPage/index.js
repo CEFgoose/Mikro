@@ -1,7 +1,7 @@
 import { DataContext } from "common/DataContext";
 import React, { useContext, useState } from "react";
 import useToggle from "hooks/useToggle";
-import { Redirect } from "react-router-dom";
+import { Navigate } from "react-router-dom";
 import kaartLogo from "../../images/20-KAART-Color.svg";
 import mikro_icon from "../../images/5.png";
 import {
@@ -14,7 +14,7 @@ import { LoginImage } from "./styles";
 import { Typography } from "@mui/material";
 
 export const WelcomeUserPage = () => {
-  const [redirect, setRedirect] = useState(false);
+  const [Navigate, setRedirect] = useState(false);
   const [modalOpen, toggleModalOpen] = useToggle(false);
   const [modalPage, setModalPage] = useState(1);
   const [OSMusername, setOSMusername] = useState(null);
@@ -146,7 +146,7 @@ export const WelcomeUserPage = () => {
           />
         </div>
       </div>
-      {!redirect ? <></> : <Redirect push to="/dashboard" />}
+      {!Navigate ? <></> : <Navigate push to="/dashboard" />}
     </>
   );
 };

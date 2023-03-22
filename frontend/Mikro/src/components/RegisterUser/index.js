@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import useToggle from "../../hooks/useToggle.js";
-import { Redirect } from "react-router-dom";
+import { Navigate } from "react-router-dom";
 import { SSO_URL } from "components/constants.js";
 import {
   ConfirmButton,
@@ -22,7 +22,7 @@ export const RegisterUser = () => {
   const [org, setOrg] = useState("");
   const [responseMessage, setResponseMessage] = useState(null);
   const [responseCode, setResponseCode] = useState(null);
-  const [redirect, toggleRedirect] = useToggle(false);
+  const [Navigate, toggleRedirect] = useToggle(false);
 
   const RegisterUserSSO = async () => {
     const body = {
@@ -143,7 +143,7 @@ export const RegisterUser = () => {
           }
         />
       </RegisterPage>
-      {!redirect ? <></> : <Redirect push to="/login" />}
+      {!Navigate ? <></> : <Navigate push to="/login" />}
     </>
   );
 };

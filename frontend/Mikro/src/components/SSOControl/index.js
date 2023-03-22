@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Redirect } from "react-router-dom";
+import { Navigate } from "react-router-dom";
 import {
   RegisterAsUserButton,
   RegisterCompanyButton,
@@ -8,7 +8,7 @@ import {
 
 //COMPONENT DECLARATION & EXPORT - SSO CONTROLS ON MIKRO LOGIN PAGE- SENDS INVITE INFO TO KAART SSO FOR NE USERS
 export const SSOControl = (props) => {
-  const [redirect, setRedirect] = useState(false);
+  const [Navigate, setRedirect] = useState(false);
   return (
     <>
       <RegisterWrapper>
@@ -50,7 +50,7 @@ export const SSOControl = (props) => {
       >
         Forgot password?
       </button>
-      {!redirect ? <></> : <Redirect push to="/registerUser" />}
+      {!Navigate ? <></> : <Navigate push to="/registerUser" />}
     </>
   );
 };

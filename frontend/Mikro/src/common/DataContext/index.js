@@ -1,4 +1,4 @@
-import { useHistory } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { InteractionContext } from "common/InteractionContext";
 import { AuthContext } from "common/AuthContext";
 import { fetcher, poster } from "../../calls";
@@ -25,7 +25,7 @@ export const DataProvider = ({ children }) => {
   const [payEmail, setPayEmail] = useState(null);
   const [outputRate, setOutputRate] = useState(null);
   const [fetching, setFetching] = useState(false);
-  const history = useHistory();
+  const history = useNavigate();
   const [userSelected, setUserSelected] = useState(null);
   const [orgRequests, setOrgRequests] = useState([]);
   const [orgPayments, setOrgPayments] = useState([]);
