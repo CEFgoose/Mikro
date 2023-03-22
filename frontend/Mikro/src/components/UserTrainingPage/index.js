@@ -143,7 +143,6 @@ export const UserTrainingPage = () => {
 
   return (
     <>
-
       <div style={{ width: "100%", float: "left" }}>
         <Sidebar isOpen={sidebarOpen} toggleSidebar={handleViewSidebar} />
         <div

@@ -237,8 +237,8 @@ class TaskAPI(MethodView):
             "Accept-Language": "en-US",
         }
         for task_id in user_task_ids:
-            target_user=User.query.filter_by(id=user.id).first()
-            target_task=Task.query.filter_by(id=task_id).first()
+            target_user = User.query.filter_by(id=user.id).first()
+            target_task = Task.query.filter_by(id=task_id).first()
             invalid_tasks_url = (
                 "https://tasks.kaart.com/api/v2/projects/%s/tasks/%s/"
                 % (project_id, task_id)
@@ -248,22 +248,22 @@ class TaskAPI(MethodView):
             )
             if tasksInvalidatedCall.ok:
                 taskData = tasksInvalidatedCall.json()
-                invalidated=[]
+                invalidated = []
                 print(taskData)
 
-                if taskData['taskStatus']=='BADIMAGERY':
+                if taskData["taskStatus"] == "BADIMAGERY":
                     invalidated.append(task_id)
 
                     target_task.update(
                         invalidated=True,
                         validated=False,
                     )
-                    invalidated_count=target_user.total_tasks_invalidated
-                    invalidated_count+=1
+                    invalidated_count = target_user.total_tasks_invalidated
+                    invalidated_count += 1
                     target_user.update(
                         total_tasks_invalidated=invalidated_count
                     )
-                print("STATUS",taskData["taskStatus"])
+                print("STATUS", taskData["taskStatus"])
 
             else:
                 return {"request": "tm3 tasks mapped call failed"}

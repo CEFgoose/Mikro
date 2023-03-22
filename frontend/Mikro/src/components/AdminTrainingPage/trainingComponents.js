@@ -14,7 +14,7 @@ import {
   TablePagination,
 } from "@mui/material";
 import {
-  TopDiv, 
+  TopDiv,
   ProjectRow,
   CardMediaStyle,
   TableCard,
@@ -26,13 +26,8 @@ import {
   SectionTitle,
   SectionSubtitle,
   ModalWrapper,
-  ModalButtons
+  ModalButtons,
 } from "../commonComponents/commonComponents";
-
-
-
-
-
 
 export const ADMIN_TRAINING_HEADERS = [
   { id: "name", label: "Title", alignRight: false },
@@ -41,274 +36,278 @@ export const ADMIN_TRAINING_HEADERS = [
   { id: "Link", label: "Link", alignRight: false },
 ];
 
-
-
-
-
 export const AddTrainingModal = (props) => {
   return (
     <Modal open={props.addOpen} key="add">
       <ModalWrapper>
         <CloseButton close_action={props.handleAddOpen} />
         <SectionTitle title_text={"Add New Training Lesson"} />
-        {props.modalPage===1?
+        {props.modalPage === 1 ? (
           <>
-        <SectionSubtitle
-          subtitle_text={
-            "Enter the URL link to the video or training document, the difficulty level and the point value for this lesson"
-          }
-        />
-        <Divider />
-        <div style={{ display: "flex", flexDirection: "column" }}>
-          <div
-            style={{
-              display: "flex",
-              flexDirection: "row",
-              alignItems: "center",
-              marginLeft: "1vw",
-              width: "100%",
-            }}
-          >
-            <SectionTitle title_text={"URL:"} />
-            <input
-              type="text"
-              value={props.URL}
-              onChange={(e) => props.handleSetURL(e)}
-              style={{ height: "5vh", marginRight: "3vw", width: "95%" }}
+            <SectionSubtitle
+              subtitle_text={
+                "Enter the URL link to the video or training document, the difficulty level and the point value for this lesson"
+              }
             />
-          </div>
-        </div>
-        <Divider />
-        <div style={{ display: "flex", flexDirection: "column" ,marginBottom:'1vh'}}>
-          <div
-            style={{
-              display: "flex",
-              flexDirection: "row",
-              alignItems: "center",
-              marginLeft: "1vw",
-              width: "100%",
-            }}
-          >
-            <SectionTitle title_text={"Point Value:"} />
-            <input
-              type="number"
-              min="1"
-              step="1"
-              value={props.pointValue}
-              onChange={(e) => props.handleSetPointValue(e)}
-              style={{ height: "5vh", marginRight: "3vw", width: "10vw" }}
-            />
-
-            <SectionTitle title_text={"Difficulty:"} />
-            <select
-              // value={props.difficulty}
-              style={{ marginRight: "1vw" }}
-              onChange={props.handleSetDifficulty}
-            >
-              <option
-                value="Easy"
-                onChange={(e) => props.handleSetDifficulty(e)}
+            <Divider />
+            <div style={{ display: "flex", flexDirection: "column" }}>
+              <div
+                style={{
+                  display: "flex",
+                  flexDirection: "row",
+                  alignItems: "center",
+                  marginLeft: "1vw",
+                  width: "100%",
+                }}
               >
-                Easy
-              </option>
-              <option
-                value="Intermediate"
-                onChange={(e) => props.handleSetDifficulty(e)}
-              >
-                Intermediate
-              </option>
-              <option
-                value="Hard"
-                onChange={(e) => props.handleSetDifficulty(e)}
-              >
-                Hard
-              </option>
-            </select>
+                <SectionTitle title_text={"URL:"} />
+                <input
+                  type="text"
+                  value={props.URL}
+                  onChange={(e) => props.handleSetURL(e)}
+                  style={{ height: "5vh", marginRight: "3vw", width: "95%" }}
+                />
+              </div>
             </div>
+            <Divider />
+            <div
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                marginBottom: "1vh",
+              }}
+            >
+              <div
+                style={{
+                  display: "flex",
+                  flexDirection: "row",
+                  alignItems: "center",
+                  marginLeft: "1vw",
+                  width: "100%",
+                }}
+              >
+                <SectionTitle title_text={"Point Value:"} />
+                <input
+                  type="number"
+                  min="1"
+                  step="1"
+                  value={props.pointValue}
+                  onChange={(e) => props.handleSetPointValue(e)}
+                  style={{ height: "5vh", marginRight: "3vw", width: "10vw" }}
+                />
 
-        </div>          
+                <SectionTitle title_text={"Difficulty:"} />
+                <select
+                  // value={props.difficulty}
+                  style={{ marginRight: "1vw" }}
+                  onChange={props.handleSetDifficulty}
+                >
+                  <option
+                    value="Easy"
+                    onChange={(e) => props.handleSetDifficulty(e)}
+                  >
+                    Easy
+                  </option>
+                  <option
+                    value="Intermediate"
+                    onChange={(e) => props.handleSetDifficulty(e)}
+                  >
+                    Intermediate
+                  </option>
+                  <option
+                    value="Hard"
+                    onChange={(e) => props.handleSetDifficulty(e)}
+                  >
+                    Hard
+                  </option>
+                </select>
+              </div>
+            </div>
           </>
-          :
-        props.modalPage===2?
+        ) : props.modalPage === 2 ? (
           <>
-        <SectionSubtitle
-          subtitle_text={
-            "Enter question 1, the correct answer, and three incorrect answers."
-          }
-        />
-        <Divider />
-        <div style={{ display: "flex", flexDirection: "column" ,marginBottom:'1vh',alignItems:'center'}}>
-        <SectionTitle title_text={"Question 1:"} />
-            <input
-              type="text"
-              value={props.question1}
-              onChange={(e) => props.handleSetQuestion(1,e)}
-              style={{ height: "5vh",  width: "95%" }}
+            <SectionSubtitle
+              subtitle_text={
+                "Enter question 1, the correct answer, and three incorrect answers."
+              }
             />
-            <SectionTitle title_text={"Correct Answer:"} />
-            <input
-              type="text"
-              value={props.answer1}
-              onChange={(e) => props.handleSetAnswer(1,e)}
-              style={{ height: "5vh",  width: "95%" }}
-            />
+            <Divider />
+            <div
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                marginBottom: "1vh",
+                alignItems: "center",
+              }}
+            >
+              <SectionTitle title_text={"Question 1:"} />
+              <input
+                type="text"
+                value={props.question1}
+                onChange={(e) => props.handleSetQuestion(1, e)}
+                style={{ height: "5vh", width: "95%" }}
+              />
+              <SectionTitle title_text={"Correct Answer:"} />
+              <input
+                type="text"
+                value={props.answer1}
+                onChange={(e) => props.handleSetAnswer(1, e)}
+                style={{ height: "5vh", width: "95%" }}
+              />
 
-            <SectionTitle title_text={"Incorrect 1:"} />
-            <input
-              type="text"
-              value={props.incorrect1_1}
-              onChange={(e) => props.handleSetIncorrect(1,1,e)}
-              style={{ height: "5vh", width: "95%" }}
-            />
+              <SectionTitle title_text={"Incorrect 1:"} />
+              <input
+                type="text"
+                value={props.incorrect1_1}
+                onChange={(e) => props.handleSetIncorrect(1, 1, e)}
+                style={{ height: "5vh", width: "95%" }}
+              />
 
-            <SectionTitle title_text={"Incorrect 2:"} />
-            <input
-              type="text"
-              value={props.incorrect1_2}
-              onChange={(e) => props.handleSetIncorrect(1,2,e)}
-              style={{ height: "5vh", width: "95%" }}
-            />            
+              <SectionTitle title_text={"Incorrect 2:"} />
+              <input
+                type="text"
+                value={props.incorrect1_2}
+                onChange={(e) => props.handleSetIncorrect(1, 2, e)}
+                style={{ height: "5vh", width: "95%" }}
+              />
 
-            <SectionTitle title_text={"Incorrect 3:"} />
-            <input
-              type="text"
-              value={props.incorrect1_3}
-              onChange={(e) => props.handleSetIncorrect(1,3,e)}
-              style={{ height: "5vh", width: "95%" }}
-            />
-
-        </div> 
+              <SectionTitle title_text={"Incorrect 3:"} />
+              <input
+                type="text"
+                value={props.incorrect1_3}
+                onChange={(e) => props.handleSetIncorrect(1, 3, e)}
+                style={{ height: "5vh", width: "95%" }}
+              />
+            </div>
           </>
-          :
-          props.modalPage===3?
+        ) : props.modalPage === 3 ? (
           <>
-        <SectionSubtitle
-          subtitle_text={
-            "Enter question 2, the correct answer, and three incorrect answers."
-          }
-        />
-        <Divider />
-        <div style={{ display: "flex", flexDirection: "column" ,marginBottom:'1vh',alignItems:'center'}}>
-        <SectionTitle title_text={"Question 2:"} />
-            <input
-              type="text"
-              value={props.question2?props.question2:''}
-              onChange={(e) => props.handleSetQuestion(2,e)}
-              style={{ height: "5vh",  width: "95%" }}
+            <SectionSubtitle
+              subtitle_text={
+                "Enter question 2, the correct answer, and three incorrect answers."
+              }
             />
-            <SectionTitle title_text={"Correct Answer:"} />
-            <input
-              type="text"
-              value={props.answer2?props.answer2:''}
-              onChange={(e) => props.handleSetAnswer(2,e)}
-              style={{ height: "5vh",  width: "95%" }}
-            />
+            <Divider />
+            <div
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                marginBottom: "1vh",
+                alignItems: "center",
+              }}
+            >
+              <SectionTitle title_text={"Question 2:"} />
+              <input
+                type="text"
+                value={props.question2 ? props.question2 : ""}
+                onChange={(e) => props.handleSetQuestion(2, e)}
+                style={{ height: "5vh", width: "95%" }}
+              />
+              <SectionTitle title_text={"Correct Answer:"} />
+              <input
+                type="text"
+                value={props.answer2 ? props.answer2 : ""}
+                onChange={(e) => props.handleSetAnswer(2, e)}
+                style={{ height: "5vh", width: "95%" }}
+              />
 
-            <SectionTitle title_text={"Incorrect 1:"} />
-            <input
-              type="text"
-              value={props.incorrect2_1?props.incorrect2_1:''}
-              onChange={(e) => props.handleSetIncorrect(2,1,e)}
-              style={{ height: "5vh", width: "95%" }}
-            />
+              <SectionTitle title_text={"Incorrect 1:"} />
+              <input
+                type="text"
+                value={props.incorrect2_1 ? props.incorrect2_1 : ""}
+                onChange={(e) => props.handleSetIncorrect(2, 1, e)}
+                style={{ height: "5vh", width: "95%" }}
+              />
 
-            <SectionTitle title_text={"Incorrect 2:"} />
-            <input
-              type="text"
-              value={props.incorrect2_2?props.incorrect2_2:''}
-              onChange={(e) => props.handleSetIncorrect(2,2,e)}
-              style={{ height: "5vh", width: "95%" }}
-            />            
+              <SectionTitle title_text={"Incorrect 2:"} />
+              <input
+                type="text"
+                value={props.incorrect2_2 ? props.incorrect2_2 : ""}
+                onChange={(e) => props.handleSetIncorrect(2, 2, e)}
+                style={{ height: "5vh", width: "95%" }}
+              />
 
-            <SectionTitle title_text={"Incorrect 3:"} />
-            <input
-              type="text"
-              value={props.incorrect2_3?props.incorrect2_3:''}
-              onChange={(e) => props.handleSetIncorrect(2,3,e)}
-              style={{ height: "5vh", width: "95%" }}
-            />
-        </div>           
+              <SectionTitle title_text={"Incorrect 3:"} />
+              <input
+                type="text"
+                value={props.incorrect2_3 ? props.incorrect2_3 : ""}
+                onChange={(e) => props.handleSetIncorrect(2, 3, e)}
+                style={{ height: "5vh", width: "95%" }}
+              />
+            </div>
           </>
-          :
-          props.modalPage===4?
+        ) : props.modalPage === 4 ? (
           <>
-        <SectionSubtitle
-          subtitle_text={
-            "Enter question 3, the correct answer, and three incorrect answers."
-          }
-        />
-        <Divider />
-        <div style={{ display: "flex", flexDirection: "column" ,marginBottom:'1vh',alignItems:'center'}}>
-        <SectionTitle title_text={"Question 3:"} />
-            <input
-              type="text"
-              value={props.question3?props.question3:''}
-              onChange={(e) => props.handleSetQuestion(3,e)}
-              style={{ height: "5vh",  width: "95%" }}
+            <SectionSubtitle
+              subtitle_text={
+                "Enter question 3, the correct answer, and three incorrect answers."
+              }
             />
-            <SectionTitle title_text={"Correct Answer:"} />
-            <input
-              type="text"
-              value={props.answer3?props.answer3:''}
-              onChange={(e) => props.handleSetAnswer(3,e)}
-              style={{ height: "5vh",  width: "95%" }}
-            />
+            <Divider />
+            <div
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                marginBottom: "1vh",
+                alignItems: "center",
+              }}
+            >
+              <SectionTitle title_text={"Question 3:"} />
+              <input
+                type="text"
+                value={props.question3 ? props.question3 : ""}
+                onChange={(e) => props.handleSetQuestion(3, e)}
+                style={{ height: "5vh", width: "95%" }}
+              />
+              <SectionTitle title_text={"Correct Answer:"} />
+              <input
+                type="text"
+                value={props.answer3 ? props.answer3 : ""}
+                onChange={(e) => props.handleSetAnswer(3, e)}
+                style={{ height: "5vh", width: "95%" }}
+              />
 
-            <SectionTitle title_text={"Incorrect 1:"} />
-            <input
-              type="text"
-              value={props.incorrect3_1?props.incorrect3_1:''}
-              onChange={(e) => props.handleSetIncorrect(3,1,e)}
-              style={{ height: "5vh", width: "95%" }}
-            />
+              <SectionTitle title_text={"Incorrect 1:"} />
+              <input
+                type="text"
+                value={props.incorrect3_1 ? props.incorrect3_1 : ""}
+                onChange={(e) => props.handleSetIncorrect(3, 1, e)}
+                style={{ height: "5vh", width: "95%" }}
+              />
 
-            <SectionTitle title_text={"Incorrect 2:"} />
-            <input
-              type="text"
-              value={props.incorrect3_2?props.incorrect3_2:''}
-              onChange={(e) => props.handleSetIncorrect(3,2,e)}
-              style={{ height: "5vh", width: "95%" }}
-            />            
+              <SectionTitle title_text={"Incorrect 2:"} />
+              <input
+                type="text"
+                value={props.incorrect3_2 ? props.incorrect3_2 : ""}
+                onChange={(e) => props.handleSetIncorrect(3, 2, e)}
+                style={{ height: "5vh", width: "95%" }}
+              />
 
-            <SectionTitle title_text={"Incorrect 3:"} />
-            <input
-              type="text"
-              value={props.incorrect3_3?props.incorrect3_3:''}
-              onChange={(e) => props.handleSetIncorrect(3,3,e)}
-              style={{ height: "5vh", width: "95%" }}
-            />
-        </div>               
+              <SectionTitle title_text={"Incorrect 3:"} />
+              <input
+                type="text"
+                value={props.incorrect3_3 ? props.incorrect3_3 : ""}
+                onChange={(e) => props.handleSetIncorrect(3, 3, e)}
+                style={{ height: "5vh", width: "95%" }}
+              />
+            </div>
           </>
-
-
-
-          :
+        ) : (
           <></>
-        }
+        )}
 
-
-
-
-
-        <div style={{marginBottom:'1vh'}}>
-        <ModalButtons
-          confirm_text={"Next"}
-          confirm_action={()=>props.handleSetModalPage()}
-          cancel_text={"Cancel"}
-          cancel_action={props.handleAddOpen}
-        />
+        <div style={{ marginBottom: "1vh" }}>
+          <ModalButtons
+            confirm_text={"Next"}
+            confirm_action={() => props.handleSetModalPage()}
+            cancel_text={"Cancel"}
+            cancel_action={props.handleAddOpen}
+          />
         </div>
-
       </ModalWrapper>
     </Modal>
   );
 };
-
-
-
-
-
-
 
 export const AdminTrainingTable = (props) => {
   return (

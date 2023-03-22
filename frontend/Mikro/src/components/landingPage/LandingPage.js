@@ -72,7 +72,6 @@ export const LandingPage = (props) => {
               >
                 &nbsp;Mikro
               </Typography>
-
             </Typography>
             <div style={{ marginTop: "4vh" }}>
               <Typography variant="h6" sx={{ color: "common.white" }}>
@@ -100,8 +99,15 @@ export const LandingPage = (props) => {
             </div>
           </div>
 
-          <div style={{position:'absolute',top:'47%',left:'33vw',height:"15vh"}}>
-          <img style={{height:'9vh'}} src={mikro_icon}></img>
+          <div
+            style={{
+              position: "absolute",
+              top: "47%",
+              left: "33vw",
+              height: "15vh",
+            }}
+          >
+            <img style={{ height: "9vh" }} src={mikro_icon}></img>
           </div>
           <div
             style={{
@@ -114,7 +120,6 @@ export const LandingPage = (props) => {
               marginTop: "12vh",
             }}
           >
-            
             <ProjectIcon style={{ marginTop: "5vh" }} src={laptop_image} />
           </div>
         </div>

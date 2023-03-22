@@ -14,7 +14,10 @@ import payments_icon from "../../images/payments_icon.png";
 import account_icon from "../../images/account_icon.png";
 import mikro_icon from "../../images/5.png";
 import training_icon from "../../images/training-icon.png";
-import { SectionTitle, SectionSubtitle } from "components/commonComponents/commonComponents";
+import {
+  SectionTitle,
+  SectionSubtitle,
+} from "components/commonComponents/commonComponents";
 import "./styles.css";
 import {
   CollapseMenuIcon,
@@ -114,36 +117,70 @@ const Sidebar = (props) => {
     <div>
       {sidebarOpen ? (
         <SidebarOpenedContainer>
-         <CollapseMenuIcon onClick={props.toggleSidebar} style={{position:'absolute',top:'.5vh'}}/>
+          <CollapseMenuIcon
+            onClick={props.toggleSidebar}
+            style={{ position: "absolute", top: ".5vh" }}
+          />
           <MenuItemTop>
-
-          <div style={{display:'flex',flexDirection:'column',marginTop:'2vh'}}>
-
-
-            <div style={{marginLeft:'.7vw'}}>
-
+            <div
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                marginTop: "2vh",
+              }}
+            >
+              <div style={{ marginLeft: ".7vw" }}></div>
             </div>
-          </div>
-
           </MenuItemTop>
 
           {/* <div style={{width:'100%',backgroundColor:'black',height:'.25vh',marginTop:'1vh'}}/> */}
 
           <MenuItemTop>
             <RoleBarWrapper>
-          <div style={{display:'flex',flexDirection:'row',alignItems:'center'}}>
-            <div style={{display:'flex',flexDirection:'row',alignItems:'center'}}>
-              <img style={{height:'5vh',marginLeft:'.8vw',marginRight:'1vw'}}src={mikro_icon} alt="Kaart Logo" />
-            </div>
-            <div style={{display:'flex',flexDirection:'column',alignItems:'center'}}>
-              <RoleHeader>{name}</RoleHeader>
-              <RoleSubHeader>{role}</RoleSubHeader>
-            </div>
+              <div
+                style={{
+                  display: "flex",
+                  flexDirection: "row",
+                  alignItems: "center",
+                }}
+              >
+                <div
+                  style={{
+                    display: "flex",
+                    flexDirection: "row",
+                    alignItems: "center",
+                  }}
+                >
+                  <img
+                    style={{
+                      height: "5vh",
+                      marginLeft: ".8vw",
+                      marginRight: "1vw",
+                    }}
+                    src={mikro_icon}
+                    alt="Kaart Logo"
+                  />
+                </div>
+                <div
+                  style={{
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "center",
+                  }}
+                >
+                  <RoleHeader>{name}</RoleHeader>
+                  <RoleSubHeader>{role}</RoleSubHeader>
+                </div>
+              </div>
 
-          </div>
-
-          <div style={{width:'100%',backgroundColor:'black',height:'.05vh',marginTop:'2vh'}}/>
-
+              <div
+                style={{
+                  width: "100%",
+                  backgroundColor: "black",
+                  height: ".05vh",
+                  marginTop: "2vh",
+                }}
+              />
             </RoleBarWrapper>
           </MenuItemTop>
 
@@ -155,7 +192,9 @@ const Sidebar = (props) => {
               <Header>Dashboard</Header>
             </MenuItem>
           </NavLink>
-          <div style={{width:'100%',backgroundColor:'black',height:'.05vh'}}/>
+          <div
+            style={{ width: "100%", backgroundColor: "black", height: ".05vh" }}
+          />
           <NavLink to={projectPageLink} style={{ textDecoration: "none" }}>
             <MenuItem>
               <ProjectIconContainer>
@@ -164,7 +203,9 @@ const Sidebar = (props) => {
               <Header>Projects</Header>
             </MenuItem>
           </NavLink>
-          <div style={{width:'100%',backgroundColor:'black',height:'.05vh'}}/>
+          <div
+            style={{ width: "100%", backgroundColor: "black", height: ".05vh" }}
+          />
 
           {role === "admin" ? (
             <NavLink to="/AdminUsersPage" style={{ textDecoration: "none" }}>
@@ -176,20 +217,33 @@ const Sidebar = (props) => {
               </MenuItem>
             </NavLink>
           ) : (
-            <>
-            </>
+            <></>
           )}
-          <div style={{width:'100%',backgroundColor:'black',height:'.05vh'}}/>
-            <NavLink to={trainingPageLink} style={{ textDecoration: "none" }}>
-              <MenuItem>
-                <ProjectIconContainer>
-                  <ProjectIcon src={training_icon} />
-                </ProjectIconContainer>
-                <Header>Training</Header>
-              </MenuItem>
-            </NavLink>
-            <div style={{width:'100%',backgroundColor:'black',height:'.05vh'}}/>
-          { role === "admin" ?<div style={{width:'100%',backgroundColor:'black',height:'.05vh'}}/> :<></>}
+          <div
+            style={{ width: "100%", backgroundColor: "black", height: ".05vh" }}
+          />
+          <NavLink to={trainingPageLink} style={{ textDecoration: "none" }}>
+            <MenuItem>
+              <ProjectIconContainer>
+                <ProjectIcon src={training_icon} />
+              </ProjectIconContainer>
+              <Header>Training</Header>
+            </MenuItem>
+          </NavLink>
+          <div
+            style={{ width: "100%", backgroundColor: "black", height: ".05vh" }}
+          />
+          {role === "admin" ? (
+            <div
+              style={{
+                width: "100%",
+                backgroundColor: "black",
+                height: ".05vh",
+              }}
+            />
+          ) : (
+            <></>
+          )}
 
           <NavLink to={paymentsPageLink} style={{ textDecoration: "none" }}>
             <MenuItem>
@@ -199,7 +253,9 @@ const Sidebar = (props) => {
               <Header>Payments</Header>
             </MenuItem>
           </NavLink>
-          <div style={{width:'100%',backgroundColor:'black',height:'.05vh'}}/>
+          <div
+            style={{ width: "100%", backgroundColor: "black", height: ".05vh" }}
+          />
           <NavLink to={accountPageLink} style={{ textDecoration: "none" }}>
             <MenuItem>
               <ProjectIconContainer>
@@ -208,14 +264,18 @@ const Sidebar = (props) => {
               <Header>Account</Header>
             </MenuItem>
           </NavLink>
-          <div style={{width:'100%',backgroundColor:'black',height:'.05vh'}}/>
+          <div
+            style={{ width: "100%", backgroundColor: "black", height: ".05vh" }}
+          />
           <MenuItem onClick={logout}>
             <ProjectIconContainer>
               <ProjectIcon onClick={logout} src={logouticon} />
             </ProjectIconContainer>
             <Header onClick={logout}>Log Out</Header>
           </MenuItem>
-          <div style={{width:'100%',backgroundColor:'black',height:'.05vh'}}/>
+          <div
+            style={{ width: "100%", backgroundColor: "black", height: ".05vh" }}
+          />
           <MenuItem href={map_url} target="_blank">
             <ProjectIconContainer>
               <ProjectIcon href={map_url} target="_blank" src={leftArrow} />
@@ -224,20 +284,47 @@ const Sidebar = (props) => {
               Kaart.com
             </Header>
           </MenuItem>
-          <div style={{width:'100%',backgroundColor:'black',height:'.05vh'}}/>
+          <div
+            style={{ width: "100%", backgroundColor: "black", height: ".05vh" }}
+          />
         </SidebarOpenedContainer>
       ) : (
-        
         <SidebarClosedContainer onClick={props.toggleSidebar}>
-            <div style={{width:'20vw',display:'flex',flexDirection:'row',alignItems:'center'}}>
-              <img style={{height:'5vh',marginLeft:'3vh',marginTop:'3vh'}}src={mikro_icon} alt="Kaart Logo" />
-             <div style={{display:'flex',flexDirection:'column',alignItems:'center'}}>
-               <SectionTitle title_text={"Welcome to Mikro"} />
-             </div>
+          <div
+            style={{
+              width: "20vw",
+              display: "flex",
+              flexDirection: "row",
+              alignItems: "center",
+            }}
+          >
+            <img
+              style={{ height: "5vh", marginLeft: "3vh", marginTop: "3vh" }}
+              src={mikro_icon}
+              alt="Kaart Logo"
+            />
+            <div
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+              }}
+            >
+              <SectionTitle title_text={"Welcome to Mikro"} />
             </div>
-            <div style={{display:'flex',flexDirection:'column',alignItems:'center',position:'absolute',left:'10vh',top:'4.5vh'}}>
-              <SectionSubtitle subtitle_text={"Click to open Menu"} />
-            </div>
+          </div>
+          <div
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              position: "absolute",
+              left: "10vh",
+              top: "4.5vh",
+            }}
+          >
+            <SectionSubtitle subtitle_text={"Click to open Menu"} />
+          </div>
         </SidebarClosedContainer>
       )}
     </div>

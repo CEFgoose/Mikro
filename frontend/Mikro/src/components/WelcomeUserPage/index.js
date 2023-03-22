@@ -125,7 +125,11 @@ export const WelcomeUserPage = () => {
           alignItems: "center",
         }}
       >
-        <LoginImage style={{marginTop:'10vh'}}src={mikro_icon} alt="Kaart Logo" />
+        <LoginImage
+          style={{ marginTop: "10vh" }}
+          src={mikro_icon}
+          alt="Kaart Logo"
+        />
         <Typography component="span" variant="h1" sx={{ color: "#000000" }}>
           Welcome to Mikro!
         </Typography>

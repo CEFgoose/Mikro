@@ -109,7 +109,6 @@ class Training(ModelWithSoftDeleteAndCRUD, SurrogatePK):
     false_3_question_4 = db.Column(db.String, nullable=True)
 
 
-
 class TrainingCompleted(CRUDMixin, SurrogatePK, db.Model):
     __tablename__ = "training_completed"
     user_id = db.Column(
@@ -122,6 +121,7 @@ class TrainingCompleted(CRUDMixin, SurrogatePK, db.Model):
         db.ForeignKey("training.id", ondelete="CASCADE"),
         nullable=True,
     )
+
 
 class ProjectUser(CRUDMixin, SurrogatePK, db.Model):
     __tablename__ = "project_users"
