@@ -11,7 +11,7 @@ RUN npm install --force
 
 COPY Mikro/ /app
 
-RUN npm run build
+RUN npm run build --force
 
 # Production environment
 FROM nginx:latest
