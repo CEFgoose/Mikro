@@ -50,7 +50,7 @@
     export mikro_DB="postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${POSTGRES_ENDPOINT}/${POSTGRES_DB}"
 
 .frontend_before_script: &frontend_before_script
-  image: registry.gitlab.com/gokaart/docker-images/node
+  image: registry.gitlab.com/mikro/docker-images/node
   before_script:
     - cd front-end/viewer
     - npm ci --prefer-offline --cache "${npm_config_cache}"
