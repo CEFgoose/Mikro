@@ -238,7 +238,7 @@ docker:
     - mkdir -p ./.cache
     - echo "{\"auths\":{\"$CI_REGISTRY\":{\"username\":\"$CI_REGISTRY_USER\",\"password\":\"$CI_REGISTRY_PASSWORD\"}}}" > /kaniko/.docker/config.json
     - /kaniko/executor --cache --cache-dir .cache --context $CI_PROJECT_DIR/backend --dockerfile $CI_PROJECT_DIR/backend/Dockerfile --destination $CI_REGISTRY_IMAGE/mikro-backend:${tag} --destination $CI_REGISTRY_IMAGE/mikro-backend:latest
-    - /kaniko/executor --cache --cache-dir .cache --context $CI_PROJECT_DIR/front-end --dockerfile $CI_PROJECT_DIR/front-end/Dockerfile --destination $CI_REGISTRY_IMAGE/mikro-frontend:${tag} --destination $CI_REGISTRY_IMAGE/mikro-frontend:latest
+    - /kaniko/executor --cache --cache-dir .cache --context $CI_PROJECT_DIR/frontend --dockerfile $CI_PROJECT_DIR/front-end/Dockerfile --destination $CI_REGISTRY_IMAGE/mikro-frontend:${tag} --destination $CI_REGISTRY_IMAGE/mikro-frontend:latest
   rules:
     - if: $CI_COMMIT_TAG
     - if: "$CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH"
