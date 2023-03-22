@@ -5,11 +5,11 @@ ENV NODE_OPTIONS=--max_old_space_size=4096
 
 WORKDIR /app
 
-COPY viewer/package.json /app
+COPY mikro/package.json /app
 
 RUN npm install --force
 
-COPY viewer/ /app
+COPY mikro/ /app
 
 RUN npm run build
 
