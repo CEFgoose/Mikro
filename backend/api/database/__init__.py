@@ -9,6 +9,7 @@ from .core import (
     PayRequests,
     Payments,
     UserTasks,
+    Training,
 )
 
 __all__ = [
@@ -22,4 +23,5 @@ __all__ = [
     "PayRequests",
     "Payments",
     "UserTasks",
+    "Training",
 ]

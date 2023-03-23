@@ -30,6 +30,10 @@ export const DataProvider = ({ children }) => {
   const [orgRequests, setOrgRequests] = useState([]);
   const [orgPayments, setOrgPayments] = useState([]);
   const [orgProjects, setorgProjects] = useState([]);
+  const [orgMappingTrainings, setorgMappingTrainings] = useState([]);
+  const [orgValidationTrainings, setorgValidationTrainings] = useState([]);
+  const [orgProjectTrainings, setorgProjectTrainings] = useState([]);
+
   const [activeProjects, setActiveProjects] = useState(null);
   const [inactiveProjects, setInactiveProjects] = useState(null);
   const [activeProjectsCount, setActiveProjectsCount] = useState(null);
@@ -454,6 +458,158 @@ export const DataProvider = ({ children }) => {
     });
   };
 
+  // TRAINING FUNCTIONS
+
+  const createTraining = (
+    title,
+    training_url,
+    training_type,
+    point_value,
+    difficulty,
+    question1,
+    answer1,
+    incorrect1_1,
+    incorrect1_2,
+    incorrect1_3,
+    question2,
+    answer2,
+    incorrect2_1,
+    incorrect2_2,
+    incorrect2_3,
+    question3,
+    answer3,
+    incorrect3_1,
+    incorrect3_2,
+    incorrect3_3
+  ) => {
+    let createTrainingURL = "training/create_training";
+    let outpack = {
+      title: title,
+      question1: question1,
+      question2: question2,
+      question3: question3,
+      answer1: answer1,
+      answer2: answer2,
+      answer3: answer3,
+      incorrect1_1: incorrect1_1,
+      incorrect1_2: incorrect1_2,
+      incorrect1_3: incorrect1_3,
+      incorrect2_1: incorrect2_1,
+      incorrect2_2: incorrect2_2,
+      incorrect2_3: incorrect2_3,
+      incorrect3_1: incorrect3_1,
+      incorrect3_2: incorrect3_2,
+      incorrect3_3: incorrect3_3,
+      point_value: point_value,
+      difficulty: difficulty,
+      training_url: training_url,
+      training_type: training_type,
+    };
+    poster(outpack, createTrainingURL).then((response) => {
+      if (response.status === 200) {
+        // setorgMappingTrainings(response.org_trainings);
+        return;
+      } else if (response.status === 304) {
+        history.push("/login");
+      } else {
+        alert(response.message);
+      }
+    });
+  };
+
+  const modifyTraining = (
+    training_id,
+    title,
+    training_url,
+    training_type,
+    point_value,
+    difficulty,
+    question1,
+    answer1,
+    incorrect1_1,
+    incorrect1_2,
+    incorrect1_3,
+    question2,
+    answer2,
+    incorrect2_1,
+    incorrect2_2,
+    incorrect2_3,
+    question3,
+    answer3,
+    incorrect3_1,
+    incorrect3_2,
+    incorrect3_3
+  ) => {
+    let modifyTrainingURL = "training/modify_training";
+    let outpack = {
+      training_id: training_id,
+      title: title,
+      question1: question1,
+      question2: question2,
+      question3: question3,
+      answer1: answer1,
+      answer2: answer2,
+      answer3: answer3,
+      incorrect1_1: incorrect1_1,
+      incorrect1_2: incorrect1_2,
+      incorrect1_3: incorrect1_3,
+      incorrect2_1: incorrect2_1,
+      incorrect2_2: incorrect2_2,
+      incorrect2_3: incorrect2_3,
+      incorrect3_1: incorrect3_1,
+      incorrect3_2: incorrect3_2,
+      incorrect3_3: incorrect3_3,
+      point_value: point_value,
+      difficulty: difficulty,
+      training_url: training_url,
+      training_type: training_type,
+    };
+    poster(outpack, modifyTrainingURL).then((response) => {
+      if (response.status === 200) {
+        fetchOrgTrainings();
+        return;
+      } else if (response.status === 304) {
+        history.push("/login");
+      } else {
+        alert(response.message);
+      }
+    });
+  };
+
+  const fetchOrgTrainings = () => {
+    let fetchTrainingsURL = "training/fetch_org_trainings";
+    fetcher(fetchTrainingsURL).then((response) => {
+      if (response.status === 200) {
+        setorgMappingTrainings(response.org_mapping_trainings);
+        setorgValidationTrainings(response.org_validation_trainings);
+        setorgProjectTrainings(response.org_project_trainings);
+        return;
+      } else if (response.status === 304) {
+        history.push("/login");
+      } else {
+        alert(response.message);
+      }
+    });
+  };
+
+  const deleteTraining = (training_id, training_title) => {
+    let deleteTrainingURL = "training/delete_training";
+    let outpack = {
+      training_id: training_id,
+    };
+    poster(outpack, deleteTrainingURL).then((response) => {
+      if (response.status === 200) {
+        alert(`Training ${training_title} has been deleted.`);
+        fetchOrgTrainings();
+        return;
+      } else if (response.status === 304) {
+        history.push("/login");
+      } else {
+        alert(response.message);
+      }
+    });
+  };
+
   // TRANSACTION ORIENTED FUNCTIONS
 
   const fetchOrgTransactions = () => {
@@ -713,6 +869,9 @@ export const DataProvider = ({ children }) => {
     orgProjects,
     activeProjectsCount,
     inactiveProjectsCount,
+    orgMappingTrainings,
+    orgValidationTrainings,
+    orgProjectTrainings,
     //STATE SETTERS
     setActiveProjectsCount,
     setInactiveProjectsCount,
@@ -769,6 +928,14 @@ export const DataProvider = ({ children }) => {
     fetchUserTransactions,
     update_user_tasks,
     admin_update_all_user_tasks,
+    //Training
+    fetchOrgTrainings,
+    setorgMappingTrainings,
+    setorgValidationTrainings,
+    setorgProjectTrainings,
+    createTraining,
+    deleteTraining,
+    modifyTraining,
     //Task
     checkUserStats,
     //general functions

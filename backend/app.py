@@ -35,6 +35,7 @@ try:
         ProjectAPI,
         TransactionAPI,
         TaskAPI,
+        TrainingAPI,
     )
 except ImportError:
     from .api.database import db, User
@@ -51,6 +52,7 @@ except ImportError:
         ProjectAPI,
         TransactionAPI,
         TaskAPI,
+        TrainingAPI,
     )
 app = Flask(__name__)
 cors = CORS(app)
@@ -85,6 +87,9 @@ db.init_app(app)
 migrate = Migrate(app, db)
 
 app.add_url_rule("/api/<path>", view_func=LoginAPI.as_view("auth"))
+app.add_url_rule(
+    "/api/training/<path>", view_func=TrainingAPI.as_view("training")
+)
 app.add_url_rule("/api/user/<path>", view_func=UserAPI.as_view("user"))
 app.add_url_rule(
     "/api/project/<path>", view_func=ProjectAPI.as_view("project")

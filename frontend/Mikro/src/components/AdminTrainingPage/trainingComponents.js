@@ -1,12 +1,5 @@
 import React from "react";
-import { styled } from "@mui/material/styles";
 import {
-  Card,
-  TableCell,
-  TableHead,
-  TableRow,
-  TableSortLabel,
-  Typography,
   Modal,
   Divider,
   Table,
@@ -14,7 +7,6 @@ import {
   TablePagination,
 } from "@mui/material";
 import {
-  TopDiv,
   ProjectRow,
   CardMediaStyle,
   TableCard,
@@ -46,10 +38,31 @@ export const AddTrainingModal = (props) => {
           <>
             <SectionSubtitle
               subtitle_text={
-                "Enter the URL link to the video or training document, the difficulty level and the point value for this lesson"
+                "Enter the Title, the URL link to the video or training document, the difficulty level and the point value for this lesson"
               }
             />
             <Divider />
+            <div style={{ display: "flex", flexDirection: "column" }}>
+              <div
+                style={{
+                  display: "flex",
+                  flexDirection: "row",
+                  alignItems: "center",
+                  marginLeft: "1vw",
+                  width: "100%",
+                }}
+              >
+                <SectionTitle title_text={"Title:"} />
+                <input
+                  type="text"
+                  value={props.title}
+                  onChange={(e) => props.handleSetTitle(e)}
+                  style={{ height: "5vh", marginRight: "3vw", width: "95%" }}
+                />
+              </div>
+            </div>
+            <Divider />
+
             <div style={{ display: "flex", flexDirection: "column" }}>
               <div
                 style={{
@@ -70,6 +83,7 @@ export const AddTrainingModal = (props) => {
               </div>
             </div>
             <Divider />
+
             <div
               style={{
                 display: "flex",
@@ -298,7 +312,302 @@ export const AddTrainingModal = (props) => {
 
         <div style={{ marginBottom: "1vh" }}>
           <ModalButtons
-            confirm_text={"Next"}
+            confirm_text={props.modalPage !== 4 ? "Next" : "Submit"}
+            confirm_action={() => props.handleSetModalPage()}
+            cancel_text={"Cancel"}
+            cancel_action={props.handleAddOpen}
+          />
+        </div>
+      </ModalWrapper>
+    </Modal>
+  );
+};
+
+export const ModifyTrainingModal = (props) => {
+  return (
+    <Modal open={props.modifyOpen} key="add">
+      <ModalWrapper>
+        <CloseButton close_action={props.handleModifyOpen} />
+        <SectionTitle title_text={"Edit Training Lesson"} />
+        {props.modalPage === 1 ? (
+          <>
+            <SectionSubtitle
+              subtitle_text={
+                "Edit the Title, the URL link to the video or training document, the difficulty level and the point value for this lesson"
+              }
+            />
+            <Divider />
+            <div style={{ display: "flex", flexDirection: "column" }}>
+              <div
+                style={{
+                  display: "flex",
+                  flexDirection: "row",
+                  alignItems: "center",
+                  marginLeft: "1vw",
+                  width: "100%",
+                }}
+              >
+                <SectionTitle title_text={"Title:"} />
+                <input
+                  type="text"
+                  value={props.title}
+                  onChange={(e) => props.handleSetTitle(e)}
+                  style={{ height: "5vh", marginRight: "3vw", width: "95%" }}
+                />
+              </div>
+            </div>
+            <Divider />
+
+            <div style={{ display: "flex", flexDirection: "column" }}>
+              <div
+                style={{
+                  display: "flex",
+                  flexDirection: "row",
+                  alignItems: "center",
+                  marginLeft: "1vw",
+                  width: "100%",
+                }}
+              >
+                <SectionTitle title_text={"URL:"} />
+                <input
+                  type="text"
+                  value={props.URL}
+                  onChange={(e) => props.handleSetURL(e)}
+                  style={{ height: "5vh", marginRight: "3vw", width: "95%" }}
+                />
+              </div>
+            </div>
+            <Divider />
+
+            <div
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                marginBottom: "1vh",
+              }}
+            >
+              <div
+                style={{
+                  display: "flex",
+                  flexDirection: "row",
+                  alignItems: "center",
+                  marginLeft: "1vw",
+                  width: "100%",
+                }}
+              >
+                <SectionTitle title_text={"Point Value:"} />
+                <input
+                  type="number"
+                  min="1"
+                  step="1"
+                  value={props.pointValue}
+                  onChange={(e) => props.handleSetPointValue(e)}
+                  style={{ height: "5vh", marginRight: "3vw", width: "10vw" }}
+                />
+
+                <SectionTitle title_text={"Difficulty:"} />
+                <select
+                  // value={props.difficulty}
+                  style={{ marginRight: "1vw" }}
+                  onChange={props.handleSetDifficulty}
+                >
+                  <option
+                    value="Easy"
+                    onChange={(e) => props.handleSetDifficulty(e)}
+                  >
+                    Easy
+                  </option>
+                  <option
+                    value="Intermediate"
+                    onChange={(e) => props.handleSetDifficulty(e)}
+                  >
+                    Intermediate
+                  </option>
+                  <option
+                    value="Hard"
+                    onChange={(e) => props.handleSetDifficulty(e)}
+                  >
+                    Hard
+                  </option>
+                </select>
+              </div>
+            </div>
+          </>
+        ) : props.modalPage === 2 ? (
+          <>
+            <SectionSubtitle
+              subtitle_text={
+                "Edit question 1, the correct answer, and three incorrect answers."
+              }
+            />
+            <Divider />
+            <div
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                marginBottom: "1vh",
+                alignItems: "center",
+              }}
+            >
+              <SectionTitle title_text={"Question 1:"} />
+              <input
+                type="text"
+                value={props.question1}
+                onChange={(e) => props.handleSetQuestion(1, e)}
+                style={{ height: "5vh", width: "95%" }}
+              />
+              <SectionTitle title_text={"Correct Answer:"} />
+              <input
+                type="text"
+                value={props.answer1}
+                onChange={(e) => props.handleSetAnswer(1, e)}
+                style={{ height: "5vh", width: "95%" }}
+              />
+
+              <SectionTitle title_text={"Incorrect 1:"} />
+              <input
+                type="text"
+                value={props.incorrect1_1}
+                onChange={(e) => props.handleSetIncorrect(1, 1, e)}
+                style={{ height: "5vh", width: "95%" }}
+              />
+
+              <SectionTitle title_text={"Incorrect 2:"} />
+              <input
+                type="text"
+                value={props.incorrect1_2}
+                onChange={(e) => props.handleSetIncorrect(1, 2, e)}
+                style={{ height: "5vh", width: "95%" }}
+              />
+
+              <SectionTitle title_text={"Incorrect 3:"} />
+              <input
+                type="text"
+                value={props.incorrect1_3}
+                onChange={(e) => props.handleSetIncorrect(1, 3, e)}
+                style={{ height: "5vh", width: "95%" }}
+              />
+            </div>
+          </>
+        ) : props.modalPage === 3 ? (
+          <>
+            <SectionSubtitle
+              subtitle_text={
+                "Edit question 2, the correct answer, and three incorrect answers."
+              }
+            />
+            <Divider />
+            <div
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                marginBottom: "1vh",
+                alignItems: "center",
+              }}
+            >
+              <SectionTitle title_text={"Question 2:"} />
+              <input
+                type="text"
+                value={props.question2 ? props.question2 : ""}
+                onChange={(e) => props.handleSetQuestion(2, e)}
+                style={{ height: "5vh", width: "95%" }}
+              />
+              <SectionTitle title_text={"Correct Answer:"} />
+              <input
+                type="text"
+                value={props.answer2 ? props.answer2 : ""}
+                onChange={(e) => props.handleSetAnswer(2, e)}
+                style={{ height: "5vh", width: "95%" }}
+              />
+
+              <SectionTitle title_text={"Incorrect 1:"} />
+              <input
+                type="text"
+                value={props.incorrect2_1 ? props.incorrect2_1 : ""}
+                onChange={(e) => props.handleSetIncorrect(2, 1, e)}
+                style={{ height: "5vh", width: "95%" }}
+              />
+
+              <SectionTitle title_text={"Incorrect 2:"} />
+              <input
+                type="text"
+                value={props.incorrect2_2 ? props.incorrect2_2 : ""}
+                onChange={(e) => props.handleSetIncorrect(2, 2, e)}
+                style={{ height: "5vh", width: "95%" }}
+              />
+
+              <SectionTitle title_text={"Incorrect 3:"} />
+              <input
+                type="text"
+                value={props.incorrect2_3 ? props.incorrect2_3 : ""}
+                onChange={(e) => props.handleSetIncorrect(2, 3, e)}
+                style={{ height: "5vh", width: "95%" }}
+              />
+            </div>
+          </>
+        ) : props.modalPage === 4 ? (
+          <>
+            <SectionSubtitle
+              subtitle_text={
+                "Edit question 3, the correct answer, and three incorrect answers."
+              }
+            />
+            <Divider />
+            <div
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                marginBottom: "1vh",
+                alignItems: "center",
+              }}
+            >
+              <SectionTitle title_text={"Question 3:"} />
+              <input
+                type="text"
+                value={props.question3 ? props.question3 : ""}
+                onChange={(e) => props.handleSetQuestion(3, e)}
+                style={{ height: "5vh", width: "95%" }}
+              />
+              <SectionTitle title_text={"Correct Answer:"} />
+              <input
+                type="text"
+                value={props.answer3 ? props.answer3 : ""}
+                onChange={(e) => props.handleSetAnswer(3, e)}
+                style={{ height: "5vh", width: "95%" }}
+              />
+
+              <SectionTitle title_text={"Incorrect 1:"} />
+              <input
+                type="text"
+                value={props.incorrect3_1 ? props.incorrect3_1 : ""}
+                onChange={(e) => props.handleSetIncorrect(3, 1, e)}
+                style={{ height: "5vh", width: "95%" }}
+              />
+
+              <SectionTitle title_text={"Incorrect 2:"} />
+              <input
+                type="text"
+                value={props.incorrect3_2 ? props.incorrect3_2 : ""}
+                onChange={(e) => props.handleSetIncorrect(3, 2, e)}
+                style={{ height: "5vh", width: "95%" }}
+              />
+
+              <SectionTitle title_text={"Incorrect 3:"} />
+              <input
+                type="text"
+                value={props.incorrect3_3 ? props.incorrect3_3 : ""}
+                onChange={(e) => props.handleSetIncorrect(3, 3, e)}
+                style={{ height: "5vh", width: "95%" }}
+              />
+            </div>
+          </>
+        ) : (
+          <></>
+        )}
+
+        <div style={{ marginBottom: "1vh" }}>
+          <ModalButtons
+            confirm_text={props.modalPage !== 4 ? "Next" : "Submit"}
             confirm_action={() => props.handleSetModalPage()}
             cancel_text={"Cancel"}
             cancel_action={props.handleAddOpen}
@@ -325,8 +634,8 @@ export const AdminTrainingTable = (props) => {
         <Table>
           <ListHead headLabel={ADMIN_TRAINING_HEADERS} />
           <TableBody>
-            {props.orgPayments &&
-              props.orgPayments
+            {props.orgTrainings &&
+              props.orgTrainings
                 .slice(
                   props.page * props.rowsPerPage,
                   props.page * props.rowsPerPage + props.rowsPerPage
@@ -334,13 +643,26 @@ export const AdminTrainingTable = (props) => {
                 .map((row) => {
                   const {
                     id,
-                    payment_email,
-                    user,
-                    user_id,
-                    amount_paid,
-                    task_ids,
-                    date_paid,
-                    payoneer_id,
+                    title,
+                    training_url,
+                    training_type,
+                    point_value,
+                    difficulty,
+                    question1,
+                    answer1,
+                    incorrect1_1,
+                    incorrect1_2,
+                    incorrect1_3,
+                    question2,
+                    answer2,
+                    incorrect2_1,
+                    incorrect2_2,
+                    incorrect2_3,
+                    question3,
+                    answer3,
+                    incorrect3_1,
+                    incorrect3_2,
+                    incorrect3_3,
                   } = row;
                   return (
                     <ProjectRow
@@ -353,24 +675,13 @@ export const AdminTrainingTable = (props) => {
                       align="center"
                       key={row}
                       tabIndex={-1}
-                      onClick={() =>
-                        props.handleSetPaymentSelected(
-                          id,
-                          user,
-                          user_id,
-                          amount_paid,
-                          date_paid,
-                          payment_email,
-                          task_ids,
-                          payoneer_id
-                        )
-                      }
-                      selected={props.paymentSelected === id}
+                      onClick={() => props.handleSetTrainingSelected(row)}
+                      selected={props.trainingSelected === id}
                     >
-                      <ProjectCell entry={user} />
-                      <ProjectCell entry={id} />
-                      <ProjectCell entry={`$${amount_paid}`} />
-                      <ProjectCell entry={date_paid} />
+                      <ProjectCell entry={title} />
+                      <ProjectCell entry={difficulty} />
+                      <ProjectCell entry={point_value} />
+                      <ProjectCell entry={training_url} />
                     </ProjectRow>
                   );
                 })}
@@ -388,5 +699,26 @@ export const AdminTrainingTable = (props) => {
         />
       </TableCard>
     </div>
+  );
+};
+
+export const DeleteTrainingModal = (props) => {
+  return (
+    <Modal open={props.deleteOpen} key="delete">
+      <ModalWrapper>
+        <CloseButton close_action={props.handleDeleteOpen} />
+        <SectionTitle
+          title_text={`Are you sure you want to delete training: ${props.training_title}?`}
+        />
+        <div style={{ marginBottom: "2vh" }}>
+          <ModalButtons
+            confirm_text={"Delete"}
+            confirm_action={() => props.handleDeleteTraining()}
+            cancel_text={"Cancel"}
+            cancel_action={props.handleDeleteOpen}
+          />
+        </div>
+      </ModalWrapper>
+    </Modal>
   );
 };

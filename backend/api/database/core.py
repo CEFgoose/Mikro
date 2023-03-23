@@ -77,36 +77,35 @@ class Project(ModelWithSoftDeleteAndCRUD, SurrogatePK):
     completed = db.Column(db.Boolean, nullable=True, server_default="False")
 
 
-class Training(ModelWithSoftDeleteAndCRUD, SurrogatePK):
+class Training(ModelWithSoftDeleteAndCRUD, SurrogatePK, db.Model):
     __tablename__ = "training"
-    id = db.Column(db.Integer, primary_key=True, autoincrement=False)
-    type = db.Column(db.String, nullable=True)
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    title = db.Column(db.String, nullable=True)
+    org_id = db.Column(db.Integer, nullable=True, default=0)
+    training_type = db.Column(db.String, nullable=True)
     point_value = db.Column(db.Integer, nullable=True)
-    link = db.Column(db.String, nullable=True)
+    training_url = db.Column(db.String, nullable=True)
+    difficulty = db.Column(db.String, nullable=True)
     question_1 = db.Column(db.String, nullable=True)
-
-    answer_question_1 = db.Column(db.String, nullable=True)
-    false_1_question_1 = db.Column(db.String, nullable=True)
-    false_2_question_1 = db.Column(db.String, nullable=True)
-    false_3_question_1 = db.Column(db.String, nullable=True)
-
+    answer_1 = db.Column(db.String, nullable=True)
+    incorrect1_1 = db.Column(db.String, nullable=True)
+    incorrect1_2 = db.Column(db.String, nullable=True)
+    incorrect1_3 = db.Column(db.String, nullable=True)
     question_2 = db.Column(db.String, nullable=True)
-    answer_question_2 = db.Column(db.String, nullable=True)
-    false_1_question_2 = db.Column(db.String, nullable=True)
-    false_2_question_2 = db.Column(db.String, nullable=True)
-    false_3_question_2 = db.Column(db.String, nullable=True)
-
+    answer_2 = db.Column(db.String, nullable=True)
+    incorrect2_1 = db.Column(db.String, nullable=True)
+    incorrect2_2 = db.Column(db.String, nullable=True)
+    incorrect2_3 = db.Column(db.String, nullable=True)
     question_3 = db.Column(db.String, nullable=True)
-    answer_question_3 = db.Column(db.String, nullable=True)
-    false_1_question_3 = db.Column(db.String, nullable=True)
-    false_2_question_3 = db.Column(db.String, nullable=True)
-    false_3_question_3 = db.Column(db.String, nullable=True)
-
+    answer_3 = db.Column(db.String, nullable=True)
+    incorrect3_1 = db.Column(db.String, nullable=True)
+    incorrect3_2 = db.Column(db.String, nullable=True)
+    incorrect3_3 = db.Column(db.String, nullable=True)
     question_4 = db.Column(db.String, nullable=True)
-    answer_question_4 = db.Column(db.String, nullable=True)
-    false_1_question_4 = db.Column(db.String, nullable=True)
-    false_2_question_4 = db.Column(db.String, nullable=True)
-    false_3_question_4 = db.Column(db.String, nullable=True)
+    answer_4 = db.Column(db.String, nullable=True)
+    incorrect4_1 = db.Column(db.String, nullable=True)
+    incorrect4_2 = db.Column(db.String, nullable=True)
+    incorrect4_3 = db.Column(db.String, nullable=True)
 
 
 class TrainingCompleted(CRUDMixin, SurrogatePK, db.Model):

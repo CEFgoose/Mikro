@@ -18,9 +18,8 @@ export const UserTrainingPage = () => {
   const {
     sidebarOpen,
     handleSetSidebarState,
-    orgPayments,
-    orgRequests,
-    CSVdata,
+    orgTrainings,
+    createTraining,
     submitPayRequest,
     fetchUserPayable,
     fetchUserTransactions,
@@ -75,70 +74,16 @@ export const UserTrainingPage = () => {
     handleSetSidebarState();
   };
 
-  const handleRequestOpen = () => {
-    toggleRequestOpen(!requestOpen);
-  };
-
-  const handleDetailsOpen = () => {
-    if (paymentSelected !== null) {
-      toggleDetailsOpen();
-    }
-  };
-
-  const handleSetPaymentSelected = (
-    id,
-    user,
-    user_id,
-    amount_paid,
-    date_paid,
-    payment_email,
-    task_ids,
-    payoneer_id
-  ) => {
-    setPaymentSelected(id);
-    setUserID(user_id);
-    setRequestSelected(id);
-    setUserName(user);
-    setRequestAmount(amount_paid);
-    setRequestDate(date_paid);
-    setPayEmail(payment_email);
-    setTaskIDs(task_ids);
-    setPayoneerID(payoneer_id);
-  };
-
-  const handleSetRequestSelected = (
-    id,
-    name,
-    user_id,
-    amount,
-    date,
-    pay_email,
-    task_ids
-  ) => {
-    setUserID(user_id);
-    setRequestSelected(id);
-    setUserName(name);
-    setRequestAmount(amount);
-    setRequestDate(date);
-    setPayEmail(pay_email);
-    setTaskIDs(task_ids);
-  };
-
   const handleSetActiveTab = (e) => {
     setActiveTab(e.target.value);
-  };
-
-  const handleSetNotes = (e) => {
-    setNotes(e.target.value);
   };
 
   const handleSetRequestAmount = (e) => {
     setRequestAmount(e);
   };
 
-  const handleSubmitPayRequest = () => {
-    submitPayRequest(notes);
-    handleRequestOpen();
+  const handleCreateTraining = () => {
+    createTraining();
   };
 
   return (
@@ -200,7 +145,7 @@ export const UserTrainingPage = () => {
                 handleChangeRowsPerPage={handleChangeRowsPerPage}
                 // orgRequests={orgRequests}
                 requestSelected={requestSelected}
-                handleSetRequestSelected={handleSetRequestSelected}
+                // handleSetRequestSelected={handleSetRequestSelected}
               />
             </TabPanel>
             <TabPanel>
@@ -211,7 +156,7 @@ export const UserTrainingPage = () => {
                 handleChangeRowsPerPage={handleChangeRowsPerPage}
                 // orgPayments={orgPayments}
                 paymentSelected={paymentSelected}
-                handleSetPaymentSelected={handleSetPaymentSelected}
+                // handleSetPaymentSelected={handleSetPaymentSelected}
               />
             </TabPanel>
             <TabPanel>
@@ -222,7 +167,7 @@ export const UserTrainingPage = () => {
                 handleChangeRowsPerPage={handleChangeRowsPerPage}
                 // orgPayments={orgPayments}
                 paymentSelected={paymentSelected}
-                handleSetPaymentSelected={handleSetPaymentSelected}
+                // handleSetPaymentSelected={handleSetPaymentSelected}
               />
             </TabPanel>
           </Tabs>

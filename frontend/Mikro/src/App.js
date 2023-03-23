@@ -1,13 +1,10 @@
-// IMPORTS
 import React, { useEffect, useContext } from "react";
 import { DataProvider } from "common/DataContext";
 import { InteractionProvider } from "common/InteractionContext";
-import { PrivateRoute } from "common/PrivateRoute";
 import { AuthContext } from "common/AuthContext";
 import { Login } from "components/Login";
 import { AdminDash } from "components/AdminDash";
 import { PageNotFound } from "components/PageNotFound";
-// import { NotificationCenter } from "components/NotificationCenter";
 import { HotkeysTable } from "components/Hotkeys";
 import { LandingPage } from "components/landingPage/LandingPage";
 import { AdminProjectsPage } from "components/AdminProjectsPage";
@@ -23,17 +20,21 @@ import { UserTrainingPage } from "components/UserTrainingPage";
 import { AdminTrainingPage } from "components/AdminTrainingPage";
 import "bootstrap/dist/css/bootstrap.min.css";
 import "./App.css";
-import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
+import {
+  BrowserRouter as Router,
+  Routes,
+  Route,
+  Navigate,
+} from "react-router-dom";
 import { RegisterUser } from "components/RegisterUser";
 
 // APP DECLARATION
 function App() {
   const { refresh, user } = useContext(AuthContext);
-  const Private = ({Component}) => {
-    const auth = user.role ==='admin'
-
-    return auth ? <Component /> : <Navigate to="/login" />
-}
+  const Private = ({ Component }) => {
+    const auth = user.role === "admin";
+    return auth ? <Component /> : <Navigate to="/login" />;
+  };
 
   //INITIAL USE EFFECT
   useEffect(() => {
@@ -53,112 +54,56 @@ function App() {
         <InteractionProvider>
           <DataProvider>
             <Routes>
+              <Route path="/" exact={true} element={<LandingPage />} />
 
-              <Route 
-                path="/"
-                exact={true} 
-                element={
-                  <LandingPage />
-                }
-              />
+              <Route path="/login" element={<Login />} />
 
-              <Route 
-                path="/login"
-                element={
-                  <Login />
-                }
-              />
+              <Route path="/welcome" element={<WelcomeUserPage />} />
 
-              <Route 
-                path="/welcome"
-                element={<WelcomeUserPage />}
-              />
-                
+              <Route path="/dashboard" element={<UserDashboard />} />
 
-              <Route 
-                path="/dashboard"
-                element={
-                  <UserDashboard />
-                }
-              />
-
-              <Route 
+              <Route
                 path="/admindash"
-                element={
-                  <Private Component={AdminDash} />
-                }
+                element={<Private Component={AdminDash} />}
               />
 
-              <Route 
-                path="/AdminProjectsPage" 
-                element={
-                  <Private Component={AdminProjectsPage} />
-                }
-              />
-                
-              <Route 
-                path="/UserProjectsPage"
-                element={
-                  <UserProjectsPage />
-                }
+              <Route
+                path="/AdminProjectsPage"
+                element={<Private Component={AdminProjectsPage} />}
               />
 
-              <Route 
-                path="/AdminUsersPage" 
-                element={
-                  <Private Component={AdminUsersPage} />
-                }
+              <Route path="/UserProjectsPage" element={<UserProjectsPage />} />
+
+              <Route
+                path="/AdminUsersPage"
+                element={<Private Component={AdminUsersPage} />}
               />
 
-              <Route 
-                path="/AdminPaymentsPage" 
-                element={
-                  <Private Component={AdminPaymentsPage} />
-                }
+              <Route
+                path="/AdminPaymentsPage"
+                element={<Private Component={AdminPaymentsPage} />}
               />
-              <Route 
-                path="/AdminTrainingPage" 
-                element={
-                  <Private Component={AdminTrainingPage} />
-                }
+              <Route
+                path="/AdminTrainingPage"
+                element={<Private Component={AdminTrainingPage} />}
               />
 
-              <Route 
-                path="/AdminAccountPage" 
-                element={
-                  <Private Component={AdminAccountPage} />
-                }
+              <Route
+                path="/AdminAccountPage"
+                element={<Private Component={AdminAccountPage} />}
               />
 
-              <Route 
-                path="/UserPaymentsPage"
-                element={<UserPaymentsPage />}
-              />
+              <Route path="/UserPaymentsPage" element={<UserPaymentsPage />} />
 
-              <Route 
-                path="/UserTrainingPage"
-                element={<UserTrainingPage />}
-              />
-                
-              <Route 
-                path="/UserAccountPage"
-                element={<UserAccountPage />}
-              />
+              <Route path="/UserTrainingPage" element={<UserTrainingPage />} />
 
-              <Route 
-                path="/registerUser"
-                element={<RegisterUser />}
-              />
+              <Route path="/UserAccountPage" element={<UserAccountPage />} />
 
-              <Route  
-                path="/hotkeys" 
-                element={HotkeysTable} 
-              />
+              <Route path="/registerUser" element={<RegisterUser />} />
 
-              <Route 
-                element={PageNotFound} 
-              />
-              
+              <Route path="/hotkeys" element={HotkeysTable} />
+
+              <Route element={PageNotFound} />
             </Routes>
           </DataProvider>
         </InteractionProvider>
