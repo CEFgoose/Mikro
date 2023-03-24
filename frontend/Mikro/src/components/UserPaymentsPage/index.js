@@ -2,15 +2,14 @@ import React, { useContext, useEffect, useState } from "react";
 import { DataContext } from "../../common/DataContext";
 import { AuthContext } from "../../common/AuthContext";
 import Sidebar from "../sidebar/sidebar";
-import { Navigate } from "react-router-dom";
 import { Tab, TabList, TabPanel, Tabs } from "react-tabs";
 import useToggle from "../../hooks/useToggle.js";
+import { RequestModal, DetailsModal } from "./paymentComponents";
 import {
   ButtonDivComponent,
   AdminPayRequestsTable,
   AdminPaymentsTable,
 } from "components/commonComponents/commonComponents";
-import { RequestModal, DetailsModal } from "./paymentComponents";
 import "./styles.css";
 
 export const UserPaymentsPage = () => {
@@ -23,10 +22,10 @@ export const UserPaymentsPage = () => {
     submitPayRequest,
     fetchUserPayable,
     fetchUserTransactions,
+    history,
   } = useContext(DataContext);
 
   const { refresh, user } = useContext(AuthContext);
-  const [Navigate, setRedirect] = useState(false);
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [requestOpen, toggleRequestOpen] = useToggle(false);
@@ -48,10 +47,10 @@ export const UserPaymentsPage = () => {
       refresh();
     }
     if (user === null) {
-      setRedirect(true);
+      history("/login");
     }
     if (user !== null && user.role !== "user") {
-      setRedirect(true);
+      history("/login");
     }
     fetchUserPayable(handleSetRequestAmount);
     fetchUserTransactions();
@@ -236,7 +235,6 @@ export const UserPaymentsPage = () => {
           </Tabs>
         </div>
       </div>
-      {!Navigate ? <></> : <Navigate push to="/login" />}
     </>
   );
 };

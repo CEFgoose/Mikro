@@ -468,7 +468,6 @@ class ProjectAPI(MethodView):
             if task.id in all_user_task_ids
             if task.mapped is True and task.validated is True
         ]
-        print(user_validated_tasks)
         user_validated_tasks_count = len(user_validated_tasks)
         user_invalidated_tasks_count = len(
             [

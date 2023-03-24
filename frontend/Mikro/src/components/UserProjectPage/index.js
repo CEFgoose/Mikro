@@ -19,13 +19,14 @@ export const UserProjectsPage = () => {
     userJoinProject,
     userLeaveProject,
     goToSource,
+    history,
   } = useContext(DataContext);
 
   const { refresh, user } = useContext(AuthContext);
   const [modalOpen, toggleModalOpen] = useToggle(false);
   const [projectSelected, setProjectSelected] = useState(null);
   const [projectName, setProjectName] = useState(null);
-  const [Navigate, setRedirect] = useState(false);
+
   const [activeTab, setActiveTab] = useState(1);
 
   useEffect(() => {
@@ -33,10 +34,10 @@ export const UserProjectsPage = () => {
       refresh();
     }
     if (user === null) {
-      setRedirect(true);
+      history("/login");
     }
     if (user !== null && user.role !== "user") {
-      setRedirect(true);
+      history("/login");
     }
     fetchUserProjects();
     // eslint-disable-next-line
@@ -147,7 +148,6 @@ export const UserProjectsPage = () => {
           </Tabs>
         </div>
       </div>
-      {!Navigate ? <></> : <Navigate push to="/login" />}
     </>
   );
 };

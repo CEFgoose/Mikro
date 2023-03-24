@@ -10,6 +10,7 @@ from .core import (
     Payments,
     UserTasks,
     Training,
+    TrainingCompleted,
 )
 
 __all__ = [
@@ -24,4 +25,5 @@ __all__ = [
     "Payments",
     "UserTasks",
     "Training",
+    "TrainingCompleted",
 ]

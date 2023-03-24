@@ -249,8 +249,6 @@ class TaskAPI(MethodView):
             if tasksInvalidatedCall.ok:
                 taskData = tasksInvalidatedCall.json()
                 invalidated = []
-                print(taskData)
-
                 if taskData["taskStatus"] == "BADIMAGERY":
                     invalidated.append(task_id)
 
@@ -263,12 +261,8 @@ class TaskAPI(MethodView):
                     target_user.update(
                         total_tasks_invalidated=invalidated_count
                     )
-                print("STATUS", taskData["taskStatus"])
-
             else:
                 return {"request": "tm3 tasks mapped call failed"}
-
-        # return {"taskData": taskData}
         return {"response": "complete"}
 
     def get_mapped_TM4_tasks(self, data, projectID):
@@ -281,7 +275,6 @@ class TaskAPI(MethodView):
                 mapper = User.query.filter_by(
                     osm_username=contributor["username"]
                 ).first()
-                # print("mappedTasks", contributor)
                 for task in contributor["mappedTasks"]:
 
                     task_exists = Task.query.filter_by(
@@ -321,12 +314,10 @@ class TaskAPI(MethodView):
             "https://tm3.kaart.com/api/v1/project/%s/mapped-tasks-by-user"  # noqa: E501
             % (project_id)
         )
-
         TM3tasksStatus = (
             "https://tm3.kaart.com/api/v1/project/%s/tasks"  # noqa: E501
             % (project_id)
         )
-
         tasksMappedCall = requests.request(
             "GET", TM3tasksMapped, headers=headers
         )

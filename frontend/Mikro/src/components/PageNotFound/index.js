@@ -29,7 +29,7 @@ export const PageNotFound = () => {
         Page Not Found
         <br />
         <br />
-        <Button onClick={() => history.push(from)}>Go Back</Button>
+        <Button onClick={() => history(from)}>Go Back</Button>
       </p>
     </div>
   );

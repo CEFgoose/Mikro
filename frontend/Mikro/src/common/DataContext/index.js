@@ -10,7 +10,7 @@ export const DataContext = createContext({});
 export const DataProvider = ({ children }) => {
   const {} = useContext(InteractionContext);
   const {} = useContext(AuthContext);
-
+  const history = useNavigate();
   const [sidebarOpen, toggleSidebarOpen] = useToggle(true);
   const [orgUsers, setOrgUsers] = useState([]);
   const [projectUsers, setProjectUsers] = useState([]);
@@ -25,7 +25,6 @@ export const DataProvider = ({ children }) => {
   const [payEmail, setPayEmail] = useState(null);
   const [outputRate, setOutputRate] = useState(null);
   const [fetching, setFetching] = useState(false);
-  const history = useNavigate();
   const [userSelected, setUserSelected] = useState(null);
   const [orgRequests, setOrgRequests] = useState([]);
   const [orgPayments, setOrgPayments] = useState([]);
@@ -33,7 +32,7 @@ export const DataProvider = ({ children }) => {
   const [orgMappingTrainings, setorgMappingTrainings] = useState([]);
   const [orgValidationTrainings, setorgValidationTrainings] = useState([]);
   const [orgProjectTrainings, setorgProjectTrainings] = useState([]);
-
+  const [userCompletedTrainings, setUserCompletedTrainings] = useState([]);
   const [activeProjects, setActiveProjects] = useState(null);
   const [inactiveProjects, setInactiveProjects] = useState(null);
   const [activeProjectsCount, setActiveProjectsCount] = useState(null);
@@ -112,7 +111,7 @@ export const DataProvider = ({ children }) => {
       if (response.status === 200) {
         handleUserDetailsStates("response", response);
       } else if (response.status === 304) {
-        history.push("/login");
+        history("/login");
       } else {
         alert(response.message);
       }
@@ -134,7 +133,7 @@ export const DataProvider = ({ children }) => {
       if (response.status === 200) {
         return;
       } else if (response.status === 304) {
-        history.push("/login");
+        history("/login");
       } else {
         alert(response.message);
       }
@@ -160,7 +159,7 @@ export const DataProvider = ({ children }) => {
       if (response.status === 200) {
         return;
       } else if (response.status === 304) {
-        history.push("/login");
+        history("/login");
       } else {
         alert(response.message);
       }
@@ -173,7 +172,7 @@ export const DataProvider = ({ children }) => {
       if (response.status === 200) {
         setOrgUsers(response.users);
       } else if (response.status === 304) {
-        history.push("/login");
+        history("/login");
       } else {
         alert(response.message);
       }
@@ -189,7 +188,7 @@ export const DataProvider = ({ children }) => {
       if (response.status === 200) {
         setProjectUsers(response.users);
       } else if (response.status === 304) {
-        history.push("/login");
+        history("/login");
       } else {
         alert(response.message);
       }
@@ -207,7 +206,7 @@ export const DataProvider = ({ children }) => {
         fetchOrgUsers();
         return;
       } else if (response.status === 304) {
-        history.push("/login");
+        history("/login");
       } else {
         alert(response.message);
       }
@@ -224,7 +223,7 @@ export const DataProvider = ({ children }) => {
         fetchOrgUsers();
         return;
       } else if (response.status === 304) {
-        history.push("/login");
+        history("/login");
       } else {
         alert(response.message);
       }
@@ -238,7 +237,7 @@ export const DataProvider = ({ children }) => {
     };
     poster(outpack, inviteUserURL).then((response) => {
       if (response.status === 304) {
-        history.push("/login");
+        history("/login");
       } else {
         alert(response.message);
       }
@@ -256,7 +255,7 @@ export const DataProvider = ({ children }) => {
         fetchUserProjects();
         return;
       } else if (response.status === 304) {
-        history.push("/login");
+        history("/login");
       } else {
         alert(response.message);
       }
@@ -274,7 +273,7 @@ export const DataProvider = ({ children }) => {
         fetchUserProjects();
         return;
       } else if (response.status === 304) {
-        history.push("/login");
+        history("/login");
       } else {
         alert(response.message);
       }
@@ -293,7 +292,7 @@ export const DataProvider = ({ children }) => {
         fetchProjectUsers(project_id);
         return;
       } else if (response.status === 304) {
-        history.push("/login");
+        history("/login");
       } else {
         alert(response.message);
       }
@@ -312,7 +311,7 @@ export const DataProvider = ({ children }) => {
         fetchProjectUsers(project_id);
         return;
       } else if (response.status === 304) {
-        history.push("/login");
+        history("/login");
       } else {
         alert(response.message);
       }
@@ -335,7 +334,7 @@ export const DataProvider = ({ children }) => {
         fetchOrgProjects();
         return;
       } else if (response.status === 304) {
-        history.push("/login");
+        history("/login");
       } else {
         alert(response.message);
       }
@@ -353,7 +352,7 @@ export const DataProvider = ({ children }) => {
         fetchOrgProjects();
         return;
       } else if (response.status === 304) {
-        history.push("/login");
+        history("/login");
       } else {
         alert(response.message);
       }
@@ -385,7 +384,7 @@ export const DataProvider = ({ children }) => {
         fetchOrgProjects();
         return;
       } else if (response.status === 304) {
-        history.push("/login");
+        history("/login");
       } else {
         alert(response.message);
       }
@@ -405,7 +404,7 @@ export const DataProvider = ({ children }) => {
         setOutputRate(response.calculation);
         return;
       } else if (response.status === 304) {
-        history.push("/login");
+        history("/login");
       } else {
         alert(response.message);
       }
@@ -420,7 +419,7 @@ export const DataProvider = ({ children }) => {
         setInactiveProjects(response.org_inactive_projects);
         return;
       } else if (response.status === 304) {
-        history.push("/login");
+        history("/login");
       } else {
         alert(response.message);
       }
@@ -435,7 +434,7 @@ export const DataProvider = ({ children }) => {
         setInactiveProjects(response.org_inactive_projects);
         return;
       } else if (response.status === 304) {
-        history.push("/login");
+        history("/login");
       } else {
         alert(response.message);
       }
@@ -451,7 +450,7 @@ export const DataProvider = ({ children }) => {
         // setInactiveProjects(response.org_inactive_projects);
         return;
       } else if (response.status === 304) {
-        history.push("/login");
+        history("/login");
       } else {
         alert(response.message);
       }
@@ -507,10 +506,10 @@ export const DataProvider = ({ children }) => {
     };
     poster(outpack, createTrainingURL).then((response) => {
       if (response.status === 200) {
-        // setorgMappingTrainings(response.org_trainings);
+        fetchOrgTrainings();
         return;
       } else if (response.status === 304) {
-        history.push("/login");
+        history("/login");
       } else {
         alert(response.message);
       }
@@ -569,7 +568,7 @@ export const DataProvider = ({ children }) => {
         fetchOrgTrainings();
         return;
       } else if (response.status === 304) {
-        history.push("/login");
+        history("/login");
       } else {
         alert(response.message);
       }
@@ -585,7 +584,24 @@ export const DataProvider = ({ children }) => {
         setorgProjectTrainings(response.org_project_trainings);
         return;
       } else if (response.status === 304) {
-        history.push("/login");
+        history("/login");
+      } else {
+        alert(response.message);
+      }
+    });
+  };
+
+  const fetchUserTrainings = () => {
+    let fetchTrainingsURL = "training/fetch_user_trainings";
+    fetcher(fetchTrainingsURL).then((response) => {
+      if (response.status === 200) {
+        setorgMappingTrainings(response.org_mapping_trainings);
+        setorgValidationTrainings(response.org_validation_trainings);
+        setorgProjectTrainings(response.org_project_trainings);
+        setUserCompletedTrainings(response.user_completed_trainings);
+        return;
+      } else if (response.status === 304) {
+        history("/login");
       } else {
         alert(response.message);
       }
@@ -603,13 +619,28 @@ export const DataProvider = ({ children }) => {
         fetchOrgTrainings();
         return;
       } else if (response.status === 304) {
-        history.push("/login");
+        history("/login");
       } else {
         alert(response.message);
       }
     });
   };
-
+  const completeTraining = (training_id, training_title) => {
+    let completeTrainingURL = "training/complete_training";
+    let outpack = {
+      training_id: training_id,
+    };
+    poster(outpack, completeTrainingURL).then((response) => {
+      if (response.status === 200) {
+        fetchUserTrainings();
+        return;
+      } else if (response.status === 304) {
+        history("/login");
+      } else {
+        alert(response.message);
+      }
+    });
+  };
   // TRANSACTION ORIENTED FUNCTIONS
 
   const fetchOrgTransactions = () => {
@@ -622,7 +653,7 @@ export const DataProvider = ({ children }) => {
         handleSetCSVdata(response.payments);
         return;
       } else if (response.status === 304) {
-        history.push("/login");
+        history("/login");
       } else {
         alert(response.message);
       }
@@ -639,7 +670,7 @@ export const DataProvider = ({ children }) => {
         handleSetCSVdata(response.payments);
         return;
       } else if (response.status === 304) {
-        history.push("/login");
+        history("/login");
       } else {
         alert(response.message);
       }
@@ -659,7 +690,7 @@ export const DataProvider = ({ children }) => {
         fetchOrgTransactions();
         return;
       } else if (response.status === 304) {
-        history.push("/login");
+        history("/login");
       } else {
         alert(response.message);
       }
@@ -677,7 +708,7 @@ export const DataProvider = ({ children }) => {
         fetchOrgTransactions();
         return;
       } else if (response.status === 304) {
-        history.push("/login");
+        history("/login");
       } else {
         alert(response.message);
       }
@@ -707,7 +738,7 @@ export const DataProvider = ({ children }) => {
         fetchOrgTransactions();
         return;
       } else if (response.status === 304) {
-        history.push("/login");
+        history("/login");
       } else {
         alert(response.message);
       }
@@ -725,7 +756,7 @@ export const DataProvider = ({ children }) => {
         fetchUserTransactions();
         return;
       } else if (response.status === 304) {
-        history.push("/login");
+        history("/login");
       } else {
         alert(response.message);
       }
@@ -739,7 +770,7 @@ export const DataProvider = ({ children }) => {
         setter(response.payable_total);
         return;
       } else if (response.status === 304) {
-        history.push("/login");
+        history("/login");
       } else {
         alert(response.message);
       }
@@ -753,7 +784,7 @@ export const DataProvider = ({ children }) => {
         handleAdminDashStates(response);
         return;
       } else if (response.status === 304) {
-        history.push("/login");
+        history("/login");
       } else {
         alert(response.message);
       }
@@ -767,7 +798,7 @@ export const DataProvider = ({ children }) => {
         handleAdminDashStates(response);
         return;
       } else if (response.status === 304) {
-        history.push("/login");
+        history("/login");
       } else {
         alert(response.message);
       }
@@ -780,7 +811,7 @@ export const DataProvider = ({ children }) => {
       if (response.status === 200) {
         return;
       } else if (response.status === 304) {
-        history.push("/login");
+        history("/login");
       } else {
         alert(response.message);
       }
@@ -793,7 +824,7 @@ export const DataProvider = ({ children }) => {
       if (response.status === 200) {
         return;
       } else if (response.status === 304) {
-        history.push("/login");
+        history("/login");
       } else {
         alert(response.message);
       }
@@ -817,6 +848,12 @@ export const DataProvider = ({ children }) => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     // Test if input matches the email regex pattern
     return emailRegex.test(email);
+  };
+
+  const shuffleArray = (array) => {
+    const newArray = [...array];
+    newArray.sort(() => Math.random() - 0.5);
+    return newArray;
   };
 
   const handleSetCSVdata = (e) => {
@@ -872,6 +909,7 @@ export const DataProvider = ({ children }) => {
     orgMappingTrainings,
     orgValidationTrainings,
     orgProjectTrainings,
+    userCompletedTrainings,
     //STATE SETTERS
     setActiveProjectsCount,
     setInactiveProjectsCount,
@@ -930,12 +968,15 @@ export const DataProvider = ({ children }) => {
     admin_update_all_user_tasks,
     //Training
     fetchOrgTrainings,
+    fetchUserTrainings,
     setorgMappingTrainings,
     setorgValidationTrainings,
     setorgProjectTrainings,
     createTraining,
     deleteTraining,
     modifyTraining,
+    completeTraining,
+    setUserCompletedTrainings,
     //Task
     checkUserStats,
     //general functions
@@ -943,6 +984,7 @@ export const DataProvider = ({ children }) => {
     findObjectById,
     goToSource,
     isValidEmail,
+    shuffleArray,
   };
 
   return value ? (

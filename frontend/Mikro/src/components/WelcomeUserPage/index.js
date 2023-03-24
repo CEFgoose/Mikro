@@ -1,12 +1,9 @@
 import { DataContext } from "common/DataContext";
 import React, { useContext, useState } from "react";
 import useToggle from "hooks/useToggle";
-import { Navigate } from "react-router-dom";
-import kaartLogo from "../../images/20-KAART-Color.svg";
 import mikro_icon from "../../images/5.png";
 import {
   SectionTitle,
-  SectionSubtitle,
   StyledButton,
 } from "components/commonComponents/commonComponents";
 import { FirstLoginModal } from "./welcomePageCompnants";
@@ -14,7 +11,6 @@ import { LoginImage } from "./styles";
 import { Typography } from "@mui/material";
 
 export const WelcomeUserPage = () => {
-  const [Navigate, setRedirect] = useState(false);
   const [modalOpen, toggleModalOpen] = useToggle(false);
   const [modalPage, setModalPage] = useState(1);
   const [OSMusername, setOSMusername] = useState(null);
@@ -23,7 +19,7 @@ export const WelcomeUserPage = () => {
   const [country, setCountry] = useState(null);
   const [city, setCity] = useState(null);
 
-  const { firstLoginUpdate, isValidEmail } = useContext(DataContext);
+  const { firstLoginUpdate, isValidEmail, history } = useContext(DataContext);
 
   const handleModalOpen = () => {
     toggleModalOpen();
@@ -95,7 +91,7 @@ export const WelcomeUserPage = () => {
         city,
         termsAgreement
       );
-      setRedirect(true);
+      history("/dashboard");
     }
   };
 
@@ -146,7 +142,6 @@ export const WelcomeUserPage = () => {
           />
         </div>
       </div>
-      {!Navigate ? <></> : <Navigate push to="/dashboard" />}
     </>
   );
 };

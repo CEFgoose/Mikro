@@ -80,7 +80,7 @@ const Sidebar = (props) => {
 
   useEffect(() => {
     if (user === null) {
-      history.push("/login");
+      history("/login");
     }
     if (user) {
       refresh();
@@ -103,7 +103,7 @@ const Sidebar = (props) => {
       method: "POST",
     }).then(() => {
       setLocalUser(null);
-      history.push("/login");
+      history("/login");
     });
   };
 

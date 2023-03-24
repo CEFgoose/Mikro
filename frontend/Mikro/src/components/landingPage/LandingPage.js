@@ -1,6 +1,5 @@
-import React, { useState } from "react";
-import { Navigate } from "react-router-dom";
-import useToggle from "hooks/useToggle";
+import React, { useContext } from "react";
+import { DataContext } from "common/DataContext";
 import { NavLink } from "react-router-dom";
 import laptop_image from "../../images/laptop.png";
 import "./styles.css";
@@ -8,10 +7,12 @@ import { Button, Typography } from "@mui/material";
 import { ProjectIcon } from "./styles.js";
 import mikro_icon from "../../images/5.png";
 export const LandingPage = (props) => {
-  const [Navigate, setRedirect] = useToggle(false);
+  const { history } = useContext(DataContext);
+
   const handleSetRedirect = () => {
-    setRedirect();
+    history("/login");
   };
+
   return (
     <>
       <div
@@ -90,8 +91,6 @@ export const LandingPage = (props) => {
                     backgroundColor: "#f4753c",
                     color: "black",
                   }}
-                  // to={PATH_AUTH.login}
-                  // component={RouterLink}
                 >
                   Start Mapping Today
                 </Button>
@@ -107,7 +106,11 @@ export const LandingPage = (props) => {
               height: "15vh",
             }}
           >
-            <img style={{ height: "9vh" }} src={mikro_icon}></img>
+            <img
+              style={{ height: "9vh" }}
+              src={mikro_icon}
+              alt="mikro icon"
+            ></img>
           </div>
           <div
             style={{
@@ -124,28 +127,6 @@ export const LandingPage = (props) => {
           </div>
         </div>
       </div>
-      {!Navigate ? <></> : <Navigate push to="/login" />}
     </>
   );
 };
-//
-
-// <div>
-// <Typography
-//   component="span"
-//   variant="h1"
-//   sx={{ color: "primary.main" }}
-// >
-//   Mikro
-// </Typography>
-// </div>
-
-// <div>
-// <Typography sx={{ color: "common.white" }}>
-//   A micro-payments platform for OSM
-// </Typography>
-// </div>
-
-// <div>
-
-// </div>

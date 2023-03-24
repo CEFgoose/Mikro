@@ -34,6 +34,7 @@ export const UserDashboard = () => {
     fetchUserDashStats,
     fetchUserProjects,
     update_user_tasks,
+    history,
   } = useContext(DataContext);
 
   const { refresh, user } = useContext(AuthContext);
@@ -47,10 +48,10 @@ export const UserDashboard = () => {
       refresh();
     }
     if (user === null) {
-      setRedirect(true);
+      history("/login");
     }
     if (user !== null && user.role !== "user") {
-      setRedirect(true);
+      history("/login");
     }
     fetchUserProjects();
     fetchUserDashStats();
@@ -207,7 +208,6 @@ export const UserDashboard = () => {
           </div>
         </div>
       </div>
-      {!Navigate ? <></> : <Navigate push to="/login" />}
     </>
   );
 };

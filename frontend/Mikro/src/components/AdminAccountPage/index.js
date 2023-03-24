@@ -1,5 +1,4 @@
 import React, { useContext, useState, useEffect } from "react";
-import { Navigate } from "react-router-dom";
 import { DataContext } from "common/DataContext";
 import { AuthContext } from "common/AuthContext";
 import { Divider } from "@mui/material";
@@ -28,10 +27,10 @@ export const AdminAccountPage = () => {
     updateUserDetails,
     handleUserDetailsStates,
     handleSetSidebarState,
+    history,
   } = useContext(DataContext);
 
   const { refresh, user } = useContext(AuthContext);
-  const [Navigate, setRedirect] = useState(false);
   const [modalOpen, toggleModalOpen] = useToggle(false);
 
   useEffect(() => {
@@ -39,10 +38,10 @@ export const AdminAccountPage = () => {
       refresh();
     }
     if (user === null) {
-      setRedirect(true);
+      history("/login");
     }
     if (user !== null && user.role !== "admin") {
-      setRedirect(true);
+      history("/login");
     }
     fetchUserDetails();
     // eslint-disable-next-line
@@ -269,7 +268,6 @@ export const AdminAccountPage = () => {
           </div>
         </div>
       </div>
-      {!Navigate ? <></> : <Navigate push to="/login" />}
     </>
   );
 };

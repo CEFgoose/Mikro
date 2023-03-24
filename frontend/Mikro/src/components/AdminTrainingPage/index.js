@@ -25,10 +25,10 @@ export const AdminTrainingPage = () => {
     fetchOrgTrainings,
     deleteTraining,
     modifyTraining,
+    history,
   } = useContext(DataContext);
 
   const { refresh, user } = useContext(AuthContext);
-  const [Navigate, setRedirect] = useState(false);
   const [page, setPage] = useState(0);
   const [modalPage, setModalPage] = useState(1);
   const [rowsPerPage, setRowsPerPage] = useState(10);
@@ -66,10 +66,10 @@ export const AdminTrainingPage = () => {
       refresh();
     }
     if (user === null) {
-      setRedirect(true);
+      history("/login");
     }
     if (user !== null && user.role !== "admin") {
-      setRedirect(true);
+      history("/login");
     }
     fetchOrgTrainings();
     // eslint-disable-next-line
@@ -492,7 +492,6 @@ export const AdminTrainingPage = () => {
           </Tabs>
         </div>
       </div>
-      {!Navigate ? <></> : <Navigate push to="/login" />}
     </>
   );
 };

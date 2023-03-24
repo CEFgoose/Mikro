@@ -1,4 +1,5 @@
-import React, { useState } from "react";
+import React, { useState, useContext } from "react";
+import { DataContext } from "common/DataContext";
 import { Navigate } from "react-router-dom";
 import {
   RegisterAsUserButton,
@@ -9,10 +10,11 @@ import {
 //COMPONENT DECLARATION & EXPORT - SSO CONTROLS ON MIKRO LOGIN PAGE- SENDS INVITE INFO TO KAART SSO FOR NE USERS
 export const SSOControl = (props) => {
   const [Navigate, setRedirect] = useState(false);
+  const { history } = useContext(DataContext);
   return (
     <>
       <RegisterWrapper>
-        <RegisterAsUserButton onClick={() => setRedirect(true)}>
+        <RegisterAsUserButton onClick={() => history("/login")}>
           Register as user
         </RegisterAsUserButton>
         <RegisterCompanyButton
@@ -50,7 +52,6 @@ export const SSOControl = (props) => {
       >
         Forgot password?
       </button>
-      {!Navigate ? <></> : <Navigate push to="/registerUser" />}
     </>
   );
 };

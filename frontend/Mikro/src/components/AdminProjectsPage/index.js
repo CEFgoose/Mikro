@@ -1,7 +1,6 @@
 import React, { useContext, useState, useEffect } from "react";
 import { DataContext } from "common/DataContext";
 import { AuthContext } from "../../common/AuthContext";
-import { Navigate } from "react-router-dom";
 import useToggle from "../../hooks/useToggle.js";
 import Sidebar from "../sidebar/sidebar";
 import "./styles.css";
@@ -41,9 +40,9 @@ export const AdminProjectsPage = () => {
     goToSource,
     assignUserProject,
     unassignUserProject,
+    history,
   } = useContext(DataContext);
 
-  const [Navigate, setRedirect] = useState(false);
   const [url, setUrl] = useState(null);
   const [rate, setRate] = useState(0.0);
   const [maxEditors, setMaxEditors] = useState(1);
@@ -64,10 +63,10 @@ export const AdminProjectsPage = () => {
       refresh();
     }
     if (user === null) {
-      setRedirect(true);
+      history("/login");
     }
     if (user !== null && user.role !== "admin") {
-      setRedirect(true);
+      history("/login");
     }
     fetchOrgProjects();
     // eslint-disable-next-line
@@ -313,7 +312,6 @@ export const AdminProjectsPage = () => {
           </Tabs>
         </div>
       </div>
-      {!Navigate ? <></> : <Navigate push to="/login" />}
     </>
   );
 };

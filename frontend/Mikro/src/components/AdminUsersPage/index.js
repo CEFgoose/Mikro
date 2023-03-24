@@ -1,5 +1,4 @@
 import React, { useContext, useState, useEffect } from "react";
-import { Navigate } from "react-router-dom";
 import { DataContext } from "common/DataContext";
 import { AuthContext } from "common/AuthContext";
 import Sidebar from "../sidebar/sidebar";
@@ -22,14 +21,19 @@ import {
 } from "../commonComponents/commonComponents";
 
 export const AdminUsersPage = () => {
-  const { orgUsers, fetchOrgUsers, inviteUser, removeUser, modifyUser } =
-    useContext(DataContext);
+  const {
+    orgUsers,
+    fetchOrgUsers,
+    inviteUser,
+    removeUser,
+    modifyUser,
+    history,
+  } = useContext(DataContext);
 
   const { sidebarOpen, handleSetSidebarState } = useContext(DataContext);
   const { refresh, user } = useContext(AuthContext);
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
-  const [Navigate, setRedirect] = useState(false);
   const [addOpen, toggleAddOpen] = useToggle(false);
   const [deleteOpen, toggleDeleteOpen] = useToggle(false);
   const [modifyOpen, toggleModifyOpen] = useToggle(false);
@@ -43,10 +47,10 @@ export const AdminUsersPage = () => {
       refresh();
     }
     if (user === null) {
-      setRedirect(true);
+      history("/login");
     }
     if (user !== null && user.role !== "admin") {
-      setRedirect(true);
+      history("/login");
     }
     fetchOrgUsers();
     // eslint-disable-next-line
@@ -247,7 +251,6 @@ export const AdminUsersPage = () => {
           </div>
         </div>
       </div>
-      {!Navigate ? <></> : <Navigate push to="/login" />}
     </>
   );
 };

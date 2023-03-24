@@ -31,10 +31,10 @@ export const AdminPaymentsPage = () => {
     deleteTransaction,
     processPayRequest,
     CSVdata,
+    history,
   } = useContext(DataContext);
 
   const { refresh, user } = useContext(AuthContext);
-  const [Navigate, setRedirect] = useState(false);
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [addOpen, toggleAddOpen] = useToggle(false);
@@ -58,10 +58,10 @@ export const AdminPaymentsPage = () => {
       refresh();
     }
     if (user === null) {
-      setRedirect(true);
+      history("/login");
     }
     if (user !== null && user.role !== "admin") {
-      setRedirect(true);
+      history("/login");
     }
     fetchOrgTransactions();
     // eslint-disable-next-line
@@ -316,7 +316,6 @@ export const AdminPaymentsPage = () => {
           </Tabs>
         </div>
       </div>
-      {!Navigate ? <></> : <Navigate push to="/login" />}
     </>
   );
 };

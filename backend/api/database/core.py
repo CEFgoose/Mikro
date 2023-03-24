@@ -28,7 +28,9 @@ class User(ModelWithSoftDeleteAndCRUD, SurrogatePK):
     role = Column(String, default="user")
     assigned_projects = Column(MutableList.as_mutable(ARRAY(Integer)))
     mapper_level = db.Column(db.Integer, default=0, nullable=True)
-
+    mapper_points = db.Column(db.Integer, default=0, nullable=True)
+    validator_points = db.Column(db.Integer, default=0, nullable=True)
+    special_project_points = db.Column(db.Integer, default=0, nullable=True)
     payable_total = db.Column(
         db.Float, nullable=True, default=0, server_default="0"
     )
@@ -106,6 +108,8 @@ class Training(ModelWithSoftDeleteAndCRUD, SurrogatePK, db.Model):
     incorrect4_1 = db.Column(db.String, nullable=True)
     incorrect4_2 = db.Column(db.String, nullable=True)
     incorrect4_3 = db.Column(db.String, nullable=True)
+    incorrect4_3 = db.Column(db.String, nullable=True)
+    # incorrect = db.Column(db.String, nullable=True)
 
 
 class TrainingCompleted(CRUDMixin, SurrogatePK, db.Model):

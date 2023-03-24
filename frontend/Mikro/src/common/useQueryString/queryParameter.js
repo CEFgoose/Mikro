@@ -14,7 +14,7 @@ const setQueryStringWithoutReloadReal = (qsValue) => {
     window.location.pathname +
     qsValue;
 
-  window.history.pushState({ path: newUrl }, "", newUrl);
+  window.historyState({ path: newUrl }, "", newUrl);
 };
 
 export const setQueryStringWithoutReload = AwesomeDebouncePromise(
