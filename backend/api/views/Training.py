@@ -92,7 +92,6 @@ class TrainingAPI(MethodView):
             }
             return response, 500
 
-
     @requires_admin
     def modify_training(self):
         # Check if user is authenticated
@@ -160,7 +159,6 @@ class TrainingAPI(MethodView):
             "message": f"Training {training_id} has been updated",
             "status": 200,
         }
-
 
     @requires_admin
     def delete_training(self):
@@ -266,7 +264,6 @@ class TrainingAPI(MethodView):
             "message": "Training completed",
             "status": 200,
         }
-
 
     def fetch_user_trainings(self):
         # Check if user is authenticated

@@ -31,7 +31,7 @@ import { RegisterUser } from "components/RegisterUser";
 // APP DECLARATION
 function App() {
   const { refresh, user } = useContext(AuthContext);
-  
+
   const Private = ({ Component }) => {
     const auth = user.role === "admin";
     return auth ? <Component /> : <Navigate to="/login" />;

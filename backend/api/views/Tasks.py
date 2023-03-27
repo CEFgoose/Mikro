@@ -62,7 +62,6 @@ class TaskAPI(MethodView):
                         pass
         return {"response": "Updated!"}
 
-
     def getValidatedTM3Tasks(self, inStatus, projectID):
         outValidated = []
         validatedIDs = [
@@ -109,8 +108,6 @@ class TaskAPI(MethodView):
                 pass
         return {"response": "complete"}
 
-
-
     def getInvalidatedTM3Tasks(self, inStatus, projectID):
         validatedIDs = [
             x["properties"]["taskId"]
@@ -145,7 +142,6 @@ class TaskAPI(MethodView):
             else:
                 pass
         return {"response": "complete"}
-    
 
     def get_validated_TM4_tasks(self, data, projectID):
         users = User.query.all()
@@ -223,8 +219,6 @@ class TaskAPI(MethodView):
                             )
         return {"response": "complete"}
 
-
-
     def get_invalidated_TM4_tasks(self, project_id, user):
         user_tasks = UserTasks.query.filter_by(user_id=user.id).all()
         user_task_ids = [relation.task_id for relation in user_tasks]
@@ -260,7 +254,6 @@ class TaskAPI(MethodView):
             else:
                 return {"request": "tm3 tasks mapped call failed"}
         return {"response": "complete"}
-    
 
     def get_mapped_TM4_tasks(self, data, projectID):
         newMappedTasks = []
@@ -301,7 +294,6 @@ class TaskAPI(MethodView):
                     else:
                         pass
         return {"message": "complete"}
-    
 
     def TM3PaymentCall(self, project_id):
         headers = {
@@ -334,7 +326,6 @@ class TaskAPI(MethodView):
         self.getValidatedTM3Tasks(taskStatusData, project_id)
         self.getInvalidatedTM3Tasks(taskStatusData, project_id)
         return {"response": "complete"}
-    
 
     def TM4_payment_call(self, project_id, user):
         payload = {}
@@ -355,7 +346,6 @@ class TaskAPI(MethodView):
             self.get_validated_TM4_tasks(data, project_id)
             self.get_invalidated_TM4_tasks(project_id, user)
             return {"message": "updated!"}
-        
 
     def update_user_tasks(self):
         # Check if user is authenticated
@@ -387,7 +377,6 @@ class TaskAPI(MethodView):
         for project_id in user_tm3_project_ids:
             self.TM3PaymentCall(project_id)
         return {"message": "updated", "status": 200}
-    
 
     @requires_admin
     def admin_update_all_user_tasks(self):

@@ -1,10 +1,5 @@
 import React from "react";
-import {
-  Modal,
-  Table,
-  TableBody,
-  TablePagination,
-} from "@mui/material";
+import { Modal, Table, TableBody, TablePagination } from "@mui/material";
 import {
   ProjectRow,
   CardMediaStyle,

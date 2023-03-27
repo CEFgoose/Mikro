@@ -65,29 +65,31 @@ export const LandingPage = (props) => {
               <br />
               Make a Difference
               <br />
-
-                  with
-
-
-              <div  style={{display:'flex',flexDirection:'row',alignItems:'center',marginLeft:'0vw'}}>
-              <Typography
-                style={{marginLeft:'0vw',paddingLeft:'0vw'}}
-                component="span"
-                variant="h1"
-                sx={{ color: "#f4753c" }}
+              with
+              <div
+                style={{
+                  display: "flex",
+                  flexDirection: "row",
+                  alignItems: "center",
+                  marginLeft: "0vw",
+                }}
               >
-              Mikro
-              </Typography>
-              <div >
-                <img
-                style={{ width: "20%", marginLeft:'5%'}}
-                src={mikro_icon}
-                alt="mikro icon"
-                />
+                <Typography
+                  style={{ marginLeft: "0vw", paddingLeft: "0vw" }}
+                  component="span"
+                  variant="h1"
+                  sx={{ color: "#f4753c" }}
+                >
+                  Mikro
+                </Typography>
+                <div>
+                  <img
+                    style={{ width: "20%", marginLeft: "5%" }}
+                    src={mikro_icon}
+                    alt="mikro icon"
+                  />
+                </div>
               </div>
-
-              </div>
-
             </Typography>
             <div style={{ marginTop: "4vh" }}>
               <Typography variant="h6" sx={{ color: "common.white" }}>
@@ -120,9 +122,7 @@ export const LandingPage = (props) => {
               left: "33vw",
               height: "15vh",
             }}
-          >
-
-          </div>
+          ></div>
           <div
             style={{
               display: "flex",

@@ -123,20 +123,19 @@ const Sidebar = (props) => {
                 marginTop: "5%",
               }}
             >
-              <div style={{ marginLeft: ".7vw"}}></div>
+              <div style={{ marginLeft: ".7vw" }}></div>
             </div>
           </MenuItemTop>
 
           {/* <div style={{width:'100%',backgroundColor:'black',height:'.25vh',marginTop:'1vh'}}/> */}
 
-          <MenuItemTop style={{marginBottom:'10%'}}>
+          <MenuItemTop style={{ marginBottom: "10%" }}>
             <RoleBarWrapper>
               <div
                 style={{
                   display: "flex",
                   flexDirection: "row",
                   alignItems: "center",
-                  
                 }}
               >
                 <div
@@ -229,7 +228,6 @@ const Sidebar = (props) => {
             style={{ width: "100%", backgroundColor: "black", height: ".05vh" }}
           /> */}
 
-
           <NavLink to={paymentsPageLink} style={{ textDecoration: "none" }}>
             <MenuItem>
               <ProjectIconContainer>
@@ -265,7 +263,6 @@ const Sidebar = (props) => {
               Kaart.com
             </Header>
           </MenuItem>
-
         </SidebarOpenedContainer>
       ) : (
         <SidebarClosedContainer onClick={props.toggleSidebar}>
