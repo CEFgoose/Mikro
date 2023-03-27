@@ -3,7 +3,6 @@ import { DataContext } from "common/DataContext";
 import { AuthContext } from "../../common/AuthContext";
 import useToggle from "../../hooks/useToggle.js";
 import Sidebar from "../sidebar/sidebar";
-import { Navigate } from "react-router-dom";
 import { ButtonDivComponent } from "components/commonComponents/commonComponents";
 import "./styles.css";
 import { Tab, TabList, TabPanel, Tabs } from "react-tabs";

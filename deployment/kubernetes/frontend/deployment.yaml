@@ -1,24 +1,26 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: frontend-deployment
+  name: client-deployment
   labels:
-    app: mikro-frontend
+    app: geocache-client
 spec:
   replicas: 1
+  minReadySeconds: 30
   selector:
     matchLabels:
-      app: mikro-frontend
+      app: geocache-client
   template:
     metadata:
       labels:
-        app: mikro-frontend
+        app: geocache-client
     spec:
       containers:
-        - name: mikro-frontend
-          image: registry.gitlab.com/mikro/mikro-frontend:latest
+        - name: geocache-client
+          image: registry.gitlab.com/gokaart/geocash/mikro-frontend:latest
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 80
       imagePullSecrets:
         - name: regcred
+      terminationGracePeriodSeconds: 30

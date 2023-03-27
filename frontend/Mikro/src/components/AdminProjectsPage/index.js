@@ -184,7 +184,6 @@ export const AdminProjectsPage = () => {
     if (assignmentStatus === "No") {
       assignUserProject(projectSelected, userSelected);
     } else {
-      console.log("unassign");
       unassignUserProject(projectSelected, userSelected);
     }
   };

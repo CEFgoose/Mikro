@@ -2,7 +2,6 @@ import React, { useContext, useEffect, useState } from "react";
 import { DataContext } from "../../common/DataContext";
 import { AuthContext } from "../../common/AuthContext";
 import Sidebar from "../sidebar/sidebar";
-import { Navigate } from "react-router-dom";
 import { Tab, TabList, TabPanel, Tabs } from "react-tabs";
 import useToggle from "../../hooks/useToggle.js";
 import { ButtonDivComponent } from "components/commonComponents/commonComponents";
@@ -46,13 +45,11 @@ export const AdminTrainingPage = () => {
   const [incorrect1_1, setIncorrect1_1] = useState(null);
   const [incorrect1_2, setIncorrect1_2] = useState(null);
   const [incorrect1_3, setIncorrect1_3] = useState(null);
-
   const [question2, setQuestion2] = useState(null);
   const [answer2, setAnswer2] = useState(null);
   const [incorrect2_1, setIncorrect2_1] = useState(null);
   const [incorrect2_2, setIncorrect2_2] = useState(null);
   const [incorrect2_3, setIncorrect2_3] = useState(null);
-
   const [question3, setQuestion3] = useState(null);
   const [answer3, setAnswer3] = useState(null);
   const [incorrect3_1, setIncorrect3_1] = useState(null);

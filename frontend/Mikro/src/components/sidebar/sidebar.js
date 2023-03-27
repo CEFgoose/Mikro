@@ -120,22 +120,23 @@ const Sidebar = (props) => {
               style={{
                 display: "flex",
                 flexDirection: "column",
-                marginTop: "2vh",
+                marginTop: "5%",
               }}
             >
-              <div style={{ marginLeft: ".7vw" }}></div>
+              <div style={{ marginLeft: ".7vw"}}></div>
             </div>
           </MenuItemTop>
 
           {/* <div style={{width:'100%',backgroundColor:'black',height:'.25vh',marginTop:'1vh'}}/> */}
 
-          <MenuItemTop>
+          <MenuItemTop style={{marginBottom:'10%'}}>
             <RoleBarWrapper>
               <div
                 style={{
                   display: "flex",
                   flexDirection: "row",
                   alignItems: "center",
+                  
                 }}
               >
                 <div
@@ -172,7 +173,7 @@ const Sidebar = (props) => {
                   width: "100%",
                   backgroundColor: "black",
                   height: ".05vh",
-                  marginTop: "2vh",
+                  marginTop: "5%",
                 }}
               />
             </RoleBarWrapper>
@@ -186,9 +187,9 @@ const Sidebar = (props) => {
               <Header>Dashboard</Header>
             </MenuItem>
           </NavLink>
-          <div
+          {/* <div
             style={{ width: "100%", backgroundColor: "black", height: ".05vh" }}
-          />
+          /> */}
           <NavLink to={projectPageLink} style={{ textDecoration: "none" }}>
             <MenuItem>
               <ProjectIconContainer>
@@ -197,9 +198,9 @@ const Sidebar = (props) => {
               <Header>Projects</Header>
             </MenuItem>
           </NavLink>
-          <div
+          {/* <div
             style={{ width: "100%", backgroundColor: "black", height: ".05vh" }}
-          />
+          /> */}
 
           {role === "admin" ? (
             <NavLink to="/AdminUsersPage" style={{ textDecoration: "none" }}>
@@ -213,9 +214,9 @@ const Sidebar = (props) => {
           ) : (
             <></>
           )}
-          <div
+          {/* <div
             style={{ width: "100%", backgroundColor: "black", height: ".05vh" }}
-          />
+          /> */}
           <NavLink to={trainingPageLink} style={{ textDecoration: "none" }}>
             <MenuItem>
               <ProjectIconContainer>
@@ -224,20 +225,10 @@ const Sidebar = (props) => {
               <Header>Training</Header>
             </MenuItem>
           </NavLink>
-          <div
+          {/* <div
             style={{ width: "100%", backgroundColor: "black", height: ".05vh" }}
-          />
-          {role === "admin" ? (
-            <div
-              style={{
-                width: "100%",
-                backgroundColor: "black",
-                height: ".05vh",
-              }}
-            />
-          ) : (
-            <></>
-          )}
+          /> */}
+
 
           <NavLink to={paymentsPageLink} style={{ textDecoration: "none" }}>
             <MenuItem>
@@ -247,9 +238,9 @@ const Sidebar = (props) => {
               <Header>Payments</Header>
             </MenuItem>
           </NavLink>
-          <div
+          {/* <div
             style={{ width: "100%", backgroundColor: "black", height: ".05vh" }}
-          />
+          /> */}
           <NavLink to={accountPageLink} style={{ textDecoration: "none" }}>
             <MenuItem>
               <ProjectIconContainer>
@@ -258,18 +249,14 @@ const Sidebar = (props) => {
               <Header>Account</Header>
             </MenuItem>
           </NavLink>
-          <div
-            style={{ width: "100%", backgroundColor: "black", height: ".05vh" }}
-          />
+
           <MenuItem onClick={logout}>
             <ProjectIconContainer>
               <ProjectIcon onClick={logout} src={logouticon} />
             </ProjectIconContainer>
             <Header onClick={logout}>Log Out</Header>
           </MenuItem>
-          <div
-            style={{ width: "100%", backgroundColor: "black", height: ".05vh" }}
-          />
+
           <MenuItem href={map_url} target="_blank">
             <ProjectIconContainer>
               <ProjectIcon href={map_url} target="_blank" src={leftArrow} />
@@ -278,9 +265,7 @@ const Sidebar = (props) => {
               Kaart.com
             </Header>
           </MenuItem>
-          <div
-            style={{ width: "100%", backgroundColor: "black", height: ".05vh" }}
-          />
+
         </SidebarOpenedContainer>
       ) : (
         <SidebarClosedContainer onClick={props.toggleSidebar}>

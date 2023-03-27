@@ -92,6 +92,7 @@ class TrainingAPI(MethodView):
             }
             return response, 500
 
+
     @requires_admin
     def modify_training(self):
         # Check if user is authenticated
@@ -160,6 +161,7 @@ class TrainingAPI(MethodView):
             "status": 200,
         }
 
+
     @requires_admin
     def delete_training(self):
         response = {}
@@ -190,7 +192,6 @@ class TrainingAPI(MethodView):
         # Check if user is authenticated
         if not g:
             return {"message": "User Not Found", "status": 304}
-
         # Get all projects for the organization
         org_id = g.user.org_id
         mapping_trainings = Training.query.filter_by(
@@ -202,7 +203,6 @@ class TrainingAPI(MethodView):
         project_trainings = Training.query.filter_by(
             org_id=org_id, training_type="Project"
         ).all()
-
         # Prepare response
         org_mapping_trainings = [
             self.format_training(training) for training in mapping_trainings
@@ -213,7 +213,6 @@ class TrainingAPI(MethodView):
         org_project_trainings = [
             self.format_training(training) for training in project_trainings
         ]
-
         return {
             "org_mapping_trainings": org_mapping_trainings,
             "org_validation_trainings": org_validation_trainings,
@@ -267,6 +266,7 @@ class TrainingAPI(MethodView):
             "message": "Training completed",
             "status": 200,
         }
+
 
     def fetch_user_trainings(self):
         # Check if user is authenticated

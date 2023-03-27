@@ -356,7 +356,6 @@ export const ModifyProjectModal = (props) => {
                                   assigned_projects,
                                   assigned,
                                 } = row;
-                                console.log(id, props.userSelected);
                                 return (
                                   <ProjectRow
                                     sx={{

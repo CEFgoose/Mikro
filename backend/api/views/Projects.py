@@ -108,16 +108,13 @@ class ProjectAPI(MethodView):
             totalTasks = project_data["totalTasks"]
         else:
             totalTasks = len(project_data["tasks"]["features"])
-
         if rateType is True:
             rate = float(rate)
             calculation = rate * totalTasks
-
         elif rateType is False:
             rate = float(rate)
             rate = rate / totalTasks
             calculation = rate
-
         # Create new project
         if rate >= 0.01:
             Project.create(
@@ -446,12 +443,10 @@ class ProjectAPI(MethodView):
         # Retrieve all projects and tasks for the organization
         all_projects = Project.query.filter_by(org_id=g.user.org_id).all()
         all_tasks = Task.query.filter_by(org_id=g.user.org_id).all()
-
         all_user_task_ids = [
             relation.task_id
             for relation in UserTasks.query.filter_by(user_id=g.user.id).all()
         ]
-
         user_mapped_tasks = [
             task
             for task in all_tasks
@@ -460,7 +455,6 @@ class ProjectAPI(MethodView):
             and task.validated is False
             and task.invalidated is False
         ]
-
         user_mapped_tasks_count = len(user_mapped_tasks)
         user_validated_tasks = [
             task

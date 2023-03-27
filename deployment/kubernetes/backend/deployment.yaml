@@ -16,7 +16,7 @@ spec:
     spec:
       containers:
         - name: mikro-backend
-          image: registry.gitlab.com/gokaart/mikro/mikro-backend:latest
+          image: registry.gitlab.com/gokaart/geocash/mikro-backend:latest
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 8000

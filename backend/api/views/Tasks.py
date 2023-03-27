@@ -17,12 +17,10 @@ from flask_jwt_extended import (
 class TaskAPI(MethodView):
     @jwt_required()
     def post(self, path: str):
-
         if path == "update_user_tasks":
             return self.update_user_tasks()
         elif path == "admin_update_all_user_tasks":
             return self.admin_update_all_user_tasks()
-
         return {
             "message": "Only /project/{fetch_users,fetch_user_projects} is permitted with GET",  # noqa: E501
         }, 405
@@ -64,7 +62,6 @@ class TaskAPI(MethodView):
                         pass
         return {"response": "Updated!"}
 
-    # --------------------------------GET ALL MIKRO VALIDATED TASKS FROM TM3------  # noqa: E501
 
     def getValidatedTM3Tasks(self, inStatus, projectID):
         outValidated = []
@@ -112,7 +109,7 @@ class TaskAPI(MethodView):
                 pass
         return {"response": "complete"}
 
-    # --------------------------------GET ALL MIKRO INVALIDATED TASKS FROM TM3------  # noqa: E501
+
 
     def getInvalidatedTM3Tasks(self, inStatus, projectID):
         validatedIDs = [
@@ -136,11 +133,9 @@ class TaskAPI(MethodView):
                     user = User.query.filter_by(
                         osm_username=task_exists.mapped_by
                     ).first()
-
                     task_exists.update(
                         validated_by="TM3 - INVALID", validated=False
                     )
-
                     user.update(
                         total_tasks_invalidated=user.total_tasks_invalidated
                         + 1,
@@ -150,6 +145,7 @@ class TaskAPI(MethodView):
             else:
                 pass
         return {"response": "complete"}
+    
 
     def get_validated_TM4_tasks(self, data, projectID):
         users = User.query.all()
@@ -227,7 +223,7 @@ class TaskAPI(MethodView):
                             )
         return {"response": "complete"}
 
-    # --------------------------------GET ALL MIKRO INVALIDATED TASKS FROM TM4------  # noqa: E501
+
 
     def get_invalidated_TM4_tasks(self, project_id, user):
         user_tasks = UserTasks.query.filter_by(user_id=user.id).all()
@@ -264,6 +260,7 @@ class TaskAPI(MethodView):
             else:
                 return {"request": "tm3 tasks mapped call failed"}
         return {"response": "complete"}
+    
 
     def get_mapped_TM4_tasks(self, data, projectID):
         newMappedTasks = []
@@ -304,6 +301,7 @@ class TaskAPI(MethodView):
                     else:
                         pass
         return {"message": "complete"}
+    
 
     def TM3PaymentCall(self, project_id):
         headers = {
@@ -336,6 +334,7 @@ class TaskAPI(MethodView):
         self.getValidatedTM3Tasks(taskStatusData, project_id)
         self.getInvalidatedTM3Tasks(taskStatusData, project_id)
         return {"response": "complete"}
+    
 
     def TM4_payment_call(self, project_id, user):
         payload = {}
@@ -352,11 +351,11 @@ class TaskAPI(MethodView):
         )
         if response.ok:
             data = response.json()
-            # print(data)
             self.get_mapped_TM4_tasks(data, project_id)
             self.get_validated_TM4_tasks(data, project_id)
             self.get_invalidated_TM4_tasks(project_id, user)
             return {"message": "updated!"}
+        
 
     def update_user_tasks(self):
         # Check if user is authenticated
@@ -388,6 +387,7 @@ class TaskAPI(MethodView):
         for project_id in user_tm3_project_ids:
             self.TM3PaymentCall(project_id)
         return {"message": "updated", "status": 200}
+    
 
     @requires_admin
     def admin_update_all_user_tasks(self):

@@ -94,10 +94,8 @@ export const UserTrainingPage = () => {
       if (selectedAnswer) {
         if (selectedAnswer === answer1) {
           setResult1(true);
-          alert("true");
         } else {
           setResult1(false);
-          alert("false");
         }
         setModalPage(2);
         return;
@@ -107,12 +105,10 @@ export const UserTrainingPage = () => {
       if (selectedAnswer) {
         if (selectedAnswer === answer2) {
           setResult2(true);
-          alert("true");
         } else {
           setResult2(false);
           alert("false");
         }
-        setModalPage(3);
         return;
       }
     }
@@ -121,10 +117,8 @@ export const UserTrainingPage = () => {
         setconfirmButtonText("Submit");
         if (selectedAnswer === answer3) {
           setResult3(true);
-          alert("true");
         } else {
           setResult3(false);
-          alert("false");
         }
         setModalPage(4);
         return;

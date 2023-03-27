@@ -647,7 +647,6 @@ export const DataProvider = ({ children }) => {
     let fetchTransactionsURL = "transaction/fetch_org_transactions";
     fetcher(fetchTransactionsURL).then((response) => {
       if (response.status === 200) {
-        console.log(response.payments);
         setOrgRequests(response.requests);
         setOrgPayments(response.payments);
         handleSetCSVdata(response.payments);
@@ -664,7 +663,6 @@ export const DataProvider = ({ children }) => {
     let fetchUserTransactionsURL = "transaction/fetch_user_transactions";
     fetcher(fetchUserTransactionsURL).then((response) => {
       if (response.status === 200) {
-        console.log(response.payments);
         setOrgRequests(response.requests);
         setOrgPayments(response.payments);
         handleSetCSVdata(response.payments);

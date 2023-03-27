@@ -109,7 +109,6 @@ class Training(ModelWithSoftDeleteAndCRUD, SurrogatePK, db.Model):
     incorrect4_2 = db.Column(db.String, nullable=True)
     incorrect4_3 = db.Column(db.String, nullable=True)
     incorrect4_3 = db.Column(db.String, nullable=True)
-    # incorrect = db.Column(db.String, nullable=True)
 
 
 class TrainingCompleted(CRUDMixin, SurrogatePK, db.Model):

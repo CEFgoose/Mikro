@@ -2,13 +2,13 @@ import { DataContext } from "common/DataContext";
 import React, { useContext, useState } from "react";
 import useToggle from "hooks/useToggle";
 import mikro_icon from "../../images/5.png";
+import { FirstLoginModal } from "./welcomePageCompnants";
+import { LoginImage } from "./styles";
+import { Typography } from "@mui/material";
 import {
   SectionTitle,
   StyledButton,
 } from "components/commonComponents/commonComponents";
-import { FirstLoginModal } from "./welcomePageCompnants";
-import { LoginImage } from "./styles";
-import { Typography } from "@mui/material";
 
 export const WelcomeUserPage = () => {
   const [modalOpen, toggleModalOpen] = useToggle(false);
@@ -43,7 +43,6 @@ export const WelcomeUserPage = () => {
   };
 
   const handleSetCountry = (e) => {
-    console.log(e);
     setCountry(e.target.value);
   };
 

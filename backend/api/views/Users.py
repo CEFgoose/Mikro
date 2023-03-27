@@ -274,13 +274,11 @@ class UserAPI(MethodView):
         ]
         for field in fields:
             value = request.json.get(field)
-            print(getattr(g.user, field))
             if (
                 value is not None
                 and value != ""
                 and value != getattr(g.user, field)
             ):
-                print(value)
                 setattr(g.user, field, value)
                 g.user.update()
         # Return success response
@@ -392,32 +390,3 @@ class UserAPI(MethodView):
         # Set status code for response
         response["status"] = 200
         return response
-
-    # # ADMIN ONLY ROUTE - UNASSIGN CURRENT SELECTED USER FROM CURRENT SELECTED TEAM # noqa: E501
-    # @requires_admin
-    # def unassign_user(self):
-    #     # initialize an empty dictionary to store the response
-    #     response = {}
-    #     # extract the team_id from the request body
-    #     team_id = request.json.get("team_id")
-    #     if not team_id:
-    #         response["message"] = "Team_id required"
-    #         response["status"] = 400
-    #         return response
-    #     # extract the user_id from the request body
-    #     user_id = request.json.get("user_id")
-    #     if not user_id:
-    #         response["message"] = "User_id required"
-    #         response["status"] = 400
-    #         return response
-    #     # check if a non-deleted relation between the user and team exists
-    #     relation = TeamMember.query.filter_by(
-    #         team_id=team_id, user_id=user_id, deleted=False
-    #     ).first()
-    #     # if the relation exists, update its deleted field to True
-    #     if relation:
-    #         relation.update(deleted=True)
-    #     # update the response dictionary
-    #     response["message"] = "User unassigned"
-    #     response["status"] = 200
-    #     return response

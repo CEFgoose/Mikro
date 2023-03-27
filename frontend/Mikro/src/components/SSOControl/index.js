@@ -1,6 +1,5 @@
 import React, { useState, useContext } from "react";
 import { DataContext } from "common/DataContext";
-import { Navigate } from "react-router-dom";
 import {
   RegisterAsUserButton,
   RegisterCompanyButton,
