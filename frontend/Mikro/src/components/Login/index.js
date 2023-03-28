@@ -47,7 +47,7 @@ export const Login = () => {
     let city;
     fetch(url, {
       method: "post",
-      mode: "cors",
+      // mode: "cors",
       credentials: "include",
       headers: {
         "X-CSRF-TOKEN": `${Cookie.get("csrf_access_token")}`,
@@ -85,10 +85,10 @@ export const Login = () => {
             e.preventDefault();
             fetch(SSO_URL.concat("auth/login"), {
               method: "POST",
-              mode: "cors",
+              // mode: "cors",
               credentials: "include",
               headers: {
-                "Access-Control-Allow-Origin": "*",
+                // "Access-Control-Allow-Origin": "*",
                 "Content-Type": "application/json",
               },
               body: JSON.stringify({
