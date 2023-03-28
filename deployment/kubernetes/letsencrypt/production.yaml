@@ -4,7 +4,7 @@ metadata:
   name: letsencrypt-production
 spec:
   acme:
-    email: osm@kaart.com
+    email: dev@kaart.com
     server: https://acme-v02.api.letsencrypt.org/directory
     privateKeySecretRef:
       # Secret resource that will be used to store the account's private key.

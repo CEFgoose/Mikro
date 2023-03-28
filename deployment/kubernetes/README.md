@@ -16,10 +16,10 @@ At this point, you can start applying the yaml files.
 Preferred order:
 
 1. letsencrypt (in order for the required pods and services to be spun up for cert-manager)
-2. namespace.yaml (required to be added prior to database, frontend, and backend)
+2. namespace.yaml (required to be added prior to database, client, and server)
 3. database (not currently used)
-4. backend
-5. frontend
+4. server
+5. client
 6. ingress.yaml (last, so that the cert-manager service is hopefully done spinning up)
 
 # Suggested commands to run
@@ -30,9 +30,9 @@ kubectl create namespace cert-manager && helm repo add jetstack https://charts.j
 kubectl apply -f letsencrypt/staging.yaml
 kubectl apply -f letsencrypt/production.yaml
 kubectl apply -f namespace.yaml
-kubectl apply -n mikro -f backend/deployment.yaml
-kubectl apply -n mikro -f backend/service.yaml
-kubectl apply -n mikro -f frontend/deployment.yaml
-kubectl apply -n mikro -f frontend/service.yaml
-kubectl apply -n mikro -f ingress.yaml
+kubectl apply -n geocache -f server/deployment.yaml
+kubectl apply -n geocache -f server/service.yaml
+kubectl apply -n geocache -f client/deployment.yaml
+kubectl apply -n geocache -f client/service.yaml
+kubectl apply -n geocache -f ingress.yaml
 ```

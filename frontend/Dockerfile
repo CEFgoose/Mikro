@@ -1,17 +1,15 @@
 # Build environment
-FROM node:16 as builder
-
-ENV NODE_OPTIONS=--max_old_space_size=4096
+FROM node:latest as builder
 
 WORKDIR /app
 
-COPY Mikro/package.json /app
+COPY package.json package-lock.json /app/
 
-RUN npm install --force
+RUN npm install --production
 
-COPY Mikro/ /app
+COPY . /app
 
-RUN npm run build --force
+RUN npm run build
 
 # Production environment
 FROM nginx:latest
