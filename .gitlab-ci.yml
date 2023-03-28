@@ -24,21 +24,21 @@ include:
     TESTING_ENDPOINT: test_database
     TESTING_PORT: 5432
   before_script:
-    - echo "APP_BASE_URL=\"${APP_BASE_URL}\"" > server/geocache.env
-    - echo "POSTGRES_DB=\"${POSTGRES_DB}\"" >> server/geocache.env
-    - echo "POSTGRES_USER=\"${POSTGRES_USER}\"" >> server/geocache.env
-    - echo "POSTGRES_PASSWORD=\"${POSTGRES_PASSWORD}\"" >> server/geocache.env
-    - echo "POSTGRES_ENDPOINT=\"${POSTGRES_ENDPOINT}\"" >> server/geocache.env
-    - echo "TESTING_DB=\"${TESTING_DB}\"" >> server/geocache.env
-    - echo "TESTING_USER=\"${TESTING_USER}\"" >> server/geocache.env
+    - echo "APP_BASE_URL=\"${APP_BASE_URL}\"" > backend/geocache.env
+    - echo "POSTGRES_DB=\"${POSTGRES_DB}\"" >> backend/geocache.env
+    - echo "POSTGRES_USER=\"${POSTGRES_USER}\"" >> backend/geocache.env
+    - echo "POSTGRES_PASSWORD=\"${POSTGRES_PASSWORD}\"" >> backend/geocache.env
+    - echo "POSTGRES_ENDPOINT=\"${POSTGRES_ENDPOINT}\"" >> backend/geocache.env
+    - echo "TESTING_DB=\"${TESTING_DB}\"" >> backend/geocache.env
+    - echo "TESTING_USER=\"${TESTING_USER}\"" >> backend/geocache.env
 
-    - cat server/geocache.env
+    - cat backend/geocache.env
     - ls -lh /dev/null
     - echo "Test" > /dev/null
     - echo $(pwd)
     - ls
-    - source server/geocache.env
-    - cd server
+    - source backend/geocache.env
+    - cd backend
     - pip3 --cache-dir ${PIP_CACHE_DIR} install -r requirements.txt
 
 .server_db_setup: &server_db_setup
@@ -69,7 +69,7 @@ cache:
   paths:
     - .cache/pip
     - .cache/npm
-    - server/venv
+    - backend/venv
 
 ###################
 # Rule references #
@@ -109,8 +109,8 @@ docker:
     - mkdir -p /kaniko/.docker
     - mkdir -p ./.cache
     - echo "{\"auths\":{\"$CI_REGISTRY\":{\"username\":\"$CI_REGISTRY_USER\",\"password\":\"$CI_REGISTRY_PASSWORD\"}}}" > /kaniko/.docker/config.json
-    - /kaniko/executor --cache --cache-dir .cache --context $CI_PROJECT_DIR/server --dockerfile $CI_PROJECT_DIR/server/Dockerfile --destination $CI_REGISTRY_IMAGE/geocache-server:${tag} --destination $CI_REGISTRY_IMAGE/geocache-server:latest
-    - /kaniko/executor --cache --cache-dir .cache --context $CI_PROJECT_DIR/client --dockerfile $CI_PROJECT_DIR/client/Dockerfile --destination $CI_REGISTRY_IMAGE/geocache-client:${tag} --destination $CI_REGISTRY_IMAGE/geocache-client:latest
+    - /kaniko/executor --cache --cache-dir .cache --context $CI_PROJECT_DIR/backend --dockerfile $CI_PROJECT_DIR/backend/Dockerfile --destination $CI_REGISTRY_IMAGE/geocache-server:${tag} --destination $CI_REGISTRY_IMAGE/geocache-server:latest
+    - /kaniko/executor --cache --cache-dir .cache --context $CI_PROJECT_DIR/frontend--dockerfile $CI_PROJECT_DIR/frontend/Dockerfile --destination $CI_REGISTRY_IMAGE/geocache-client:${tag} --destination $CI_REGISTRY_IMAGE/geocache-client:latest
   rules:
     - !reference [.deploy_rules, rules]
   tags:
@@ -137,9 +137,13 @@ kubernetes_cluster_micro_kaart_com:
     - if [ -z "${CI_COMMIT_TAG}" ];then tag="${CI_COMMIT_REF_SLUG}-${CI_COMMIT_SHORT_SHA}"; else tag="${CI_COMMIT_TAG}"; fi
   script:
     - cd deployment/kubernetes
-    - sed -i "s/\(.*registry.gitlab.com\/gokaart\/geocash\/geocache-.*\):latest/\1:$tag/" server/deployment.yaml
-    - sed -i "s/\(.*registry.gitlab.com\/gokaart\/geocash\/geocache-.*\):latest/\1:$tag/" client/deployment.yaml
+    - sed -i "s/\(.*registry.gitlab.com\/gokaart\/geocash\/geocache-.*\):latest/\1:$tag/" backend/deployment.yaml
+    - sed -i "s/\(.*registry.gitlab.com\/gokaart\/geocash\/geocache-.*\):latest/\1:$tag/" frontend/deployment.yaml
     #- kubectl apply -f namespace.yaml # This only needs to be run once, and should probably be run by itself.
-    - kubectl apply -f server/deployment.yaml -f server/service.yaml -f client/deployment.yaml -f client/service.yaml -f ingress.yaml
+    - kubectl apply -f backend/deployment.yaml -f backend/service.yaml -f frontend/deployment.yaml -f frontend/service.yaml -f ingress.yaml
   rules:
     - !reference [.deploy_rules, rules]
+
+
+
+
