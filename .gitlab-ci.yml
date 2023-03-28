@@ -110,7 +110,7 @@ docker:
     - mkdir -p ./.cache
     - echo "{\"auths\":{\"$CI_REGISTRY\":{\"username\":\"$CI_REGISTRY_USER\",\"password\":\"$CI_REGISTRY_PASSWORD\"}}}" > /kaniko/.docker/config.json
     - /kaniko/executor --cache --cache-dir .cache --context $CI_PROJECT_DIR/backend --dockerfile $CI_PROJECT_DIR/backend/Dockerfile --destination $CI_REGISTRY_IMAGE/geocache-server:${tag} --destination $CI_REGISTRY_IMAGE/geocache-server:latest
-    - /kaniko/executor --cache --cache-dir .cache --context $CI_PROJECT_DIR/frontend--dockerfile $CI_PROJECT_DIR/frontend/Dockerfile --destination $CI_REGISTRY_IMAGE/geocache-client:${tag} --destination $CI_REGISTRY_IMAGE/geocache-client:latest
+    - /kaniko/executor --cache --cache-dir .cache --context $CI_PROJECT_DIR/frontend --dockerfile $CI_PROJECT_DIR/frontend/Dockerfile --destination $CI_REGISTRY_IMAGE/geocache-client:${tag} --destination $CI_REGISTRY_IMAGE/geocache-client:latest
   rules:
     - !reference [.deploy_rules, rules]
   tags:
