@@ -121,7 +121,7 @@ def load_user():
         }
 
         url = (
-            SSO_BASE_URL + "auth/register_user?method=user&integrations=mikro"
+            SSO_BASE_URL + "auth/register_user?method=user&integrations=micro"
         )
         response = requests.post(
             url,
