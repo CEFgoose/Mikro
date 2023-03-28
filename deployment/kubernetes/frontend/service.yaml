@@ -1,10 +1,10 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: frontend-service
+  name: client-service
 spec:
   selector:
-    app: mikro-frontend
+    app: geocache-client
   ports:
     - protocol: TCP
       port: 80

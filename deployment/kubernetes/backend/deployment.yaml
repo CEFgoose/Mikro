@@ -1,61 +1,73 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: backend-deployment
+  name: server-deployment
   labels:
-    app: mikro-backend
+    app: geocache-server
 spec:
   replicas: 1
+  minReadySeconds: 30
   selector:
     matchLabels:
-      app: mikro-backend
+      app: geocache-server
   template:
     metadata:
       labels:
-        app: mikro-backend
+        app: geocache-server
     spec:
       containers:
-        - name: mikro-backend
-          image: registry.gitlab.com/gokaart/geocash/mikro-backend:latest
+        - name: geocache-server
+          image: registry.gitlab.com/gokaart/geocash/geocache-server:latest
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 8000
           env:
-            - name: APP_BASE_URL
+            - name: CLIENT_BASE_URL
               valueFrom:
                 secretKeyRef:
-                  name: mikro-backend-secrets
-                  key: APP_BASE_URL
-            # mikro database information
+                  name: geocache-server-secrets
+                  key: CLIENT_BASE_URL
+            # Mongoose database information
             - name: POSTGRES_DB
               valueFrom:
                 secretKeyRef:
-                  name: mikro-backend-secrets
+                  name: geocache-server-secrets
                   key: POSTGRES_DB
             - name: POSTGRES_USER
               valueFrom:
                 secretKeyRef:
-                  name: mikro-backend-secrets
+                  name: geocache-server-secrets
                   key: POSTGRES_USER
             - name: POSTGRES_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: mikro-backend-secrets
+                  name: geocache-server-secrets
                   key: POSTGRES_PASSWORD
             - name: POSTGRES_ENDPOINT
               valueFrom:
                 secretKeyRef:
-                  name: mikro-backend-secrets
+                  name: geocache-server-secrets
                   key: POSTGRES_ENDPOINT
             - name: POSTGRES_PORT
               valueFrom:
                 secretKeyRef:
-                  name: mikro-backend-secrets
+                  name: geocache-server-secrets
                   key: POSTGRES_PORT
-            - name: JWT_SECRET
+            - name: JWT_SECRET_KEY
               valueFrom:
                 secretKeyRef:
-                  name: mikro-backend-secrets
-                  key: JWT_SECRET
+                  name: geocache-server-secrets
+                  key: JWT_SECRET_KEY
+            - name: SSO_API_URL
+              valueFrom:
+                secretKeyRef:
+                  name: geocache-server-secrets
+                  key: SSO_API_URL
+            - name: JWT_COOKIE_DOMAIN
+              valueFrom:
+                secretKeyRef:
+                  name: geocache-server-secrets
+                  key: JWT_COOKIE_DOMAIN
       imagePullSecrets:
         - name: regcred
+      terminationGracePeriodSeconds: 30

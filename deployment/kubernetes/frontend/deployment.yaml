@@ -17,7 +17,7 @@ spec:
     spec:
       containers:
         - name: geocache-client
-          image: registry.gitlab.com/gokaart/geocash/mikro-frontend:latest
+          image: registry.gitlab.com/gokaart/geocash/geocache-client:latest
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 80
