@@ -54,6 +54,7 @@ export const Login = () => {
       },
     })
       .then((response) => {
+        console.log(response,response.json)
         if (!response.ok) throw response;
         return response.json();
       })

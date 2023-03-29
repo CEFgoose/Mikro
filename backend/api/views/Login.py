@@ -16,16 +16,18 @@ class LoginAPI(MethodView):
     @jwt_required()
     def post(self, path: str):
         if path == "login":
+            print("LOGIN!")
             return self.do_login()
 
         return jsonify({"message": "Only auth/login is permitted!"}), 405
 
     def do_login(self):
-        """This function performs the login process for the API."""
+        print("LOGIN!")
         # Initialize the return object
         return_obj = {}
         # Check if the user is already logged in
         if not g.user:
+            print("NO USER")
             # Get the JWT user information
             jwt_user = get_jwt()
             # Check if the "Mikro" integration is missing
