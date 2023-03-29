@@ -50,6 +50,7 @@ export const Login = () => {
       // mode: "cors",
       credentials: "include",
       headers: {
+        "Authorization": "Bearer",
         "X-CSRF-TOKEN": `${Cookie.get("csrf_access_token")}`,
       },
     })
