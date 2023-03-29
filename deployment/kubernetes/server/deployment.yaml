@@ -25,48 +25,48 @@ spec:
             - name: CLIENT_BASE_URL
               valueFrom:
                 secretKeyRef:
-                  name: geocache-server-secrets
+                  name: mikro-backend-secrets
                   key: CLIENT_BASE_URL
             # Mongoose database information
             - name: POSTGRES_DB
               valueFrom:
                 secretKeyRef:
-                  name: geocache-server-secrets
+                  name: mikro-backend-secrets
                   key: POSTGRES_DB
             - name: POSTGRES_USER
               valueFrom:
                 secretKeyRef:
-                  name: geocache-server-secrets
+                  name: mikro-backend-secrets
                   key: POSTGRES_USER
             - name: POSTGRES_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: geocache-server-secrets
+                  name: mikro-backend-secrets
                   key: POSTGRES_PASSWORD
             - name: POSTGRES_ENDPOINT
               valueFrom:
                 secretKeyRef:
-                  name: geocache-server-secrets
+                  name: mikro-backend-secrets
                   key: POSTGRES_ENDPOINT
             - name: POSTGRES_PORT
               valueFrom:
                 secretKeyRef:
-                  name: geocache-server-secrets
+                  name: mikro-backend-secrets
                   key: POSTGRES_PORT
             - name: JWT_SECRET_KEY
               valueFrom:
                 secretKeyRef:
-                  name: geocache-server-secrets
+                  name: mikro-backend-secrets
                   key: JWT_SECRET_KEY
             - name: SSO_API_URL
               valueFrom:
                 secretKeyRef:
-                  name: geocache-server-secrets
+                  name: mikro-backend-secrets
                   key: SSO_API_URL
             - name: JWT_COOKIE_DOMAIN
               valueFrom:
                 secretKeyRef:
-                  name: geocache-server-secrets
+                  name: mikro-backend-secrets
                   key: JWT_COOKIE_DOMAIN
       imagePullSecrets:
         - name: regcred
