@@ -8,6 +8,7 @@ from flask import (
 )
 from flask_jwt_extended import jwt_required, get_jwt
 import requests
+import logging
 from ..static_variables import SSO_BASE_URL
 
 
@@ -42,10 +43,12 @@ class LoginAPI(MethodView):
                 org_id = jwt_user["company_id"]
                 # Get the user information from the SSO
                 url = SSO_BASE_URL
+                logging.error(url)
                 resp = s.get(
                     url + f"users/{jwt_user['id']}",
                     cookies={"access_token_cookie": at_cookie},
                 )
+                logging.error(resp.text)
                 # If the request is successful, create or retrieve the user
                 if resp.ok:
                     user_info = resp.json()["result"]
