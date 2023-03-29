@@ -52,10 +52,10 @@ spec:
                 secretKeyRef:
                   name: mikro-backend-secrets
                   key: POSTGRES_PORT
-            - name: JWT_SECRET
+            - name: JWT_SECRET_KEY
               valueFrom:
                 secretKeyRef:
                   name: mikro-backend-secrets
-                  key: JWT_SECRET
+                  key: JWT_SECRET_KEY
       imagePullSecrets:
         - name: regcred
