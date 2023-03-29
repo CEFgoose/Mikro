@@ -12,8 +12,8 @@ RUN pip install --no-cache-dir gunicorn && pip install --no-cache-dir -r /app/re
 
 COPY . /app
 
-ENV GC_API_CONFIG="/app/devops-configs/config.py"
-ENV FLASK_APP="/app/app.py"
+# ENV GC_API_CONFIG="/app/devops-configs/config.py"
+# ENV FLASK_APP="/app/app.py"
 
 
 CMD ["./start.sh"]
