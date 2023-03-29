@@ -14,7 +14,7 @@ from ..static_variables import SSO_BASE_URL
 
 class LoginAPI(MethodView):
     # JWT protected login call, calls the actual login function if JWT present & valid & path is correct # noqa: E501
-    @jwt_required()
+    # @jwt_required()
     def post(self, path: str):
         if path == "login":
             print("LOGIN!")
