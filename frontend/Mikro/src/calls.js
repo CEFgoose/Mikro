@@ -9,7 +9,7 @@ export async function poster(info, route, concat = false) {
     body: JSON.stringify(info),
     headers: {
       "Content-Type": "application/json",
-      // mode: "cors",
+      mode: "cors",
       "X-CSRF-TOKEN": `${Cookie.get("csrf_access_token")}`,
     },
   });
@@ -26,7 +26,7 @@ export async function fetcher(route) {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      // mode: "cors",
+      mode: "cors",
       "X-CSRF-TOKEN": `${Cookie.get("csrf_access_token")}`,
     },
   });
