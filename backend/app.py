@@ -75,14 +75,13 @@ app.config["SQLALCHEMY_DATABASE_URI"] = (
 app.config["REDIS_URL"] = "redis://localhost:6379"
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 app.config["SSO_URL"] = os.getenv("SSO_URL", "https://my.kaart.com/api")
-# app.config["JWT_TOKEN_LOCATION"] = "headers"
 app.config["JWT_TOKEN_LOCATION"] = "cookies"
 app.config["JWT_COOKIE_CSRF_PROTECT"] = True
 app.config["JWT_SECRET_KEY"] = os.getenv("JWT_SECRET", None)
-JWT_COOKIE_DOMAIN = os.getenv("JWT_COOKIE_DOMAIN", "dev.localhost")
 
-# JWT_COOKIE_DOMAIN = os.getenv("SSO_URL", "https://my.kaart.com/api")
+JWT_COOKIE_DOMAIN = os.getenv("JWT_COOKIE_DOMAIN", "dev.localhost")
 app.secret_key = os.getenv("SECRET_KEY", os.urandom(64))
+
 db.init_app(app)
 migrate = Migrate(app, db)
 
