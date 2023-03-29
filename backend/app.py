@@ -99,7 +99,6 @@ app.add_url_rule(
 )
 app.add_url_rule("/api/task/<path>", view_func=TaskAPI.as_view("task"))
 
-
 @app.before_request
 @jwt_required(optional=True)
 def load_user():
