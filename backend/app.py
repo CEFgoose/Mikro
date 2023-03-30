@@ -86,7 +86,7 @@ app.secret_key = os.getenv("SECRET_KEY", os.urandom(64))
 db.init_app(app)
 migrate = Migrate(app, db)
 
-app.add_url_rule("/<path>", view_func=LoginAPI.as_view("auth"))
+app.add_url_rule("auth/<path>", view_func=LoginAPI.as_view("auth"))
 
 app.add_url_rule(
     "/training/<path>", view_func=TrainingAPI.as_view("training")
