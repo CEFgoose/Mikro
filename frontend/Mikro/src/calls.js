@@ -4,7 +4,7 @@ var obj;
 
 //--------------poster----------
 export async function poster(info, route, concat = false) {
-  const response = await fetch(API_URL.concat(route), {
+  const response = await fetch(API_URL.concat("auth/" + route), {
     method: "POST",
     body: JSON.stringify(info),
     headers: {
@@ -22,7 +22,7 @@ export async function poster(info, route, concat = false) {
 }
 //--------------fetcher---------
 export async function fetcher(route) {
-  const response = await fetch(API_URL.concat(route), {
+  const response = await fetch(API_URL.concat("auth/" + route), {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
