@@ -87,6 +87,7 @@ db.init_app(app)
 migrate = Migrate(app, db)
 
 app.add_url_rule("/api/<path>", view_func=LoginAPI.as_view("auth"))
+
 app.add_url_rule(
     "/api/training/<path>", view_func=TrainingAPI.as_view("training")
 )

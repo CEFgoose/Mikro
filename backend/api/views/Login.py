@@ -16,7 +16,6 @@ class LoginAPI(MethodView):
     # JWT protected login call, calls the actual login function if JWT present & valid & path is correct # noqa: E501
     @jwt_required()
     def post(self, path: str):
-        None.this
         if path == "login":
             print("LOGIN!")
             return self.do_login()
