@@ -40,7 +40,7 @@ export const Login = () => {
 
   //LOGIN FUNCTION - CHANGE URL FOR DEPLOYMENT
   const login = () => {
-    let url = API_URL.concat("/login");
+    let url = API_URL.concat("login");
     let osm_username;
     let payment_email;
     let country;
