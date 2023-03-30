@@ -117,7 +117,7 @@ def load_user():
             "email": email,
             "password": password,
             "org": org,
-            "int": "mikro",
+            "int": "micro",
         }
 
         url = (
