@@ -11,7 +11,6 @@ import requests
 import logging
 from ..static_variables import SSO_BASE_URL
 
-
 class LoginAPI(MethodView):
     # JWT protected login call, calls the actual login function if JWT present & valid & path is correct # noqa: E501
     # @jwt_required()
@@ -23,14 +22,15 @@ class LoginAPI(MethodView):
         return jsonify({"message": "Only auth/login is permitted!"}), 405
 
     def do_login(self):
-        print("LOGIN!")
+        logging.error("Starting login process")
         # Initialize the return object
         return_obj = {}
         # Check if the user is already logged in
         if not g.user:
-            print("NO USER")
+            logging.error("Getting JWT")
             # Get the JWT user information
             jwt_user = get_jwt()
+            logging.error(str(jwt_user))
             # Check if the "Mikro" integration is missing
             if "micro" not in jwt_user["integrations"]:
                 return_obj["message"] = "Mikro Integration Missing"
@@ -38,6 +38,7 @@ class LoginAPI(MethodView):
                 return return_obj
             # Get the access token cookie
             at_cookie = request.cookies.get("access_token_cookie")
+            logging.error(str(at_cookie))
             # Use a session to access the user information from the SSO
             with requests.Session() as s:
                 org_id = jwt_user["company_id"]
@@ -51,6 +52,7 @@ class LoginAPI(MethodView):
                 logging.error(resp.text)
                 # If the request is successful, create or retrieve the user
                 if resp.ok:
+                    logging.error("RESPONSE OK")
                     user_info = resp.json()["result"]
                     user = User.create(
                         id=jwt_user["id"],
@@ -63,6 +65,7 @@ class LoginAPI(MethodView):
                     )
                     g.user = user
                 else:
+                    logging.error("RESPONSE NOT OK")
                     # Return an error if the request fails
                     return_obj[
                         "message"
