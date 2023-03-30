@@ -8,15 +8,13 @@ from flask import (
 )
 from flask_jwt_extended import jwt_required, get_jwt
 import requests
-import logging
 from ..static_variables import SSO_BASE_URL
-
 from flask.globals import current_app
 
 
 class LoginAPI(MethodView):
     # JWT protected login call, calls the actual login function if JWT present & valid & path is correct # noqa: E501
-    # @jwt_required()
+    @jwt_required()
     def post(self, path: str):
         if path == "login":
             print("LOGIN!")

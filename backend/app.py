@@ -10,6 +10,7 @@ import requests
 from dotenv import load_dotenv
 from flask import g
 
+import foobar
 
 # SSO_BASE_URL = "http://127.0.0.1:5001/api/"
 SSO_BASE_URL = "https://my.kaart.com/api/"
