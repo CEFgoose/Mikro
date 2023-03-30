@@ -50,7 +50,6 @@ export const Login = () => {
       // mode: "cors",
       credentials: "include",
       headers: {
-        "Authorization": "Bearer",
         "X-CSRF-TOKEN": `${Cookie.get("csrf_access_token")}`,
       },
     })
@@ -100,7 +99,7 @@ export const Login = () => {
             })
               .then((response) => {
                 if (!response.ok) throw response;
-                return response;
+                // return response;
               })
               .then(() => {
                 // successfully logged into SSO, now login to Mikro

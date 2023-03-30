@@ -22,6 +22,8 @@ export const RegisterUser = () => {
   const [responseMessage, setResponseMessage] = useState(null);
   const [responseCode, setResponseCode] = useState(null);
   const { history } = useContext(DataContext);
+
+  
   const RegisterUserSSO = async () => {
     const body = {
       firstName: firstName,
