@@ -15,11 +15,11 @@ from flask.globals import current_app
 class LoginAPI(MethodView):
     # JWT protected login call, calls the actual login function if JWT present & valid & path is correct # noqa: E501
     @jwt_required()
-    def post(self, path: str):
-        if path == "login":
-            print("LOGIN!")
+    def post(self):
+        try:
             return self.do_login()
-
+        except Exception as e:
+            current_app.logger.error(str(e))
         return jsonify({"message": "Only auth/login is permitted!"}), 405
 
     def do_login(self):
