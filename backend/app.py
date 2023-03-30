@@ -9,7 +9,7 @@ from flask import Flask, request
 import requests
 from dotenv import load_dotenv
 from flask import g
-
+from flask.globals import current_app
 
 
 # SSO_BASE_URL = "http://127.0.0.1:5001/api/"
@@ -91,7 +91,7 @@ app.add_url_rule("/<path>", view_func=LoginAPI.as_view("auth"))
 app.add_url_rule(
     "/training/<path>", view_func=TrainingAPI.as_view("training")
 )
-app.add_url_rule("/api/user/<path>", view_func=UserAPI.as_view("user"))
+app.add_url_rule("/user/<path>", view_func=UserAPI.as_view("user"))
 app.add_url_rule(
     "/project/<path>", view_func=ProjectAPI.as_view("project")
 )
@@ -104,6 +104,7 @@ app.add_url_rule("/task/<path>", view_func=TaskAPI.as_view("task"))
 # @app.before_request
 # @jwt_required(optional=True)
 # def load_user():
+#     current_app.logger.error("load_user")
 #     if "register_user" not in request.url:
 #         g.user = User.query.filter_by(id=get_jwt_identity()).one_or_none()
 #     else:
