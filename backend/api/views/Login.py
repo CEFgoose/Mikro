@@ -11,7 +11,7 @@ import requests
 import logging
 from ..static_variables import SSO_BASE_URL
 
-from flask import current_app
+from flask.globals import current_app
 
 
 class LoginAPI(MethodView):
@@ -25,15 +25,15 @@ class LoginAPI(MethodView):
         return jsonify({"message": "Only auth/login is permitted!"}), 405
 
     def do_login(self):
-        current_app.logging.error("Starting login process")
+        current_app.logger.error("starting login")
         # Initialize the return object
         return_obj = {}
         # Check if the user is already logged in
         if not g.user:
-            current_app.logging.error("Getting JWT")
+            current_app.logger.error("getting jwt")
             # Get the JWT user information
             jwt_user = get_jwt()
-            current_app.logging.error(str(jwt_user))
+            current_app.logger.error(str(jwt_user))
             # Check if the "Mikro" integration is missing
             if "micro" not in jwt_user["integrations"]:
                 return_obj["message"] = "Mikro Integration Missing"
@@ -41,21 +41,21 @@ class LoginAPI(MethodView):
                 return return_obj
             # Get the access token cookie
             at_cookie = request.cookies.get("access_token_cookie")
-            current_app.logging.error(str(at_cookie))
+            current_app.logger.error(str(at_cookie))
             # Use a session to access the user information from the SSO
             with requests.Session() as s:
                 org_id = jwt_user["company_id"]
                 # Get the user information from the SSO
                 url = SSO_BASE_URL
-                current_app.logging.error(url)
+                current_app.logger.error(url)
                 resp = s.get(
                     url + f"users/{jwt_user['id']}",
                     cookies={"access_token_cookie": at_cookie},
                 )
-                current_app.logging.error(resp.text)
+                current_app.logger.error(resp.text)
                 # If the request is successful, create or retrieve the user
                 if resp.ok:
-                    current_app.logging.error("RESPONSE OK")
+                    current_app.logger.error("RESPONSE OK")
                     user_info = resp.json()["result"]
                     user = User.create(
                         id=jwt_user["id"],
@@ -68,13 +68,15 @@ class LoginAPI(MethodView):
                     )
                     g.user = user
                 else:
-                    current_app.logging.error("RESPONSE NOT OK")
+                    current_app.logger.error("RESPONSE NOT OK")
                     # Return an error if the request fails
                     return_obj[
                         "message"
                     ] = "An error occurred, please try again later"
                     return_obj["status"] = 400
                     return return_obj
+
+        current_app.logger.error("USER FOUND")
         # Return the user information if the login was successful
         return_obj["name"] = (
             g.user.first_name.capitalize()
