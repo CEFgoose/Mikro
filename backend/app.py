@@ -86,19 +86,19 @@ app.secret_key = os.getenv("SECRET_KEY", os.urandom(64))
 db.init_app(app)
 migrate = Migrate(app, db)
 
-app.add_url_rule("/api/<path>", view_func=LoginAPI.as_view("auth"))
+app.add_url_rule("/<path>", view_func=LoginAPI.as_view("auth"))
 
 app.add_url_rule(
-    "/api/training/<path>", view_func=TrainingAPI.as_view("training")
+    "/training/<path>", view_func=TrainingAPI.as_view("training")
 )
 app.add_url_rule("/api/user/<path>", view_func=UserAPI.as_view("user"))
 app.add_url_rule(
-    "/api/project/<path>", view_func=ProjectAPI.as_view("project")
+    "/project/<path>", view_func=ProjectAPI.as_view("project")
 )
 app.add_url_rule(
-    "/api/transaction/<path>", view_func=TransactionAPI.as_view("transaction")
+    "/transaction/<path>", view_func=TransactionAPI.as_view("transaction")
 )
-app.add_url_rule("/api/task/<path>", view_func=TaskAPI.as_view("task"))
+app.add_url_rule("/task/<path>", view_func=TaskAPI.as_view("task"))
 
 
 # @app.before_request
