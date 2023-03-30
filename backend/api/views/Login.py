@@ -16,9 +16,7 @@ class LoginAPI(MethodView):
     # JWT protected login call, calls the actual login function if JWT present & valid & path is correct # noqa: E501
     @jwt_required()
     def post(self, path: str):
-
-        import foobar
-
+        None.this
         if path == "login":
             print("LOGIN!")
             return self.do_login()
@@ -44,7 +42,7 @@ class LoginAPI(MethodView):
             at_cookie = request.cookies.get("access_token_cookie")
             current_app.logger.error(str(at_cookie))
             # Use a session to access the user information from the SSO
-            with requests.Session() as s:
+        with requests.Session() as s:
                 org_id = jwt_user["company_id"]
                 # Get the user information from the SSO
                 url = SSO_BASE_URL
@@ -53,7 +51,7 @@ class LoginAPI(MethodView):
                     url + f"users/{jwt_user['id']}",
                     cookies={"access_token_cookie": at_cookie},
                 )
-                current_app.logger.error(resp.text)
+                current_app.logger.error(resp.text)            
                 # If the request is successful, create or retrieve the user
                 if resp.ok:
                     current_app.logger.error("RESPONSE OK")
