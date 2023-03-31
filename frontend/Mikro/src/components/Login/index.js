@@ -54,7 +54,7 @@ export const Login = () => {
       },
     })
       .then((response) => {
-        console.log(response,response.json)
+        console.log(response, response.json);
         if (!response.ok) throw response;
         return response.json();
       })
@@ -96,17 +96,14 @@ export const Login = () => {
                 email: email,
                 password: password,
               }),
-            })
-              .then((response) => {
-                if (response.ok) {
-                  login();
-                }
-                else{
-                  console.log(response)
-                  throw response
-                }
-              })
-
+            }).then((response) => {
+              if (response.ok) {
+                login();
+              } else {
+                console.log(response);
+                throw response;
+              }
+            });
           }}
         >
           <LoginImage src={kaartLogo} alt="Kaart Logo" />

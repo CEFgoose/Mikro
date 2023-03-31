@@ -4,13 +4,17 @@ import os
 from flask_cors import CORS
 from flask_migrate import Migrate
 from flask_mail import Mail
-from flask_jwt_extended import JWTManager, get_jwt_identity, jwt_required, verify_jwt_in_request,current_user
+from flask_jwt_extended import (
+    JWTManager,
+    get_jwt_identity,
+    jwt_required,
+    verify_jwt_in_request,
+)
 from flask import Flask, request
 import requests
 from dotenv import load_dotenv
 from flask import g
-from flask.globals import current_app
-
+# from flask.globals import current_app
 
 
 def optional_jwt():
@@ -19,7 +23,8 @@ def optional_jwt():
             return True
     except BaseException:
         return False
-    
+
+
 def load_user_from_jwt():
     if "register_user" not in request.url:
         g.user = User.query.filter_by(id=get_jwt_identity()).one_or_none()
@@ -101,51 +106,49 @@ migrate = Migrate(app, db)
 
 app.add_url_rule("/login", view_func=LoginAPI.as_view("auth"))
 
-app.add_url_rule(
-    "/training/<path>", view_func=TrainingAPI.as_view("training")
-)
+app.add_url_rule("/training/<path>", view_func=TrainingAPI.as_view("training"))
 app.add_url_rule("/user/<path>", view_func=UserAPI.as_view("user"))
-app.add_url_rule(
-    "/project/<path>", view_func=ProjectAPI.as_view("project")
-)
+app.add_url_rule("/project/<path>", view_func=ProjectAPI.as_view("project"))
 app.add_url_rule(
     "/transaction/<path>", view_func=TransactionAPI.as_view("transaction")
 )
 app.add_url_rule("/task/<path>", view_func=TaskAPI.as_view("task"))
+
 
 @app.before_request
 @jwt_required(optional=True)
 def load_user():
     if optional_jwt():
         load_user_from_jwt()
-    # else:
-    #     if "register_user" in request.url:
-    #         email = request.json.get("email")
-    #         firstName = request.json.get("firstName")
-    #         lastName = request.json.get("lastName")
-    #         password = request.json.get("password")
-    #         org = request.json.get("org")
-    #         body = {
-    #             "firstName": firstName,
-    #             "lastName": lastName,
-    #             "email": email,
-    #             "password": password,
-    #             "org": org,
-    #             "int": "micro",
-    #         }
-    #         url = (
-    #             SSO_BASE_URL + "auth/register_user?method=user&integrations=micro"
-    #         )
-    #         response = requests.post(
-    #             url,
-    #             json=body,
-    #         )  # noqa: E501 E228
-    #         if response.status_code == 200:
-    #             resp = response.json()
-    #             if resp["code"] == 0:
-    #                 message = "Mikro integration added to your Kaart account, you may log into Mikro any time."  # noqa: E501
-    #             if resp["code"] == 1:
-    #                 message = "Account already exists with Mikro integration, you may log into Mikro any time."  # noqa: E501
-    #             if resp["code"] == 2:
-    #                 message = "Your Kaart account has been created with Mikro integration, press the button below to activate your account!"  # noqa: E501
-    #             return {"message": message, "code": resp["code"]}
+    else:
+        if "register_user" in request.url:
+            email = request.json.get("email")
+            firstName = request.json.get("firstName")
+            lastName = request.json.get("lastName")
+            password = request.json.get("password")
+            org = request.json.get("org")
+            body = {
+                "firstName": firstName,
+                "lastName": lastName,
+                "email": email,
+                "password": password,
+                "org": org,
+                "int": "micro",
+            }
+            url = (
+                SSO_BASE_URL
+                + "auth/register_user?method=user&integrations=micro"
+            )
+            response = requests.post(
+                url,
+                json=body,
+            )  # noqa: E501 E228
+            if response.status_code == 200:
+                resp = response.json()
+                if resp["code"] == 0:
+                    message = "Mikro integration added to your Kaart account, you may log into Mikro any time."  # noqa: E501
+                if resp["code"] == 1:
+                    message = "Account already exists with Mikro integration, you may log into Mikro any time."  # noqa: E501
+                if resp["code"] == 2:
+                    message = "Your Kaart account has been created with Mikro integration, press the button below to activate your account!"  # noqa: E501
+                return {"message": message, "code": resp["code"]}

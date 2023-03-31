@@ -1,6 +1,6 @@
 import React, { useState, useContext } from "react";
 import { DataContext } from "common/DataContext/index.js";
-import { SSO_URL } from "components/constants.js";
+import { poster } from "calls.js";
 import {
   ConfirmButton,
   SectionSubtitle,
@@ -23,50 +23,77 @@ export const RegisterUser = () => {
   const [responseCode, setResponseCode] = useState(null);
   const { history } = useContext(DataContext);
 
-  
-  const RegisterUserSSO = async () => {
-    const body = {
+  async function RegisterUserSSO() {
+    let url = "register_user";
+    let outpack = {
       firstName: firstName,
       lastName: lastName,
       email: email,
       password: password,
       org: org,
-      int: "micro",
     };
-    const url = `${SSO_URL}auth/register_user?method=user&integrations=micro`;
-     await fetch(url, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(body),
-    })
-    .then((response)=>{
-      if (response.ok) {
-        let code = response.code;
-        setResponseCode(code);
-        if (code === 0) {
-          setResponseMessage(
-            "Mikro integration added to your Kaart account, you may log into Mikro any time."
-          );
-        } else if (code === 1) {
-          setResponseMessage(
-            "Account already exists with Mikro integration, you may log into Mikro any time."
-          );
-        } else if (code === 2) {
-          setResponseMessage(
-            "Your Kaart account has been created with Mikro integration, press the button below to activate your account!"
-          );
-        }
-        return { responseMessage, responseCode };
-      } else {
-        throw new Error(
-          `Failed to register user: ${response.status} ${response.statusText}`
+    await poster(outpack, url).then((response) => {
+      let code = response.code;
+      setResponseCode(code);
+      if (code === 0) {
+        setResponseMessage(
+          "Mikro integration added to your Kaart account, you may log into Mikro any time."
+        );
+      } else if (code === 1) {
+        setResponseMessage(
+          "Account already exists with Mikro integration, you may log into Mikro any time."
+        );
+      } else if (code === 2) {
+        setResponseMessage(
+          "Your Kaart account has been created with Mikro integration, press the button below to activate your account!"
         );
       }
-    })
+    });
+  }
 
-  };
+  // const RegisterUserSSO = async () => {
+  //   const body = {
+  //     firstName: firstName,
+  //     lastName: lastName,
+  //     email: email,
+  //     password: password,
+  //     org: org,
+  //     int: "micro",
+  //   };
+  //   const url = `${SSO_URL}auth/register_user?method=user&integrations=micro`;
+  //    await fetch(url, {
+  //     method: "POST",
+  //     headers: {
+  //       "Content-Type": "application/json",
+  //     },
+  //     body: JSON.stringify(body),
+  //   })
+  //   .then((response)=>{
+  //     if (response.ok) {
+  //       let code = response.code;
+  //       setResponseCode(code);
+  //       if (code === 0) {
+  //         setResponseMessage(
+  //           "Mikro integration added to your Kaart account, you may log into Mikro any time."
+  //         );
+  //       } else if (code === 1) {
+  //         setResponseMessage(
+  //           "Account already exists with Mikro integration, you may log into Mikro any time."
+  //         );
+  //       } else if (code === 2) {
+  //         setResponseMessage(
+  //           "Your Kaart account has been created with Mikro integration, press the button below to activate your account!"
+  //         );
+  //       }
+  //       return { responseMessage, responseCode };
+  //     } else {
+  //       throw new Error(
+  //         `Failed to register user: ${response.status} ${response.statusText}`
+  //       );
+  //     }
+  //   })
+
+  // };
 
   return (
     <>

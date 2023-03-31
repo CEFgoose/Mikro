@@ -6,7 +6,7 @@ from flask import (
     jsonify,
     request,
 )
-from flask_jwt_extended import jwt_required, get_jwt
+from flask_jwt_extended import get_jwt
 import requests
 from ..static_variables import SSO_BASE_URL
 from flask.globals import current_app
@@ -42,37 +42,37 @@ class LoginAPI(MethodView):
             current_app.logger.error(str(at_cookie))
             # Use a session to access the user information from the SSO
             with requests.Session() as s:
-                    org_id = jwt_user["company_id"]
-                    # Get the user information from the SSO
-                    url = SSO_BASE_URL
-                    current_app.logger.error(url)
-                    resp = s.get(
-                        url + f"users/{jwt_user['id']}",
-                        cookies={"access_token_cookie": at_cookie},
+                org_id = jwt_user["company_id"]
+                # Get the user information from the SSO
+                url = SSO_BASE_URL
+                current_app.logger.error(url)
+                resp = s.get(
+                    url + f"users/{jwt_user['id']}",
+                    cookies={"access_token_cookie": at_cookie},
+                )
+                current_app.logger.error(resp.text)
+                # If the request is successful, create or retrieve the user
+                if resp.ok:
+                    current_app.logger.error("RESPONSE OK")
+                    user_info = resp.json()["result"]
+                    user = User.create(
+                        id=jwt_user["id"],
+                        role=jwt_user["role"],
+                        org_id=org_id,
+                        osm_username=None,
+                        first_name=user_info["first_name"],
+                        last_name=user_info["last_name"],
+                        email=user_info["email"],
                     )
-                    current_app.logger.error(resp.text)            
-                    # If the request is successful, create or retrieve the user
-                    if resp.ok:
-                        current_app.logger.error("RESPONSE OK")
-                        user_info = resp.json()["result"]
-                        user = User.create(
-                            id=jwt_user["id"],
-                            role=jwt_user["role"],
-                            org_id=org_id,
-                            osm_username=None,
-                            first_name=user_info["first_name"],
-                            last_name=user_info["last_name"],
-                            email=user_info["email"],
-                        )
-                        g.user = user
-                    else:
-                        current_app.logger.error("RESPONSE NOT OK")
-                        # Return an error if the request fails
-                        return_obj[
-                            "message"
-                        ] = "An error occurred, please try again later"
-                        return_obj["status"] = 400
-                        return return_obj
+                    g.user = user
+                else:
+                    current_app.logger.error("RESPONSE NOT OK")
+                    # Return an error if the request fails
+                    return_obj[
+                        "message"
+                    ] = "An error occurred, please try again later"
+                    return_obj["status"] = 400
+                    return return_obj
 
         current_app.logger.error("USER FOUND")
         # Return the user information if the login was successful
