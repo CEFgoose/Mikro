@@ -23,6 +23,7 @@ class LoginAPI(MethodView):
             return jsonify({"message": "Only auth/login is permitted!"}), 405
 
     def do_login(self):
+        
         current_app.logger.error("starting login")
         # Initialize the return object
         return_obj = {}

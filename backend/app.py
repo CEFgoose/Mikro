@@ -4,7 +4,7 @@ import os
 from flask_cors import CORS
 from flask_migrate import Migrate
 from flask_mail import Mail
-from flask_jwt_extended import JWTManager, get_jwt_identity, jwt_required, verify_jwt_in_request
+from flask_jwt_extended import JWTManager, get_jwt_identity,get_jwt, jwt_required, verify_jwt_in_request
 from flask import Flask, request
 import requests
 from dotenv import load_dotenv
@@ -102,11 +102,12 @@ app.add_url_rule("/task/<path>", view_func=TaskAPI.as_view("task"))
 
 
 @app.before_request
-verify_jwt_in_request()
+# @verify_jwt_in_request()
 def load_user():
+    jwt_user = get_jwt()
     current_app.logger.error("load_user")
     if "register_user" not in request.url:
-        g.user = User.query.filter_by(id=get_jwt_identity()).one_or_none()
+        g.user = User.query.filter_by(id=jwt_user.id).one_or_none()
     else:
         email = request.json.get("email")
         firstName = request.json.get("firstName")
