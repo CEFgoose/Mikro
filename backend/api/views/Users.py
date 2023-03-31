@@ -35,6 +35,8 @@ class UserAPI(MethodView):
             return self.do_modify_users()
         elif path == "first_login_update":
             return self.first_login_update()
+        elif path == "register_user":
+            return self.register_user()
         return {
             "message": "Only /project/{fetch_users,fetch_user_projects} is permitted with GET",  # noqa: E501
         }, 405

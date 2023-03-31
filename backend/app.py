@@ -119,7 +119,8 @@ app.add_url_rule("/task/<path>", view_func=TaskAPI.as_view("task"))
 @jwt_required(optional=True)
 def load_user():
     if optional_jwt():
-        load_user_from_jwt()
+        if "register_user" not in request.url:
+            load_user_from_jwt()
     else:
         if "register_user" in request.url:
             email = request.json.get("email")
