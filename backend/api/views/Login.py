@@ -6,7 +6,7 @@ from flask import (
     jsonify,
     request,
 )
-from flask_jwt_extended import jwt_required, get_jwt, verify_jwt_in_request,get_jwt_identity
+from flask_jwt_extended import jwt_required, get_jwt
 import requests
 from ..static_variables import SSO_BASE_URL
 from flask.globals import current_app
@@ -27,7 +27,6 @@ class LoginAPI(MethodView):
         # Initialize the return object
         return_obj = {}
         # Check if the user is already logged in
-        load_user()
         if not g.user:
             current_app.logger.error("getting jwt")
             # Get the JWT user information
@@ -92,55 +91,3 @@ class LoginAPI(MethodView):
         return_obj["id"] = g.user.id
         return_obj["status"] = 200
         return return_obj
-
-def load_user_from_jwt():
-    if "register_user" not in request.url:
-        g.user = User.query.filter_by(id=get_jwt_identity()).one_or_none()
-
-
-def load_user():
-    current_app.logger.error("load_user")
-    if optional_jwt():
-        current_app.logger.error("HAS JWT")
-        load_user_from_jwt()
-    else:
-        current_app.logger.error("HASNT JWT")
-        if "register_user" in request.url:
-            email = request.json.get("email")
-            firstName = request.json.get("firstName")
-            lastName = request.json.get("lastName")
-            password = request.json.get("password")
-            org = request.json.get("org")
-            body = {
-                "firstName": firstName,
-                "lastName": lastName,
-                "email": email,
-                "password": password,
-                "org": org,
-                "int": "micro",
-            }
-
-            url = (
-                SSO_BASE_URL + "auth/register_user?method=user&integrations=micro"
-            )
-            response = requests.post(
-                url,
-                json=body,
-            )  # noqa: E501 E228
-            if response.status_code == 200:
-                resp = response.json()
-                if resp["code"] == 0:
-                    message = "Mikro integration added to your Kaart account, you may log into Mikro any time."  # noqa: E501
-                if resp["code"] == 1:
-                    message = "Account already exists with Mikro integration, you may log into Mikro any time."  # noqa: E501
-                if resp["code"] == 2:
-                    message = "Your Kaart account has been created with Mikro integration, press the button below to activate your account!"  # noqa: E501
-                return {"message": message, "code": resp["code"]}
-
-
-def optional_jwt():
-    try:
-        if verify_jwt_in_request():
-            return True
-    except BaseException:
-        return False

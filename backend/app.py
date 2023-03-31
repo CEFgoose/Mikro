@@ -114,43 +114,43 @@ def load_user_from_jwt():
         g.user = User.query.filter_by(id=get_jwt_identity()).one_or_none()
 
 
-# @app.after_request
-# @jwt_required(optional=True)
-# def load_user():
-#     current_app.logger.error("load_user")
-#     if optional_jwt():
-#         current_app.logger.error("HAS JWT")
-#         load_user_from_jwt()
-#     else:
-#         current_app.logger.error("HASNT JWT")
-#         if "register_user" in request.url:
-#             email = request.json.get("email")
-#             firstName = request.json.get("firstName")
-#             lastName = request.json.get("lastName")
-#             password = request.json.get("password")
-#             org = request.json.get("org")
-#             body = {
-#                 "firstName": firstName,
-#                 "lastName": lastName,
-#                 "email": email,
-#                 "password": password,
-#                 "org": org,
-#                 "int": "micro",
-#             }
+@app.before_request
+@jwt_required()
+def load_user():
+    current_app.logger.error("load_user")
+    if optional_jwt():
+        current_app.logger.error("HAS JWT")
+        load_user_from_jwt()
+    else:
+        current_app.logger.error("HASNT JWT")
+        if "register_user" in request.url:
+            email = request.json.get("email")
+            firstName = request.json.get("firstName")
+            lastName = request.json.get("lastName")
+            password = request.json.get("password")
+            org = request.json.get("org")
+            body = {
+                "firstName": firstName,
+                "lastName": lastName,
+                "email": email,
+                "password": password,
+                "org": org,
+                "int": "micro",
+            }
 
-#             url = (
-#                 SSO_BASE_URL + "auth/register_user?method=user&integrations=micro"
-#             )
-#             response = requests.post(
-#                 url,
-#                 json=body,
-#             )  # noqa: E501 E228
-#             if response.status_code == 200:
-#                 resp = response.json()
-#                 if resp["code"] == 0:
-#                     message = "Mikro integration added to your Kaart account, you may log into Mikro any time."  # noqa: E501
-#                 if resp["code"] == 1:
-#                     message = "Account already exists with Mikro integration, you may log into Mikro any time."  # noqa: E501
-#                 if resp["code"] == 2:
-#                     message = "Your Kaart account has been created with Mikro integration, press the button below to activate your account!"  # noqa: E501
-#                 return {"message": message, "code": resp["code"]}
+            url = (
+                SSO_BASE_URL + "auth/register_user?method=user&integrations=micro"
+            )
+            response = requests.post(
+                url,
+                json=body,
+            )  # noqa: E501 E228
+            if response.status_code == 200:
+                resp = response.json()
+                if resp["code"] == 0:
+                    message = "Mikro integration added to your Kaart account, you may log into Mikro any time."  # noqa: E501
+                if resp["code"] == 1:
+                    message = "Account already exists with Mikro integration, you may log into Mikro any time."  # noqa: E501
+                if resp["code"] == 2:
+                    message = "Your Kaart account has been created with Mikro integration, press the button below to activate your account!"  # noqa: E501
+                return {"message": message, "code": resp["code"]}

@@ -98,13 +98,15 @@ export const Login = () => {
               }),
             })
               .then((response) => {
-                if (!response.ok) throw response;
-                // return response;
+                if (response.ok) {
+                  login();
+                }
+                else{
+                  console.log(response)
+                  throw response
+                }
               })
-              .then(() => {
-                // successfully logged into SSO, now login to Mikro
-                login();
-              });
+
           }}
         >
           <LoginImage src={kaartLogo} alt="Kaart Logo" />
