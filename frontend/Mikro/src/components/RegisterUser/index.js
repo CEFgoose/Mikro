@@ -24,7 +24,7 @@ export const RegisterUser = () => {
   const { history } = useContext(DataContext);
 
   async function RegisterUserSSO() {
-    let url = "register_user";
+    let url = "user/register_user";
     let outpack = {
       firstName: firstName,
       lastName: lastName,

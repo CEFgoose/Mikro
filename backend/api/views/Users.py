@@ -390,3 +390,11 @@ class UserAPI(MethodView):
         # Set status code for response
         response["status"] = 200
         return response
+
+
+
+    def register_user(self):
+        # Initialize response dictionary
+        response = {}
+        response["status"] = 200
+        return response
