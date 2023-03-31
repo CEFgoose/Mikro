@@ -114,7 +114,7 @@ def load_user_from_jwt():
         g.user = User.query.filter_by(id=get_jwt_identity()).one_or_none()
 
 
-@app.before_request
+@app.after_request
 # @jwt_required(optional=True)
 def load_user():
     current_app.logger.error("load_user")
