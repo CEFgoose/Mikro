@@ -4,13 +4,21 @@ import os
 from flask_cors import CORS
 from flask_migrate import Migrate
 from flask_mail import Mail
-from flask_jwt_extended import JWTManager, get_jwt_identity,get_jwt, jwt_required, verify_jwt_in_request
+from flask_jwt_extended import JWTManager, get_jwt_identity, jwt_required, verify_jwt_in_request
 from flask import Flask, request
 import requests
 from dotenv import load_dotenv
 from flask import g
 from flask.globals import current_app
 
+
+
+def optional_jwt():
+    try:
+        if verify_jwt_in_request():
+            return True
+    except BaseException:
+        return False
 
 # SSO_BASE_URL = "http://127.0.0.1:5001/api/"
 SSO_BASE_URL = "https://my.kaart.com/api/"
@@ -101,13 +109,17 @@ app.add_url_rule(
 app.add_url_rule("/task/<path>", view_func=TaskAPI.as_view("task"))
 
 
-@app.before_request
-# @verify_jwt_in_request()
-def load_user():
-    jwt_user = get_jwt()
-    current_app.logger.error("load_user")
+def load_user_from_jwt():
     if "register_user" not in request.url:
-        g.user = User.query.filter_by(id=jwt_user.id).one_or_none()
+        g.user = User.query.filter_by(id=get_jwt_identity()).one_or_none()
+
+
+@app.before_request
+# @jwt_required(optional=True)
+def load_user():
+    current_app.logger.error("load_user")
+    if optional_jwt():
+        load_user_from_jwt()
     else:
         email = request.json.get("email")
         firstName = request.json.get("firstName")
