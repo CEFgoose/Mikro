@@ -4,7 +4,7 @@ import os
 from flask_cors import CORS
 from flask_migrate import Migrate
 from flask_mail import Mail
-from flask_jwt_extended import JWTManager, get_jwt_identity, jwt_required, verify_jwt_in_request
+from flask_jwt_extended import JWTManager, get_jwt_identity, jwt_required, verify_jwt_in_request,current_user
 from flask import Flask, request
 import requests
 from dotenv import load_dotenv
@@ -115,7 +115,7 @@ def load_user_from_jwt():
 
 
 @app.before_request
-@jwt_required()
+@jwt_required(optional=True)
 def load_user():
     current_app.logger.error("load_user")
     if optional_jwt():

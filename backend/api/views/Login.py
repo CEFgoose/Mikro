@@ -26,11 +26,11 @@ class LoginAPI(MethodView):
         current_app.logger.error("starting login")
         # Initialize the return object
         return_obj = {}
+        jwt_user = get_jwt()
         # Check if the user is already logged in
         if not g.user:
             current_app.logger.error("getting jwt")
             # Get the JWT user information
-            jwt_user = get_jwt()
             current_app.logger.error(str(jwt_user))
             # Check if the "Mikro" integration is missing
             if "micro" not in jwt_user["integrations"]:
