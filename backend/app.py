@@ -119,8 +119,10 @@ def load_user_from_jwt():
 def load_user():
     current_app.logger.error("load_user")
     if optional_jwt():
+        current_app.logger.error("HAS JWT")
         load_user_from_jwt()
     else:
+        current_app.logger.error("HASNT JWT")
         if "register_user" in request.url:
             email = request.json.get("email")
             firstName = request.json.get("firstName")
