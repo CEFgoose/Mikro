@@ -35,7 +35,7 @@ class LoginAPI(MethodView):
             # Check if the "Mikro" integration is missing
             if "micro" not in jwt_user["integrations"]:
                 return_obj["message"] = "Mikro Integration Missing"
-                return_obj["status"] = 400
+                return_obj["status"] = 405
                 return return_obj
             # Get the access token cookie
             at_cookie = request.cookies.get("access_token_cookie")

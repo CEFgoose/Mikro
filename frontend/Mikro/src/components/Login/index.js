@@ -54,26 +54,28 @@ export const Login = () => {
       },
     })
       .then((response) => {
-        console.log(response, response.json);
-        if (!response.ok) throw response;
-        return response.json();
-      })
-      .then((data) => {
-        setFetching(false);
-        osm_username = data.osm_username;
-        payment_email = data.payment_email;
-        city = data.city;
-        country = data.country;
-        setUser(data);
-        checkrole = data.role;
-      })
-      .then(() => {
-        if (!osm_username || !payment_email || !city || !country) {
-          history("/welcome");
-        } else {
-          history(checkrole === "admin" ? "/admindash" : "/dashboard");
+        if (response.status=== 200){
+          setFetching(false);
+          osm_username = response.osm_username;
+          payment_email = response.payment_email;
+          city = response.city;
+          country = response.country;
+          setUser(response);
+          checkrole = response.role;
+          if (!osm_username || !payment_email || !city || !country) {
+            history("/welcome");
+          } else {
+            history(checkrole === "admin" ? "/admindash" : "/dashboard");
+          }
+          return response.json();
         }
-      });
+        else{
+          alert(response.message)
+          history("/login");
+          return
+        } 
+      })
+
   };
 
   //COMPONENT RENDER
