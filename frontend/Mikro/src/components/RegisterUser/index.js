@@ -44,6 +44,7 @@ export const RegisterUser = () => {
       headers: {
         // "Access-Control-Allow-Origin": "*",
         "Access-Control-Allow-Credentials":true,
+        "Access-Control-Allow-Headers": 'Authorization',
         "Content-Type": "application/json",
       },
       body:body
