@@ -42,9 +42,9 @@ export const RegisterUser = () => {
       // mode: "cors",
       credentials: "include",
       headers: {
+        'Access-Control-Allow-Headers': 'authorization,x-csrf-token',
         // "Access-Control-Allow-Origin": "*",
         "Access-Control-Allow-Credentials":true,
-        "Access-Control-Allow-Headers": 'Authorization',
         "Content-Type": "application/json",
       },
       body:body
