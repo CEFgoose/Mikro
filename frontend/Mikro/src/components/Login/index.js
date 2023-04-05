@@ -132,7 +132,7 @@ export const Login = () => {
               // mode: "cors",
               credentials: "include",
               headers: {
-                "Access-Control-Allow-Origin": "*",
+                // "Access-Control-Allow-Origin": "*",
                 "Content-Type": "application/json",
               },
               body: JSON.stringify({
