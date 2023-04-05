@@ -38,6 +38,8 @@ export const Login = () => {
     setPassword(e.target.value);
   };
 
+
+
   //LOGIN FUNCTION - CHANGE URL FOR DEPLOYMENT
   const login = () => {
     let url = API_URL.concat("login");
@@ -52,30 +54,70 @@ export const Login = () => {
       headers: {
         "X-CSRF-TOKEN": `${Cookie.get("csrf_access_token")}`,
       },
-    }).then((response) => {
-      if (response.status === 200) {
+    })
+      .then((response) => {
+        if (!response.ok) throw response;
+        return response.json();
+      })
+      .then((response) => {
         setFetching(false);
+        setUser(response);
+        checkrole = response.role;
         osm_username = response.osm_username;
         payment_email = response.payment_email;
         city = response.city;
         country = response.country;
-        console.log(response, osm_username,payment_email, city,country)
-        checkrole = response.role;
+      })
+      .then((response) =>{
         if (!osm_username || !payment_email || !city || !country) {
           setUser(response);
           history("/welcome");
         }
-        else {
-          history(checkrole === "admin" ? "/admindash" : "/dashboard");
+        else{
+          history(checkrole === "admin" ? "/admindash" : "/dashboard")
         }
-        return response.json();
-      } else {
-        alert(response.message);
-        history("/login");
-        return;
-      }
-    });
+
+        }
+
+
+      )
+      .catch((error) => {
+        setFetching(false);
+        if (error.status && error.status === 400) {
+          history("/login");
+        }
+      });
   };
+  // //LOGIN FUNCTION - CHANGE URL FOR DEPLOYMENT
+  // async function login(){
+  //   let url = API_URL.concat("login");
+
+  //   await fetch(url, {
+  //     method: "post",
+  //     // mode: "cors",
+  //     credentials: "include",
+  //     headers: {
+  //       "X-CSRF-TOKEN": `${Cookie.get("csrf_access_token")}`,
+  //     },
+  //   }).then((response) => {
+  //     if (response.status === 200) {
+
+  //       console.log(response.json())
+
+  //       checkrole = response.role;
+
+  //       else {
+  //         history(checkrole === "admin" ? "/admindash" : "/dashboard");
+  //       }
+  //       return response.json();
+  //     } 
+  //     else {
+  //       alert(response.message);
+  //       history("/login");
+  //       return;
+  //     }
+  //   });
+  // };
 
   //COMPONENT RENDER
   return (
@@ -90,7 +132,7 @@ export const Login = () => {
               // mode: "cors",
               credentials: "include",
               headers: {
-                // "Access-Control-Allow-Origin": "*",
+                "Access-Control-Allow-Origin": "*",
                 "Content-Type": "application/json",
               },
               body: JSON.stringify({
