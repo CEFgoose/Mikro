@@ -52,30 +52,27 @@ export const Login = () => {
       headers: {
         "X-CSRF-TOKEN": `${Cookie.get("csrf_access_token")}`,
       },
-    })
-      .then((response) => {
-        if (response.status=== 200){
-          setFetching(false);
-          osm_username = response.osm_username;
-          payment_email = response.payment_email;
-          city = response.city;
-          country = response.country;
-          setUser(response);
-          checkrole = response.role;
-          if (!osm_username || !payment_email || !city || !country) {
-            history("/welcome");
-          } else {
-            history(checkrole === "admin" ? "/admindash" : "/dashboard");
-          }
-          return response.json();
+    }).then((response) => {
+      if (response.status === 200) {
+        setFetching(false);
+        osm_username = response.osm_username;
+        payment_email = response.payment_email;
+        city = response.city;
+        country = response.country;
+        setUser(response);
+        checkrole = response.role;
+        if (!osm_username || !payment_email || !city || !country) {
+          history("/welcome");
+        } else {
+          history(checkrole === "admin" ? "/admindash" : "/dashboard");
         }
-        else{
-          alert(response.message)
-          history("/login");
-          return
-        } 
-      })
-
+        return response.json();
+      } else {
+        alert(response.message);
+        history("/login");
+        return;
+      }
+    });
   };
 
   //COMPONENT RENDER

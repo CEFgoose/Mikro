@@ -16,6 +16,7 @@ from dotenv import load_dotenv
 from flask import g
 from flask.globals import current_app
 
+
 def optional_jwt():
     try:
         if verify_jwt_in_request():
@@ -137,7 +138,7 @@ def load_user():
         }
 
         url = (
-            SSO_BASE_URL + "auth/register_user?method=user&integrations=viewer"
+            SSO_BASE_URL + "auth/register_user?method=user&integrations=micro"
         )
         response = requests.post(
             url,
@@ -148,7 +149,7 @@ def load_user():
             if resp["code"] == 0:
                 message = "Viewer integration added to your Kaart account, you may log into Mikro any time."  # noqa: E501
             if resp["code"] == 1:
-                message = "Account already exists with viewer integration, you may log into Mikro any time."  # noqa: E501
+                message = "Account already exists with micro integration, you may log into Mikro any time."  # noqa: E501
             if resp["code"] == 2:
                 message = "Your Kaart account has been created with Mikro integration, press the button below to activate your account!"  # noqa: E501
             return {"message": message, "code": resp["code"]}

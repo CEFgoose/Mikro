@@ -393,8 +393,6 @@ class UserAPI(MethodView):
         response["status"] = 200
         return response
 
-
-
     # def register_user(self):
     #     # Initialize response dictionary
     #     response = {}

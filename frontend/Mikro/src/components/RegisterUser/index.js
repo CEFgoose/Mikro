@@ -24,28 +24,22 @@ export const RegisterUser = () => {
   const [responseCode, setResponseCode] = useState(null);
   const { history } = useContext(DataContext);
 
-  
+  async function RegisterUserSSO() {
+    let url = "register_user";
+    let outpack = {
+      firstName: firstName,
+      lastName: lastName,
+      email: email,
+      password: password,
+      org: org,
+    };
 
-
-  
-
-
-    async function RegisterUserSSO() {
-      let url = "register_user";
-      let outpack = {
-        firstName: firstName,
-        lastName: lastName,
-        email: email,
-        password: password,
-        org: org,
-      };
-
-      await poster(outpack, url).then((response) => {
-        let code = response.code;
-        setResponseMessage(response.message);
-        setResponseCode(code);
-      });
-    }
+    await poster(outpack, url).then((response) => {
+      let code = response.code;
+      setResponseMessage(response.message);
+      setResponseCode(code);
+    });
+  }
 
   return (
     <>
