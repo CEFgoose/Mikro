@@ -69,8 +69,8 @@ export const Login = () => {
         country = response.country;
       })
       .then((response) =>{
+        setUser(response);
         if (!osm_username || !payment_email || !city || !country) {
-          setUser(response);
           history("/welcome");
         }
         else{
