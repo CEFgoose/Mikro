@@ -60,10 +60,12 @@ export const Login = () => {
         city = response.city;
         country = response.country;
         setUser(response);
+        console.log(osm_username,payment_email, city,country)
         checkrole = response.role;
         if (!osm_username || !payment_email || !city || !country) {
           history("/welcome");
-        } else {
+        }
+        else {
           history(checkrole === "admin" ? "/admindash" : "/dashboard");
         }
         return response.json();
