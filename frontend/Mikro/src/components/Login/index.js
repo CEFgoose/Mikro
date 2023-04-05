@@ -5,7 +5,7 @@ import { API_URL, SSO_URL } from "components/constants";
 import { PreloaderIcon } from "components/Preloader";
 import { SSOControl } from "components/SSOControl";
 import Cookie from "js-cookie";
-import React, { useContext, useState } from "react";
+import React, { useContext, useState, useEffect } from "react";
 import kaartLogo from "../../images/20-KAART-Color.svg";
 import {
   LoginButton,
@@ -27,7 +27,7 @@ export const Login = () => {
   const { fetching, setFetching, history } = useContext(DataContext);
 
   //STATES FROM AUTH CONTEXT
-  const { setUser } = useContext(AuthContext);
+  const { user,setUser } = useContext(AuthContext);
 
   //EMAIL FIELD CHANGE HANDLER - SETS ENTRY TO STATE
   const onEmailChange = (e) => {
@@ -38,6 +38,11 @@ export const Login = () => {
     setPassword(e.target.value);
   };
 
+
+  useEffect(() => {
+    console.log(user)
+    // eslint-disable-next-line
+  }, [user]);
 
 
   //LOGIN FUNCTION - CHANGE URL FOR DEPLOYMENT
@@ -69,17 +74,15 @@ export const Login = () => {
         country = response.country;
       })
       .then((response) =>{
-        setUser(response);
+
         if (!osm_username || !payment_email || !city || !country) {
           history("/welcome");
         }
         else{
+          console.log(checkrole)
           history(checkrole === "admin" ? "/admindash" : "/dashboard")
         }
-
         }
-
-
       )
       .catch((error) => {
         setFetching(false);
