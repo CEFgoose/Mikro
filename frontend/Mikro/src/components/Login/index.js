@@ -59,10 +59,10 @@ export const Login = () => {
         payment_email = response.payment_email;
         city = response.city;
         country = response.country;
-        setUser(response);
-        console.log(osm_username,payment_email, city,country)
+        console.log(response, osm_username,payment_email, city,country)
         checkrole = response.role;
         if (!osm_username || !payment_email || !city || !country) {
+          setUser(response);
           history("/welcome");
         }
         else {
