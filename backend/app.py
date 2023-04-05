@@ -134,16 +134,16 @@ def load_user():
             "email": email,
             "password": password,
             "org": org,
-            "int": "viewer",
+            "int": "micro",
         }
 
         url = (
-            SSO_BASE_URL + "auth/register_user?method=user&integrations=micro"
+            SSO_BASE_URL + "auth/register_user"
         )
         response = requests.post(
             url,
             json=body,
-        )  # noqa: E501 E228
+        )  # noqa: E501 E228ar
         if response.status_code == 200:
             resp = response.json()
             if resp["code"] == 0:
