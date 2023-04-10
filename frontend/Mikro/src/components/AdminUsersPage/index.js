@@ -108,7 +108,7 @@ export const AdminUsersPage = () => {
 
   const do_invite_user = () => {
     if (inviteEmail) {
-      inviteUser(inviteEmail);
+      inviteUser(inviteEmail,'mikro');
       alert("Invitation Email Sent");
       toggleAddOpen();
     }

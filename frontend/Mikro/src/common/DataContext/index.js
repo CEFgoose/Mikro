@@ -230,10 +230,11 @@ export const DataProvider = ({ children }) => {
     });
   };
 
-  const inviteUser = (email) => {
+  const inviteUser = (email,app) => {
     let inviteUserURL = "user/invite_user";
     let outpack = {
       email: email,
+      app:app
     };
     poster(outpack, inviteUserURL).then((response) => {
       if (response.status === 304) {
