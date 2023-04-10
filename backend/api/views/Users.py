@@ -296,6 +296,7 @@ class UserAPI(MethodView):
         target_email = (
             request.json["email"] if "email" in request.json else None
         )
+        app="mikro"
         # Check if the email address is not provided or is an empty string
         if not target_email or target_email == "":
             return_obj["message"] = "email address required"
@@ -304,7 +305,7 @@ class UserAPI(MethodView):
         # Construct the URL for sending the registration email
         url = SSO_BASE_URL + "auth/send_reg_email"
         # Send the request to the SSO API
-        response = requests.post(url, json={"email": target_email})
+        response = requests.post(url, json={"email": target_email, "app":app})
         # Update the return object with the response from the SSO API
         return_obj["message"] = "email sent"
         return_obj["sso_response"] = response.status_code
