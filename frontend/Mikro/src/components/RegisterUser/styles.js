@@ -14,6 +14,14 @@ export const FormWrapper = styled.div`
   flex-direction: column;
 `;
 
+export const LoginImage = styled.img`
+  height: 35vh;
+  margin-left: auto;
+  margin-right: auto;
+  display: block;
+`;
+
+
 export const GridBox = styled.div`
   margin: 1em;
   background-color: white;

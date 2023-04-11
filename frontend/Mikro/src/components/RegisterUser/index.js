@@ -2,6 +2,8 @@ import React, { useState, useContext } from "react";
 import { DataContext } from "common/DataContext/index.js";
 import { SSO_URL } from "components/constants.js";
 import { poster } from "calls.js";
+import mikro_icon from "../../images/5.png";
+import { LoginImage } from "./styles";
 import {
   ConfirmButton,
   SectionSubtitle,
@@ -48,7 +50,12 @@ export const RegisterUser = () => {
       <RegisterPage>
         <RegisterForm>
           {/* <RegisterImage src={kaartLogo} alt="Kaart Logo"/> */}
-          <Title>Sign Up Now</Title>
+          <LoginImage
+          style={{ marginTop: "2vh",marginBottom:'2vh' }}
+          src={mikro_icon}
+          alt="Kaart Logo"
+          />
+          <Title>Sign Up for Mikro</Title>
           <NameInput
             type="text"
             name="First Name"

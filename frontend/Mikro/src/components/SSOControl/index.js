@@ -13,19 +13,19 @@ export const SSOControl = (props) => {
   return (
     <>
       <RegisterWrapper>
-        <RegisterAsUserButton onClick={() => history("/login")}>
+        <RegisterAsUserButton onClick={() => history("/registerUser")}>
           Register as user
         </RegisterAsUserButton>
         <RegisterCompanyButton
-          onClick={() =>
-            window.open(
-              "http://my.kaart.com/register?method=admin&integrations=".concat(
-                props.integrations
-              ),
-              "_blank",
-              "width=720, height=800"
-            )
-          }
+          // onClick={() =>
+          //   window.open(
+          //     "http://my.kaart.com/register?method=admin&integrations=".concat(
+          //       props.integrations
+          //     ),
+          //     "_blank",
+          //     "width=720, height=800"
+          //   )
+          // }
         >
           Register as admin
         </RegisterCompanyButton>

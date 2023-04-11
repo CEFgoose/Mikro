@@ -293,10 +293,13 @@ class UserAPI(MethodView):
         # Initialize an empty dictionary to store the response
         return_obj = {}
         # Get the target email address from the request
-        target_email = (
-            request.json["email"] if "email" in request.json else None
-        )
-        app="mikro"
+        target_email = request.json.get("email")
+        if not target_email:
+            return {"message": "target_email integration required", "status": 400}
+
+        app = request.json.get("app")
+        if not app:
+            return {"message": "app integration required", "status": 400}
         # Check if the email address is not provided or is an empty string
         if not target_email or target_email == "":
             return_obj["message"] = "email address required"
