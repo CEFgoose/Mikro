@@ -47,13 +47,17 @@ export const UserDashboard = () => {
     }
     if (user === null) {
       history("/login");
+      return
     }
     if (user !== null && user.role !== "user") {
       history("/login");
+      return
     }
+    if (user !== null && user.role === "user"){
     fetchUserProjects();
     fetchUserDashStats();
     update_user_tasks();
+    }
     // eslint-disable-next-line
   }, []);
 

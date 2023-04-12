@@ -31,11 +31,7 @@ export const AuthProvider = ({ children }) => {
         }
         return response;
       })
-      .catch(() => {
-        alert("Refreshing access token failed, please log in again");
-        history("/login");
-      })
-      .then(() => {});
+
   };
 
   const value = {

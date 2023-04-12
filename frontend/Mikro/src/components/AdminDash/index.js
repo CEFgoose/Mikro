@@ -53,13 +53,17 @@ export const AdminDash = () => {
     }
     if (user === null) {
       history("/login");
+      return
     }
     if (user !== null && user.role !== "admin") {
       history("/login");
+      return
     }
+    if (user !== null && user.role === "admin") {
     fetchOrgProjects();
     fetchAdminDashStats();
     admin_update_all_user_tasks();
+    }
     // eslint-disable-next-line
   }, []);
 
