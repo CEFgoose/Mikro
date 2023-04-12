@@ -107,8 +107,8 @@ export const UserTrainingPage = () => {
           setResult2(true);
         } else {
           setResult2(false);
-          alert("false");
         }
+        setModalPage(3);
         return;
       }
     }
