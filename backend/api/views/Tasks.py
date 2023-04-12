@@ -148,6 +148,7 @@ class TaskAPI(MethodView):
         usernames = [x.osm_username for x in users]
         contributions = data["userContributions"]
         tempValidators = []
+        target_project=Project.query.filter_by(id=projectID).first()
         for c in contributions:
             validator_exists = User.query.filter_by(
                 osm_username=c["username"]
@@ -193,6 +194,9 @@ class TaskAPI(MethodView):
                                 payable_total=currentAwaitingPayment,
                                 total_tasks_validated=newTasksValidated,
                             )
+                            target_project.update(
+                                tasks_validated=target_project.tasks_validated+1
+                            )
                         else:
                             pass
                     else:
@@ -226,6 +230,7 @@ class TaskAPI(MethodView):
             "Authorization": "Bearer TVRBME1qSTBNek0uWkFkbWJ3LnA0aFZZVXZ0bl9RZWRJTVpaaHpTcE5vbVRMZw==",  # noqa: E501
             "Accept-Language": "en-US",
         }
+        target_project=Project.query.filter_by(id=project_id).first()
         for task_id in user_task_ids:
             target_user = User.query.filter_by(id=user.id).first()
             target_task = Task.query.filter_by(id=task_id).first()
@@ -251,9 +256,15 @@ class TaskAPI(MethodView):
                     target_user.update(
                         total_tasks_invalidated=invalidated_count
                     )
+                    target_project.update(
+                        tasks_invalidated=target_project.tasks_invalidated+1
+                    )
             else:
                 return {"request": "tm3 tasks mapped call failed"}
         return {"response": "complete"}
+
+
+
 
     def get_mapped_TM4_tasks(self, data, projectID):
         newMappedTasks = []
@@ -291,9 +302,15 @@ class TaskAPI(MethodView):
                         mapper.update(
                             total_tasks_mapped=mapper.total_tasks_mapped + 1
                         )
+                        target_project.update(
+                            tasks_mapped=target_project.tasks_mapped+1
+                        )
                     else:
                         pass
         return {"message": "complete"}
+    
+
+
 
     def TM3PaymentCall(self, project_id):
         headers = {

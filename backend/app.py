@@ -30,8 +30,8 @@ def load_user_from_jwt():
         g.user = User.query.filter_by(id=get_jwt_identity()).one_or_none()
 
 
-# SSO_BASE_URL = "http://127.0.0.1:5001/api/"
-SSO_BASE_URL = "https://my.kaart.com/api/"
+SSO_BASE_URL = "http://127.0.0.1:5001/api/"
+# SSO_BASE_URL = "https://my.kaart.com/api/"
 DB_key = "cjyjs1zsq0ypexp"
 DB_secret = "d4q5mgo3i0sy9y3"
 DB_AUTH_URL = "https://www.dropbox.com/oauth2/authorize"
@@ -104,14 +104,20 @@ app.secret_key = os.getenv("SECRET_KEY", os.urandom(64))
 db.init_app(app)
 migrate = Migrate(app, db)
 
-app.add_url_rule("/login", view_func=LoginAPI.as_view("auth"))
 
+#DEV
+# app.add_url_rule("/api/login", view_func=LoginAPI.as_view("auth"))
+# app.add_url_rule("/api/training/<path>", view_func=TrainingAPI.as_view("training"))
+# app.add_url_rule("/api/user/<path>", view_func=UserAPI.as_view("user"))
+# app.add_url_rule("/api/project/<path>", view_func=ProjectAPI.as_view("project"))
+# app.add_url_rule("/api/transaction/<path>", view_func=TransactionAPI.as_view("transaction"))
+# app.add_url_rule("/api/task/<path>", view_func=TaskAPI.as_view("task"))
+#PROD
+app.add_url_rule("/login", view_func=LoginAPI.as_view("auth"))
 app.add_url_rule("/training/<path>", view_func=TrainingAPI.as_view("training"))
 app.add_url_rule("/user/<path>", view_func=UserAPI.as_view("user"))
 app.add_url_rule("/project/<path>", view_func=ProjectAPI.as_view("project"))
-app.add_url_rule(
-    "/transaction/<path>", view_func=TransactionAPI.as_view("transaction")
-)
+app.add_url_rule("/transaction/<path>", view_func=TransactionAPI.as_view("transaction"))
 app.add_url_rule("/task/<path>", view_func=TaskAPI.as_view("task"))
 
 

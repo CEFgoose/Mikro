@@ -38,27 +38,3 @@ export async function fetcher(route) {
 
   return obj;
 }
-// export async function poster(info, route, concat = false) {
-//   let url;
-//   if (concat){
-//     url=API_URL.concat("auth/" + route)
-//   }
-//   else{
-//     url=API_URL.concat(route)
-//   }
-//   const response = await fetch(url ,{
-//     method: "POST",
-//     body: JSON.stringify(info),
-//     headers: {
-//       "Content-Type": "application/json",
-//       // mode: "cors",
-//       "X-CSRF-TOKEN": `${Cookie.get("csrf_access_token")}`,
-//     },
-//   });
-//   if (response.ok) {
-//     obj = await response.json();
-//   } else if (!response.ok) {
-//     obj = { response: "error" };
-//   }
-//   return obj;
-// }

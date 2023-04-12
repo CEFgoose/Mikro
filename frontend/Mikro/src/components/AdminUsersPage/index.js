@@ -33,7 +33,7 @@ export const AdminUsersPage = () => {
   const { sidebarOpen, handleSetSidebarState } = useContext(DataContext);
   const { refresh, user } = useContext(AuthContext);
   const [page, setPage] = useState(0);
-  const [rowsPerPage, setRowsPerPage] = useState(10);
+  const [rowsPerPage, setRowsPerPage] = useState(5);
   const [addOpen, toggleAddOpen] = useToggle(false);
   const [deleteOpen, toggleDeleteOpen] = useToggle(false);
   const [modifyOpen, toggleModifyOpen] = useToggle(false);
@@ -183,7 +183,7 @@ export const AdminUsersPage = () => {
               flexDirection: "row",
               marginLeft: "3vw",
               marginTop: "1vw",
-              height: "82%",
+              height: "85%",
               width: "79vw",
             }}
           >

@@ -91,36 +91,7 @@ export const Login = () => {
         }
       });
   };
-  // //LOGIN FUNCTION - CHANGE URL FOR DEPLOYMENT
-  // async function login(){
-  //   let url = API_URL.concat("login");
 
-  //   await fetch(url, {
-  //     method: "post",
-  //     // mode: "cors",
-  //     credentials: "include",
-  //     headers: {
-  //       "X-CSRF-TOKEN": `${Cookie.get("csrf_access_token")}`,
-  //     },
-  //   }).then((response) => {
-  //     if (response.status === 200) {
-
-  //       console.log(response.json())
-
-  //       checkrole = response.role;
-
-  //       else {
-  //         history(checkrole === "admin" ? "/admindash" : "/dashboard");
-  //       }
-  //       return response.json();
-  //     } 
-  //     else {
-  //       alert(response.message);
-  //       history("/login");
-  //       return;
-  //     }
-  //   });
-  // };
 
   //COMPONENT RENDER
   return (
