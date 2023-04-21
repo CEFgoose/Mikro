@@ -6,7 +6,7 @@ import { Table, TableBody, TablePagination } from "@mui/material";
 import "./styles.css";
 import {
   ListHead,
-  USER_PROJECTS_TABLE_HEADERS ,
+  VALIDATOR_PROJECTS_TABLE_HEADERS,
   DashboardCard,
   ProjectRow,
   ProjectCell,
@@ -14,7 +14,7 @@ import {
   CardMediaStyle,
 } from "components/commonComponents/commonComponents";
 
-export const UserDashboard = () => {
+export const ValidatorDashboard = () => {
   const {
     sidebarOpen,
     handleSetSidebarState,
@@ -30,9 +30,11 @@ export const UserDashboard = () => {
     paidTotal,
     activeProjectsCount,
     inactiveProjectsCount,
-    fetchUserDashStats,
-    fetchUserProjects,
-    update_user_tasks,
+    fetchValidatorDashStats,
+    fetchValidatorProjects,
+    validatorTasksInvalidated,
+    validatorTasksValidated,
+    update_validator_tasks,
     history,
   } = useContext(DataContext);
 
@@ -49,12 +51,13 @@ export const UserDashboard = () => {
       history("/login");
       return;
     }
-    if (user !== null && user.role !== "user") {
+    if (user !== null && user.role !== "validator") {
       history("/login");
       return;
     }
-    if (user !== null && user.role === "user") {
-      update_user_tasks();
+    if (user !== null && user.role === "validator") {
+      update_validator_tasks();
+
     }
     // eslint-disable-next-line
   }, []);
@@ -91,7 +94,6 @@ export const UserDashboard = () => {
               <strong>
               Dashboard:
               </strong>
-
             </h1>
             <div
               style={{ marginTop: "1vw", position: "relative", left: "37.5vw" }}
@@ -107,8 +109,8 @@ export const UserDashboard = () => {
           >
             <DashboardCard
               marginLeft={"3.5vw"}
-              marginRight={"5vw"}
-              width={"20vw"}
+              marginRight={"1.25vw"}
+              width={"17vw"}
               title={"Projects Overview"}
               subtitle_text_1={"Joined:"}
               subtitle_text_2={"Available:"}
@@ -117,25 +119,41 @@ export const UserDashboard = () => {
               value_2={inactiveProjectsCount}
               value_3={completedProjects}
             />
+
             <DashboardCard
-              marginLeft={"3.5vw"}
-              marginRight={"5.5vw"}
-              width={"20vw"}
-              title={"Tasks Overview"}
-              subtitle_text_1={"Awaiting Approval:"}
+              marginLeft={"0vw"}
+              marginRight={"1.25vw"}
+              width={"17vw"}
+              title={"Mapper Overview"}
+              subtitle_text_1={"Mapped:"}
               subtitle_text_2={"Approved:"}
-              subtitle_text_3={"Invalidated:"}
+              subtitle_text_3={"Unapproved:"}
               value_1={tasksMapped}
               value_2={tasksValidated}
               value_3={tasksInvalidated}
             />
+
             <DashboardCard
-              marginLeft={"3.5vw"}
-              width={"20vw"}
+              marginLeft={"0vw"}
+              marginRight={"1.25vw"}
+              width={"17vw"}
+              title={"Validator Overview"}
+              subtitle_text_1={"Validated:"}
+              subtitle_text_2={"Invalidated:"}
+              subtitle_text_3={"More Needed:"}
+              value_1={validatorTasksValidated}
+              value_2={validatorTasksInvalidated}
+              value_3={0}
+            />
+
+            <DashboardCard
+              marginLeft={"0vw"}
+              marginRight={"1vw"}
+              width={"22.75vw"}
               title={"Payment Overview"}
               subtitle_text_1={"Payable Total:"}
               subtitle_text_2={"Payout Requests:"}
-              subtitle_text_3={"Payouts to Date:"}
+              subtitle_text_3={"Payment received:"}
               value_1={`$${payableTotal&&payableTotal.toFixed(2)}`}
               value_2={`$${requestsTotal&&requestsTotal.toFixed(2)}`}
               value_3={`$${paidTotal&&paidTotal.toFixed(2)}`}
@@ -153,7 +171,7 @@ export const UserDashboard = () => {
             <TableCard style={{ boxShadow: "1px 1px 6px 2px gray" }}>
               <CardMediaStyle />
               <Table>
-                <ListHead headLabel={USER_PROJECTS_TABLE_HEADERS} />
+                <ListHead headLabel={VALIDATOR_PROJECTS_TABLE_HEADERS} />
                 <TableBody>
                   {activeProjects &&
                     activeProjects
@@ -165,15 +183,15 @@ export const UserDashboard = () => {
                         const {
                           id,
                           name,
-                          difficulty,
                           mapping_rate_per_task,
+                          validation_rate_per_task,
                           total_tasks,
                           tasks_mapped,
-                          tasks_approved,
-                          tasks_unapproved,
+                          tasks_validated,
+                          tasks_invalidated,
                           url,
+                          max_payment,
                           user_earnings,
-
                         } = row;
                         return (
                           <ProjectRow
@@ -191,13 +209,13 @@ export const UserDashboard = () => {
                             onDoubleClick={() => goToSource(url)}
                           >
                             <ProjectCell entry={<strong>{name}</strong>} />
-                            <ProjectCell entry={difficulty} />
                             <ProjectCell entry={`$${mapping_rate_per_task&&mapping_rate_per_task.toFixed(2)}`} />
+                            <ProjectCell entry={`$${validation_rate_per_task&&validation_rate_per_task.toFixed(2)}`} />
                             <ProjectCell entry={total_tasks} />
-
                             <ProjectCell entry={tasks_mapped} />
-                            <ProjectCell entry={tasks_approved} />
-                            <ProjectCell entry={tasks_unapproved} />
+                            <ProjectCell entry={tasks_validated} />
+                            <ProjectCell entry={tasks_invalidated} />
+                            <ProjectCell entry={tasks_validated} />
                             <ProjectCell entry={`$${user_earnings&&user_earnings.toFixed(2)}`} />
                           </ProjectRow>
                         );

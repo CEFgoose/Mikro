@@ -23,7 +23,6 @@ class LoginAPI(MethodView):
             return jsonify({"message": "ERROR!"}), 405
 
     def do_login(self):
-        current_app.logger.error("starting login")
         # Initialize the return object
         return_obj = {}
         jwt_user = get_jwt()

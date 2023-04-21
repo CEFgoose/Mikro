@@ -108,7 +108,7 @@ export const AdminUsersPage = () => {
 
   const do_invite_user = () => {
     if (inviteEmail) {
-      inviteUser(inviteEmail,'mikro');
+      inviteUser(inviteEmail, "mikro");
       alert("Invitation Email Sent");
       toggleAddOpen();
     }
@@ -158,7 +158,10 @@ export const AdminUsersPage = () => {
                 paddingBottom: "2vh",
               }}
             >
-              Users:
+              <strong>
+                Users:
+              </strong>
+              
             </h1>
             <div
               style={{ marginTop: "1vw", position: "relative", left: "44vw" }}
@@ -224,14 +227,14 @@ export const AdminUsersPage = () => {
                             onClick={() => handleSetUserSelected(id)}
                             selected={userSelected === id}
                           >
-                            <ProjectCell entry={name} />
+                            <ProjectCell entry={<strong>{name}</strong>} />
                             <ProjectCell entry={role} />
                             <ProjectCell entry={assigned_projects} />
                             <ProjectCell entry={total_tasks_mapped} />
                             <ProjectCell entry={total_tasks_validated} />
                             <ProjectCell entry={total_tasks_invalidated} />
-                            <ProjectCell entry={awaiting_payment} />
-                            <ProjectCell entry={total_payout} />
+                            <ProjectCell entry={`$${awaiting_payment&&awaiting_payment.toFixed(2)}`} />
+                            <ProjectCell entry={`$${total_payout&&total_payout.toFixed(2)}`} />
                           </ProjectRow>
                         );
                       })}

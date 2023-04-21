@@ -5,11 +5,11 @@ import useToggle from "../../hooks/useToggle.js";
 import Sidebar from "../sidebar/sidebar";
 import "./styles.css";
 import { Tab, TabList, TabPanel, Tabs } from "react-tabs";
+import { ProjectCardGrid } from "components/commonComponents/commonComponents";
 import {
   AddProjectModal,
   DeleteProjectModal,
   ModifyProjectModal,
-  ProjectCardGrid,
 } from "./projectComponents";
 
 import { ButtonDivComponent } from "components/commonComponents/commonComponents";
@@ -44,14 +44,17 @@ export const AdminProjectsPage = () => {
   } = useContext(DataContext);
 
   const [url, setUrl] = useState(null);
-  const [rate, setRate] = useState(0.0);
+  const [mappingRate, setMappingRate] = useState(0.0);
+  const [validationRate, setValidationRate] = useState(0.0);
   const [maxEditors, setMaxEditors] = useState(1);
+  const [maxValidators, setMaxValidators] = useState(1);
   const [visibility, toggleVisibility] = useToggle(true);
   const [addOpen, toggleAddOpen] = useToggle(false);
   const [deleteOpen, toggleDeleteOpen] = useToggle(false);
   const [modifyOpen, toggleModifyOpen] = useToggle(false);
   const [rateMethod, toggleRateMethod] = useToggle(true);
   const [projectSelected, setProjectSelected] = useState(null);
+  const [projectSelectedName, setProjectSelectedName] = useState(null);
   const [projectDifficulty, setProjectDifficulty] = useState(null);
   const [assignmentStatus, setAssignmentStatus] = useState(null);
   const [projectStatus, toggleProjectStatus] = useToggle(false);
@@ -59,6 +62,7 @@ export const AdminProjectsPage = () => {
   const [assignmentButtonText, setAssignmentButtonText] = useState("Assign");
 
   useEffect(() => {
+
     if (user) {
       refresh();
     }
@@ -95,7 +99,8 @@ export const AdminProjectsPage = () => {
         selectedProject = findObjectById(inactiveProjects, projectSelected);
       }
       handleSetProjectStatus(selectedProject.status);
-      setRate(selectedProject.rate_per_task);
+      setMappingRate(selectedProject.mapping_rate_per_task);
+      setValidationRate(selectedProject.validation_rate_per_task);
       setMaxEditors(selectedProject.max_editors);
       setProjectDifficulty(selectedProject.difficulty);
       setProjectSelectedDetails(selectedProject);
@@ -133,13 +138,22 @@ export const AdminProjectsPage = () => {
     setMaxEditors(e.target.value);
   };
 
+  const handleSetMaxValidators =(e)=>{
+    setMaxValidators(e.target.value);
+  }
+
   const handleSetProjectDifficulty = (e) => {
     setProjectDifficulty(e.target.value);
   };
 
-  const handleSetRate = (e) => {
-    setRate(e.target.value);
+  const handleSetValidationRate = (e) => {
+    setValidationRate(e.target.value);
   };
+
+  const handleSetMappingRate = (e) => {
+    setMappingRate(e.target.value);
+  };
+
 
   const handleToggleVisibility = (e) => {
     toggleVisibility();
@@ -150,16 +164,17 @@ export const AdminProjectsPage = () => {
   };
 
   const handleCalculateRate = (e) => {
-    calculateProjectBudget(url, rateMethod, rate, projectSelected);
+    calculateProjectBudget(url, rateMethod, mappingRate, validationRate, projectSelected);
   };
 
   const handleCreateProject = (e) => {
-    createProject(url, rateMethod, rate, maxEditors, visibility);
+    createProject(url, rateMethod, mappingRate, validationRate, maxEditors, maxValidators, visibility);
     handleAddOpen();
   };
 
-  const handleSetProjectSelected = (e) => {
-    setProjectSelected(parseInt(e.target.value));
+  const handleSetProjectSelected = (id,name) => {
+    setProjectSelected(parseInt(id));
+    setProjectSelectedName(name)
   };
 
   const handleDeleteProject = () => {
@@ -171,8 +186,10 @@ export const AdminProjectsPage = () => {
     updateProject(
       projectSelected,
       rateMethod,
-      rate,
+      mappingRate,
+      validationRate,
       maxEditors,
+      maxValidators,
       visibility,
       projectDifficulty,
       projectStatus
@@ -195,10 +212,14 @@ export const AdminProjectsPage = () => {
         handleAddOpen={handleAddOpen}
         url={url}
         handleSetUrl={handleSetUrl}
-        rate={rate}
-        handleSetRate={handleSetRate}
+        mapping_rate={mappingRate}
+        handleSetMappingRate={handleSetMappingRate}
+        validation_rate={validationRate}
+        handleSetValidationRate={handleSetValidationRate}
         maxEditors={maxEditors}
         handleSetMaxEditors={handleSetMaxEditors}
+        maxValidators={maxValidators}
+        handleSetMaxValidators={handleSetMaxValidators}
         visibility={visibility}
         handleToggleVisibility={handleToggleVisibility}
         rateMethod={rateMethod}
@@ -225,12 +246,16 @@ export const AdminProjectsPage = () => {
         visibility={visibility}
         handleCalculateRate={handleCalculateRate}
         handleCreateProject={handleCreateProject}
-        rate={rate}
+        mapping_rate={mappingRate}
+        handleSetMappingRate={handleSetMappingRate}
+        validation_rate={validationRate}
+        handleSetValidationRate={handleSetValidationRate}
         maxEditors={maxEditors}
-        handleSetRate={handleSetRate}
+        handleSetMaxEditors={handleSetMaxEditors}
+        maxValidators={maxValidators}
+        handleSetMaxValidators={handleSetMaxValidators}
         handleModifyProject={handleModifyProject}
         projectSelectedDetails={projectSelectedDetails}
-        handleSetMaxEditors={handleSetMaxEditors}
         handleSetProjectDifficulty={handleSetProjectDifficulty}
         handleToggleVisibility={handleToggleVisibility}
         handleOutputRate={handleOutputRate}
@@ -260,7 +285,9 @@ export const AdminProjectsPage = () => {
             style={{ display: "flex", marginLeft: "6vh", flexDirection: "row" }}
           >
             <h1 style={{ marginTop: "1vw", paddingBottom: "2vh" }}>
+              <strong>
               Projects:
+              </strong>
             </h1>
             <div
               style={{ marginTop: "1vw", position: "relative", left: "41.5vw" }}
@@ -293,6 +320,7 @@ export const AdminProjectsPage = () => {
             <TabPanel>
               <ProjectCardGrid
                 key={1}
+                role={user.role}
                 goToSource={goToSource}
                 projects={activeProjects}
                 handleSetProjectSelected={handleSetProjectSelected}
@@ -301,6 +329,7 @@ export const AdminProjectsPage = () => {
             </TabPanel>
             <TabPanel>
               <ProjectCardGrid
+                role={user.role}
                 key={1}
                 goToSource={goToSource}
                 projects={inactiveProjects}

@@ -11,10 +11,10 @@ import {
   TableSortLabel,
   Typography,
   Modal,
-  Divider,
   Table,
   TableBody,
   TablePagination,
+  Grid
 } from "@mui/material";
 
 export const TopDiv = styled("div")(({ theme }) => ({
@@ -77,17 +77,57 @@ export const ProjectRow = styled(TableRow)(() => ({
   marginLeft: "2vw",
 }));
 
+
+export const AdminCardMediaStyle = styled("div")(({ theme }) => ({
+  display: "flex",
+  position: "relative",
+  backgroundColor: "#f4753c",
+  paddingTop: "1vh",
+  "&:before": {
+    top: 0,
+    width: "100%",
+    height: "100%",
+    position: "absolute",
+    WebkitBackdropFilter: "blur(3px)", // Fix on Mobile
+    fontWeight: "400",
+  },
+}));
+
 //TABLE HEADERS
 
-export const PROJECTS_TABLE_HEADERS = [
+export const ADMIN_PROJECTS_TABLE_HEADERS = [
   { id: "name", label: "Name", alignLeft: true },
-  { id: "Rate", label: "Rate", alignLeft: true },
-  { id: "Tasks", label: "Tasks", alignLeft: true },
-  { id: "Difficulty", label: "Difficulty", alignLeft: true },
-  { id: "Budget", label: "Budget", alignLeft: true },
+  { id: "mapping_Rate", label: "Mapping Rate", alignLeft: true },
+  { id: "mapping_Rate", label: "Validation Rate", alignLeft: true },
+  { id: "Tasks", label: "Total Tasks", alignLeft: true },
+  { id: "Difficulty", label: "Project Difficulty", alignLeft: true },
+  { id: "Budget", label: "Total Budget", alignLeft: true },
   { id: "Current Payout", label: "Current Payout", alignLeft: true },
-  { id: "Validated/Mapped", label: "Validated/Mapped", alignLeft: true },
+  { id: "Validated/Mapped", label: "Validated/ Mapped", alignLeft: true },
   { id: "Invalidated", label: "Invalidated", alignLeft: true },
+];
+export const USER_PROJECTS_TABLE_HEADERS = [
+  { id: "name", label: "Project Name", alignLeft: true },
+  { id: "Difficulty", label: "Project Difficulty", alignLeft: true },
+  { id: "Mapper Rate", label: "Mapper Rate", alignLeft: true },
+  { id: "Tasks", label: "Total Tasks", alignLeft: true },
+  { id: "mapped", label: "You Mapped", alignLeft: true },
+  { id: "approved", label: "Your Approved", alignLeft: true },
+  { id: "unapproved", label: "Your Unapproved", alignLeft: true },
+  { id: "Earnings", label: "Your Earnings", alignLeft: true },
+
+
+];
+export const VALIDATOR_PROJECTS_TABLE_HEADERS = [
+  { id: "name", label: "Name", alignLeft: true },
+  { id: "Mapper Rate", label: "Mapper Rate", alignLeft: true },
+  { id: "Validator Rate", label: "Validator Rate", alignLeft: true },
+  { id: "Tasks", label: "Total Tasks", alignLeft: true },
+  { id: "mapped", label: "You Mapped", alignLeft: true },
+  { id: "validated", label: "You Validated", alignLeft: true },
+  { id: "invalidated", label: "You Invalidated", alignLeft: true },
+  { id: "approved", label: "Your Approved", alignLeft: true },
+  { id: "Earnings", label: "Your Earnings", alignLeft: true },
 ];
 
 export const USERS_TABLE_HEADERS = [
@@ -134,10 +174,10 @@ export const DashboardCard = (props) => {
           boxShadow: "1px 1px 6px 2px gray",
           position: "relative",
           top: "2vh",
-          marginLeft: "3.5vw",
-          marginRight: "5.3vw",
+          marginLeft: props.marginLeft,
+          marginRight: props.marginRight,
           marginBottom: "1vh",
-          width: "20vw",
+          width: props.width,
           height: "40vh",
           display: "flex",
           flexDirection: "column",
@@ -151,27 +191,27 @@ export const DashboardCard = (props) => {
             justifyContent: "center",
           }}
         >
-          <SectionTitle title_text={props.title} />
+          <SectionTitle title_text={props.title} bold={true}/>
         </div>
         <Divider />
         <div
           style={{ display: "flex", flexDirection: "row", marginBottom: "4vh" }}
         >
-          <SectionTitle title_text={props.subtitle_text_1} />
+          <SectionTitle title_text={props.subtitle_text_1} bold={true}/>
           <SectionTitle title_text={props.value_1} />
         </div>
         <Divider />
         <div
           style={{ display: "flex", flexDirection: "row", marginBottom: "4vh" }}
         >
-          <SectionTitle title_text={props.subtitle_text_2} />
+          <SectionTitle title_text={props.subtitle_text_2} bold={true} />
           <SectionTitle title_text={props.value_2} />
         </div>
         <Divider />
         <div
           style={{ display: "flex", flexDirection: "row", marginBottom: "1vh" }}
         >
-          <SectionTitle title_text={props.subtitle_text_3} />
+          <SectionTitle title_text={props.subtitle_text_3} bold={true} />
           <SectionTitle title_text={props.value_3} />
         </div>
         <Divider />
@@ -255,11 +295,21 @@ export const SectionTitle = (props) => {
         paddingLeft: "1vw",
         paddingRight: "1vw",
         marginBottom: "1vh",
-        marginTop: "2vh",
+        marginTop: "1vh",
       }}
       sx={{ mt: 6 }}
     >
+      {props.bold&&props.bold===true?
+      <>
+      <strong>
       {props.title_text}
+      </strong>
+      </>
+      :
+      <>
+      {props.title_text}
+      </>
+      }
     </Typography>
   );
 };
@@ -272,13 +322,23 @@ export const SectionSubtitle = (props) => {
       align="center"
       style={{
         paddingLeft: "1vw",
-        paddingRight: "1vw",
-        marginBottom: "1vh",
+        paddingRight:
+          props.padding_right && props.padding_right
+            ? props.padding_right
+            : "1vh",
+        marginBottom:
+          props.margin_bottom && props.margin_bottom
+            ? props.margin_bottom
+            : "1vh",
         marginTop: "1vh",
       }}
       sx={{ mt: 6 }}
     >
-      {props.subtitle_text}
+      {props.bold === true ? (
+        <strong>{props.subtitle_text}</strong>
+      ) : (
+        <>{props.subtitle_text}</>
+      )}
     </Typography>
   );
 };
@@ -395,7 +455,9 @@ export const ListHead = (props) => {
               direction={props.operator === true ? "desc" : "asc"}
               onClick={(e) => props.sortOrgProjects(headCell.label, "asc")}
             >
+              <strong>
               {headCell.label}
+              </strong>
             </TableSortLabel>
           </TableCell>
         ))}
@@ -506,7 +568,7 @@ export const AdminPayRequestsTable = (props) => {
         display: "flex",
         flexDirection: "row",
         marginLeft: "3.5vw",
-        height: "78vh",
+        height: "70vh",
         width: "77.5vw",
       }}
     >
@@ -555,7 +617,7 @@ export const AdminPayRequestsTable = (props) => {
                       }
                       selected={props.requestSelected === id}
                     >
-                      <ProjectCell entry={user} />
+                      <ProjectCell entry={<strong>{user}</strong>} />
                       <ProjectCell entry={id} />
                       <ProjectCell entry={amount_requested} />
                       <ProjectCell entry={date_requested} />
@@ -606,6 +668,7 @@ export const AdminPaymentsTable = (props) => {
                     id,
                     payment_email,
                     user,
+                    osm_username,
                     user_id,
                     amount_paid,
                     task_ids,
@@ -627,6 +690,7 @@ export const AdminPaymentsTable = (props) => {
                         props.handleSetPaymentSelected(
                           id,
                           user,
+                          osm_username,
                           user_id,
                           amount_paid,
                           date_paid,
@@ -658,5 +722,428 @@ export const AdminPaymentsTable = (props) => {
         />
       </TableCard>
     </div>
+  );
+};
+
+
+export const Divider =()=>{
+  return(
+    <div
+    style={{
+      width: "90%",
+      backgroundColor: "black",
+      height: ".05vh",
+      margin:'auto',
+      marginTop:'.5vh'
+    }}
+  />
+  )
+
+}
+
+
+export const ProjectCardGrid = (props) => {
+  return (
+    <div style={{ overflowY: "scroll", width: "85vw", height: "83vh" }}>
+      <Grid
+        sx={{
+          height: "auto",
+          position: "relative",
+          top: "3vh",
+          left: "3vw",
+        }}
+        container
+        spacing={3}
+      >
+        {props.projects &&
+          props.projects.slice().map((card) => {
+            const {
+              id,
+              name,
+              difficulty,
+              visibility,
+              total_payout,
+              mapping_rate_per_task,
+              validation_rate_per_task,
+              max_editors,
+              total_editors,
+              total_tasks,
+              total_mapped,
+              total_validated,
+              total_invalidated,
+              url,
+              source,
+              max_payment,
+            } = card;
+            return (
+              <ProjectCard
+                id={id}
+                name={name}
+                url={url}
+                role={props.role}
+                goToSource={props.goToSource}
+                difficulty={difficulty}
+                visibility={visibility}
+                max_editors={max_editors}
+                total_editors={total_editors}
+                total_tasks={total_tasks}
+                mapping_rate_per_task={mapping_rate_per_task}
+                validation_rate_per_task={validation_rate_per_task}
+                tasks_mapped={total_mapped}
+                tasks_validated={total_validated}
+                tasks_invalidated={total_invalidated}
+                total_payout={total_payout}
+                projectSelected={props.projectSelected}
+                source={source}
+                max_payment={max_payment}
+                handleSetProjectSelected={props.handleSetProjectSelected}
+              />
+            );
+          })}
+      </Grid>
+    </div>
+  );
+};
+
+
+
+
+export const ProjectCard = (props) => {
+  return (
+    <Card
+      key={props.id}
+      style={{
+        boxShadow: "1px 1px 6px 2px gray",
+        width: "25vw",
+        height: "56vh",
+        marginLeft: "2vw",
+        marginTop: "2vh",
+      }}
+      onDoubleClick={() => props.goToSource(props.url)}
+    >
+      <AdminCardMediaStyle>
+        <input
+          type={"checkbox"}
+          id={props.id}
+          value={props.id}
+          checked={props.id === props.projectSelected}
+          onChange={(e) => props.handleSetProjectSelected(props.id, props.name)}
+          style={{ marginLeft: "1vw", marginBottom: "1vh" }}
+        />
+      </AdminCardMediaStyle>
+      <div
+        style={{
+          display: "flex",
+          flexDirection: "row",
+          justifyContent: "center",
+          height: "10vh",
+        }}
+      >
+        <SectionTitle title_text={props.name} bold={true}/>
+      </div>
+      <Divider/>
+      <div
+        style={{
+          display: "flex",
+          flexDirection: "row",
+          justifyContent: "center",
+        }}
+      >
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            justifyContent: "center",
+          }}
+        >
+          <SectionSubtitle
+            subtitle_text={`Difficulty:`}
+            bold={true}
+            margin_bottom={"0vh"}
+          />
+          <SectionSubtitle
+            subtitle_text={`${props.difficulty}`}
+            margin_bottom={"0vh"}
+          />
+        </div>
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            justifyContent: "center",
+          }}
+        >
+          <SectionSubtitle
+            subtitle_text={`Visibility:`}
+            bold={true}
+            margin_bottom={"0vh"}
+          />
+          <SectionSubtitle
+            subtitle_text={`${
+              props.visibility === true ? `Public` : `Private`
+            }`}
+            margin_bottom={"0vh"}
+          />
+        </div>
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            justifyContent: "center",
+          }}
+        >
+          <SectionSubtitle
+            subtitle_text={`Source:`}
+            bold={true}
+            margin_bottom={"0vh"}
+          />
+          <SectionSubtitle
+            subtitle_text={`${props.source === "tasks" ? `TM4` : `TM3`}`}
+            margin_bottom={"0vh"}
+          />
+        </div>
+      </div>
+
+      <Divider/>
+      <div
+        style={{
+          display: "flex",
+          flexDirection: "row",
+          justifyContent: "center",
+        }}
+      >
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "row",
+            justifyContent: "center",
+          }}
+        >
+          <SectionSubtitle subtitle_text={"Editors:"} bold={true} />
+          <SectionSubtitle
+            subtitle_text={`${props.total_editors}/${props.max_editors}`}
+          />
+        </div>
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "row",
+            justifyContent: "center",
+          }}
+        >
+          <SectionSubtitle subtitle_text={"Validators:"} bold={true} />
+          <SectionSubtitle subtitle_text={`${0}/${0}`} />
+        </div>
+      </div>
+      <Divider/>
+      <div
+        style={{
+          display: "flex",
+          flexDirection: "row",
+          justifyContent: "center",
+        }}
+      >
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            justifyContent: "center",
+          }}
+        >
+          <SectionSubtitle
+            subtitle_text={"Total Tasks:"}
+            margin_bottom={"0vh"}
+            bold={true}
+          />
+          <SectionSubtitle
+            subtitle_text={props.total_tasks}
+            margin_bottom={"0vh"}
+          />
+        </div>
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            justifyContent: "center",
+          }}
+        >
+          <SectionSubtitle
+            subtitle_text={"Mapping Rate:"}
+            margin_bottom={"0vh"}
+            bold={true}
+          />
+          <SectionSubtitle
+            subtitle_text={`$${props.mapping_rate_per_task.toFixed(2)}`}
+            margin_bottom={"0vh"}
+          />
+        </div>
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            justifyContent: "center",
+          }}
+        >
+          <SectionSubtitle
+            subtitle_text={"Validation Rate:"}
+            margin_bottom={"0vh"}
+            bold={true}
+          />
+          <SectionSubtitle
+            subtitle_text={`$${props.validation_rate_per_task.toFixed(2)}`}
+            margin_bottom={"0vh"}
+          />
+        </div>
+      </div>
+      <Divider/>
+      <div
+        style={{
+          display: "flex",
+          flexDirection: "row",
+          justifyContent: "center",
+        }}
+      >
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            justifyContent: "center",
+          }}
+        >
+          <SectionSubtitle
+            subtitle_text={"Mapped:"}
+            margin_bottom={"0vh"}
+            bold={true}
+          />
+          <div
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              justifyContent: "center",
+            }}
+          >
+            <SectionSubtitle
+              margin_bottom={"0vh"}
+              subtitle_text={`${props.tasks_mapped}-tasks`}
+            />
+            <SectionSubtitle
+              margin_bottom={"0vh"}
+              subtitle_text={`${(
+                (100 / props.total_tasks) *
+                props.tasks_mapped
+              ).toFixed(2)}%`}
+            />
+          </div>
+        </div>
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            justifyContent: "center",
+          }}
+        >
+          <SectionSubtitle
+            subtitle_text={"Validated:"}
+            margin_bottom={"0vh"}
+            bold={true}
+          />
+          <div
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              justifyContent: "center",
+            }}
+          >
+            <SectionSubtitle
+              margin_bottom={"0vh"}
+              subtitle_text={`${props.tasks_validated}-tasks`}
+            />
+            <SectionSubtitle
+              margin_bottom={"0vh"}
+              subtitle_text={`${(
+                (100 / props.total_tasks) *
+                props.tasks_validated
+              ).toFixed(2)}%`}
+            />
+          </div>
+        </div>
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            justifyContent: "center",
+          }}
+        >
+          <SectionSubtitle
+            subtitle_text={"Invalidated:"}
+            margin_bottom={"0vh"}
+            bold={true}
+          />
+          <div
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              justifyContent: "center",
+            }}
+          >
+            <SectionSubtitle
+              margin_bottom={"0vh"}
+              subtitle_text={`${props.tasks_invalidated}-tasks`}
+            />
+            <SectionSubtitle
+              margin_bottom={"0vh"}
+              subtitle_text={`${(
+                (100 / props.total_tasks) *
+                props.tasks_invalidated
+              ).toFixed(4)} %`}
+            />
+          </div>
+        </div>
+      </div>
+      <Divider/>
+
+      {props.role && props.role === "admin" ? (
+        <>
+          <div
+            style={{
+              display: "flex",
+              flexDirection: "row",
+              justifyContent: "center",
+            }}
+          >
+            <div
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                justifyContent: "center",
+              }}
+            >
+              <SectionSubtitle
+                subtitle_text={"Current Payout:"}
+                bold={true}
+                margin_bottom={"0vh"}
+              />
+              <SectionSubtitle subtitle_text={`$${props.total_payout&&(props.total_payout  / 100).toFixed(2)}`} />
+            </div>
+            <div
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                justifyContent: "center",
+              }}
+            >
+              <SectionSubtitle
+                subtitle_text={"Total Budget:"}
+                bold={true}
+                margin_bottom={"0vh"}
+              />
+              <SectionSubtitle subtitle_text={`$${props.max_payment&&props.max_payment.toFixed(2)}`} />
+            </div>
+          </div>
+        </>
+      ) : (
+        <></>
+      )}
+    </Card>
   );
 };

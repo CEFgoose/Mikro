@@ -151,6 +151,15 @@ export const ModifyUserModal = (props) => {
             type="radio"
             value="User"
             name="role"
+            onChange={() => props.handleRoleSelected("validator")}
+            checked={props.roleSelected === "validator"}
+          />{" "}
+          Validator
+          <span style={{ width: "5vw" }} />
+          <input
+            type="radio"
+            value="User"
+            name="role"
             onChange={() => props.handleRoleSelected("user")}
             checked={props.roleSelected === "user"}
           />{" "}

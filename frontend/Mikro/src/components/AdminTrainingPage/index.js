@@ -423,7 +423,9 @@ export const AdminTrainingPage = () => {
             style={{ display: "flex", marginLeft: "6vh", flexDirection: "row" }}
           >
             <h1 style={{ marginTop: "1vw", paddingBottom: "2vh" }}>
-              Training:
+              <strong>
+                Training:
+              </strong>
             </h1>
             <div style={{ marginLeft: "40vw", marginTop: "1vh" }}>
               <ButtonDivComponent

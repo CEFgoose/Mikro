@@ -6,9 +6,10 @@ import Sidebar from "../sidebar/sidebar";
 import { ButtonDivComponent } from "components/commonComponents/commonComponents";
 import "./styles.css";
 import { Tab, TabList, TabPanel, Tabs } from "react-tabs";
-import {UserProjectModal } from "./projectComponents";
+import { UserProjectModal } from "./projectComponents";
 import { ProjectCardGrid } from "components/commonComponents/commonComponents";
-export const UserProjectsPage = () => {
+
+export const ValidatorProjectsPage = () => {
   const {
     sidebarOpen,
     handleSetSidebarState,

@@ -38,8 +38,8 @@ export const RegisterUser = () => {
 
     await poster(outpack, url).then((response) => {
       let code = response.code;
-      console.log(response.message)
-      alert(response.message)
+      console.log(response.message);
+      alert(response.message);
       setResponseMessage(response.message);
       setResponseCode(code);
     });
@@ -51,9 +51,9 @@ export const RegisterUser = () => {
         <RegisterForm>
           {/* <RegisterImage src={kaartLogo} alt="Kaart Logo"/> */}
           <LoginImage
-          style={{ marginTop: "2vh",marginBottom:'2vh' }}
-          src={mikro_icon}
-          alt="Kaart Logo"
+            style={{ marginTop: "2vh", marginBottom: "2vh" }}
+            src={mikro_icon}
+            alt="Kaart Logo"
           />
           <Title>Sign Up for Mikro</Title>
           <NameInput

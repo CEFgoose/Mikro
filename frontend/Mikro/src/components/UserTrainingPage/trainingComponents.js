@@ -265,7 +265,7 @@ export const UserTrainingTable = (props) => {
                       onClick={() => props.handleSetTrainingSelected(row)}
                       selected={props.trainingSelected === id}
                     >
-                      <ProjectCell entry={title} />
+                      <ProjectCell entry={<strong>{title}</strong>}/>
                       <ProjectCell entry={difficulty} />
                       <ProjectCell entry={point_value} />
                       <ProjectCell entry={training_url} />

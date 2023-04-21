@@ -18,6 +18,9 @@ import { UserPaymentsPage } from "components/UserPaymentsPage";
 import { WelcomeUserPage } from "components/WelcomeUserPage";
 import { UserTrainingPage } from "components/UserTrainingPage";
 import { AdminTrainingPage } from "components/AdminTrainingPage";
+import { ValidatorDashboard } from "components/ValidatorDashboard";
+import { ValidatorPaymentsPage } from "components/ValidatorPaymentsPage";
+import { ValidatorProjectsPage } from "components/ValidatorProjectPage";
 import "bootstrap/dist/css/bootstrap.min.css";
 import "./App.css";
 import {
@@ -33,14 +36,14 @@ function App() {
   const { refresh, user } = useContext(AuthContext);
 
   const Private = ({ Component }) => {
-    const auth = user.role === "admin";
+    const auth = user.role === "admin" || user.role === "validator";
     return auth ? <Component /> : <Navigate to="/login" />;
   };
 
   //INITIAL USE EFFECT
   useEffect(() => {
     //JWT REFRESH INTERVAL SETUP
-    // if (user) refresh();
+    if (user) refresh();
     const interval = setInterval(() => {
       refresh();
     }, 1170000);
@@ -64,6 +67,11 @@ function App() {
               <Route path="/dashboard" element={<UserDashboard />} />
 
               <Route
+                path="/validatordash"
+                element={<Private Component={ValidatorDashboard} />}
+              />
+
+              <Route
                 path="/admindash"
                 element={<Private Component={AdminDash} />}
               />
@@ -71,6 +79,11 @@ function App() {
               <Route
                 path="/AdminProjectsPage"
                 element={<Private Component={AdminProjectsPage} />}
+              />
+
+              <Route
+                path="/validatorProjectsPage"
+                element={<Private Component={ValidatorProjectsPage} />}
               />
 
               <Route path="/UserProjectsPage" element={<UserProjectsPage />} />
@@ -84,6 +97,12 @@ function App() {
                 path="/AdminPaymentsPage"
                 element={<Private Component={AdminPaymentsPage} />}
               />
+
+              <Route
+                path="/ValidatorPaymentsPage"
+                element={<Private Component={ValidatorPaymentsPage} />}
+              />
+
               <Route
                 path="/AdminTrainingPage"
                 element={<Private Component={AdminTrainingPage} />}

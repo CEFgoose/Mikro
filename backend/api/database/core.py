@@ -31,6 +31,12 @@ class User(ModelWithSoftDeleteAndCRUD, SurrogatePK):
     mapper_points = db.Column(db.Integer, default=0, nullable=True)
     validator_points = db.Column(db.Integer, default=0, nullable=True)
     special_project_points = db.Column(db.Integer, default=0, nullable=True)
+    validation_payable_total = db.Column(
+        db.Float, nullable=True, default=0, server_default="0"
+    )
+    mapping_payable_total = db.Column(
+        db.Float, nullable=True, default=0, server_default="0"
+    )
     payable_total = db.Column(
         db.Float, nullable=True, default=0, server_default="0"
     )
@@ -49,6 +55,12 @@ class User(ModelWithSoftDeleteAndCRUD, SurrogatePK):
     total_tasks_invalidated = db.Column(
         db.Integer, nullable=False, default=0, server_default="0"
     )
+    validator_tasks_invalidated = db.Column(
+        db.Integer, nullable=True, default=0, server_default="0"
+    )
+    validator_tasks_validated = db.Column(
+        db.Integer, nullable=True, default=0, server_default="0"
+    )
     requesting_payment = db.Column(
         db.Boolean,
         nullable=False,
@@ -64,9 +76,12 @@ class Project(ModelWithSoftDeleteAndCRUD, SurrogatePK):
     max_payment = db.Column(db.Float, nullable=True, default=0)
     payment_due = db.Column(db.Float, nullable=True, default=0)
     total_payout = db.Column(db.Float, nullable=True, default=0)
-    rate_per_task = db.Column(db.Float, nullable=True, default=100)
-    max_editors = db.Column(db.Integer, nullable=False, default=5)
+    validation_rate_per_task = db.Column(db.Float, nullable=True, default=100)
+    mapping_rate_per_task = db.Column(db.Float, nullable=True, default=100)
+    max_editors = db.Column(db.Integer, nullable=True, default=5)
+    max_validators = db.Column(db.Integer, nullable=True, default=5)
     total_editors = db.Column(db.BigInteger, default=0)
+    total_validators = db.Column(db.BigInteger, default=0)
     total_tasks = db.Column(db.BigInteger, default=0)
     difficulty = db.Column(db.String, nullable=True, default="Intermediate")
     tasks_mapped = db.Column(db.BigInteger, default=0)
@@ -161,7 +176,8 @@ class Task(ModelWithSoftDeleteAndCRUD, SurrogatePK):
         db.BigInteger,
         nullable=False,
     )
-    rate = db.Column(db.Float, nullable=True)
+    validation_rate = db.Column(db.Float, nullable=True, default=100)
+    mapping_rate = db.Column(db.Float, nullable=True, default=100)
     paid_out = db.Column(db.Boolean, nullable=False, default=False)
     mapped = db.Column(db.Boolean, nullable=True, default=False)
     validated = db.Column(db.Boolean, nullable=True, default=False)
@@ -177,6 +193,7 @@ class PayRequests(CRUDMixin, SurrogatePK, db.Model):
     amount_requested = db.Column(db.Float, nullable=True)
     user_id = db.Column(db.Integer, nullable=True)
     user_name = db.Column(db.String(65), nullable=True)
+    osm_username = db.Column(db.String(65), nullable=True)
     payment_email = db.Column(db.String(65), nullable=True)
     task_ids = Column(MutableList.as_mutable(ARRAY(Integer)))
     date_requested = Column(DateTime, default=func.now())
@@ -190,6 +207,7 @@ class Payments(CRUDMixin, SurrogatePK, db.Model):
     payoneer_id = db.Column(db.String(65), nullable=True)
     amount_paid = db.Column(db.Float, nullable=True)
     user_name = db.Column(db.String(65), nullable=True)
+    osm_username = db.Column(db.String(65), nullable=True)
     user_id = db.Column(db.Integer, nullable=True)
     payment_email = db.Column(db.String(65), nullable=True)
     task_ids = Column(MutableList.as_mutable(ARRAY(Integer)))

@@ -41,11 +41,17 @@ export const DataProvider = ({ children }) => {
   const [tasksMapped, setTasksMapped] = useState(null);
   const [tasksValidated, setTasksValidated] = useState(null);
   const [tasksInvalidated, setTasksInvalidated] = useState(null);
+
+  const [validatorTasksValidated, setValidatorTasksValidated] = useState(null);
+  const [validatorTasksInvalidated, setValidatorTasksInvalidated] = useState(null);
   const [payableTotal, setPayableTotal] = useState(null);
   const [requestsTotal, setRequestsTotal] = useState(null);
   const [paidTotal, setPaidTotal] = useState(null);
   const [CSVdata, setCSVdata] = useState([]);
 
+  const [mappingEarnings, setMappingEarnings] = useState(null);
+  const [validationEarnings, setValidationEarnings] = useState(null);
+  const [totalEarnings, setTotalEarnings] = useState(null);
   const handleSetSidebarState = () => {
     toggleSidebarOpen();
   };
@@ -61,6 +67,8 @@ export const DataProvider = ({ children }) => {
     setTasksMapped(e.mapped_tasks);
     setTasksValidated(e.validated_tasks);
     setTasksInvalidated(e.invalidated_tasks);
+    setValidatorTasksValidated(e.validator_validated)
+    setValidatorTasksInvalidated(e.validator_invalidated)
     setPayableTotal(e.payable_total > 0 ? e.payable_total : 0);
     setRequestsTotal(e.requests_total > 0 ? e.requests_total : 0);
     setPaidTotal(e.payouts_total > 0 ? e.payouts_total : 0);
@@ -213,6 +221,22 @@ export const DataProvider = ({ children }) => {
     });
   };
 
+
+  const resetUserStats = () => {
+    let resetUsersURL = "user/reset_test_user_stats";
+    fetcher(resetUsersURL).then((response) => {
+      if (response.status === 200) {
+        fetchOrgUsers();
+        return;
+      } else if (response.status === 304) {
+        history("/login");
+      } else {
+        alert(response.message);
+      }
+    });
+  };
+
+
   const removeUser = (id) => {
     let removeUsersURL = "user/remove_users";
     let outpack = {
@@ -230,11 +254,11 @@ export const DataProvider = ({ children }) => {
     });
   };
 
-  const inviteUser = (email,app) => {
+  const inviteUser = (email, app) => {
     let inviteUserURL = "user/invite_user";
     let outpack = {
       email: email,
-      app:app
+      app: app,
     };
     poster(outpack, inviteUserURL).then((response) => {
       if (response.status === 304) {
@@ -320,13 +344,15 @@ export const DataProvider = ({ children }) => {
   };
   //PROJECT ORIENTED API CALLS AND HANDLERS
 
-  const createProject = (url, rate_type, rate, max_editors, visibility) => {
+  const createProject = (url, rate_type, mapping_rate, validation_rate, max_editors, max_validators, visibility) => {
     let createProjectURL = "project/create_project";
     let outpack = {
       url: url,
       rate_type: rate_type,
-      rate: rate,
+      validation_rate: validation_rate,
+      mapping_rate: mapping_rate,
       max_editors: max_editors,
+      max_validators: max_validators,
       visibility: visibility,
     };
     poster(outpack, createProjectURL).then((response) => {
@@ -363,8 +389,10 @@ export const DataProvider = ({ children }) => {
   const updateProject = (
     projectSelected,
     rateMethod,
-    rate,
+    mappingRate,
+    validaionRate,
     maxEditors,
+    maxValidators,
     visibility,
     projectDifficulty,
     projectStatus
@@ -373,8 +401,10 @@ export const DataProvider = ({ children }) => {
     let outpack = {
       project_id: projectSelected,
       rate_type: rateMethod,
-      rate: rate,
+      mapping_rate: mappingRate,
+      validation_rate: validaionRate,
       max_editors: maxEditors,
+      max_validators: maxValidators,
       visibility: visibility,
       difficulty: projectDifficulty,
       project_status: projectStatus,
@@ -392,12 +422,13 @@ export const DataProvider = ({ children }) => {
     });
   };
 
-  const calculateProjectBudget = (url, rate_type, rate, project_id = null) => {
+  const calculateProjectBudget = (url, rate_type, mapping_rate, validation_rate, project_id = null) => {
     let calculateProjectBudgetURL = "project/calculate_budget";
     let outpack = {
       url: url,
       rate_type: rate_type,
-      rate: rate,
+      validation_rate: validation_rate,
+      mapping_rate: mapping_rate,
       project_id: project_id,
     };
     poster(outpack, calculateProjectBudgetURL).then((response) => {
@@ -441,6 +472,23 @@ export const DataProvider = ({ children }) => {
       }
     });
   };
+
+
+  const fetchValidatorProjects = () => {
+    let fetchUserURL = "project/fetch_validator_projects";
+    fetcher(fetchUserURL).then((response) => {
+      if (response.status === 200) {
+        setActiveProjects(response.org_active_projects);
+        setInactiveProjects(response.org_inactive_projects);
+        return;
+      } else if (response.status === 304) {
+        history("/login");
+      } else {
+        alert(response.message);
+      }
+    });
+  };
+  //Task oriented functions
   //Task oriented functions
 
   const checkUserStats = () => {
@@ -753,6 +801,7 @@ export const DataProvider = ({ children }) => {
       if (response.status === 200) {
         alert(response.message);
         fetchUserTransactions();
+        fetchUserPayable();
         return;
       } else if (response.status === 304) {
         history("/login");
@@ -762,11 +811,16 @@ export const DataProvider = ({ children }) => {
     });
   };
 
-  const fetchUserPayable = (setter) => {
+  const fetchUserPayable = (setter = null) => {
     let fetchUserPayableURL = "transaction/fetch_user_payable";
     fetcher(fetchUserPayableURL).then((response) => {
       if (response.status === 200) {
-        setter(response.payable_total);
+        if (setter){
+          setter(response.payable_total);
+        }
+        setMappingEarnings(response.mapping_earnings)
+        setValidationEarnings(response.validation_earnings)
+        setTotalEarnings(response.payable_total)
         return;
       } else if (response.status === 304) {
         history("/login");
@@ -804,10 +858,42 @@ export const DataProvider = ({ children }) => {
     });
   };
 
+
+  const fetchValidatorDashStats = () => {
+    let userDashStats = "project/fetch_validator_dash_stats";
+    fetcher(userDashStats).then((response) => {
+      if (response.status === 200) {
+        handleAdminDashStates(response);
+        return;
+      } else if (response.status === 304) {
+        history("/login");
+      } else {
+        alert(response.message);
+      }
+    });
+  };
+
   const update_user_tasks = (project_id) => {
     let userTaskStatsURL = "task/update_user_tasks";
     fetcher(userTaskStatsURL).then((response) => {
       if (response.status === 200) {
+        fetchUserProjects();
+        fetchUserDashStats();
+        return;
+      } else if (response.status === 304) {
+        history("/login");
+      } else {
+        alert(response.message);
+      }
+    });
+  };
+
+  const update_validator_tasks = (project_id) => {
+    let userTaskStatsURL = "task/update_user_tasks";
+    fetcher(userTaskStatsURL).then((response) => {
+      if (response.status === 200) {
+        fetchValidatorProjects();
+        fetchValidatorDashStats();
         return;
       } else if (response.status === 304) {
         history("/login");
@@ -821,6 +907,8 @@ export const DataProvider = ({ children }) => {
     let userTaskStatsURL = "task/admin_update_all_user_tasks";
     fetcher(userTaskStatsURL).then((response) => {
       if (response.status === 200) {
+        fetchOrgProjects();
+        fetchAdminDashStats();
         return;
       } else if (response.status === 304) {
         history("/login");
@@ -909,7 +997,14 @@ export const DataProvider = ({ children }) => {
     orgValidationTrainings,
     orgProjectTrainings,
     userCompletedTrainings,
+    mappingEarnings, 
+    validationEarnings, 
+    totalEarnings,
+    validatorTasksInvalidated,
+    validatorTasksValidated,
     //STATE SETTERS
+    setValidatorTasksValidated,
+    setValidatorTasksInvalidated,
     setActiveProjectsCount,
     setInactiveProjectsCount,
     setorgProjects,
@@ -946,6 +1041,7 @@ export const DataProvider = ({ children }) => {
     assignUserProject,
     unassignUserProject,
     fetchUserProjects,
+    fetchValidatorDashStats,
     //project
     fetchProjectUsers,
     fetchOrgProjects,
@@ -955,6 +1051,7 @@ export const DataProvider = ({ children }) => {
     updateProject,
     fetchAdminDashStats,
     fetchUserDashStats,
+    fetchValidatorProjects,
     //Transaction
     fetchOrgTransactions,
     createTransaction,
@@ -964,6 +1061,7 @@ export const DataProvider = ({ children }) => {
     fetchUserPayable,
     fetchUserTransactions,
     update_user_tasks,
+    update_validator_tasks,
     admin_update_all_user_tasks,
     //Training
     fetchOrgTrainings,
@@ -984,6 +1082,11 @@ export const DataProvider = ({ children }) => {
     goToSource,
     isValidEmail,
     shuffleArray,
+    setMappingEarnings,
+    setValidationEarnings,
+    setTotalEarnings,
+    resetUserStats
+ 
   };
 
   return value ? (

@@ -27,7 +27,7 @@ export const Login = () => {
   const { fetching, setFetching, history } = useContext(DataContext);
 
   //STATES FROM AUTH CONTEXT
-  const { user,setUser } = useContext(AuthContext);
+  const { user, setUser } = useContext(AuthContext);
 
   //EMAIL FIELD CHANGE HANDLER - SETS ENTRY TO STATE
   const onEmailChange = (e) => {
@@ -38,12 +38,10 @@ export const Login = () => {
     setPassword(e.target.value);
   };
 
-
   useEffect(() => {
-    console.log(user)
+    console.log(user);
     // eslint-disable-next-line
   }, [user]);
-
 
   //LOGIN FUNCTION - CHANGE URL FOR DEPLOYMENT
   const login = () => {
@@ -73,17 +71,19 @@ export const Login = () => {
         city = response.city;
         country = response.country;
       })
-      .then((response) =>{
-
+      .then((response) => {
         if (!osm_username || !payment_email || !city || !country) {
           history("/welcome");
+        } else {
+          history(
+            checkrole === "admin"
+              ? "/admindash"
+              : checkrole === "validator"
+              ? "/validatordash"
+              : "/dashboard"
+          );
         }
-        else{
-          console.log(checkrole)
-          history(checkrole === "admin" ? "/admindash" : "/dashboard")
-        }
-        }
-      )
+      })
       .catch((error) => {
         setFetching(false);
         if (error.status && error.status === 400) {
@@ -91,7 +91,6 @@ export const Login = () => {
         }
       });
   };
-
 
   //COMPONENT RENDER
   return (

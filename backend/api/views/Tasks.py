@@ -167,18 +167,28 @@ class TaskAPI(MethodView):
                             mapper = User.query.filter_by(
                                 osm_username=mapper
                             ).first()
+                            if task_exists.invalidated==True:
+                                mapper.update(
+                                    total_tasks_validated=mapper.total_tasks_validated-1,
+
+                                )
+                                validator_exists.update(
+                                    validator_tasks_invalidated=validator_exists.validator_tasks_invalidated-1
+                                )
+                                target_project.update(
+                                    tasks_invalidated=target_project.tasks_invalidated-1
+                                )
                             task_exists.update(
                                 validated_by=c["username"],
                                 validated=True,
+                                invalidated=False
                             )
                             oldValidatedTotal = int(
                                 mapper.total_tasks_validated
                             )
                             newTasksValidated = oldValidatedTotal + 1
-                            oldAwaitingPayment = float(
-                                mapper.payable_total
-                            )  # noqa: E501
-                            newAwaitingPayment = task_exists.rate
+                            oldAwaitingPayment = mapper.mapping_payable_total
+                            newAwaitingPayment = task_exists.mapping_rate
                             if (
                                 oldAwaitingPayment is not None
                                 and newAwaitingPayment is not None
@@ -187,13 +197,38 @@ class TaskAPI(MethodView):
                                 currentAwaitingPayment = (
                                     oldAwaitingPayment + newAwaitingPayment
                                 )
+                                print('current',currentAwaitingPayment)
                             else:
                                 currentAwaitingPayment = oldAwaitingPayment
-
                             mapper.update(
-                                payable_total=currentAwaitingPayment,
+                                mapping_payable_total= currentAwaitingPayment,
                                 total_tasks_validated=newTasksValidated,
                             )
+
+
+                            oldValidationsPayment = float(
+                                validator_exists.validation_payable_total
+                            )  # noqa: E501
+                            newValidationsPayment = task_exists.validation_rate                            
+                            if (
+                                oldValidationsPayment is not None
+                                and newValidationsPayment is not None
+                                and newValidationsPayment != 0
+                            ):
+                                currentValidationsPayment = (
+                                    oldValidationsPayment + newValidationsPayment
+                                )
+                            else:
+                                currentValidationsPayment = oldValidationsPayment
+
+
+
+
+                            validator_exists.update(
+                                validator_tasks_validated = validator_exists.validator_tasks_validated+1,
+                                validation_payable_total= currentValidationsPayment,
+                            )
+
                             target_project.update(
                                 tasks_validated=target_project.tasks_validated+1
                             )
@@ -234,33 +269,49 @@ class TaskAPI(MethodView):
         for task_id in user_task_ids:
             target_user = User.query.filter_by(id=user.id).first()
             target_task = Task.query.filter_by(id=task_id).first()
-            invalid_tasks_url = (
-                "https://tasks.kaart.com/api/v2/projects/%s/tasks/%s/"
-                % (project_id, task_id)
-            )
-            tasksInvalidatedCall = requests.request(
-                "GET", invalid_tasks_url, headers=headers
-            )
-            if tasksInvalidatedCall.ok:
-                taskData = tasksInvalidatedCall.json()
-                invalidated = []
-                if taskData["taskStatus"] == "BADIMAGERY":
-                    invalidated.append(task_id)
+            if not target_task.invalidated:
+                invalid_tasks_url = (
+                    "https://tasks.kaart.com/api/v2/projects/%s/tasks/%s/"
+                    % (project_id, task_id)
+                )
+                tasksInvalidatedCall = requests.request(
+                    "GET", invalid_tasks_url, headers=headers
+                )
+                if tasksInvalidatedCall.ok:
+                    taskData = tasksInvalidatedCall.json()
+                    invalidated = []
+                    if taskData["taskStatus"] == "INVALIDATED":
+                        validator_exists=User.query.filter_by(osm_username=taskData['taskHistory'][0]['actionBy']).first()
+                        if validator_exists:
+                            validator_exists.update(
+                                validator_tasks_invalidated=validator_exists.validator_tasks_invalidated+1,
+                                validation_payable_total=validator_exists.validation_payable_total+target_task.validation_rate
+                            )
+                            target_task.update(
+                                validated_by=validator_exists.osm_username
+                            )
 
-                    target_task.update(
-                        invalidated=True,
-                        validated=False,
-                    )
-                    invalidated_count = target_user.total_tasks_invalidated
-                    invalidated_count += 1
-                    target_user.update(
-                        total_tasks_invalidated=invalidated_count
-                    )
-                    target_project.update(
-                        tasks_invalidated=target_project.tasks_invalidated+1
-                    )
-            else:
-                return {"request": "tm3 tasks mapped call failed"}
+                        else:
+                            validator_name= taskData['taskHistory'][0]['actionBy']
+                            target_task.update(
+                            validated_by=validator_name
+                            )
+                        invalidated.append(task_id)
+
+                        target_task.update(
+                            invalidated=True,
+                            validated=False,
+                        )
+                        invalidated_count = target_user.total_tasks_invalidated
+                        invalidated_count += 1
+                        target_user.update(
+                            total_tasks_invalidated=invalidated_count
+                        )
+                        target_project.update(
+                            tasks_invalidated=target_project.tasks_invalidated+1
+                        )
+                else:
+                    return {"request": "tm4 tasks invalidated call failed"}
         return {"response": "complete"}
 
 
@@ -289,7 +340,8 @@ class TaskAPI(MethodView):
                             id=task,
                             org_id=g.user.org_id,
                             project_id=projectID,
-                            rate=target_project.rate_per_task,
+                            mapping_rate=target_project.mapping_rate_per_task,
+                            validation_rate=target_project.validation_rate_per_task,
                             paid_out=False,
                             mapped=True,
                             mapped_by=contributor["username"],

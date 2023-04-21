@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 from ..utils import requires_admin
 import requests
-from ..database import User, ProjectUser
+from ..database import User, ProjectUser, Task
 from flask.views import MethodView
 from flask import g, request
 from flask_jwt_extended import (
@@ -35,6 +35,9 @@ class UserAPI(MethodView):
             return self.do_modify_users()
         elif path == "first_login_update":
             return self.first_login_update()
+        elif path == "reset_test_user_stats":
+            return self.reset_test_user_stats()        
+        
         # elif path == "register_user":
         #     return self.register_user()
         return {
@@ -174,7 +177,7 @@ class UserAPI(MethodView):
                     "joined": user.create_time,
                     "total_payout": user.paid_total,
                     "awaiting_payment": user.requested_total,
-                    "validated_tasks_amounts": user.payable_total,
+                    "validated_tasks_amounts": user.mapping_payable_total + user.validation_payable_total,
                     "total_tasks_mapped": user.total_tasks_mapped,
                     "total_tasks_validated": user.total_tasks_validated,
                     "total_tasks_invalidated": user.total_tasks_invalidated,
@@ -397,6 +400,22 @@ class UserAPI(MethodView):
         response["status"] = 200
         return response
 
+    def reset_test_user_stats(self):
+        response={}
+        g.user.update(
+            total_tasks_mapped = 0,
+            total_tasks_validated =0,
+            total_tasks_invalidated = 0,
+            validator_tasks_validated = 0,
+            validator_tasks_invalidated = 0,
+            payable_total=0,
+            validation_payable_total=0,
+            mapping_payable_total=0
+        )
+
+        response['message']='Stats reset'
+        response['status']=200
+        return response
     # def register_user(self):
     #     # Initialize response dictionary
     #     response = {}

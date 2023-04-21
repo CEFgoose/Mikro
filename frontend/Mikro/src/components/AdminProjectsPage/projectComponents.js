@@ -37,13 +37,26 @@ export const AddProjectModal = (props) => {
     <Modal open={props.addOpen} key="add">
       <ModalWrapper>
         <CloseButton close_action={props.handleAddOpen} />
-        <SectionTitle title_text={"Add New Project"} />
+        <SectionTitle title_text={"Add New Project"} bold={true} />
         <SectionSubtitle
+        bold={true}
           subtitle_text={
-            "Enter the project URL from the OSM tasking manager, the max number of editors and rate per task or total project budget."
+            "Enter the details about your new project."
           }
         />
-        <Divider />
+        <SectionSubtitle
+          subtitle_text={
+            "Disclaimer: The Budget calculator assumes each task in the project will only need to be validated once. Validators earn the validation rate for the task regardless of the outcome of the validation, so the final total budget may be higher if some tasks are invalidated, corrected, and later approved."
+          }
+        />
+      <div
+        style={{
+          width: "100%",
+          backgroundColor: "black",
+          height: ".05vh",
+          marginTop: ".5vh",
+        }}
+      />
         <div style={{ display: "flex", flexDirection: "column" }}>
           <div
             style={{
@@ -54,7 +67,7 @@ export const AddProjectModal = (props) => {
               width: "100%",
             }}
           >
-            <SectionTitle title_text={"URL:"} />
+            <SectionTitle title_text={"URL:"} bold={true} />
             <input
               type="text"
               value={props.url}
@@ -62,27 +75,46 @@ export const AddProjectModal = (props) => {
               style={{ height: "5vh", marginRight: "3vw", width: "95%" }}
             />
           </div>
-          <Divider />
+      <div
+        style={{
+          width: "100%",
+          backgroundColor: "black",
+          height: ".05vh",
+          marginTop: ".5vh",
+        }}
+      />
           <div
             style={{
               display: "flex",
               flexDirection: "row",
               alignItems: "center",
-              marginLeft: "1vw",
+              justifyContent:'center',
+              marginLeft: "0vw",
             }}
           >
-            <SectionTitle title_text={"Budget:"} />
-            <SectionTitle title_text={"$"} />
+
+
+            {/* <SectionTitle title_text={"Budget:"} /> */}
+            <SectionTitle title_text={"Mapping Rate:"} bold={true}/>
             <input
               type="number"
               min="0.01"
               step="0.01"
-              value={props.rate}
-              onChange={(e) => props.handleSetRate(e)}
-              style={{ height: "5vh", marginRight: "1vw" }}
+              value={props.mapping_rate}
+              onChange={(e) => props.handleSetMappingRate(e)}
+              style={{ height: "5vh", marginRight: "0vw", width:'5vw' }}
             />
-            <SectionTitle title_text={"Type:"} />
-            <SectionSubtitle subtitle_text={"rate per task:"} />
+            <SectionTitle title_text={"Validation Rate:"} bold={true}/>
+            <input
+              type="number"
+              min="0.01"
+              step="0.01"
+              value={props.validation_rate}
+              onChange={(e) => props.handleSetValidationRate(e)}
+              style={{ height: "5vh", marginRight: "0vw", width:'5vw' }}
+            />
+            {/* <SectionTitle title_text={"Type:"} bold={true}/>
+            <SectionSubtitle subtitle_text={"rate per task:"} bold={true}/>
             <input
               type="radio"
               value="rate per task"
@@ -90,18 +122,65 @@ export const AddProjectModal = (props) => {
               onChange={() => props.handleToggleRateMethod()}
               checked={props.rateMethod === true}
             />
-            <span style={{ width: "2vw" }} />
-            <SectionSubtitle subtitle_text={"Total Budget:"} />
+
+            <SectionSubtitle subtitle_text={"Total Budget:"} bold={true}/>
             <input
               type="radio"
               value="Total Budget"
               name="Total Budget"
               onChange={() => props.handleToggleRateMethod()}
               checked={props.rateMethod === false}
-              style={{ marginRight: "2%" }}
+              style={{ marginRight: "4%" }}
+            /> */}
+          </div>
+
+      <div
+        style={{
+          width: "100%",
+          backgroundColor: "black",
+          height: ".05vh",
+          marginTop: ".5vh",
+        }}
+      />
+          <div
+            style={{
+              display: "flex",
+              flexDirection: "row",
+              alignItems: "center",
+              justifyContent:'center',
+              marginLeft: "1vw",
+            }}
+          >
+            <SectionTitle title_text={"Max Editors:"} bold={true}/>
+            <input
+              type="number"
+              min="1"
+              step="1"
+              value={props.maxEditors}
+              onChange={(e) => props.handleSetMaxEditors(e)}
+              style={{ height: "5vh", marginRight: "0vw", width:'5vw' }}
+            />
+            <SectionTitle title_text={"Max Validators:"} bold={true}/>
+            <input
+              type="number"
+              min="1"
+              step="1"
+              value={props.maxValidators}
+              onChange={(e) => props.handleSetMaxValidators(e)}
+              style={{ height: "5vh", marginRight: "0vw", width:'5vw' }}
             />
           </div>
-          <Divider />
+
+
+
+          <div
+        style={{
+          width: "100%",
+          backgroundColor: "black",
+          height: ".05vh",
+          marginTop: ".5vh",
+        }}
+      />
           <div
             style={{
               display: "flex",
@@ -110,9 +189,13 @@ export const AddProjectModal = (props) => {
               marginLeft: "1vw",
             }}
           >
-            <SectionTitle title_text={"Project Visibility:"} />
+
+
+
+            
+            <SectionTitle title_text={"Project Visibility:"} bold={true}/>
             <span style={{ width: "3vw" }} />
-            <SectionSubtitle subtitle_text={"Public:"} />
+            <SectionSubtitle subtitle_text={"Public:"}bold={true}/>
             <input
               type="radio"
               value="public"
@@ -121,7 +204,7 @@ export const AddProjectModal = (props) => {
               checked={props.visibility === true}
             />
             <span style={{ width: "5vw" }} />
-            <SectionSubtitle subtitle_text={"Private:"} />
+            <SectionSubtitle subtitle_text={"Private:"} bold={true}/>
             <input
               type="radio"
               value="private"
@@ -130,33 +213,67 @@ export const AddProjectModal = (props) => {
               checked={props.visibility === false}
               style={{ marginRight: "6.5vw" }}
             />
-            <StyledButton
-              button_text="Create Project"
-              button_action={props.handleCreateProject}
-            />
+
           </div>
-          <Divider />
+          <div
+        style={{
+          width: "100%",
+          backgroundColor: "black",
+          height: ".05vh",
+          marginTop: ".5vh",
+        }}
+      />
           <div
             style={{
               display: "flex",
               flexDirection: "row",
               alignItems: "center",
               marginBottom: "2vh",
-              marginLeft: "1vw",
+              marginLeft: "0vw",
             }}
           >
-            <SectionTitle title_text={"Budget Calculator:"} />
+            <SectionTitle title_text={"Budget Calculator:"} bold={true} />
             <input
               type="text"
               value={props.outputRate}
               onChange={(e) => props.handleOutputRate(e)}
-              style={{ height: "5vh", width: "24vw", marginRight: "1.25vw" }}
+              style={{ height: "5vh", width: "55vw", marginRight: "1.25vw" }}
             />
-            <StyledButton
+
+          </div>
+
+          <div
+        style={{
+          width: "100%",
+          backgroundColor: "black",
+          height: ".05vh",
+          marginTop: ".5vh",
+        }}
+      />
+          <div
+            style={{
+              display: "flex",
+              flexDirection: "row",
+              alignItems: "center",
+              marginBottom: "1vh",
+              marginTop: "1vh",
+              marginLeft: "1vw",
+              justifyContent:'center'
+
+            }}
+          >
+          <StyledButton
+              button_text="Create Project"
+              button_action={props.handleCreateProject}
+            />
+
+          <StyledButton
               button_text="Calculate"
               button_action={props.handleCalculateRate}
             />
+
           </div>
+
         </div>
       </ModalWrapper>
     </Modal>
@@ -222,6 +339,7 @@ export const ModifyProjectModal = (props) => {
           <ModalWrapper>
             <CloseButton close_action={props.handleModifyOpen} />
             <SectionTitle
+            bold={true}
               title_text={`Edit Project ${props.projectSelectedDetails.name}`}
             />
             <Tabs>
@@ -239,35 +357,45 @@ export const ModifyProjectModal = (props) => {
                 </TabList>
                 {/* BUDGET TAB */}
                 <TabPanel>
+
+                <div
+                  style={{
+                    width: "90%",
+                    backgroundColor: "black",
+                    height: ".05vh",
+                    margin:'auto',
+                    marginBottom:'1vh'
+                  }}
+                />
                   <div
                     style={{
                       display: "flex",
                       flexDirection: "row",
                       alignItems: "center",
-                      marginLeft: "1vw",
-                      width: "100%",
-                    }}
-                  ></div>
-                  <Divider />
-                  <div
-                    style={{
-                      display: "flex",
-                      flexDirection: "row",
-                      alignItems: "center",
+                      justifyContent:'center',
                       marginLeft: "1vw",
                     }}
                   >
-                    <SectionTitle title_text={"Budget:"} />
-                    <SectionTitle title_text={"$"} />
+                    <SectionTitle title_text={"Budget:"} bold={true} ma/>
+                    <SectionSubtitle subtitle_text={"Mapping Rate"} bold={true}/>
                     <input
                       type="number"
                       min="0.01"
                       step=".01"
-                      value={props.rate}
-                      onChange={(e) => props.handleSetRate(e)}
-                      style={{ height: "5vh", marginRight: "1vw" }}
+                      value={props.mapping_rate}
+                      onChange={(e) => props.handleSetMappingRate(e)}
+                      style={{ height: "5vh", marginRight: "1vw",width:'5vw' }}
                     />
-                    <SectionTitle title_text={"Type:"} />
+                    <SectionSubtitle subtitle_text={"Validation Rate"} bold={true}/>
+                    <input
+                      type="number"
+                      min="0.01"
+                      step=".01"
+                      value={props.validation_rate}
+                      onChange={(e) => props.handleSetValidationRate(e)}
+                      style={{ height: "5vh", marginRight: "1vw",width:'5vw' }}
+                    />
+                    {/* <SectionTitle title_text={"Type:"} />
                     <SectionSubtitle subtitle_text={"rate per task:"} />
                     <input
                       type="radio"
@@ -285,19 +413,31 @@ export const ModifyProjectModal = (props) => {
                       onChange={() => props.handleToggleRateMethod()}
                       checked={props.rateMethod === false}
                       style={{ marginRight: "2%" }}
-                    />
+                    /> */}
                   </div>
-                  <Divider />
+                  <div
+                  style={{
+                    width: "90%",
+                    backgroundColor: "black",
+                    height: ".05vh",
+                    margin:'auto',
+                    marginTop:'1vh',
+                    marginBottom:'1vh'
+                  }}
+                />
                   <div
                     style={{
                       display: "flex",
                       flexDirection: "row",
                       alignItems: "center",
-                      marginBottom: "2vh",
-                      marginLeft: "1vw",
+                      marginBottom: "0vh",
+                      marginLeft: "0vw",
                     }}
                   >
-                    <SectionTitle title_text={"Budget Calculator:"} />
+                    <SectionTitle 
+                    title_text={"Budget Calculator:"}
+                    bold={true}
+                     />
                     <input
                       type="text"
                       defaultValue={""}
@@ -305,20 +445,35 @@ export const ModifyProjectModal = (props) => {
                       onChange={(e) => props.handleOutputRate(e)}
                       style={{
                         height: "5vh",
-                        width: "24vw",
-                        marginRight: "1.25vw",
+                        width: "40vw",
+                        marginRight: "2vw",
                       }}
                     />
-                    <StyledButton
+
+                  </div>
+
+                  <div
+                  style={{
+                    width: "90%",
+                    backgroundColor: "black",
+                    height: ".05vh",
+                    margin:'auto',
+                    marginBottom:'2vh'
+                  }}
+                />
+                  <div style={{position:'absolute',float:'bottom',left:'34vw'}}>
+                  <StyledButton
                       button_text="Calculate"
                       button_action={props.handleCalculateRate}
                     />
                   </div>
+
                   <ModifyProjectButtons
                     handleModifyOpen={props.handleModifyOpen}
                     confirm_action={props.handleModifyProject}
                     confirm_text={"Update"}
                   />
+                  
                 </TabPanel>
                 {/* USERS TAB */}
                 <TabPanel>
@@ -374,7 +529,7 @@ export const ModifyProjectModal = (props) => {
                                     selected={props.userSelected === id}
                                     // onDoubleClick={() => view_all_project_sequences(value)}
                                   >
-                                    <ProjectCell key={name} entry={name} />
+                                    <ProjectCell key={name} entry={<strong>{name}</strong>} />
                                     <ProjectCell key={role} entry={role} />
                                     <ProjectCell
                                       key={assigned}
@@ -398,6 +553,14 @@ export const ModifyProjectModal = (props) => {
                   />
                 </TabPanel>
                 {/* SETTINGS TAB */}
+                <div
+                  style={{
+                    width: "100%",
+                    backgroundColor: "black",
+                    height: ".05vh",
+
+                  }}
+                />
                 <TabPanel>
                   <div
                     style={{
@@ -407,9 +570,10 @@ export const ModifyProjectModal = (props) => {
                       marginLeft: "1vw",
                     }}
                   >
-                    <SectionTitle title_text={"Project Visibility:"} />
+
+                    <SectionTitle title_text={"Project Visibility:"} bold={true} />
                     <span style={{ width: "3vw" }} />
-                    <SectionSubtitle subtitle_text={"Public:"} />
+                    <SectionSubtitle subtitle_text={"Public:"} bold={true} />
                     <input
                       type="radio"
                       value="public"
@@ -421,7 +585,7 @@ export const ModifyProjectModal = (props) => {
                       checked={props.visibility === true}
                     />
                     <span style={{ width: "5vw" }} />
-                    <SectionSubtitle subtitle_text={"Private:"} />
+                    <SectionSubtitle subtitle_text={"Private:"} bold={true} />
                     <input
                       type="radio"
                       value="private"
@@ -431,6 +595,16 @@ export const ModifyProjectModal = (props) => {
                       style={{ marginRight: "6.5vw" }}
                     />
                   </div>
+
+                  <div
+                  style={{
+                    width: "100%",
+                    backgroundColor: "black",
+                    height: ".05vh",
+
+                  }}
+                />
+
                   <div
                     style={{
                       display: "flex",
@@ -439,9 +613,9 @@ export const ModifyProjectModal = (props) => {
                       marginLeft: "1vw",
                     }}
                   >
-                    <SectionTitle title_text={"Project Status:"} />
+                    <SectionTitle title_text={"Project Status:"} bold={true} />
                     <span style={{ width: "3vw" }} />
-                    <SectionSubtitle subtitle_text={"Active:"} />
+                    <SectionSubtitle subtitle_text={"Active:"} bold={true} />
                     <input
                       type="radio"
                       value="Active"
@@ -453,7 +627,7 @@ export const ModifyProjectModal = (props) => {
                       checked={props.projectStatus === true}
                     />
                     <span style={{ width: "5vw" }} />
-                    <SectionSubtitle subtitle_text={"Inactive:"} />
+                    <SectionSubtitle subtitle_text={"Inactive:"} bold={true} />
                     <input
                       type="radio"
                       value="inactive"
@@ -464,6 +638,14 @@ export const ModifyProjectModal = (props) => {
                     />
                   </div>
                   <div
+                  style={{
+                    width: "100%",
+                    backgroundColor: "black",
+                    height: ".05vh",
+
+                  }}
+                />
+                  <div
                     style={{
                       display: "flex",
                       flexDirection: "row",
@@ -471,10 +653,11 @@ export const ModifyProjectModal = (props) => {
                       marginLeft: "1vw",
                     }}
                   >
-                    <SectionTitle title_text={"Difficulty:"} />
+                    
+                    <SectionTitle title_text={"Difficulty:"}bold={true}  />
                     <select
                       value={props.projectDifficulty}
-                      style={{ marginRight: "1vw" }}
+                      style={{ marginRight: "0vw" }}
                       onChange={props.handleSetProjectDifficulty}
                     >
                       <option
@@ -496,15 +679,34 @@ export const ModifyProjectModal = (props) => {
                         Hard
                       </option>
                     </select>
-                    <SectionTitle title_text={"Max Editors:"} />
+                    <SectionTitle title_text={"Max Editors:"} bold={true} />
                     <input
                       type={"number"}
                       min="1"
                       step="1"
                       value={props.maxEditors}
                       onChange={props.handleSetMaxEditors}
+                      style={{width:'4vw'}}
                     />
+                    <SectionTitle title_text={"Max Validators:"} bold={true} />
+                    <input
+                      type={"number"}
+                      min="1"
+                      step="1"
+                      value={props.maxValidators}
+                      onChange={props.handleSetMaxValidators}
+                      style={{width:'4vw'}}
+                    />
+                    
                   </div>
+                  <div
+                  style={{
+                    width: "100%",
+                    backgroundColor: "black",
+                    height: ".05vh",
+                    marginBottom:'1vh'
+                  }}
+                />
                   <ModifyProjectButtons
                     handleModifyOpen={props.handleModifyOpen}
                     confirm_action={props.handleModifyProject}
@@ -541,246 +743,5 @@ export const ModifyProjectButtons = (props) => {
         confirm_text={props.confirm_text}
       />
     </div>
-  );
-};
-
-export const ProjectCardGrid = (props) => {
-  return (
-    <div style={{ overflowY: "scroll", width: "85vw", height: "83vh" }}>
-      <Grid
-        sx={{
-          height: "auto",
-          position: "relative",
-          top: "3vh",
-          left: "3vw",
-        }}
-        container
-        spacing={3}
-      >
-        {props.projects &&
-          props.projects.slice().map((card) => {
-            const {
-              id,
-              name,
-              difficulty,
-              visibility,
-              total_payout,
-              rate_per_task,
-              max_editors,
-              total_editors,
-              total_tasks,
-              tasks_mapped,
-              tasks_validated,
-              tasks_invalidated,
-              url,
-              source,
-              max_payment,
-            } = card;
-            return (
-              <AdminProjectCard
-                id={id}
-                url={url}
-                name={name}
-                difficulty={difficulty}
-                visibility={visibility}
-                max_editors={max_editors}
-                total_editors={total_editors}
-                total_tasks={total_tasks}
-                rate_per_task={rate_per_task}
-                tasks_mapped={tasks_mapped}
-                tasks_validated={tasks_validated}
-                tasks_invalidated={tasks_invalidated}
-                total_payout={total_payout}
-                max_payment={max_payment}
-                projectSelected={props.projectSelected}
-                source={source}
-                goToSource={props.goToSource}
-                handleSetProjectSelected={props.handleSetProjectSelected}
-              />
-            );
-          })}
-      </Grid>
-    </div>
-  );
-};
-
-export const AdminProjectCard = (props) => {
-  return (
-    <Card
-      key={props.id}
-      style={{
-        boxShadow: "1px 1px 6px 2px gray",
-        width: "25vw",
-        height: "56vh",
-        marginLeft: "2vw",
-        marginTop: "2vh",
-      }}
-      onDoubleClick={() => props.goToSource(props.url)}
-    >
-      <AdminCardMediaStyle>
-        <input
-          type={"checkbox"}
-          id={props.id}
-          value={props.id}
-          checked={props.id === props.projectSelected}
-          onChange={(e) => props.handleSetProjectSelected(e)}
-          style={{ marginLeft: "1vw", marginBottom: "1vh" }}
-        />
-      </AdminCardMediaStyle>
-
-      <div
-        style={{
-          display: "flex",
-          flexDirection: "row",
-          justifyContent: "center",
-          height: "10vh",
-        }}
-      >
-        <SectionTitle title_text={props.name} />
-      </div>
-      <Divider />
-      <div
-        style={{
-          display: "flex",
-          flexDirection: "row",
-          justifyContent: "center",
-        }}
-      >
-        <SectionSubtitle subtitle_text={`Difficulty: ${props.difficulty}`} />
-        <SectionSubtitle
-          subtitle_text={`Visibility: ${
-            props.visibility === true ? `Public` : `Private`
-          }`}
-        />
-      </div>
-      <SectionSubtitle
-        subtitle_text={`Source: ${props.source === "tasks" ? `TM4` : `TM3`}`}
-      />
-      <Divider />
-      <div
-        style={{
-          display: "flex",
-          flexDirection: "row",
-          justifyContent: "center",
-        }}
-      >
-        <div
-          style={{
-            display: "flex",
-            flexDirection: "column",
-            justifyContent: "center",
-          }}
-        >
-          <SectionSubtitle subtitle_text={"Mapped %:"} />
-          <SectionSubtitle
-            subtitle_text={`${(props.total_tasks / 100) * props.tasks_mapped}%`}
-          />
-        </div>
-        <div
-          style={{
-            display: "flex",
-            flexDirection: "column",
-            justifyContent: "center",
-          }}
-        >
-          <SectionSubtitle subtitle_text={"Validated %:"} />
-          <SectionSubtitle
-            subtitle_text={`${
-              (props.total_tasks / 100) * props.tasks_validated
-            }%`}
-          />
-        </div>
-        <div
-          style={{
-            display: "flex",
-            flexDirection: "column",
-            justifyContent: "center",
-          }}
-        >
-          <SectionSubtitle subtitle_text={"Editors:"} />
-          <SectionSubtitle
-            subtitle_text={`${props.total_editors}/${props.max_editors}`}
-          />
-        </div>
-      </div>
-      <Divider />
-      <div
-        style={{
-          display: "flex",
-          flexDirection: "row",
-          justifyContent: "center",
-        }}
-      >
-        <div
-          style={{
-            display: "flex",
-            flexDirection: "column",
-            justifyContent: "center",
-          }}
-        >
-          <SectionSubtitle subtitle_text={"Tasks Mapped:"} />
-          <SectionSubtitle subtitle_text={props.tasks_mapped} />
-        </div>
-        <div
-          style={{
-            display: "flex",
-            flexDirection: "column",
-            justifyContent: "center",
-          }}
-        >
-          <SectionSubtitle subtitle_text={"Tasks Validated:"} />
-          <SectionSubtitle subtitle_text={props.tasks_validated} />
-        </div>
-        <div
-          style={{
-            display: "flex",
-            flexDirection: "column",
-            justifyContent: "center",
-          }}
-        >
-          <SectionSubtitle subtitle_text={"Current Payout:"} />
-          <SectionSubtitle subtitle_text={`$${props.total_payout}`} />
-        </div>
-      </div>
-      <Divider />
-      <div
-        style={{
-          display: "flex",
-          flexDirection: "row",
-          justifyContent: "center",
-        }}
-      >
-        <div
-          style={{
-            display: "flex",
-            flexDirection: "column",
-            justifyContent: "center",
-          }}
-        >
-          <SectionSubtitle subtitle_text={"Total Tasks:"} />
-          <SectionSubtitle subtitle_text={props.total_tasks} />
-        </div>
-        <div
-          style={{
-            display: "flex",
-            flexDirection: "column",
-            justifyContent: "center",
-          }}
-        >
-          <SectionSubtitle subtitle_text={"Rate/Task:"} />
-          <SectionSubtitle subtitle_text={`$${props.rate_per_task}`} />
-        </div>
-        <div
-          style={{
-            display: "flex",
-            flexDirection: "column",
-            justifyContent: "center",
-          }}
-        >
-          <SectionSubtitle subtitle_text={"Total Budget:"} />
-          <SectionSubtitle subtitle_text={`$${props.max_payment}`} />
-        </div>
-      </div>
-    </Card>
   );
 };

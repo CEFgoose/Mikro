@@ -128,7 +128,6 @@ def load_user():
         if optional_jwt():
             load_user_from_jwt()
     else:
-        current_app.logger.error("REGISTER USER!!!")
         email = request.json.get("email")
         firstName = request.json.get("firstName")
         lastName = request.json.get("lastName")

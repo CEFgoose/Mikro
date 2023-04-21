@@ -96,7 +96,10 @@ export const AdminAccountPage = () => {
                 paddingBottom: "2vh",
               }}
             >
-              Account:
+              <strong>
+                Account:
+              </strong>
+
             </h1>
             <div
               style={{
@@ -118,19 +121,20 @@ export const AdminAccountPage = () => {
               flexDirection: "row",
               marginLeft: "3vw",
               marginTop: "1vw",
-              height: "82%",
+              height: "50%",
               width: "79vw",
             }}
           >
             <TableCard style={{ boxShadow: "1px 1px 6px 2px gray" }}>
               <CardMediaStyle />
+
               <div
                 style={{
                   display: "flex",
                   flexDirection: "row",
                   height: "15vh",
-                  marginTop: "2vh",
-                  marginBottom: "2vh",
+                  marginTop: "0vh",
+                  marginBottom: "0vh",
                 }}
               >
                 <div
@@ -140,12 +144,12 @@ export const AdminAccountPage = () => {
                     alignItems: "center",
                   }}
                 >
-                  <SectionTitle title_text={"First Name:"} />
+                  <SectionTitle title_text={"First Name:"} bold={true}/>
                   <input
                     type="text"
                     value={firstName}
                     onChange={(e) => handleUserDetailsStates("first_name", e)}
-                    style={{ height: "5vh", marginRight: "2vw" }}
+                    style={{ height: "5vh", marginRight: "2vw", width:'13vw'}}
                   />
                 </div>
 
@@ -156,14 +160,15 @@ export const AdminAccountPage = () => {
                     alignItems: "center",
                   }}
                 >
-                  <SectionTitle title_text={"Last Name:"} />
+                  <SectionTitle title_text={"Last Name:"}bold={true}/>
                   <input
                     type="text"
                     value={lastName}
                     onChange={(e) => handleUserDetailsStates("last_name", e)}
-                    style={{ height: "5vh", marginRight: "2vw" }}
+                    style={{ height: "5vh", marginRight: "2vw", width:'13vw' }}
                   />
                 </div>
+
                 <div
                   style={{
                     display: "flex",
@@ -171,41 +176,50 @@ export const AdminAccountPage = () => {
                     alignItems: "center",
                   }}
                 >
-                  <SectionTitle title_text={"OSM Username:"} />
+                  <SectionTitle title_text={"OSM Username:"} bold={true}/>
                   <input
                     type="text"
                     value={OSMname}
                     onChange={(e) => handleUserDetailsStates("osm_name", e)}
-                    style={{ height: "5vh", marginRight: "2vw" }}
+                    style={{ height: "5vh", marginRight: "2vw", width:'13vw' }}
                   />
                 </div>
               </div>
-              <Divider />
+
+              <div
+                style={{
+                  width: "100%",
+                  backgroundColor: "black",
+                  height: ".05vh",
+                }}
+              />
+
               <div
                 style={{
                   display: "flex",
                   flexDirection: "row",
                   height: "15vh",
-                  marginTop: "2vh",
-                  marginBottom: "2vh",
+                  marginTop: "0vh",
+                  marginBottom: "0vh",
+                  justifyContent:'center'
                 }}
               >
                 <div
                   style={{
                     display: "flex",
                     flexDirection: "row",
-                    marginLeft: "15vw",
                     alignItems: "center",
                   }}
                 >
-                  <SectionTitle title_text={"City:"} />
+                  <SectionTitle title_text={"City:"} bold={true}/>
                   <input
                     type="text"
                     value={city}
                     onChange={(e) => handleUserDetailsStates("city", e)}
-                    style={{ height: "5vh", marginRight: "5vw" }}
+                    style={{ height: "5vh", marginRight: "5vw", width:'15vw'}}
                   />
                 </div>
+
                 <div
                   style={{
                     display: "flex",
@@ -213,41 +227,53 @@ export const AdminAccountPage = () => {
                     alignItems: "center",
                   }}
                 >
-                  <SectionTitle title_text={"Country:"} />
+                  <SectionTitle title_text={"Country:"} bold={true}/>
                   <input
                     type="text"
                     value={country}
                     onChange={(e) => handleUserDetailsStates("country", e)}
-                    style={{ height: "5vh", marginRight: "5vw" }}
+                    style={{ height: "5vh", marginRight: "5vw", width:'15vw' }}
                   />
                 </div>
               </div>
-              <Divider />
+
+
+              <div
+                style={{
+                  width: "100%",
+                  backgroundColor: "black",
+                  height: ".05vh",
+                }}
+              />
+
+
+
               <div
                 style={{
                   display: "flex",
                   flexDirection: "row",
                   height: "15vh",
-                  marginTop: "2vh",
-                  marginBottom: "2vh",
+                  justifyContent:'center',
+                  marginTop: "0vh",
+                  marginBottom: "0vh",
                 }}
               >
                 <div
                   style={{
                     display: "flex",
                     flexDirection: "row",
-                    marginLeft: "7vw",
                     alignItems: "center",
                   }}
                 >
-                  <SectionTitle title_text={"Personal Email:"} />
+                  <SectionTitle title_text={"Personal Email:"} bold={true}/>
                   <input
                     type="text"
                     value={email}
                     onChange={(e) => handleUserDetailsStates("email", e)}
-                    style={{ height: "5vh", marginRight: "5vw" }}
+                    style={{ height: "5vh", marginRight: "5vw", width:'20vw' }}
                   />
                 </div>
+
                 <div
                   style={{
                     display: "flex",
@@ -255,12 +281,12 @@ export const AdminAccountPage = () => {
                     alignItems: "center",
                   }}
                 >
-                  <SectionTitle title_text={"Payment Email:"} />
+                  <SectionTitle title_text={"Payment Email:"} bold={true}/>
                   <input
                     type="text"
                     value={payEmail}
                     onChange={(e) => handleUserDetailsStates("pay_email", e)}
-                    style={{ height: "5vh", marginRight: "5vw" }}
+                    style={{ height: "5vh", marginRight: "5vw", width:'20vw' }}
                   />
                 </div>
               </div>

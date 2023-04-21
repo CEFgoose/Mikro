@@ -5,7 +5,7 @@ import Sidebar from "../sidebar/sidebar";
 import { Table, TableBody, TablePagination } from "@mui/material";
 import {
   ListHead,
-  PROJECTS_TABLE_HEADERS,
+  ADMIN_PROJECTS_TABLE_HEADERS,
   DashboardCard,
   ProjectRow,
   ProjectCell,
@@ -53,16 +53,16 @@ export const AdminDash = () => {
     }
     if (user === null) {
       history("/login");
-      return
+      return;
     }
     if (user !== null && user.role !== "admin") {
       history("/login");
-      return
+      return;
     }
     if (user !== null && user.role === "admin") {
-    fetchOrgProjects();
-    fetchAdminDashStats();
-    admin_update_all_user_tasks();
+      admin_update_all_user_tasks();
+
+
     }
     // eslint-disable-next-line
   }, []);
@@ -92,7 +92,9 @@ export const AdminDash = () => {
             style={{ display: "flex", marginLeft: "6vh", flexDirection: "row" }}
           >
             <h1 style={{ marginTop: "1vw", paddingBottom: "2vh" }}>
-              Dashboard:
+              <strong>
+                Dashboard:
+              </strong>
             </h1>
             <div
               style={{ marginTop: "1vw", position: "relative", left: "37.5vw" }}
@@ -106,6 +108,9 @@ export const AdminDash = () => {
             }}
           >
             <DashboardCard
+              marginLeft={"3.5vw"}
+              marginRight={"5vw"}
+              width={"20vw"}
               title={"Projects Overview"}
               subtitle_text_1={"Active:"}
               subtitle_text_2={"Inactive:"}
@@ -115,6 +120,9 @@ export const AdminDash = () => {
               value_3={completedProjects}
             />
             <DashboardCard
+              marginLeft={"3.5vw"}
+              marginRight={"5.5vw"}
+              width={"20vw"}
               title={"Tasks Overview"}
               subtitle_text_1={"Awaiting Approval:"}
               subtitle_text_2={"Approved:"}
@@ -124,13 +132,15 @@ export const AdminDash = () => {
               value_3={tasksInvalidated}
             />
             <DashboardCard
+              marginLeft={"3.5vw"}
+              width={"20vw"}
               title={"Payment Overview"}
               subtitle_text_1={"Payable Total:"}
               subtitle_text_2={"Payout Requests:"}
               subtitle_text_3={"Payouts to Date:"}
-              value_1={`$${payableTotal}`}
-              value_2={`$${requestsTotal}`}
-              value_3={`$${paidTotal}`}
+              value_1={`$${payableTotal&&payableTotal.toFixed(2)}`}
+              value_2={`$${requestsTotal&&requestsTotal.toFixed(2)}`}
+              value_3={`$${paidTotal&&paidTotal.toFixed(2)}`}
             />
           </div>
           <div
@@ -145,7 +155,7 @@ export const AdminDash = () => {
             <TableCard style={{ boxShadow: "1px 1px 6px 2px gray" }}>
               <CardMediaStyle />
               <Table>
-                <ListHead headLabel={PROJECTS_TABLE_HEADERS} />
+                <ListHead headLabel={ADMIN_PROJECTS_TABLE_HEADERS} />
                 <TableBody>
                   {activeProjects &&
                     activeProjects
@@ -158,11 +168,12 @@ export const AdminDash = () => {
                           id,
                           name,
                           difficulty,
-                          rate_per_task,
+                          mapping_rate_per_task,
+                          validation_rate_per_task,
                           total_tasks,
-                          tasks_mapped,
-                          tasks_validated,
-                          tasks_invalidated,
+                          total_mapped,
+                          total_validated,
+                          total_invalidated,
                           url,
                           source,
                           max_payment,
@@ -183,16 +194,17 @@ export const AdminDash = () => {
                             selected={projectSelected === id}
                             onDoubleClick={() => goToSource(url)}
                           >
-                            <ProjectCell entry={name} />
-                            <ProjectCell entry={`$${rate_per_task}`} />
+                            <ProjectCell entry={<strong>{name}</strong>} />
+                            <ProjectCell entry={`$${mapping_rate_per_task&&mapping_rate_per_task.toFixed(2)}`} />
+                            <ProjectCell entry={`$${validation_rate_per_task&&validation_rate_per_task.toFixed(2)}`} />
                             <ProjectCell entry={total_tasks} />
                             <ProjectCell entry={difficulty} />
-                            <ProjectCell entry={`$${max_payment}`} />
-                            <ProjectCell entry={`$${payment_due}`} />
+                            <ProjectCell entry={`$${max_payment&&max_payment.toFixed(2)}`} />
+                            <ProjectCell entry={`$${payment_due&&payment_due.toFixed(2)}`} />
                             <ProjectCell
-                              entry={`${tasks_validated}/${tasks_mapped}`}
+                              entry={`${total_validated}/${total_mapped}`}
                             />
-                            <ProjectCell entry={tasks_invalidated} />
+                            <ProjectCell entry={total_invalidated} />
                           </ProjectRow>
                         );
                       })}

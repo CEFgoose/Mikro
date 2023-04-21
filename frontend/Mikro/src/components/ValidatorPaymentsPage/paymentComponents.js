@@ -1,6 +1,6 @@
 import { CSVLink } from "react-csv";
 import React from "react";
-import { Modal } from "@mui/material";
+import { Modal, Divider } from "@mui/material";
 import {
   CancelButton,
   CloseButton,
@@ -8,7 +8,6 @@ import {
   SectionTitle,
   SectionSubtitle,
   ModalWrapper,
-  Divider
 } from "../commonComponents/commonComponents";
 
 export const AddTransactionModal = (props) => {
@@ -16,7 +15,7 @@ export const AddTransactionModal = (props) => {
     <Modal open={props.addOpen} key="add">
       <ModalWrapper>
         <CloseButton close_action={props.handleAddOpen} />
-        <SectionTitle title_text={"Add New Pay Request"} bold={true}/>
+        <SectionTitle title_text={"Add New Pay Request"} />
         <SectionSubtitle
           subtitle_text={
             "Enter the Username, payment email request amount and task IDs for this request."
@@ -93,28 +92,6 @@ export const AddTransactionModal = (props) => {
   );
 };
 
-export const ModalButtons = (props) => {
-  return (
-    <div
-      style={{
-        display: "flex",
-        flexDirection: "row",
-        textAlign: "center",
-        justifyContent: "center",
-      }}
-    >
-      <CancelButton
-        cancel_action={props.cancel_action}
-        cancel_text={"Cancel"}
-      />
-      <ConfirmButton
-        confirm_action={props.confirm_action}
-        confirm_text={props.confirm_text}
-      />
-    </div>
-  );
-};
-
 export const DeleteModal = (props) => {
   return (
     <Modal open={props.deleteOpen} key="delete">
@@ -136,7 +113,7 @@ export const DetailsModal = (props) => {
     <Modal open={props.detailsOpen} key="delete">
       <ModalWrapper>
         <CloseButton close_action={props.handleDetailsOpen} />
-        <SectionTitle title_text={props.title_text} bold={true}/>
+        <SectionTitle title_text={props.title_text} />
         <div style={{ display: "flex", flexDirection: "column" }}>
           <Divider />
           <div
@@ -144,22 +121,21 @@ export const DetailsModal = (props) => {
               display: "flex",
               flexDirection: "row",
               alignItems: "center",
-              justifyContent:'left',
-              marginLeft: "2vw",
+              marginLeft: "1vw",
               width: "100%",
             }}
           >
-            <SectionTitle title_text={"User:"} bold={true}/>
+            <SectionTitle title_text={"User:"} />
             <input
               type="text"
               value={props.user_name}
-              style={{ height: "5vh", marginRight: "0vw", width: "40%" }}
+              style={{ height: "5vh", marginRight: "3vw", width: "95%" }}
             />
-            <SectionTitle title_text={"OSM Username:"} bold={true}/>
+            <SectionTitle title_text={"Payment Amount:"} />
             <input
               type="text"
-              value={props.osm_username}
-              style={{ height: "5vh", marginRight: "6vw", width: "40%" }}
+              value={`$${props.amount_paid}`}
+              style={{ height: "5vh", marginRight: "3vw", width: "95%" }}
             />
           </div>
           <Divider />
@@ -168,59 +144,21 @@ export const DetailsModal = (props) => {
               display: "flex",
               flexDirection: "row",
               alignItems: "center",
-              justifyContent:'left',
-              marginLeft: "0vw",
-              marginTop:'1vh',
+              marginLeft: "1vw",
               width: "100%",
             }}
           >
-
-
-
-          <SectionTitle title_text={"Mapping Amount:"} bold={true}/>
-            <input
-              type="text"
-              value={`$${props.amount_paid}`}
-              style={{ height: "5vh", marginRight: "0vw", width: "10%" }}
-            />
-          <SectionTitle title_text={"Validation Amount:"} bold={true}/>
-            <input
-              type="text"
-              value={`$${props.amount_paid}`}
-              style={{ height: "5vh", marginRight: "0vw", width: "10%" }}
-            />
-            <SectionTitle title_text={"Total Payment:"} bold={true}/>
-            <input
-              type="text"
-              value={`$${props.amount_paid}`}
-              style={{ height: "5vh", marginRight: "3.75vw", width: "10%" }}
-            />
-          </div>
-
-          <Divider />
-          <div
-            style={{
-              display: "flex",
-              flexDirection: "row",
-              alignItems: "center",
-              justifyContent:'left',
-              marginLeft: "2vw",
-              marginTop:'1vh',
-              marginBottom:'1vh',
-              width: "100%",
-            }}
-          >
-            <SectionTitle title_text={"Date Paid:"}bold={true} />
+            <SectionTitle title_text={"Date Paid:"} />
             <input
               type="text"
               value={props.date_paid}
-              style={{ height: "5vh", marginRight: "3.75vw", width: "31%" }}
+              style={{ height: "5vh", marginRight: "3vw", width: "95%" }}
             />
-            <SectionTitle title_text={"Payoneer ID:"}bold={true} />
+            <SectionTitle title_text={"Payoneer ID:"} />
             <input
               type="text"
               value={props.payoneer_id}
-              style={{ height: "5vh", marginRight: "1vw", width: "10%" }}
+              style={{ height: "5vh", marginRight: "3vw", width: "35%" }}
             />
           </div>
           <Divider />
@@ -229,17 +167,15 @@ export const DetailsModal = (props) => {
               display: "flex",
               flexDirection: "row",
               alignItems: "center",
-              justifyContent:'left',
-              marginLeft: "2vw",
-              marginTop:'1vh',
+              marginLeft: "1vw",
               width: "100%",
             }}
           >
-            <SectionTitle title_text={"Payment Email:"} bold={true}/>
+            <SectionTitle title_text={"Payment Email:"} />
             <input
               type="text"
               value={props.payment_email}
-              style={{ height: "5vh", marginRight: "3vw", width: "63%" }}
+              style={{ height: "5vh", marginRight: "3vw", width: "95%" }}
             />
           </div>
           <Divider />
@@ -248,16 +184,15 @@ export const DetailsModal = (props) => {
               display: "flex",
               flexDirection: "row",
               alignItems: "center",
-              justifyContent:'left',
-              marginLeft: "2vw",
+              marginLeft: "1vw",
               width: "100%",
             }}
           >
-            <SectionTitle title_text={"Task IDs:"} bold={true}/>
+            <SectionTitle title_text={"Task IDs:"} />
             <input
               type="text"
               value={props.task_ids}
-              style={{ height: "5vh", marginRight: "3vw", width: "72%" }}
+              style={{ height: "5vh", marginRight: "3vw", width: "95%" }}
             />
           </div>
           <Divider />
@@ -266,18 +201,16 @@ export const DetailsModal = (props) => {
               display: "flex",
               flexDirection: "row",
               alignItems: "center",
-              justifyContent:'left',
-              marginLeft: "2vw",
+              marginLeft: "1vw",
               width: "100%",
-              marginTop:'1vh',
               marginBottom: "2vh",
             }}
           >
-            <SectionTitle title_text={"Notes:"}bold={true} />
+            <SectionTitle title_text={"Notes:"} />
             <input
               type="text"
               value={props.notes}
-              style={{ height: "5vh",marginLeft:'1.75vw', marginRight: "0vw", width: "72%" }}
+              style={{ height: "5vh", marginRight: "3vw", width: "95%" }}
             />
           </div>
         </div>
@@ -353,7 +286,6 @@ export const ProcessRequestModal = (props) => {
             <input
               type="text"
               value={props.taskIDs}
-              onChange={(e) => props.handleSetTaskIds(e)}
               style={{ height: "5vh", marginRight: "3vw", width: "20vw" }}
             />
           </div>
@@ -414,5 +346,80 @@ export const CSVExport = (data) => {
         style={{ textDecoration: "none" }}
       ></CSVLink>
     </>
+  );
+};
+
+export const RequestModal = (props) => {
+  return (
+    <Modal open={props.requestOpen} key="request">
+      <ModalWrapper>
+        <CloseButton close_action={props.handleRequestOpen} />
+        <SectionTitle title_text={props.title_text} />
+        <div style={{ display: "flex", flexDirection: "column" }}>
+          <Divider />
+          <div
+            style={{
+              display: "flex",
+              flexDirection: "row",
+              alignItems: "center",
+              marginLeft: "1vw",
+              width: "100%",
+            }}
+          >
+            <SectionTitle title_text={"Request Amount:"} />
+            <input
+              type="number"
+              value={props.requestAmount&&props.requestAmount.toFixed(2)}
+              style={{ height: "5vh", marginRight: "0vw", width: "67.5%" }}
+            />
+          </div>
+          <div
+            style={{
+              display: "flex",
+              flexDirection: "row",
+              alignItems: "center",
+              marginLeft: "1vw",
+              width: "100%",
+            }}
+          >
+            <SectionTitle title_text={"Notes:"} />
+            <input
+              type="text"
+              value={props.notes}
+              onChange={(e) => props.handleSetNotes(e)}
+              style={{ height: "5vh", marginRight: "3vw", width: "95%" }}
+            />
+          </div>
+        </div>
+        <ModalButtons
+          confirm_text={"Submit"}
+          cancel_text={"Cancel"}
+          cancel_action={props.handleRequestOpen}
+          confirm_action={props.confirm_action}
+        />
+      </ModalWrapper>
+    </Modal>
+  );
+};
+
+export const ModalButtons = (props) => {
+  return (
+    <div
+      style={{
+        display: "flex",
+        flexDirection: "row",
+        textAlign: "center",
+        justifyContent: "center",
+      }}
+    >
+      <CancelButton
+        cancel_action={props.cancel_action}
+        cancel_text={"Cancel"}
+      />
+      <ConfirmButton
+        confirm_action={props.confirm_action}
+        confirm_text={props.confirm_text}
+      />
+    </div>
   );
 };

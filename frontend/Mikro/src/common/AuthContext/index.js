@@ -23,15 +23,13 @@ export const AuthProvider = ({ children }) => {
       method: "POST",
       credentials: "include",
       headers: { "X-CSRF-TOKEN": Cookie.get("csrf_access_token") },
-    })
-      .then((response) => {
-        if (!response.ok) {
-          alert("Refreshing access token failed, please log in again");
-          history("/login");
-        }
-        return response;
-      })
-
+    }).then((response) => {
+      if (!response.ok) {
+        alert("Refreshing access token failed, please log in again");
+        history("/login");
+      }
+      return response;
+    });
   };
 
   const value = {

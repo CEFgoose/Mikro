@@ -41,6 +41,7 @@ export const AdminPaymentsPage = () => {
   const [processOpen, toggleProcessOpen] = useToggle(false);
   const [detailsOpen, toggleDetailsOpen] = useToggle(false);
   const [userName, setUserName] = useState(null);
+  const [OSMuserName, setOSMuserName] = useState(null);
   const [userID, setUserID] = useState(null);
   const [payEmail, setPayEmail] = useState(null);
   const [payoneerID, setPayoneerID] = useState(null);
@@ -103,6 +104,7 @@ export const AdminPaymentsPage = () => {
   const handleSetPaymentSelected = (
     id,
     user,
+    osm_username,
     user_id,
     amount_paid,
     date_paid,
@@ -119,6 +121,7 @@ export const AdminPaymentsPage = () => {
     setPayEmail(payment_email);
     setTaskIDs(task_ids);
     setPayoneerID(payoneer_id);
+    setOSMuserName(osm_username)
   };
 
   const handleSetRequestSelected = (
@@ -234,6 +237,7 @@ export const AdminPaymentsPage = () => {
         title_text={`Details for Payment ${payoneerID}`}
         payoneer_id={payoneerID}
         user_name={userName}
+        osm_username={OSMuserName}
         date_paid={requestDate}
         payment_email={payEmail}
         amount_paid={requestAmount}
@@ -256,7 +260,10 @@ export const AdminPaymentsPage = () => {
             style={{ display: "flex", marginLeft: "6vh", flexDirection: "row" }}
           >
             <h1 style={{ marginTop: "1vw", paddingBottom: "2vh" }}>
-              Payments:
+              <strong>
+                Payments:
+              </strong>
+
             </h1>
 
             <div

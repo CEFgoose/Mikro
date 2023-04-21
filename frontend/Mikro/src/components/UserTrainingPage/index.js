@@ -66,8 +66,10 @@ export const UserTrainingPage = () => {
     if (user === null) {
       history("/login");
     }
-    if (user !== null && user.role !== "user") {
-      history("/login");
+    if (user !== null) {
+      if (user.role !== "user" && user.role !== "validator") {
+        history("/login");
+      }
     }
     fetchUserTrainings();
     // eslint-disable-next-line
@@ -247,7 +249,9 @@ export const UserTrainingPage = () => {
             style={{ display: "flex", marginLeft: "6vh", flexDirection: "row" }}
           >
             <h1 style={{ marginTop: "1vw", paddingBottom: "2vh" }}>
-              Training:
+              <strong>
+                Training:
+              </strong>
             </h1>
             <div style={{ marginLeft: "50vw", marginTop: "1vh" }}>
               <ButtonDivComponent
