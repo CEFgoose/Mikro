@@ -498,7 +498,7 @@ class ProjectAPI(MethodView):
             task
             for task in all_tasks
             if task.id in all_user_task_ids
-            if task.mapped is True and task.validated is True
+            and task.mapped is True and task.validated is True
         ]
         user_validated_tasks_count = len(user_validated_tasks)
         user_invalidated_tasks_count = len(
@@ -506,7 +506,7 @@ class ProjectAPI(MethodView):
                 task
                 for task in all_tasks
                 if task.id in all_user_task_ids
-                if task.mapped is True and task.invalidated is True
+                and task.mapped is True and task.invalidated is True
             ]
         )
         all_user_requests = PayRequests.query.filter_by(
