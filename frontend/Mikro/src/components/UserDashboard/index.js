@@ -23,6 +23,9 @@ export const UserDashboard = () => {
     activeProjects,
     completedProjects,
     tasksMapped,
+    mapped_tasks,
+    validated_tasks,
+    invalidated_tasks,
     tasksValidated,
     tasksInvalidated,
     payableTotal,
@@ -54,10 +57,22 @@ export const UserDashboard = () => {
       return;
     }
     if (user !== null && user.role === "user") {
-      update_user_tasks();
+
+
+            update_user_tasks();
+
     }
+
     // eslint-disable-next-line
   }, []);
+
+
+  useEffect(() => {
+
+    console.log(tasksMapped)
+    // eslint-disable-next-line
+  }, [tasksMapped]);
+
 
   const handleViewSidebar = () => {
     handleSetSidebarState();
@@ -113,9 +128,9 @@ export const UserDashboard = () => {
               subtitle_text_1={"Joined:"}
               subtitle_text_2={"Available:"}
               subtitle_text_3={"Completed:"}
-              value_1={activeProjectsCount}
-              value_2={inactiveProjectsCount}
-              value_3={completedProjects}
+              value_1={activeProjectsCount&&activeProjectsCount}
+              value_2={inactiveProjectsCount&&inactiveProjectsCount}
+              value_3={completedProjects&&completedProjects}
             />
             <DashboardCard
               marginLeft={"3.5vw"}
@@ -125,9 +140,9 @@ export const UserDashboard = () => {
               subtitle_text_1={"Awaiting Approval:"}
               subtitle_text_2={"Approved:"}
               subtitle_text_3={"Invalidated:"}
-              value_1={tasksMapped}
-              value_2={tasksValidated}
-              value_3={tasksInvalidated}
+              value_1={tasksMapped&&tasksMapped}
+              value_2={tasksValidated&&tasksValidated}
+              value_3={tasksInvalidated&&invalidated_tasks}
             />
             <DashboardCard
               marginLeft={"3.5vw"}

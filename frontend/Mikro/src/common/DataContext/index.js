@@ -61,6 +61,7 @@ export const DataProvider = ({ children }) => {
   };
 
   const handleAdminDashStates = (e) => {
+    console.log(e)
     setActiveProjectsCount(e.active_projects);
     setInactiveProjectsCount(e.inactive_projects);
     setCompletedProjects(e.completed_projects);
@@ -73,6 +74,8 @@ export const DataProvider = ({ children }) => {
     setRequestsTotal(e.requests_total > 0 ? e.requests_total : 0);
     setPaidTotal(e.payouts_total > 0 ? e.payouts_total : 0);
   };
+
+  
 
   //USER ORIENTED API CALLS AND HANDLERS
   const handleUserDetailsStates = (state, e) => {
@@ -877,8 +880,8 @@ export const DataProvider = ({ children }) => {
     let userTaskStatsURL = "task/update_user_tasks";
     fetcher(userTaskStatsURL).then((response) => {
       if (response.status === 200) {
-        fetchUserProjects();
         fetchUserDashStats();
+        fetchUserProjects();
         return;
       } else if (response.status === 304) {
         history("/login");

@@ -248,10 +248,10 @@ const Sidebar = (props) => {
             </Header>
           </MenuItem>
           
-          <ConfirmButton 
+          {/* <ConfirmButton 
             confirm_action={()=>resetUserStats()}
             confirm_text={"Reset Stats"}
-          />
+          /> */}
         </SidebarOpenedContainer>
 
       
