@@ -349,7 +349,7 @@ class TaskAPI(MethodView):
                             validated=False,
                         )
                         UserTasks.create(
-                            user_id=g.user.id, task_id=new_task.id
+                            user_id=mapper.id, task_id=new_task.id
                         )
                         mapper.update(
                             total_tasks_mapped=mapper.total_tasks_mapped + 1

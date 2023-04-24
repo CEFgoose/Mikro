@@ -489,7 +489,7 @@ class ProjectAPI(MethodView):
             task
             for task in all_tasks
             if task.id in all_user_task_ids
-            if task.mapped is True
+            and task.mapped is True
             and task.validated is False
             and task.invalidated is False
         ]
@@ -529,9 +529,6 @@ class ProjectAPI(MethodView):
         payouts_total = sum(
             payment.amount_paid for payment in all_user_payments
         )
-
-            
-
         payable_total= g.user.mapping_payable_total 
         # Construct response dictionary
         response = {

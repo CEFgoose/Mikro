@@ -880,8 +880,7 @@ export const DataProvider = ({ children }) => {
     let userTaskStatsURL = "task/update_user_tasks";
     fetcher(userTaskStatsURL).then((response) => {
       if (response.status === 200) {
-        fetchUserDashStats();
-        fetchUserProjects();
+
         return;
       } else if (response.status === 304) {
         history("/login");

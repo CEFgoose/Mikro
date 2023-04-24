@@ -57,21 +57,22 @@ export const UserDashboard = () => {
       return;
     }
     if (user !== null && user.role === "user") {
-
-
-            update_user_tasks();
-
+    update_user_tasks().then({
+      
+    });
+    fetchUserDashStats();
+    fetchUserProjects();
     }
 
     // eslint-disable-next-line
   }, []);
 
 
-  useEffect(() => {
+  // useEffect(() => {
 
-    console.log(tasksMapped)
-    // eslint-disable-next-line
-  }, [tasksMapped]);
+  //   console.log(tasksMapped)
+  //   // eslint-disable-next-line
+  // }, [tasksMapped]);
 
 
   const handleViewSidebar = () => {
