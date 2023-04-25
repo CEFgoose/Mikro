@@ -61,8 +61,8 @@ export const AdminDash = () => {
     }
     if (user !== null && user.role === "admin") {
       admin_update_all_user_tasks();
-
-
+      fetchOrgProjects();
+      fetchAdminDashStats();
     }
     // eslint-disable-next-line
   }, []);
@@ -115,9 +115,9 @@ export const AdminDash = () => {
               subtitle_text_1={"Active:"}
               subtitle_text_2={"Inactive:"}
               subtitle_text_3={"Completed:"}
-              value_1={activeProjectsCount}
-              value_2={inactiveProjectsCount}
-              value_3={completedProjects}
+              value_1={activeProjectsCount!==null?activeProjectsCount :'-'}
+              value_2={inactiveProjectsCount!==null?inactiveProjectsCount :'-'}
+              value_3={completedProjects!==null?completedProjects :'-'}
             />
             <DashboardCard
               marginLeft={"3.5vw"}
@@ -127,9 +127,9 @@ export const AdminDash = () => {
               subtitle_text_1={"Awaiting Approval:"}
               subtitle_text_2={"Approved:"}
               subtitle_text_3={"Invalidated:"}
-              value_1={tasksMapped}
-              value_2={tasksValidated}
-              value_3={tasksInvalidated}
+              value_1={tasksMapped!==null?tasksMapped :'-'}
+              value_2={tasksValidated!==null?tasksValidated :'-'}
+              value_3={tasksInvalidated!==null?tasksInvalidated :'-'}
             />
             <DashboardCard
               marginLeft={"3.5vw"}
@@ -138,9 +138,9 @@ export const AdminDash = () => {
               subtitle_text_1={"Payable Total:"}
               subtitle_text_2={"Payout Requests:"}
               subtitle_text_3={"Payouts to Date:"}
-              value_1={`$${payableTotal&&payableTotal.toFixed(2)}`}
-              value_2={`$${requestsTotal&&requestsTotal.toFixed(2)}`}
-              value_3={`$${paidTotal&&paidTotal.toFixed(2)}`}
+              value_1={`$${payableTotal!==null?payableTotal.toFixed(2):'-'}`}
+              value_2={`$${requestsTotal!==null?requestsTotal.toFixed(2):'-'}`}
+              value_3={`$${paidTotal!==null?paidTotal.toFixed(2):'-'}`}
             />
           </div>
           <div
@@ -175,7 +175,6 @@ export const AdminDash = () => {
                           total_validated,
                           total_invalidated,
                           url,
-                          source,
                           max_payment,
                           payment_due,
                         } = row;

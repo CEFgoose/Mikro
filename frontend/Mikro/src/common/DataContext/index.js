@@ -894,8 +894,6 @@ export const DataProvider = ({ children }) => {
     let userTaskStatsURL = "task/update_user_tasks";
     fetcher(userTaskStatsURL).then((response) => {
       if (response.status === 200) {
-        fetchValidatorProjects();
-        fetchValidatorDashStats();
         return;
       } else if (response.status === 304) {
         history("/login");
@@ -909,8 +907,6 @@ export const DataProvider = ({ children }) => {
     let userTaskStatsURL = "task/admin_update_all_user_tasks";
     fetcher(userTaskStatsURL).then((response) => {
       if (response.status === 200) {
-        fetchOrgProjects();
-        fetchAdminDashStats();
         return;
       } else if (response.status === 304) {
         history("/login");

@@ -127,9 +127,9 @@ export const UserDashboard = () => {
               subtitle_text_1={"Joined:"}
               subtitle_text_2={"Available:"}
               subtitle_text_3={"Completed:"}
-              value_1={activeProjectsCount&&activeProjectsCount}
-              value_2={inactiveProjectsCount&&inactiveProjectsCount}
-              value_3={completedProjects&&completedProjects}
+              value_1={activeProjectsCount?activeProjectsCount:'-'}
+              value_2={inactiveProjectsCount!==null?inactiveProjectsCount:'-'}
+              value_3={completedProjects!==null?completedProjects:'-'}
             />
             <DashboardCard
               marginLeft={"3.5vw"}
@@ -139,9 +139,9 @@ export const UserDashboard = () => {
               subtitle_text_1={"Awaiting Approval:"}
               subtitle_text_2={"Approved:"}
               subtitle_text_3={"Invalidated:"}
-              value_1={tasksMapped&&tasksMapped}
-              value_2={tasksValidated&&tasksValidated}
-              value_3={tasksInvalidated&&invalidated_tasks}
+              value_1={tasksMapped!==null?tasksMapped:'-'}
+              value_2={tasksValidated!==null?tasksValidated:'-'}
+              value_3={tasksInvalidated!==null?invalidated_tasks:'-'}
             />
             <DashboardCard
               marginLeft={"3.5vw"}
@@ -150,9 +150,9 @@ export const UserDashboard = () => {
               subtitle_text_1={"Payable Total:"}
               subtitle_text_2={"Payout Requests:"}
               subtitle_text_3={"Payouts to Date:"}
-              value_1={`$${payableTotal&&payableTotal.toFixed(2)}`}
-              value_2={`$${requestsTotal&&requestsTotal.toFixed(2)}`}
-              value_3={`$${paidTotal&&paidTotal.toFixed(2)}`}
+              value_1={`$${payableTotal!==null?payableTotal.toFixed(2):'-'}`}
+              value_2={`$${requestsTotal!==null?requestsTotal.toFixed(2):'-'}`}
+              value_3={`$${paidTotal!==null?paidTotal.toFixed(2):'-'}`}
             />
           </div>
           <div

@@ -57,7 +57,8 @@ export const ValidatorDashboard = () => {
     }
     if (user !== null && user.role === "validator") {
       update_validator_tasks();
-
+      fetchValidatorProjects();
+      fetchValidatorDashStats();
     }
     // eslint-disable-next-line
   }, []);
@@ -115,9 +116,9 @@ export const ValidatorDashboard = () => {
               subtitle_text_1={"Joined:"}
               subtitle_text_2={"Available:"}
               subtitle_text_3={"Completed:"}
-              value_1={activeProjectsCount}
-              value_2={inactiveProjectsCount}
-              value_3={completedProjects}
+              value_1={activeProjectsCount!==null?activeProjectsCount:'-'}
+              value_2={inactiveProjectsCount!==null?inactiveProjectsCount:'-'}
+              value_3={completedProjects!==null?completedProjects:'-'}
             />
 
             <DashboardCard
@@ -128,9 +129,9 @@ export const ValidatorDashboard = () => {
               subtitle_text_1={"Mapped:"}
               subtitle_text_2={"Approved:"}
               subtitle_text_3={"Unapproved:"}
-              value_1={tasksMapped}
-              value_2={tasksValidated}
-              value_3={tasksInvalidated}
+              value_1={tasksMapped!==null?tasksMapped:'-'}
+              value_2={tasksValidated!==null?tasksValidated:'-'}
+              value_3={tasksInvalidated!==null?tasksInvalidated:'-'}
             />
 
             <DashboardCard
@@ -141,8 +142,8 @@ export const ValidatorDashboard = () => {
               subtitle_text_1={"Validated:"}
               subtitle_text_2={"Invalidated:"}
               subtitle_text_3={"More Needed:"}
-              value_1={validatorTasksValidated}
-              value_2={validatorTasksInvalidated}
+              value_1={validatorTasksValidated!==null?validatorTasksValidated:'-'}
+              value_2={validatorTasksInvalidated!==null?validatorTasksInvalidated:'-'}
               value_3={0}
             />
 
@@ -154,9 +155,9 @@ export const ValidatorDashboard = () => {
               subtitle_text_1={"Payable Total:"}
               subtitle_text_2={"Payout Requests:"}
               subtitle_text_3={"Payment received:"}
-              value_1={`$${payableTotal&&payableTotal.toFixed(2)}`}
-              value_2={`$${requestsTotal&&requestsTotal.toFixed(2)}`}
-              value_3={`$${paidTotal&&paidTotal.toFixed(2)}`}
+              value_1={`$${payableTotal!==null?payableTotal.toFixed(2):'-'}`}
+              value_2={`$${requestsTotal!==null?requestsTotal.toFixed(2):'-'}`}
+              value_3={`$${paidTotal!==null?paidTotal.toFixed(2):'-'}`}
             />
           </div>
           <div
