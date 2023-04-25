@@ -57,9 +57,7 @@ export const UserDashboard = () => {
       return;
     }
     if (user !== null && user.role === "user") {
-    update_user_tasks().then({
-      
-    });
+    update_user_tasks();
     fetchUserDashStats();
     fetchUserProjects();
     }
