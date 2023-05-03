@@ -369,7 +369,7 @@ export const RequestModal = (props) => {
             <SectionTitle title_text={"Request Amount:"} />
             <input
               type="number"
-              value={props.requestAmount&&props.requestAmount.toFixed(2)}
+              value={props.requestAmount && props.requestAmount.toFixed(2)}
               style={{ height: "5vh", marginRight: "0vw", width: "67.5%" }}
             />
           </div>

@@ -14,7 +14,7 @@ import {
   Table,
   TableBody,
   TablePagination,
-  Grid
+  Grid,
 } from "@mui/material";
 
 export const TopDiv = styled("div")(({ theme }) => ({
@@ -77,7 +77,6 @@ export const ProjectRow = styled(TableRow)(() => ({
   marginLeft: "2vw",
 }));
 
-
 export const AdminCardMediaStyle = styled("div")(({ theme }) => ({
   display: "flex",
   position: "relative",
@@ -115,8 +114,6 @@ export const USER_PROJECTS_TABLE_HEADERS = [
   { id: "approved", label: "Your Approved", alignLeft: true },
   { id: "unapproved", label: "Your Unapproved", alignLeft: true },
   { id: "Earnings", label: "Your Earnings", alignLeft: true },
-
-
 ];
 export const VALIDATOR_PROJECTS_TABLE_HEADERS = [
   { id: "name", label: "Name", alignLeft: true },
@@ -191,13 +188,13 @@ export const DashboardCard = (props) => {
             justifyContent: "center",
           }}
         >
-          <SectionTitle title_text={props.title} bold={true}/>
+          <SectionTitle title_text={props.title} bold={true} />
         </div>
         <Divider />
         <div
           style={{ display: "flex", flexDirection: "row", marginBottom: "4vh" }}
         >
-          <SectionTitle title_text={props.subtitle_text_1} bold={true}/>
+          <SectionTitle title_text={props.subtitle_text_1} bold={true} />
           <SectionTitle title_text={props.value_1} />
         </div>
         <Divider />
@@ -299,17 +296,13 @@ export const SectionTitle = (props) => {
       }}
       sx={{ mt: 6 }}
     >
-      {props.bold&&props.bold===true?
-      <>
-      <strong>
-      {props.title_text}
-      </strong>
-      </>
-      :
-      <>
-      {props.title_text}
-      </>
-      }
+      {props.bold && props.bold === true ? (
+        <>
+          <strong>{props.title_text}</strong>
+        </>
+      ) : (
+        <>{props.title_text}</>
+      )}
     </Typography>
   );
 };
@@ -455,9 +448,7 @@ export const ListHead = (props) => {
               direction={props.operator === true ? "desc" : "asc"}
               onClick={(e) => props.sortOrgProjects(headCell.label, "asc")}
             >
-              <strong>
-              {headCell.label}
-              </strong>
+              <strong>{headCell.label}</strong>
             </TableSortLabel>
           </TableCell>
         ))}
@@ -725,22 +716,19 @@ export const AdminPaymentsTable = (props) => {
   );
 };
 
-
-export const Divider =()=>{
-  return(
+export const Divider = () => {
+  return (
     <div
-    style={{
-      width: "90%",
-      backgroundColor: "black",
-      height: ".05vh",
-      margin:'auto',
-      marginTop:'.5vh'
-    }}
-  />
-  )
-
-}
-
+      style={{
+        width: "90%",
+        backgroundColor: "black",
+        height: ".05vh",
+        margin: "auto",
+        marginTop: ".5vh",
+      }}
+    />
+  );
+};
 
 export const ProjectCardGrid = (props) => {
   return (
@@ -805,9 +793,6 @@ export const ProjectCardGrid = (props) => {
   );
 };
 
-
-
-
 export const ProjectCard = (props) => {
   return (
     <Card
@@ -839,9 +824,9 @@ export const ProjectCard = (props) => {
           height: "10vh",
         }}
       >
-        <SectionTitle title_text={props.name} bold={true}/>
+        <SectionTitle title_text={props.name} bold={true} />
       </div>
-      <Divider/>
+      <Divider />
       <div
         style={{
           display: "flex",
@@ -904,7 +889,7 @@ export const ProjectCard = (props) => {
         </div>
       </div>
 
-      <Divider/>
+      <Divider />
       <div
         style={{
           display: "flex",
@@ -935,7 +920,7 @@ export const ProjectCard = (props) => {
           <SectionSubtitle subtitle_text={`${0}/${0}`} />
         </div>
       </div>
-      <Divider/>
+      <Divider />
       <div
         style={{
           display: "flex",
@@ -995,7 +980,7 @@ export const ProjectCard = (props) => {
           />
         </div>
       </div>
-      <Divider/>
+      <Divider />
       <div
         style={{
           display: "flex",
@@ -1100,7 +1085,7 @@ export const ProjectCard = (props) => {
           </div>
         </div>
       </div>
-      <Divider/>
+      <Divider />
 
       {props.role && props.role === "admin" ? (
         <>
@@ -1123,7 +1108,11 @@ export const ProjectCard = (props) => {
                 bold={true}
                 margin_bottom={"0vh"}
               />
-              <SectionSubtitle subtitle_text={`$${props.total_payout&&(props.total_payout  / 100).toFixed(2)}`} />
+              <SectionSubtitle
+                subtitle_text={`$${
+                  props.total_payout && (props.total_payout / 100).toFixed(2)
+                }`}
+              />
             </div>
             <div
               style={{
@@ -1137,7 +1126,11 @@ export const ProjectCard = (props) => {
                 bold={true}
                 margin_bottom={"0vh"}
               />
-              <SectionSubtitle subtitle_text={`$${props.max_payment&&props.max_payment.toFixed(2)}`} />
+              <SectionSubtitle
+                subtitle_text={`$${
+                  props.max_payment && props.max_payment.toFixed(2)
+                }`}
+              />
             </div>
           </div>
         </>

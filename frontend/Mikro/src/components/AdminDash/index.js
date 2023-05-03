@@ -92,9 +92,7 @@ export const AdminDash = () => {
             style={{ display: "flex", marginLeft: "6vh", flexDirection: "row" }}
           >
             <h1 style={{ marginTop: "1vw", paddingBottom: "2vh" }}>
-              <strong>
-                Dashboard:
-              </strong>
+              <strong>Dashboard:</strong>
             </h1>
             <div
               style={{ marginTop: "1vw", position: "relative", left: "37.5vw" }}
@@ -115,9 +113,11 @@ export const AdminDash = () => {
               subtitle_text_1={"Active:"}
               subtitle_text_2={"Inactive:"}
               subtitle_text_3={"Completed:"}
-              value_1={activeProjectsCount!==null?activeProjectsCount :'-'}
-              value_2={inactiveProjectsCount!==null?inactiveProjectsCount :'-'}
-              value_3={completedProjects!==null?completedProjects :'-'}
+              value_1={activeProjectsCount !== null ? activeProjectsCount : "-"}
+              value_2={
+                inactiveProjectsCount !== null ? inactiveProjectsCount : "-"
+              }
+              value_3={completedProjects !== null ? completedProjects : "-"}
             />
             <DashboardCard
               marginLeft={"3.5vw"}
@@ -127,9 +127,9 @@ export const AdminDash = () => {
               subtitle_text_1={"Awaiting Approval:"}
               subtitle_text_2={"Approved:"}
               subtitle_text_3={"Invalidated:"}
-              value_1={tasksMapped!==null?tasksMapped :'-'}
-              value_2={tasksValidated!==null?tasksValidated :'-'}
-              value_3={tasksInvalidated!==null?tasksInvalidated :'-'}
+              value_1={tasksMapped !== null ? tasksMapped : "-"}
+              value_2={tasksValidated !== null ? tasksValidated : "-"}
+              value_3={tasksInvalidated !== null ? tasksInvalidated : "-"}
             />
             <DashboardCard
               marginLeft={"3.5vw"}
@@ -138,9 +138,13 @@ export const AdminDash = () => {
               subtitle_text_1={"Payable Total:"}
               subtitle_text_2={"Payout Requests:"}
               subtitle_text_3={"Payouts to Date:"}
-              value_1={`$${payableTotal!==null?payableTotal.toFixed(2):'-'}`}
-              value_2={`$${requestsTotal!==null?requestsTotal.toFixed(2):'-'}`}
-              value_3={`$${paidTotal!==null?paidTotal.toFixed(2):'-'}`}
+              value_1={`$${
+                payableTotal !== null ? payableTotal.toFixed(2) : "-"
+              }`}
+              value_2={`$${
+                requestsTotal !== null ? requestsTotal.toFixed(2) : "-"
+              }`}
+              value_3={`$${paidTotal !== null ? paidTotal.toFixed(2) : "-"}`}
             />
           </div>
           <div
@@ -194,12 +198,30 @@ export const AdminDash = () => {
                             onDoubleClick={() => goToSource(url)}
                           >
                             <ProjectCell entry={<strong>{name}</strong>} />
-                            <ProjectCell entry={`$${mapping_rate_per_task&&mapping_rate_per_task.toFixed(2)}`} />
-                            <ProjectCell entry={`$${validation_rate_per_task&&validation_rate_per_task.toFixed(2)}`} />
+                            <ProjectCell
+                              entry={`$${
+                                mapping_rate_per_task &&
+                                mapping_rate_per_task.toFixed(2)
+                              }`}
+                            />
+                            <ProjectCell
+                              entry={`$${
+                                validation_rate_per_task &&
+                                validation_rate_per_task.toFixed(2)
+                              }`}
+                            />
                             <ProjectCell entry={total_tasks} />
                             <ProjectCell entry={difficulty} />
-                            <ProjectCell entry={`$${max_payment&&max_payment.toFixed(2)}`} />
-                            <ProjectCell entry={`$${payment_due&&payment_due.toFixed(2)}`} />
+                            <ProjectCell
+                              entry={`$${
+                                max_payment && max_payment.toFixed(2)
+                              }`}
+                            />
+                            <ProjectCell
+                              entry={`$${
+                                payment_due && payment_due.toFixed(2)
+                              }`}
+                            />
                             <ProjectCell
                               entry={`${total_validated}/${total_mapped}`}
                             />

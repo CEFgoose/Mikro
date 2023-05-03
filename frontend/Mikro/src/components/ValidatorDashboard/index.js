@@ -92,9 +92,7 @@ export const ValidatorDashboard = () => {
             style={{ display: "flex", marginLeft: "6vh", flexDirection: "row" }}
           >
             <h1 style={{ marginTop: "1vw", paddingBottom: "2vh" }}>
-              <strong>
-              Dashboard:
-              </strong>
+              <strong>Dashboard:</strong>
             </h1>
             <div
               style={{ marginTop: "1vw", position: "relative", left: "37.5vw" }}
@@ -116,9 +114,11 @@ export const ValidatorDashboard = () => {
               subtitle_text_1={"Joined:"}
               subtitle_text_2={"Available:"}
               subtitle_text_3={"Completed:"}
-              value_1={activeProjectsCount!==null?activeProjectsCount:'-'}
-              value_2={inactiveProjectsCount!==null?inactiveProjectsCount:'-'}
-              value_3={completedProjects!==null?completedProjects:'-'}
+              value_1={activeProjectsCount !== null ? activeProjectsCount : "-"}
+              value_2={
+                inactiveProjectsCount !== null ? inactiveProjectsCount : "-"
+              }
+              value_3={completedProjects !== null ? completedProjects : "-"}
             />
 
             <DashboardCard
@@ -129,9 +129,9 @@ export const ValidatorDashboard = () => {
               subtitle_text_1={"Mapped:"}
               subtitle_text_2={"Approved:"}
               subtitle_text_3={"Unapproved:"}
-              value_1={tasksMapped!==null?tasksMapped:'-'}
-              value_2={tasksValidated!==null?tasksValidated:'-'}
-              value_3={tasksInvalidated!==null?tasksInvalidated:'-'}
+              value_1={tasksMapped !== null ? tasksMapped : "-"}
+              value_2={tasksValidated !== null ? tasksValidated : "-"}
+              value_3={tasksInvalidated !== null ? tasksInvalidated : "-"}
             />
 
             <DashboardCard
@@ -142,8 +142,14 @@ export const ValidatorDashboard = () => {
               subtitle_text_1={"Validated:"}
               subtitle_text_2={"Invalidated:"}
               subtitle_text_3={"More Needed:"}
-              value_1={validatorTasksValidated!==null?validatorTasksValidated:'-'}
-              value_2={validatorTasksInvalidated!==null?validatorTasksInvalidated:'-'}
+              value_1={
+                validatorTasksValidated !== null ? validatorTasksValidated : "-"
+              }
+              value_2={
+                validatorTasksInvalidated !== null
+                  ? validatorTasksInvalidated
+                  : "-"
+              }
               value_3={0}
             />
 
@@ -155,9 +161,13 @@ export const ValidatorDashboard = () => {
               subtitle_text_1={"Payable Total:"}
               subtitle_text_2={"Payout Requests:"}
               subtitle_text_3={"Payment received:"}
-              value_1={`$${payableTotal!==null?payableTotal.toFixed(2):'-'}`}
-              value_2={`$${requestsTotal!==null?requestsTotal.toFixed(2):'-'}`}
-              value_3={`$${paidTotal!==null?paidTotal.toFixed(2):'-'}`}
+              value_1={`$${
+                payableTotal !== null ? payableTotal.toFixed(2) : "-"
+              }`}
+              value_2={`$${
+                requestsTotal !== null ? requestsTotal.toFixed(2) : "-"
+              }`}
+              value_3={`$${paidTotal !== null ? paidTotal.toFixed(2) : "-"}`}
             />
           </div>
           <div
@@ -210,14 +220,28 @@ export const ValidatorDashboard = () => {
                             onDoubleClick={() => goToSource(url)}
                           >
                             <ProjectCell entry={<strong>{name}</strong>} />
-                            <ProjectCell entry={`$${mapping_rate_per_task&&mapping_rate_per_task.toFixed(2)}`} />
-                            <ProjectCell entry={`$${validation_rate_per_task&&validation_rate_per_task.toFixed(2)}`} />
+                            <ProjectCell
+                              entry={`$${
+                                mapping_rate_per_task &&
+                                mapping_rate_per_task.toFixed(2)
+                              }`}
+                            />
+                            <ProjectCell
+                              entry={`$${
+                                validation_rate_per_task &&
+                                validation_rate_per_task.toFixed(2)
+                              }`}
+                            />
                             <ProjectCell entry={total_tasks} />
                             <ProjectCell entry={tasks_mapped} />
                             <ProjectCell entry={tasks_validated} />
                             <ProjectCell entry={tasks_invalidated} />
                             <ProjectCell entry={tasks_validated} />
-                            <ProjectCell entry={`$${user_earnings&&user_earnings.toFixed(2)}`} />
+                            <ProjectCell
+                              entry={`$${
+                                user_earnings && user_earnings.toFixed(2)
+                              }`}
+                            />
                           </ProjectRow>
                         );
                       })}

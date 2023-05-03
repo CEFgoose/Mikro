@@ -158,10 +158,7 @@ export const AdminUsersPage = () => {
                 paddingBottom: "2vh",
               }}
             >
-              <strong>
-                Users:
-              </strong>
-              
+              <strong>Users:</strong>
             </h1>
             <div
               style={{ marginTop: "1vw", position: "relative", left: "44vw" }}
@@ -233,8 +230,16 @@ export const AdminUsersPage = () => {
                             <ProjectCell entry={total_tasks_mapped} />
                             <ProjectCell entry={total_tasks_validated} />
                             <ProjectCell entry={total_tasks_invalidated} />
-                            <ProjectCell entry={`$${awaiting_payment&&awaiting_payment.toFixed(2)}`} />
-                            <ProjectCell entry={`$${total_payout&&total_payout.toFixed(2)}`} />
+                            <ProjectCell
+                              entry={`$${
+                                awaiting_payment && awaiting_payment.toFixed(2)
+                              }`}
+                            />
+                            <ProjectCell
+                              entry={`$${
+                                total_payout && total_payout.toFixed(2)
+                              }`}
+                            />
                           </ProjectRow>
                         );
                       })}

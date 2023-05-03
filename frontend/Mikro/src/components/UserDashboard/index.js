@@ -6,7 +6,7 @@ import { Table, TableBody, TablePagination } from "@mui/material";
 import "./styles.css";
 import {
   ListHead,
-  USER_PROJECTS_TABLE_HEADERS ,
+  USER_PROJECTS_TABLE_HEADERS,
   DashboardCard,
   ProjectRow,
   ProjectCell,
@@ -57,21 +57,19 @@ export const UserDashboard = () => {
       return;
     }
     if (user !== null && user.role === "user") {
-    update_user_tasks();
-    fetchUserDashStats();
-    fetchUserProjects();
+      update_user_tasks();
+      fetchUserDashStats();
+      fetchUserProjects();
     }
 
     // eslint-disable-next-line
   }, []);
-
 
   // useEffect(() => {
 
   //   console.log(tasksMapped)
   //   // eslint-disable-next-line
   // }, [tasksMapped]);
-
 
   const handleViewSidebar = () => {
     handleSetSidebarState();
@@ -102,10 +100,7 @@ export const UserDashboard = () => {
             style={{ display: "flex", marginLeft: "6vh", flexDirection: "row" }}
           >
             <h1 style={{ marginTop: "1vw", paddingBottom: "2vh" }}>
-              <strong>
-              Dashboard:
-              </strong>
-
+              <strong>Dashboard:</strong>
             </h1>
             <div
               style={{ marginTop: "1vw", position: "relative", left: "37.5vw" }}
@@ -127,9 +122,11 @@ export const UserDashboard = () => {
               subtitle_text_1={"Joined:"}
               subtitle_text_2={"Available:"}
               subtitle_text_3={"Completed:"}
-              value_1={activeProjectsCount?activeProjectsCount:'-'}
-              value_2={inactiveProjectsCount!==null?inactiveProjectsCount:'-'}
-              value_3={completedProjects!==null?completedProjects:'-'}
+              value_1={activeProjectsCount ? activeProjectsCount : "-"}
+              value_2={
+                inactiveProjectsCount !== null ? inactiveProjectsCount : "-"
+              }
+              value_3={completedProjects !== null ? completedProjects : "-"}
             />
             <DashboardCard
               marginLeft={"3.5vw"}
@@ -139,9 +136,9 @@ export const UserDashboard = () => {
               subtitle_text_1={"Awaiting Approval:"}
               subtitle_text_2={"Approved:"}
               subtitle_text_3={"Invalidated:"}
-              value_1={tasksMapped!==null?tasksMapped:'-'}
-              value_2={tasksValidated!==null?tasksValidated:'-'}
-              value_3={tasksInvalidated!==null?invalidated_tasks:'-'}
+              value_1={tasksMapped !== null ? tasksMapped : "-"}
+              value_2={tasksValidated !== null ? tasksValidated : "-"}
+              value_3={tasksInvalidated !== null ? invalidated_tasks : "-"}
             />
             <DashboardCard
               marginLeft={"3.5vw"}
@@ -150,9 +147,13 @@ export const UserDashboard = () => {
               subtitle_text_1={"Payable Total:"}
               subtitle_text_2={"Payout Requests:"}
               subtitle_text_3={"Payouts to Date:"}
-              value_1={`$${payableTotal!==null?payableTotal.toFixed(2):'-'}`}
-              value_2={`$${requestsTotal!==null?requestsTotal.toFixed(2):'-'}`}
-              value_3={`$${paidTotal!==null?paidTotal.toFixed(2):'-'}`}
+              value_1={`$${
+                payableTotal !== null ? payableTotal.toFixed(2) : "-"
+              }`}
+              value_2={`$${
+                requestsTotal !== null ? requestsTotal.toFixed(2) : "-"
+              }`}
+              value_3={`$${paidTotal !== null ? paidTotal.toFixed(2) : "-"}`}
             />
           </div>
           <div
@@ -187,7 +188,6 @@ export const UserDashboard = () => {
                           tasks_unapproved,
                           url,
                           user_earnings,
-
                         } = row;
                         return (
                           <ProjectRow
@@ -206,13 +206,22 @@ export const UserDashboard = () => {
                           >
                             <ProjectCell entry={<strong>{name}</strong>} />
                             <ProjectCell entry={difficulty} />
-                            <ProjectCell entry={`$${mapping_rate_per_task&&mapping_rate_per_task.toFixed(2)}`} />
+                            <ProjectCell
+                              entry={`$${
+                                mapping_rate_per_task &&
+                                mapping_rate_per_task.toFixed(2)
+                              }`}
+                            />
                             <ProjectCell entry={total_tasks} />
 
                             <ProjectCell entry={tasks_mapped} />
                             <ProjectCell entry={tasks_approved} />
                             <ProjectCell entry={tasks_unapproved} />
-                            <ProjectCell entry={`$${user_earnings&&user_earnings.toFixed(2)}`} />
+                            <ProjectCell
+                              entry={`$${
+                                user_earnings && user_earnings.toFixed(2)
+                              }`}
+                            />
                           </ProjectRow>
                         );
                       })}

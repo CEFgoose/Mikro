@@ -12,6 +12,7 @@ import projects_icon from "../../images/project_icon.png";
 import users_icon from "../../images/users_icon.png";
 import payments_icon from "../../images/payments_icon.png";
 import account_icon from "../../images/account_icon.png";
+import checklist_icon from "../../images/checklist_icon.png";
 import mikro_icon from "../../images/5.png";
 import training_icon from "../../images/training-icon.png";
 import "./styles.css";
@@ -64,9 +65,13 @@ const Sidebar = (props) => {
   const [name, setName] = useState("");
   const [dashboardLink, setDashboardLink] = useState("/dashboard");
   const [projectPageLink, setProjectPageLink] = useState("/UserProjectsPage");
+  const [checklistPageLink, setChecklistPageLink] = useState(
+    "/UserChecklistsPage"
+  );
   const [accountPageLink, setAccountPageLink] = useState("/UserAccountPage");
   const [paymentsPageLink, setPaymentsPageLink] = useState("/UserPaymentsPage");
   const [trainingPageLink, setTrainingPageLink] = useState("/UserTrainingPage");
+
   const [localUser, setLocalUser] = useLocalStorageState("mikro.user", null);
   const { history, sidebarOpe, resetUserStats } = useContext(DataContext);
   const { user, refresh } = useContext(AuthContext);
@@ -86,6 +91,7 @@ const Sidebar = (props) => {
       setAccountPageLink("/AdminAccountPage");
       setPaymentsPageLink("/AdminPaymentsPage");
       setTrainingPageLink("/AdminTrainingPage");
+      setChecklistPageLink("/AdminChecklistsPage");
     }
     if (user.role === "validator") {
       setDashboardLink("/validatordash");
@@ -93,6 +99,7 @@ const Sidebar = (props) => {
       setAccountPageLink("/UserAccountPage");
       setPaymentsPageLink("/ValidatorPaymentsPage");
       setTrainingPageLink("/UserTrainingPage");
+      setChecklistPageLink("/ValidatorChecklistsPage");
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -109,23 +116,28 @@ const Sidebar = (props) => {
 
   return (
     <div>
-      
-        <SidebarOpenedContainer>
-          <MenuItemTop>
+      <SidebarOpenedContainer>
+        <MenuItemTop>
+          <div
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              marginTop: "5%",
+            }}
+          >
+            <div style={{ marginLeft: ".7vw" }}></div>
+          </div>
+        </MenuItemTop>
+
+        <MenuItemTop style={{ marginBottom: "10%" }}>
+          <RoleBarWrapper>
             <div
               style={{
                 display: "flex",
-                flexDirection: "column",
-                marginTop: "5%",
+                flexDirection: "row",
+                alignItems: "center",
               }}
             >
-              <div style={{ marginLeft: ".7vw" }}></div>
-            </div>
-          </MenuItemTop>
-
-
-          <MenuItemTop style={{ marginBottom: "10%" }}>
-            <RoleBarWrapper>
               <div
                 style={{
                   display: "flex",
@@ -133,128 +145,127 @@ const Sidebar = (props) => {
                   alignItems: "center",
                 }}
               >
-                <div
+                <img
                   style={{
-                    display: "flex",
-                    flexDirection: "row",
-                    alignItems: "center",
+                    height: "5vh",
+                    marginLeft: ".8vw",
+                    marginRight: "1vw",
                   }}
-                >
-                  <img
-                    style={{
-                      height: "5vh",
-                      marginLeft: ".8vw",
-                      marginRight: "1vw",
-                    }}
-                    src={mikro_icon}
-                    alt="Kaart Logo"
-                  />
-                </div>
-                <div
-                  style={{
-                    display: "flex",
-                    flexDirection: "column",
-                    alignItems: "center",
-                  }}
-                >
-                  <RoleHeader>{<strong>{name}</strong>}</RoleHeader>
-                  <RoleSubHeader>{<strong>{role}</strong>}</RoleSubHeader>
-                </div>
+                  src={mikro_icon}
+                  alt="Kaart Logo"
+                />
               </div>
-
               <div
                 style={{
-                  width: "100%",
-                  backgroundColor: "black",
-                  height: ".05vh",
-                  marginTop: "5%",
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "center",
                 }}
-              />
-            </RoleBarWrapper>
-          </MenuItemTop>
+              >
+                <RoleHeader>{<strong>{name}</strong>}</RoleHeader>
+                <RoleSubHeader>{<strong>{role}</strong>}</RoleSubHeader>
+              </div>
+            </div>
 
-          <NavLink to={dashboardLink} style={{ textDecoration: "none" }}>
-            <MenuItem>
-              <ProjectIconContainer>
-                <ProjectIcon src={dashicon} />
-              </ProjectIconContainer>
-              <Header>Dashboard</Header>
-            </MenuItem>
-          </NavLink>
+            <div
+              style={{
+                width: "100%",
+                backgroundColor: "black",
+                height: ".05vh",
+                marginTop: "5%",
+              }}
+            />
+          </RoleBarWrapper>
+        </MenuItemTop>
 
-          <NavLink to={projectPageLink} style={{ textDecoration: "none" }}>
-            <MenuItem>
-              <ProjectIconContainer>
-                <ProjectIcon src={projects_icon} />
-              </ProjectIconContainer>
-              <Header>Projects</Header>
-            </MenuItem>
-          </NavLink>
-
-          {role === "admin" ? (
-            <NavLink to="/AdminUsersPage" style={{ textDecoration: "none" }}>
-              <MenuItem>
-                <ProjectIconContainer>
-                  <ProjectIcon src={users_icon} />
-                </ProjectIconContainer>
-                <Header>Users</Header>
-              </MenuItem>
-            </NavLink>
-          ) : (
-            <></>
-          )}
-
-          <NavLink to={trainingPageLink} style={{ textDecoration: "none" }}>
-            <MenuItem>
-              <ProjectIconContainer>
-                <ProjectIcon src={training_icon} />
-              </ProjectIconContainer>
-              <Header>Training</Header>
-            </MenuItem>
-          </NavLink>
-
-
-          <NavLink to={paymentsPageLink} style={{ textDecoration: "none" }}>
-            <MenuItem>
-              <ProjectIconContainer>
-                <ProjectIcon src={payments_icon} />
-              </ProjectIconContainer>
-              <Header>Payments</Header>
-            </MenuItem>
-          </NavLink>
-
-          <NavLink to={accountPageLink} style={{ textDecoration: "none" }}>
-            <MenuItem>
-              <ProjectIconContainer>
-                <ProjectIcon src={account_icon} />
-              </ProjectIconContainer>
-              <Header>Account</Header>
-            </MenuItem>
-          </NavLink>
-
-          <MenuItem onClick={logout}>
+        <NavLink to={dashboardLink} style={{ textDecoration: "none" }}>
+          <MenuItem>
             <ProjectIconContainer>
-              <ProjectIcon onClick={logout} src={logouticon} />
+              <ProjectIcon src={dashicon} />
             </ProjectIconContainer>
-            <Header onClick={logout}>Log Out</Header>
+            <Header>Dashboard</Header>
           </MenuItem>
+        </NavLink>
 
-          <MenuItem href={map_url} target="_blank">
+        <NavLink to={checklistPageLink} style={{ textDecoration: "none" }}>
+          <MenuItem>
             <ProjectIconContainer>
-              <ProjectIcon href={map_url} target="_blank" src={leftArrow} />
+              <ProjectIcon src={checklist_icon} />
             </ProjectIconContainer>
-            <Header href={map_url} target="_blank">
-              Kaart.com
-            </Header>
+            <Header>Checklists</Header>
           </MenuItem>
-          
-          {/* <ConfirmButton 
+        </NavLink>
+
+        <NavLink to={projectPageLink} style={{ textDecoration: "none" }}>
+          <MenuItem>
+            <ProjectIconContainer>
+              <ProjectIcon src={projects_icon} />
+            </ProjectIconContainer>
+            <Header>Projects</Header>
+          </MenuItem>
+        </NavLink>
+
+        {role === "admin" ? (
+          <NavLink to="/AdminUsersPage" style={{ textDecoration: "none" }}>
+            <MenuItem>
+              <ProjectIconContainer>
+                <ProjectIcon src={users_icon} />
+              </ProjectIconContainer>
+              <Header>Users</Header>
+            </MenuItem>
+          </NavLink>
+        ) : (
+          <></>
+        )}
+
+        <NavLink to={trainingPageLink} style={{ textDecoration: "none" }}>
+          <MenuItem>
+            <ProjectIconContainer>
+              <ProjectIcon src={training_icon} />
+            </ProjectIconContainer>
+            <Header>Training</Header>
+          </MenuItem>
+        </NavLink>
+
+        <NavLink to={paymentsPageLink} style={{ textDecoration: "none" }}>
+          <MenuItem>
+            <ProjectIconContainer>
+              <ProjectIcon src={payments_icon} />
+            </ProjectIconContainer>
+            <Header>Payments</Header>
+          </MenuItem>
+        </NavLink>
+
+        <NavLink to={accountPageLink} style={{ textDecoration: "none" }}>
+          <MenuItem>
+            <ProjectIconContainer>
+              <ProjectIcon src={account_icon} />
+            </ProjectIconContainer>
+            <Header>Account</Header>
+          </MenuItem>
+        </NavLink>
+
+        <MenuItem onClick={logout}>
+          <ProjectIconContainer>
+            <ProjectIcon onClick={logout} src={logouticon} />
+          </ProjectIconContainer>
+          <Header onClick={logout}>Log Out</Header>
+        </MenuItem>
+
+        <MenuItem href={map_url} target="_blank">
+          <ProjectIconContainer>
+            <ProjectIcon href={map_url} target="_blank" src={leftArrow} />
+          </ProjectIconContainer>
+          <Header href={map_url} target="_blank">
+            Kaart.com
+          </Header>
+        </MenuItem>
+
+        {/* <ConfirmButton 
             confirm_action={()=>resetUserStats()}
             confirm_text={"Reset Stats"}
           /> */}
-        </SidebarOpenedContainer>
-
-      
+      </SidebarOpenedContainer>
     </div>
   );
 };

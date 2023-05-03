@@ -121,7 +121,7 @@ export const AdminPaymentsPage = () => {
     setPayEmail(payment_email);
     setTaskIDs(task_ids);
     setPayoneerID(payoneer_id);
-    setOSMuserName(osm_username)
+    setOSMuserName(osm_username);
   };
 
   const handleSetRequestSelected = (
@@ -260,10 +260,7 @@ export const AdminPaymentsPage = () => {
             style={{ display: "flex", marginLeft: "6vh", flexDirection: "row" }}
           >
             <h1 style={{ marginTop: "1vw", paddingBottom: "2vh" }}>
-              <strong>
-                Payments:
-              </strong>
-
+              <strong>Payments:</strong>
             </h1>
 
             <div

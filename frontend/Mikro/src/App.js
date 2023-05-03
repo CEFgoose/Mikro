@@ -21,6 +21,8 @@ import { AdminTrainingPage } from "components/AdminTrainingPage";
 import { ValidatorDashboard } from "components/ValidatorDashboard";
 import { ValidatorPaymentsPage } from "components/ValidatorPaymentsPage";
 import { ValidatorProjectsPage } from "components/ValidatorProjectPage";
+import { AdminChecklistsPage } from "components/AdminChecklistsPage";
+import { UserChecklistsPage } from "components/UserChecklistsPage";
 import "bootstrap/dist/css/bootstrap.min.css";
 import "./App.css";
 import {
@@ -64,6 +66,8 @@ function App() {
 
               <Route path="/welcome" element={<WelcomeUserPage />} />
 
+              {/* DASHBOARDS */}
+
               <Route path="/dashboard" element={<UserDashboard />} />
 
               <Route
@@ -76,6 +80,26 @@ function App() {
                 element={<Private Component={AdminDash} />}
               />
 
+              {/* CHECKLISTS PAGES */}
+
+              <Route
+                path="/AdminChecklistsPage"
+                element={<Private Component={AdminChecklistsPage} />}
+              />
+
+              <Route
+                path="/UserChecklistsPage"
+                element={<UserChecklistsPage/>}
+              />
+              {/* <Route
+                path="/validatorProjectsPage"
+                element={<Private Component={ValidatorProjectsPage} />}
+              />
+
+              <Route path="/UserProjectsPage" element={<UserProjectsPage />} />
+ */}
+
+              {/* PROJECTS PAGES */}
               <Route
                 path="/AdminProjectsPage"
                 element={<Private Component={AdminProjectsPage} />}

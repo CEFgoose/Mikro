@@ -249,9 +249,7 @@ export const UserTrainingPage = () => {
             style={{ display: "flex", marginLeft: "6vh", flexDirection: "row" }}
           >
             <h1 style={{ marginTop: "1vw", paddingBottom: "2vh" }}>
-              <strong>
-                Training:
-              </strong>
+              <strong>Training:</strong>
             </h1>
             <div style={{ marginLeft: "50vw", marginTop: "1vh" }}>
               <ButtonDivComponent

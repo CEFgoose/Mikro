@@ -98,9 +98,7 @@ export const UserAccountPage = () => {
                 paddingBottom: "2vh",
               }}
             >
-              <strong>
-              Account:
-              </strong>
+              <strong>Account:</strong>
             </h1>
             <div
               style={{
@@ -145,12 +143,12 @@ export const UserAccountPage = () => {
                     alignItems: "center",
                   }}
                 >
-                  <SectionTitle title_text={"First Name:"} bold={true}/>
+                  <SectionTitle title_text={"First Name:"} bold={true} />
                   <input
                     type="text"
                     value={firstName}
                     onChange={(e) => handleUserDetailsStates("first_name", e)}
-                    style={{ height: "5vh", marginRight: "2vw", width:'13vw'}}
+                    style={{ height: "5vh", marginRight: "2vw", width: "13vw" }}
                   />
                 </div>
 
@@ -161,12 +159,12 @@ export const UserAccountPage = () => {
                     alignItems: "center",
                   }}
                 >
-                  <SectionTitle title_text={"Last Name:"}bold={true}/>
+                  <SectionTitle title_text={"Last Name:"} bold={true} />
                   <input
                     type="text"
                     value={lastName}
                     onChange={(e) => handleUserDetailsStates("last_name", e)}
-                    style={{ height: "5vh", marginRight: "2vw", width:'13vw' }}
+                    style={{ height: "5vh", marginRight: "2vw", width: "13vw" }}
                   />
                 </div>
 
@@ -177,12 +175,12 @@ export const UserAccountPage = () => {
                     alignItems: "center",
                   }}
                 >
-                  <SectionTitle title_text={"OSM Username:"} bold={true}/>
+                  <SectionTitle title_text={"OSM Username:"} bold={true} />
                   <input
                     type="text"
                     value={OSMname}
                     onChange={(e) => handleUserDetailsStates("osm_name", e)}
-                    style={{ height: "5vh", marginRight: "2vw", width:'13vw' }}
+                    style={{ height: "5vh", marginRight: "2vw", width: "13vw" }}
                   />
                 </div>
               </div>
@@ -202,7 +200,7 @@ export const UserAccountPage = () => {
                   height: "15vh",
                   marginTop: "0vh",
                   marginBottom: "0vh",
-                  justifyContent:'center'
+                  justifyContent: "center",
                 }}
               >
                 <div
@@ -212,12 +210,12 @@ export const UserAccountPage = () => {
                     alignItems: "center",
                   }}
                 >
-                  <SectionTitle title_text={"City:"} bold={true}/>
+                  <SectionTitle title_text={"City:"} bold={true} />
                   <input
                     type="text"
                     value={city}
                     onChange={(e) => handleUserDetailsStates("city", e)}
-                    style={{ height: "5vh", marginRight: "5vw", width:'15vw'}}
+                    style={{ height: "5vh", marginRight: "5vw", width: "15vw" }}
                   />
                 </div>
 
@@ -228,16 +226,15 @@ export const UserAccountPage = () => {
                     alignItems: "center",
                   }}
                 >
-                  <SectionTitle title_text={"Country:"} bold={true}/>
+                  <SectionTitle title_text={"Country:"} bold={true} />
                   <input
                     type="text"
                     value={country}
                     onChange={(e) => handleUserDetailsStates("country", e)}
-                    style={{ height: "5vh", marginRight: "5vw", width:'15vw' }}
+                    style={{ height: "5vh", marginRight: "5vw", width: "15vw" }}
                   />
                 </div>
               </div>
-
 
               <div
                 style={{
@@ -247,14 +244,12 @@ export const UserAccountPage = () => {
                 }}
               />
 
-
-
               <div
                 style={{
                   display: "flex",
                   flexDirection: "row",
                   height: "15vh",
-                  justifyContent:'center',
+                  justifyContent: "center",
                   marginTop: "0vh",
                   marginBottom: "0vh",
                 }}
@@ -266,12 +261,12 @@ export const UserAccountPage = () => {
                     alignItems: "center",
                   }}
                 >
-                  <SectionTitle title_text={"Personal Email:"} bold={true}/>
+                  <SectionTitle title_text={"Personal Email:"} bold={true} />
                   <input
                     type="text"
                     value={email}
                     onChange={(e) => handleUserDetailsStates("email", e)}
-                    style={{ height: "5vh", marginRight: "5vw", width:'20vw' }}
+                    style={{ height: "5vh", marginRight: "5vw", width: "20vw" }}
                   />
                 </div>
 
@@ -282,19 +277,18 @@ export const UserAccountPage = () => {
                     alignItems: "center",
                   }}
                 >
-                  <SectionTitle title_text={"Payment Email:"} bold={true}/>
+                  <SectionTitle title_text={"Payment Email:"} bold={true} />
                   <input
                     type="text"
                     value={payEmail}
                     onChange={(e) => handleUserDetailsStates("pay_email", e)}
-                    style={{ height: "5vh", marginRight: "5vw", width:'20vw' }}
+                    style={{ height: "5vh", marginRight: "5vw", width: "20vw" }}
                   />
                 </div>
               </div>
             </TableCard>
           </div>
         </div>
-        
       </div>
     </>
   );

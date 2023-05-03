@@ -6,7 +6,7 @@ from .Projects import ProjectAPI
 from .Transactions import TransactionAPI
 from .Tasks import TaskAPI
 from .Training import TrainingAPI
-
+from .Checklists import ChecklistAPI
 __all__ = {
     "UserAPI",
     "LoginAPI",
@@ -14,4 +14,5 @@ __all__ = {
     "TransactionAPI",
     "TaskAPI",
     "TrainingAPI",
+    "ChecklistAPI",
 }

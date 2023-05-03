@@ -15,6 +15,7 @@ export const DataProvider = ({ children }) => {
   const [orgUsers, setOrgUsers] = useState([]);
   const [projectUsers, setProjectUsers] = useState([]);
   const [projectSelectedDetails, setProjectSelectedDetails] = useState(null);
+  const [checklistSelectedDetails, setChecklistSelectedDetails] = useState(null);
   const [firstName, setFirstName] = useState(null);
   const [lastName, setLastName] = useState(null);
   const [fullName, setFullName] = useState(null);
@@ -29,6 +30,15 @@ export const DataProvider = ({ children }) => {
   const [orgRequests, setOrgRequests] = useState([]);
   const [orgPayments, setOrgPayments] = useState([]);
   const [orgProjects, setorgProjects] = useState([]);
+  const [orgActiveChecklists, setorgActiveChecklists] = useState([]);
+  const [orgInActiveChecklists, setorgInactiveChecklists] = useState([]);
+
+  const [userAvailableChecklists, setUserAvailableChecklists] = useState([]);
+  const [userCompletedChecklists, setUserCompletedChecklists] = useState([]);
+  const [userConfirmedChecklists, setUserConfirmedChecklists] = useState([]);
+  const [userStartedChecklists, setUserStartedChecklists] = useState([]);
+
+
   const [orgMappingTrainings, setorgMappingTrainings] = useState([]);
   const [orgValidationTrainings, setorgValidationTrainings] = useState([]);
   const [orgProjectTrainings, setorgProjectTrainings] = useState([]);
@@ -43,7 +53,8 @@ export const DataProvider = ({ children }) => {
   const [tasksInvalidated, setTasksInvalidated] = useState(null);
 
   const [validatorTasksValidated, setValidatorTasksValidated] = useState(null);
-  const [validatorTasksInvalidated, setValidatorTasksInvalidated] = useState(null);
+  const [validatorTasksInvalidated, setValidatorTasksInvalidated] =
+    useState(null);
   const [payableTotal, setPayableTotal] = useState(null);
   const [requestsTotal, setRequestsTotal] = useState(null);
   const [paidTotal, setPaidTotal] = useState(null);
@@ -61,21 +72,176 @@ export const DataProvider = ({ children }) => {
   };
 
   const handleAdminDashStates = (e) => {
-    console.log(e)
+    console.log(e);
     setActiveProjectsCount(e.active_projects);
     setInactiveProjectsCount(e.inactive_projects);
     setCompletedProjects(e.completed_projects);
     setTasksMapped(e.mapped_tasks);
     setTasksValidated(e.validated_tasks);
     setTasksInvalidated(e.invalidated_tasks);
-    setValidatorTasksValidated(e.validator_validated)
-    setValidatorTasksInvalidated(e.validator_invalidated)
+    setValidatorTasksValidated(e.validator_validated);
+    setValidatorTasksInvalidated(e.validator_invalidated);
     setPayableTotal(e.payable_total > 0 ? e.payable_total : 0);
     setRequestsTotal(e.requests_total > 0 ? e.requests_total : 0);
     setPaidTotal(e.payouts_total > 0 ? e.payouts_total : 0);
   };
 
-  
+  //CHECKLISTS ORIENTED CALLS & FUNCTIONS
+  const createChecklist = (
+    checklistName,
+    checklistDescription,
+    checklistDifficulty,
+    visibility,
+    completionRate,
+    validationRate,
+    listItems,
+    dueDate
+  ) => {
+    let outpack = {
+      checklistName: checklistName,
+      checklistDescription: checklistDescription,
+      checklistDifficulty: checklistDifficulty,
+      visibility: visibility,
+      completionRate: completionRate,
+      validationRate: validationRate,
+      listItems: listItems,
+      dueDate:dueDate
+    };
+    let createChecklistUrl = "checklist/create_checklist";
+    poster(outpack, createChecklistUrl).then((response) => {
+      if (response.status === 200) {
+        alert(response.message);
+        fetchAdminChecklists()
+        return;
+      } else if (response.status === 304) {
+        history("/login");
+      } else {
+        alert(response.message);
+      }
+    });
+  };
+
+  const updateChecklist = (
+    checklistSelected,
+    checklistName,
+    checklistDescription,
+    checklistDifficulty,
+    visibility,
+    completionRate,
+    validationRate,
+    listItems,
+    dueDate,
+    checklistStatus
+  ) => {
+    let outpack = {
+      checklistSelected:checklistSelected,
+      checklistName: checklistName,
+      checklistDescription: checklistDescription,
+      checklistDifficulty: checklistDifficulty,
+      visibility: visibility,
+      completionRate: completionRate,
+      validationRate: validationRate,
+      listItems: listItems,
+      dueDate:dueDate,
+      checklistStatus:checklistStatus
+    };
+    let updateChecklistUrl = "checklist/update_checklist";
+    poster(outpack, updateChecklistUrl).then((response) => {
+      if (response.status === 200) {
+        alert(response.message);
+        fetchAdminChecklists()
+        return;
+      } else if (response.status === 304) {
+        history("/login");
+      } else {
+        alert(response.message);
+      }
+    });
+  };
+
+
+  const startChecklist = (
+    checklistSelected
+  ) => {
+    let outpack = {
+      checklist_id:checklistSelected
+    };
+    let startChecklistUrl = "checklist/start_checklist";
+    poster(outpack, startChecklistUrl).then((response) => {
+      if (response.status === 200) {
+        alert(response.message);
+        fetchUserChecklists()
+        return;
+      } else if (response.status === 304) {
+        history("/login");
+      } else {
+        alert(response.message);
+      }
+    });
+  };
+
+
+  const completeListItem = (
+    checklistSelected,
+    itemNumber
+  ) => {
+    let outpack = {
+      checklist_id:checklistSelected,
+      item_number:itemNumber
+    };
+    let completeItemUrl = "checklist/complete_list_item";
+    poster(outpack, completeItemUrl ).then((response) => {
+      if (response.status === 200) {
+        fetchUserChecklists()
+        // fetchAdminChecklists()
+        return;
+      } else if (response.status === 304) {
+        history("/login");
+      } else {
+        alert(response.message);
+      }
+    });
+  };
+
+
+
+
+
+
+   const fetchUserChecklists = () => {
+    let fetchUserChecklistsUrl = "checklist/fetch_user_checklists";
+
+    fetcher(fetchUserChecklistsUrl).then((response) => {
+      if (response.status === 200) {
+        console.log(response)
+        setUserAvailableChecklists(response.user_available_checklists)
+        setUserCompletedChecklists(response.user_completed_checklists)
+        setUserConfirmedChecklists(response.user_confirmed_checklists)
+        setUserStartedChecklists(response.user_started_checklists)
+        console.log(response.user_started_checklists)
+    
+      } else if (response.status === 304) {
+        history("/login");
+      } else {
+        alert(response.message);
+      }
+    });
+  };
+
+  const fetchAdminChecklists = () => {
+    let fetchAdminChecklistsUrl = "checklist/fetch_admin_checklists";
+
+    fetcher(fetchAdminChecklistsUrl).then((response) => {
+      if (response.status === 200) {
+        setorgActiveChecklists(response.active_checklists);
+        setorgInactiveChecklists(response.inactive_checklists);
+      } else if (response.status === 304) {
+        history("/login");
+      } else {
+        alert(response.message);
+      }
+    });
+  };
 
   //USER ORIENTED API CALLS AND HANDLERS
   const handleUserDetailsStates = (state, e) => {
@@ -224,7 +390,6 @@ export const DataProvider = ({ children }) => {
     });
   };
 
-
   const resetUserStats = () => {
     let resetUsersURL = "user/reset_test_user_stats";
     fetcher(resetUsersURL).then((response) => {
@@ -238,7 +403,6 @@ export const DataProvider = ({ children }) => {
       }
     });
   };
-
 
   const removeUser = (id) => {
     let removeUsersURL = "user/remove_users";
@@ -347,7 +511,15 @@ export const DataProvider = ({ children }) => {
   };
   //PROJECT ORIENTED API CALLS AND HANDLERS
 
-  const createProject = (url, rate_type, mapping_rate, validation_rate, max_editors, max_validators, visibility) => {
+  const createProject = (
+    url,
+    rate_type,
+    mapping_rate,
+    validation_rate,
+    max_editors,
+    max_validators,
+    visibility
+  ) => {
     let createProjectURL = "project/create_project";
     let outpack = {
       url: url,
@@ -425,7 +597,13 @@ export const DataProvider = ({ children }) => {
     });
   };
 
-  const calculateProjectBudget = (url, rate_type, mapping_rate, validation_rate, project_id = null) => {
+  const calculateProjectBudget = (
+    url,
+    rate_type,
+    mapping_rate,
+    validation_rate,
+    project_id = null
+  ) => {
     let calculateProjectBudgetURL = "project/calculate_budget";
     let outpack = {
       url: url,
@@ -475,7 +653,6 @@ export const DataProvider = ({ children }) => {
       }
     });
   };
-
 
   const fetchValidatorProjects = () => {
     let fetchUserURL = "project/fetch_validator_projects";
@@ -818,12 +995,12 @@ export const DataProvider = ({ children }) => {
     let fetchUserPayableURL = "transaction/fetch_user_payable";
     fetcher(fetchUserPayableURL).then((response) => {
       if (response.status === 200) {
-        if (setter){
+        if (setter) {
           setter(response.payable_total);
         }
-        setMappingEarnings(response.mapping_earnings)
-        setValidationEarnings(response.validation_earnings)
-        setTotalEarnings(response.payable_total)
+        setMappingEarnings(response.mapping_earnings);
+        setValidationEarnings(response.validation_earnings);
+        setTotalEarnings(response.payable_total);
         return;
       } else if (response.status === 304) {
         history("/login");
@@ -861,7 +1038,6 @@ export const DataProvider = ({ children }) => {
     });
   };
 
-
   const fetchValidatorDashStats = () => {
     let userDashStats = "project/fetch_validator_dash_stats";
     fetcher(userDashStats).then((response) => {
@@ -880,7 +1056,6 @@ export const DataProvider = ({ children }) => {
     let userTaskStatsURL = "task/update_user_tasks";
     fetcher(userTaskStatsURL).then((response) => {
       if (response.status === 200) {
-
         return;
       } else if (response.status === 304) {
         history("/login");
@@ -995,8 +1170,8 @@ export const DataProvider = ({ children }) => {
     orgValidationTrainings,
     orgProjectTrainings,
     userCompletedTrainings,
-    mappingEarnings, 
-    validationEarnings, 
+    mappingEarnings,
+    validationEarnings,
     totalEarnings,
     validatorTasksInvalidated,
     validatorTasksValidated,
@@ -1083,8 +1258,28 @@ export const DataProvider = ({ children }) => {
     setMappingEarnings,
     setValidationEarnings,
     setTotalEarnings,
-    resetUserStats
- 
+    resetUserStats,
+    //checklists
+    createChecklist,
+    fetchAdminChecklists,
+    setChecklistSelectedDetails,
+    updateChecklist,
+    orgActiveChecklists,
+    orgInActiveChecklists,
+    checklistSelectedDetails, 
+
+
+  userAvailableChecklists,
+   setUserAvailableChecklists,
+   userCompletedChecklists,
+   setUserCompletedChecklists,
+   userConfirmedChecklists,
+   setUserConfirmedChecklists,
+   userStartedChecklists,
+   setUserStartedChecklists,
+   fetchUserChecklists,
+   startChecklist,
+   completeListItem,
   };
 
   return value ? (

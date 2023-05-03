@@ -177,13 +177,15 @@ export const UserPaymentsPage = () => {
           }}
         >
           <div
-            style={{ display: "flex", marginLeft: "6vh", flexDirection: "row" ,height:'7vh'}}
+            style={{
+              display: "flex",
+              marginLeft: "6vh",
+              flexDirection: "row",
+              height: "7vh",
+            }}
           >
             <h1 style={{ marginTop: "1vw", paddingBottom: "0vh" }}>
-              <strong>
-              Payments:
-              </strong>
-
+              <strong>Payments:</strong>
             </h1>
             <div
               style={
@@ -206,31 +208,33 @@ export const UserPaymentsPage = () => {
             </div>
           </div>
 
-          <div style={{display:'flex',flexDirection:'row',height:'7vh',marginTop:'0vh',marginBottom:'0vh',marginLeft:'20vw'}}>
-          <h2 style={{ marginTop: "1vw", paddingBottom: "2vh" }}>
-            <strong>
-              Your Earnings-
-              </strong>
-            </h2>
-            <span style={{width:'2vw'}}/>
+          <div
+            style={{
+              display: "flex",
+              flexDirection: "row",
+              height: "7vh",
+              marginTop: "0vh",
+              marginBottom: "0vh",
+              marginLeft: "20vw",
+            }}
+          >
             <h2 style={{ marginTop: "1vw", paddingBottom: "2vh" }}>
-            <strong>
-              Mapping:
-              </strong>
+              <strong>Your Earnings-</strong>
+            </h2>
+            <span style={{ width: "2vw" }} />
+            <h2 style={{ marginTop: "1vw", paddingBottom: "2vh" }}>
+              <strong>Mapping:</strong>
             </h2>
             <h2 style={{ marginTop: "1vw", paddingBottom: "2vh" }}>
-              {`$${mappingEarnings&&mappingEarnings.toFixed(2)}`}
+              {`$${mappingEarnings && mappingEarnings.toFixed(2)}`}
             </h2>
 
-  
-            <span style={{width:'8vw'}}/>
+            <span style={{ width: "8vw" }} />
             <h2 style={{ marginTop: "1vw", paddingBottom: "2vh" }}>
-              <strong>
-              Total:
-              </strong>
+              <strong>Total:</strong>
             </h2>
             <h2 style={{ marginTop: "1vw", paddingBottom: "2vh" }}>
-              {`$${mappingEarnings&&mappingEarnings.toFixed(2)}`}
+              {`$${mappingEarnings && mappingEarnings.toFixed(2)}`}
             </h2>
           </div>
           <Tabs>

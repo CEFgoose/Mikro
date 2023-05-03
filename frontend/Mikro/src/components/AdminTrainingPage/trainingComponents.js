@@ -674,7 +674,9 @@ export const AdminTrainingTable = (props) => {
                       key={row}
                       tabIndex={-1}
                       onClick={() => props.handleSetTrainingSelected(row)}
-                      onDoubleClick={()=>{window.open(training_url)}}
+                      onDoubleClick={() => {
+                        window.open(training_url);
+                      }}
                       selected={props.trainingSelected === id}
                     >
                       <ProjectCell entry={<strong>{title}</strong>} />

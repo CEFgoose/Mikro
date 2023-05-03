@@ -90,4 +90,3 @@ export const ModifyProjectButtons = (props) => {
     </div>
   );
 };
-

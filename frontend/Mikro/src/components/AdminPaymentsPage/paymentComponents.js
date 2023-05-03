@@ -8,7 +8,7 @@ import {
   SectionTitle,
   SectionSubtitle,
   ModalWrapper,
-  Divider
+  Divider,
 } from "../commonComponents/commonComponents";
 
 export const AddTransactionModal = (props) => {
@@ -16,7 +16,7 @@ export const AddTransactionModal = (props) => {
     <Modal open={props.addOpen} key="add">
       <ModalWrapper>
         <CloseButton close_action={props.handleAddOpen} />
-        <SectionTitle title_text={"Add New Pay Request"} bold={true}/>
+        <SectionTitle title_text={"Add New Pay Request"} bold={true} />
         <SectionSubtitle
           subtitle_text={
             "Enter the Username, payment email request amount and task IDs for this request."
@@ -136,7 +136,7 @@ export const DetailsModal = (props) => {
     <Modal open={props.detailsOpen} key="delete">
       <ModalWrapper>
         <CloseButton close_action={props.handleDetailsOpen} />
-        <SectionTitle title_text={props.title_text} bold={true}/>
+        <SectionTitle title_text={props.title_text} bold={true} />
         <div style={{ display: "flex", flexDirection: "column" }}>
           <Divider />
           <div
@@ -144,18 +144,18 @@ export const DetailsModal = (props) => {
               display: "flex",
               flexDirection: "row",
               alignItems: "center",
-              justifyContent:'left',
+              justifyContent: "left",
               marginLeft: "2vw",
               width: "100%",
             }}
           >
-            <SectionTitle title_text={"User:"} bold={true}/>
+            <SectionTitle title_text={"User:"} bold={true} />
             <input
               type="text"
               value={props.user_name}
               style={{ height: "5vh", marginRight: "0vw", width: "40%" }}
             />
-            <SectionTitle title_text={"OSM Username:"} bold={true}/>
+            <SectionTitle title_text={"OSM Username:"} bold={true} />
             <input
               type="text"
               value={props.osm_username}
@@ -168,28 +168,25 @@ export const DetailsModal = (props) => {
               display: "flex",
               flexDirection: "row",
               alignItems: "center",
-              justifyContent:'left',
+              justifyContent: "left",
               marginLeft: "0vw",
-              marginTop:'1vh',
+              marginTop: "1vh",
               width: "100%",
             }}
           >
-
-
-
-          <SectionTitle title_text={"Mapping Amount:"} bold={true}/>
+            <SectionTitle title_text={"Mapping Amount:"} bold={true} />
             <input
               type="text"
               value={`$${props.amount_paid}`}
               style={{ height: "5vh", marginRight: "0vw", width: "10%" }}
             />
-          <SectionTitle title_text={"Validation Amount:"} bold={true}/>
+            <SectionTitle title_text={"Validation Amount:"} bold={true} />
             <input
               type="text"
               value={`$${props.amount_paid}`}
               style={{ height: "5vh", marginRight: "0vw", width: "10%" }}
             />
-            <SectionTitle title_text={"Total Payment:"} bold={true}/>
+            <SectionTitle title_text={"Total Payment:"} bold={true} />
             <input
               type="text"
               value={`$${props.amount_paid}`}
@@ -203,20 +200,20 @@ export const DetailsModal = (props) => {
               display: "flex",
               flexDirection: "row",
               alignItems: "center",
-              justifyContent:'left',
+              justifyContent: "left",
               marginLeft: "2vw",
-              marginTop:'1vh',
-              marginBottom:'1vh',
+              marginTop: "1vh",
+              marginBottom: "1vh",
               width: "100%",
             }}
           >
-            <SectionTitle title_text={"Date Paid:"}bold={true} />
+            <SectionTitle title_text={"Date Paid:"} bold={true} />
             <input
               type="text"
               value={props.date_paid}
               style={{ height: "5vh", marginRight: "3.75vw", width: "31%" }}
             />
-            <SectionTitle title_text={"Payoneer ID:"}bold={true} />
+            <SectionTitle title_text={"Payoneer ID:"} bold={true} />
             <input
               type="text"
               value={props.payoneer_id}
@@ -229,13 +226,13 @@ export const DetailsModal = (props) => {
               display: "flex",
               flexDirection: "row",
               alignItems: "center",
-              justifyContent:'left',
+              justifyContent: "left",
               marginLeft: "2vw",
-              marginTop:'1vh',
+              marginTop: "1vh",
               width: "100%",
             }}
           >
-            <SectionTitle title_text={"Payment Email:"} bold={true}/>
+            <SectionTitle title_text={"Payment Email:"} bold={true} />
             <input
               type="text"
               value={props.payment_email}
@@ -248,12 +245,12 @@ export const DetailsModal = (props) => {
               display: "flex",
               flexDirection: "row",
               alignItems: "center",
-              justifyContent:'left',
+              justifyContent: "left",
               marginLeft: "2vw",
               width: "100%",
             }}
           >
-            <SectionTitle title_text={"Task IDs:"} bold={true}/>
+            <SectionTitle title_text={"Task IDs:"} bold={true} />
             <input
               type="text"
               value={props.task_ids}
@@ -266,18 +263,23 @@ export const DetailsModal = (props) => {
               display: "flex",
               flexDirection: "row",
               alignItems: "center",
-              justifyContent:'left',
+              justifyContent: "left",
               marginLeft: "2vw",
               width: "100%",
-              marginTop:'1vh',
+              marginTop: "1vh",
               marginBottom: "2vh",
             }}
           >
-            <SectionTitle title_text={"Notes:"}bold={true} />
+            <SectionTitle title_text={"Notes:"} bold={true} />
             <input
               type="text"
               value={props.notes}
-              style={{ height: "5vh",marginLeft:'1.75vw', marginRight: "0vw", width: "72%" }}
+              style={{
+                height: "5vh",
+                marginLeft: "1.75vw",
+                marginRight: "0vw",
+                width: "72%",
+              }}
             />
           </div>
         </div>

@@ -6,7 +6,7 @@ import Sidebar from "../sidebar/sidebar";
 import { ButtonDivComponent } from "components/commonComponents/commonComponents";
 import "./styles.css";
 import { Tab, TabList, TabPanel, Tabs } from "react-tabs";
-import {UserProjectModal } from "./projectComponents";
+import { UserProjectModal } from "./projectComponents";
 import { ProjectCardGrid } from "components/commonComponents/commonComponents";
 export const UserProjectsPage = () => {
   const {
@@ -101,10 +101,7 @@ export const UserProjectsPage = () => {
             style={{ display: "flex", marginLeft: "6vh", flexDirection: "row" }}
           >
             <h1 style={{ marginTop: "1vw", paddingBottom: "2vh" }}>
-              <strong>
-              Projects:
-              </strong>
-
+              <strong>Projects:</strong>
             </h1>
             <div
               style={{ marginTop: "1vw", position: "relative", left: "60vw" }}

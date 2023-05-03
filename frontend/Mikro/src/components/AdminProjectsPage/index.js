@@ -62,7 +62,6 @@ export const AdminProjectsPage = () => {
   const [assignmentButtonText, setAssignmentButtonText] = useState("Assign");
 
   useEffect(() => {
-
     if (user) {
       refresh();
     }
@@ -138,9 +137,9 @@ export const AdminProjectsPage = () => {
     setMaxEditors(e.target.value);
   };
 
-  const handleSetMaxValidators =(e)=>{
+  const handleSetMaxValidators = (e) => {
     setMaxValidators(e.target.value);
-  }
+  };
 
   const handleSetProjectDifficulty = (e) => {
     setProjectDifficulty(e.target.value);
@@ -154,7 +153,6 @@ export const AdminProjectsPage = () => {
     setMappingRate(e.target.value);
   };
 
-
   const handleToggleVisibility = (e) => {
     toggleVisibility();
   };
@@ -164,17 +162,31 @@ export const AdminProjectsPage = () => {
   };
 
   const handleCalculateRate = (e) => {
-    calculateProjectBudget(url, rateMethod, mappingRate, validationRate, projectSelected);
+    calculateProjectBudget(
+      url,
+      rateMethod,
+      mappingRate,
+      validationRate,
+      projectSelected
+    );
   };
 
   const handleCreateProject = (e) => {
-    createProject(url, rateMethod, mappingRate, validationRate, maxEditors, maxValidators, visibility);
+    createProject(
+      url,
+      rateMethod,
+      mappingRate,
+      validationRate,
+      maxEditors,
+      maxValidators,
+      visibility
+    );
     handleAddOpen();
   };
 
-  const handleSetProjectSelected = (id,name) => {
+  const handleSetProjectSelected = (id, name) => {
     setProjectSelected(parseInt(id));
-    setProjectSelectedName(name)
+    setProjectSelectedName(name);
   };
 
   const handleDeleteProject = () => {
@@ -285,9 +297,7 @@ export const AdminProjectsPage = () => {
             style={{ display: "flex", marginLeft: "6vh", flexDirection: "row" }}
           >
             <h1 style={{ marginTop: "1vw", paddingBottom: "2vh" }}>
-              <strong>
-              Projects:
-              </strong>
+              <strong>Projects:</strong>
             </h1>
             <div
               style={{ marginTop: "1vw", position: "relative", left: "41.5vw" }}

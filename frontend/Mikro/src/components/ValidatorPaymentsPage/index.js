@@ -179,17 +179,22 @@ export const ValidatorPaymentsPage = () => {
           }}
         >
           <div
-            style={{ display: "flex", marginLeft: "6vh", flexDirection: "row", height:'7vh'}}
+            style={{
+              display: "flex",
+              marginLeft: "6vh",
+              flexDirection: "row",
+              height: "7vh",
+            }}
           >
-            <h1 style={{ marginTop: "1vw", paddingBottom: "0vh",marginBottom:'0vh'}}>
-            <strong>
-              Payments:
-              </strong>
+            <h1
+              style={{
+                marginTop: "1vw",
+                paddingBottom: "0vh",
+                marginBottom: "0vh",
+              }}
+            >
+              <strong>Payments:</strong>
             </h1>
-
-
-
-
 
             <div
               style={
@@ -210,42 +215,41 @@ export const ValidatorPaymentsPage = () => {
                 }
               />
             </div>
-
-
           </div>
 
-          <div style={{display:'flex',flexDirection:'row',height:'7vh',marginTop:'0vh',marginBottom:'0vh',marginLeft:'10vw'}}>
-          <h2 style={{ marginTop: "1vw", paddingBottom: "2vh" }}>
-          <strong>
-              Your Earnings-
-              </strong>
-            </h2>
-            <span style={{width:'3vw'}}/>
+          <div
+            style={{
+              display: "flex",
+              flexDirection: "row",
+              height: "7vh",
+              marginTop: "0vh",
+              marginBottom: "0vh",
+              marginLeft: "10vw",
+            }}
+          >
             <h2 style={{ marginTop: "1vw", paddingBottom: "2vh" }}>
-            <strong>
-              Mapping:
-              </strong>
+              <strong>Your Earnings-</strong>
             </h2>
+            <span style={{ width: "3vw" }} />
             <h2 style={{ marginTop: "1vw", paddingBottom: "2vh" }}>
-              {`$${mappingEarnings&&mappingEarnings.toFixed(2)}`}
-            </h2>
-            <span style={{width:'3vw'}}/>
-            <h2 style={{ marginTop: "1vw", paddingBottom: "2vh" }}>
-              <strong>
-              Validation:
-              </strong>
+              <strong>Mapping:</strong>
             </h2>
             <h2 style={{ marginTop: "1vw", paddingBottom: "2vh" }}>
-              {`$${validationEarnings&&validationEarnings.toFixed(2)}`}
+              {`$${mappingEarnings && mappingEarnings.toFixed(2)}`}
             </h2>
-            <span style={{width:'3vw'}}/>
+            <span style={{ width: "3vw" }} />
             <h2 style={{ marginTop: "1vw", paddingBottom: "2vh" }}>
-            <strong>
-              Total:
-              </strong>
+              <strong>Validation:</strong>
             </h2>
             <h2 style={{ marginTop: "1vw", paddingBottom: "2vh" }}>
-              {`$${totalEarnings&&totalEarnings.toFixed(2)}`}
+              {`$${validationEarnings && validationEarnings.toFixed(2)}`}
+            </h2>
+            <span style={{ width: "3vw" }} />
+            <h2 style={{ marginTop: "1vw", paddingBottom: "2vh" }}>
+              <strong>Total:</strong>
+            </h2>
+            <h2 style={{ marginTop: "1vw", paddingBottom: "2vh" }}>
+              {`$${totalEarnings && totalEarnings.toFixed(2)}`}
             </h2>
           </div>
 

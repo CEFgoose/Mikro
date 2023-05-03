@@ -102,10 +102,7 @@ export const ValidatorProjectsPage = () => {
             style={{ display: "flex", marginLeft: "6vh", flexDirection: "row" }}
           >
             <h1 style={{ marginTop: "1vw", paddingBottom: "2vh" }}>
-              <strong>
-              Projects:
-              </strong>
-
+              <strong>Projects:</strong>
             </h1>
             <div
               style={{ marginTop: "1vw", position: "relative", left: "60vw" }}
