@@ -257,7 +257,18 @@ export const AdminChecklistsPage = () => {
   };
 
   const handleModifyChecklist = (openModal = true) => {
-    updateChecklist(listItems);
+    updateChecklist( 
+      checklistSelected,     
+      checklistName,
+      checklistDescription,
+      checklistDifficulty,
+      visibility,
+      completionRate,
+      validationRate,
+      listItems,
+      dueDate,
+      checklistStatus
+      );
     if (openModal) {
       handleModifyOpen();
     } else {
