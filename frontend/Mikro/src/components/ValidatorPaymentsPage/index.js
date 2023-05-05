@@ -25,6 +25,7 @@ export const ValidatorPaymentsPage = () => {
     history,
     mappingEarnings,
     validationEarnings,
+    checklistsEarnings,
     totalEarnings,
   } = useContext(DataContext);
 
@@ -224,7 +225,7 @@ export const ValidatorPaymentsPage = () => {
               height: "7vh",
               marginTop: "0vh",
               marginBottom: "0vh",
-              marginLeft: "10vw",
+              marginLeft: "5vw",
             }}
           >
             <h2 style={{ marginTop: "1vw", paddingBottom: "2vh" }}>
@@ -243,6 +244,13 @@ export const ValidatorPaymentsPage = () => {
             </h2>
             <h2 style={{ marginTop: "1vw", paddingBottom: "2vh" }}>
               {`$${validationEarnings && validationEarnings.toFixed(2)}`}
+            </h2>
+            <span style={{ width: "3vw" }} />
+            <h2 style={{ marginTop: "1vw", paddingBottom: "2vh" }}>
+              <strong>Checklists:</strong>
+            </h2>
+            <h2 style={{ marginTop: "1vw", paddingBottom: "2vh" }}>
+              {`$${checklistsEarnings && checklistsEarnings.toFixed(2)}`}
             </h2>
             <span style={{ width: "3vw" }} />
             <h2 style={{ marginTop: "1vw", paddingBottom: "2vh" }}>

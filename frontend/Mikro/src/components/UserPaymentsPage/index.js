@@ -24,7 +24,7 @@ export const UserPaymentsPage = () => {
     fetchUserTransactions,
     history,
     mappingEarnings,
-    validationEarnings,
+    checklistsEarnings,
     totalEarnings,
   } = useContext(DataContext);
 
@@ -215,21 +215,29 @@ export const UserPaymentsPage = () => {
               height: "7vh",
               marginTop: "0vh",
               marginBottom: "0vh",
-              marginLeft: "20vw",
+              marginLeft: "10vw",
             }}
           >
             <h2 style={{ marginTop: "1vw", paddingBottom: "2vh" }}>
               <strong>Your Earnings-</strong>
             </h2>
-            <span style={{ width: "2vw" }} />
+            <span style={{ width: "4vw" }} />
+
             <h2 style={{ marginTop: "1vw", paddingBottom: "2vh" }}>
               <strong>Mapping:</strong>
             </h2>
             <h2 style={{ marginTop: "1vw", paddingBottom: "2vh" }}>
               {`$${mappingEarnings && mappingEarnings.toFixed(2)}`}
             </h2>
+            <span style={{ width: "4vw" }} />
+            <h2 style={{ marginTop: "1vw", paddingBottom: "2vh" }}>
+              <strong>Checklists:</strong>
+            </h2>
+            <h2 style={{ marginTop: "1vw", paddingBottom: "2vh" }}>
+              {`$${checklistsEarnings && checklistsEarnings.toFixed(2)}`}
+            </h2>
 
-            <span style={{ width: "8vw" }} />
+            <span style={{ width: "4vw" }} />
             <h2 style={{ marginTop: "1vw", paddingBottom: "2vh" }}>
               <strong>Total:</strong>
             </h2>

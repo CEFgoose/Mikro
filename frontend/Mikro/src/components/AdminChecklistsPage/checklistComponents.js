@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { styled } from "@mui/material/styles";
-import { Modal, Table, TableBody, Card, Grid } from "@mui/material";
+import { Modal, Card, Grid } from "@mui/material";
 import { Tab, TabList, TabPanel, Tabs } from "react-tabs";
 import {
   CancelButton,
@@ -10,13 +10,9 @@ import {
   SectionSubtitle,
   ModalWrapper,
   StyledButton,
-  ASSIGN_USERS_TABLE_HEADERS,
-  ProjectRow,
-  ProjectCell,
-  TableCard,
-  ListHead,
   Divider,
 } from "../commonComponents/commonComponents";
+import { TextArea } from "components/commonComponents/styles";
 
 export const AdminCardMediaStyle = styled("div")(({ theme }) => ({
   display: "flex",
@@ -34,7 +30,6 @@ export const AdminCardMediaStyle = styled("div")(({ theme }) => ({
 }));
 
 export const ChecklistCardGrid = (props) => {
-  
   return (
     <div style={{ overflowY: "scroll", width: "85vw", height: "83vh" }}>
       <Grid
@@ -62,81 +57,138 @@ export const ChecklistCardGrid = (props) => {
               description,
               author,
               max_payment,
+              user_name,
+              completed,
+              confirmed,
+              payment_due,
+              comments,
             } = card;
             return (
               <>
-              {props.type==='Admin'?
-              <>
-              <AdminChecklistCard
-                id={id}
-                name={name}
-                description={description}
-                role={props.role}
-                goToSource={props.goToSource}
-                difficulty={difficulty}
-                visibility={visibility}
-                due_date={due_date}
-                list_items={list_items}
-                completion_rate={completion_rate}
-                validation_rate={validation_rate}
-                total_payout={total_payout}
-                author={author}
-                max_payment={max_payment}
-                checklistSelected={props.checklistSelected}
-                handleSetChecklistSelected={props.handleSetChecklistSelected}
-              />
-              </>
-              :props.type==='New'?
-              <>
-              <NewChecklistCard
-                id={id}
-                name={name}
-                description={description}
-                role={props.role}
-                goToSource={props.goToSource}
-                difficulty={difficulty}
-                visibility={visibility}
-                due_date={due_date}
-                list_items={list_items}
-                completion_rate={completion_rate}
-                validation_rate={validation_rate}
-                total_payout={total_payout}
-                author={author}
-                max_payment={max_payment}
-                checklistSelected={props.checklistSelected}
-                handleSetChecklistSelected={props.handleSetChecklistSelected}
-              />
-              </>
-              
-              :props.type==='User'?
-              <>
-              <UserChecklistCard
-                id={id}
-                name={name}
-                completed={props.completed}
-                description={description}
-                role={props.role}
-                goToSource={props.goToSource}
-                difficulty={difficulty}
-                visibility={visibility}
-                due_date={due_date}
-                list_items={list_items}
-                completion_rate={completion_rate}
-                validation_rate={validation_rate}
-                total_payout={total_payout}
-                author={author}
-                max_payment={max_payment}
-                checklistSelected={props.checklistSelected}
-                handleCompleteListItem={props.handleCompleteListItem}
-                handleSetChecklistSelected={props.handleSetChecklistSelected}
-              />
-              </>
-              :
-              <></>
-
-              }
-
-
+                {props.type === "Admin" ? (
+                  <>
+                    <AdminChecklistCard
+                      id={id}
+                      name={name}
+                      description={description}
+                      comments={comments}
+                      role={props.role}
+                      goToSource={props.goToSource}
+                      handleAddComment={props.handleAddComment}
+                      handleCommentOpen={props.handleCommentOpen}
+                      handleSetCommentSelected={props.handleSetCommentSelected}
+                      difficulty={difficulty}
+                      visibility={visibility}
+                      due_date={due_date}
+                      list_items={list_items}
+                      completion_rate={completion_rate}
+                      validation_rate={validation_rate}
+                      total_payout={total_payout}
+                      author={author}
+                      max_payment={max_payment}
+                      commentSelected={props.commentSelected}
+                      handleAddItemOpen={props.handleAddItemOpen}
+                      checklistSelected={props.checklistSelected}
+                      handleSetChecklistSelected={
+                        props.handleSetChecklistSelected
+                      }
+                    />
+                  </>
+                ) : props.type === "New" ? (
+                  <>
+                    <NewChecklistCard
+                      id={id}
+                      name={name}
+                      description={description}
+                      comments={comments}
+                      role={props.role}
+                      goToSource={props.goToSource}
+                      handleCommentOpen={props.handleCommentOpen}
+                      handleAddComment={props.handleAddComment}
+                      difficulty={difficulty}
+                      visibility={visibility}
+                      due_date={due_date}
+                      list_items={list_items}
+                      completion_rate={completion_rate}
+                      validation_rate={validation_rate}
+                      total_payout={total_payout}
+                      author={author}
+                      max_payment={max_payment}
+                      checklistSelected={props.checklistSelected}
+                      handleSetChecklistSelected={
+                        props.handleSetChecklistSelected
+                      }
+                    />
+                  </>
+                ) : props.type === "User" ? (
+                  <>
+                    <UserChecklistCard
+                      id={id}
+                      name={name}
+                      description={description}
+                      comments={comments}
+                      role={props.role}
+                      goToSource={props.goToSource}
+                      handleCommentOpen={props.handleCommentOpen}
+                      handleAddComment={props.handleAddComment}
+                      difficulty={difficulty}
+                      visibility={visibility}
+                      due_date={due_date}
+                      list_items={list_items}
+                      completion_rate={completion_rate}
+                      validation_rate={validation_rate}
+                      total_payout={total_payout}
+                      author={author}
+                      max_payment={max_payment}
+                      completed={completed}
+                      confirmed={confirmed}
+                      checklistSelected={props.checklistSelected}
+                      handleCompleteListItem={props.handleCompleteListItem}
+                      handleSetChecklistSelected={
+                        props.handleSetChecklistSelected
+                      }
+                    />
+                  </>
+                ) : props.type === "Validator" ? (
+                  <>
+                    <ValidatorChecklistCard
+                      id={id}
+                      name={name}
+                      role={props.role}
+                      user_name={user_name}
+                      completed={completed}
+                      confirmed={confirmed}
+                      description={description}
+                      comments={comments}
+                      commentSelected={props.commentSelected}
+                      handleSetCommentSelected={props.handleSetCommentSelected}
+                      goToSource={props.goToSource}
+                      handleCommentOpen={props.handleCommentOpen}
+                      handleDeleteComment={props.handleDeleteComment}
+                      handleAddComment={props.handleAddComment}
+                      difficulty={difficulty}
+                      visibility={visibility}
+                      due_date={due_date}
+                      list_items={list_items}
+                      completion_rate={completion_rate}
+                      validation_rate={validation_rate}
+                      user_payment_due={completion_rate}
+                      validator_payment_due={validation_rate}
+                      total_payment_due={completion_rate + validation_rate}
+                      payment_due={payment_due}
+                      author={author}
+                      max_payment={max_payment}
+                      handleConfirmItem={props.handleConfirmItem}
+                      checklistSelected={props.checklistSelected}
+                      handleCompleteListItem={props.handleCompleteListItem}
+                      handleSetChecklistSelected={
+                        props.handleSetChecklistSelected
+                      }
+                    />
+                  </>
+                ) : (
+                  <></>
+                )}
               </>
             );
           })}
@@ -161,11 +213,9 @@ export const AddChecklistModal = (props) => {
               : ""
           }
         />
-
         <Divider />
         <div style={{ display: "flex", flexDirection: "column" }}>
           {/* PAGE 1 */}
-
           {props.page === 1 ? (
             <>
               <div
@@ -320,9 +370,7 @@ export const AddChecklistModal = (props) => {
           ) : (
             <></>
           )}
-
           {/* PAGE 2 */}
-
           {props.page === 2 ? (
             <>
               <div
@@ -359,7 +407,6 @@ export const AddChecklistModal = (props) => {
                     );
                   })}
               </div>
-
               <div
                 style={{
                   display: "flex",
@@ -380,7 +427,6 @@ export const AddChecklistModal = (props) => {
                 />
               </div>
               <Divider />
-
               <div
                 style={{
                   display: "flex",
@@ -405,7 +451,6 @@ export const AddChecklistModal = (props) => {
           ) : (
             <></>
           )}
-
           {/* BUTTON COMPONENT */}
           <div
             style={{
@@ -426,7 +471,6 @@ export const AddChecklistModal = (props) => {
             ) : (
               <></>
             )}
-
             <StyledButton
               button_text={props.page === 1 ? "Next" : "Add"}
               button_action={
@@ -456,27 +500,102 @@ export const AddChecklistModal = (props) => {
   );
 };
 
-// DELETE PROJECT MODAL //
-export const DeleteProjectModal = (props) => {
+// CONFIRMATION MODAL //
+export const CommentModal = (props) => {
   return (
-    <Modal open={props.deleteOpen} key="delete">
+    <Modal open={props.commentOpen} key="confirm">
       <ModalWrapper>
-        <CloseButton close_action={props.handleDeleteOpen} />
-        <SectionTitle
-          title_text={"Are you sure you want to delete the following project?"}
-        />
-        <SectionSubtitle subtitle_text={`PROJECT # ${props.projectSelected}`} />
-        <DeleteProjectButtons
-          handleDeleteOpen={props.handleDeleteOpen}
-          do_delete_project={props.handleDeleteProject}
-        />
+        <CloseButton close_action={props.handleCommentOpen} />
+        <SectionTitle title_text={"New Comment:"} bold={true} />
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            justifyContent: "center",
+            alignItems: "center",
+            marginBottom: "2vh",
+            marginTop: "1vh",
+          }}
+        >
+          <TextArea
+            type="text"
+            value={props.checklistName}
+            onChange={(e) => props.handleSetComment(e)}
+            style={{ height: "15vh", width: "95%", overflowY: "scroll" }}
+          />
+        </div>
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "row",
+            justifyContent: "center",
+            marginBottom: "2vh",
+            marginTop: "1vh",
+          }}
+        >
+          <StyledButton
+            button_text={"Add"}
+            button_action={() => props.handleAddComment()}
+          />
+        </div>
       </ModalWrapper>
     </Modal>
   );
 };
 
-// DELETE PROJECT BUTTONS //
-export const DeleteProjectButtons = (props) => {
+// CONFIRMATION MODAL //
+export const ConfirmationModal = (props) => {
+  return (
+    <Modal open={props.confirmOpen} key="confirm">
+      <ModalWrapper>
+        <CloseButton close_action={props.handleConfirmOpen} />
+        <SectionTitle title_text={props.question} />
+        <SectionSubtitle subtitle_text={props.extraText} />
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "row",
+            justifyContent: "center",
+            marginBottom: "2vh",
+          }}
+        >
+          <StyledButton
+            button_text={"OK"}
+            button_action={() => props.handleConfirmOpen()}
+          />
+        </div>
+      </ModalWrapper>
+    </Modal>
+  );
+};
+
+// DELETE CHecklist MODAL //
+export const DeleteChecklistModal = (props) => {
+  return (
+    <Modal open={props.deleteOpen} key="delete">
+      <ModalWrapper>
+        <CloseButton close_action={props.handleDeleteOpen} />
+        <SectionTitle
+          title_text={
+            "Are you sure you want to delete the following checklist?"
+          }
+        />
+        <SectionSubtitle
+          subtitle_text={`checklist # ${props.checklistSelected}`}
+        />
+        <div style={{ marginBottom: "2vh" }}>
+          <DeleteChecklistButtons
+            cancel_action={props.handleDeleteOpen}
+            confirm_action={props.handleDeleteChecklist}
+          />
+        </div>
+      </ModalWrapper>
+    </Modal>
+  );
+};
+
+// DELETE Checklist BUTTONS //
+export const DeleteChecklistButtons = (props) => {
   return (
     <div
       style={{
@@ -487,11 +606,11 @@ export const DeleteProjectButtons = (props) => {
       }}
     >
       <CancelButton
-        cancel_action={props.handleDeleteOpen}
+        cancel_action={props.cancel_action}
         cancel_text={"Cancel"}
       />
       <ConfirmButton
-        confirm_action={props.do_delete_project}
+        confirm_action={props.confirm_action}
         confirm_text={"Delete"}
       />
     </div>
@@ -502,16 +621,11 @@ export const DeleteProjectButtons = (props) => {
 export const ModifyChecklistModal = (props) => {
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
-  // useEffect(() => {
-  //   if (props.projectSelected !== null) {
-  //     props.fetchProjectUsers(props.projectSelected);
-  //   }
-  //   // eslint-disable-next-line
-  // }, [props.projectSelected]);
-  // console.log(props)
+
   return (
     <>
-      {props.checklistSelectedDetails && props.checklistSelectedDetails != null ? (
+      {props.checklistSelectedDetails &&
+      props.checklistSelectedDetails != null ? (
         <Modal open={props.modifyOpen} key="modify">
           <ModalWrapper>
             <CloseButton close_action={props.handleModifyOpen} />
@@ -529,7 +643,7 @@ export const ModifyChecklistModal = (props) => {
               >
                 <TabList>
                   <Tab>Details</Tab>
-                  {/* <Tab>Users</Tab> */}
+
                   <Tab>Settings</Tab>
                 </TabList>
                 {/* BUDGET TAB */}
@@ -543,45 +657,53 @@ export const ModifyChecklistModal = (props) => {
                       marginBottom: "1vh",
                     }}
                   />
-                                <div
-                style={{
-                  display: "flex",
-                  flexDirection: "row",
-                  alignItems: "center",
-                  marginLeft: "1vw",
-                  width: "100%",
-                  marginTop: "1vh",
-                  marginBottom: "1vh",
-                }}
-              >
-                <SectionTitle title_text={"Name:"} bold={true} />
-                <input
-                  type="text"
-                  value={props.checklistName}
-                  onChange={(e) => props.handleSetChecklistName(e)}
-                  style={{ height: "5vh", marginRight: "3vw", width: "95%" }}
-                />
-              </div>
-              <Divider />
-              <div
-                style={{
-                  display: "flex",
-                  flexDirection: "row",
-                  alignItems: "center",
-                  marginLeft: "1vw",
-                  marginTop: "1vh",
-                  marginBottom: "1vh",
-                  width: "100%",
-                }}
-              >
-                <SectionTitle title_text={"Description:"} bold={true} />
-                <input
-                  type="text"
-                  value={props.checklistDescription}
-                  onChange={(e) => props.handleSetChecklistDescription(e)}
-                  style={{ height: "5vh", marginRight: "3vw", width: "95%" }}
-                />
-              </div>
+                  <div
+                    style={{
+                      display: "flex",
+                      flexDirection: "row",
+                      alignItems: "center",
+                      marginLeft: "1vw",
+                      width: "100%",
+                      marginTop: "1vh",
+                      marginBottom: "1vh",
+                    }}
+                  >
+                    <SectionTitle title_text={"Name:"} bold={true} />
+                    <input
+                      type="text"
+                      value={props.checklistName}
+                      onChange={(e) => props.handleSetChecklistName(e)}
+                      style={{
+                        height: "5vh",
+                        marginRight: "3vw",
+                        width: "95%",
+                      }}
+                    />
+                  </div>
+                  <Divider />
+                  <div
+                    style={{
+                      display: "flex",
+                      flexDirection: "row",
+                      alignItems: "center",
+                      marginLeft: "1vw",
+                      marginTop: "1vh",
+                      marginBottom: "1vh",
+                      width: "100%",
+                    }}
+                  >
+                    <SectionTitle title_text={"Description:"} bold={true} />
+                    <input
+                      type="text"
+                      value={props.checklistDescription}
+                      onChange={(e) => props.handleSetChecklistDescription(e)}
+                      style={{
+                        height: "5vh",
+                        marginRight: "3vw",
+                        width: "95%",
+                      }}
+                    />
+                  </div>
                   <div
                     style={{
                       display: "flex",
@@ -624,25 +746,6 @@ export const ModifyChecklistModal = (props) => {
                         width: "5vw",
                       }}
                     />
-                    {/* <SectionTitle title_text={"Type:"} />
-                    <SectionSubtitle subtitle_text={"rate per task:"} />
-                    <input
-                      type="radio"
-                      value="rate per task"
-                      name="rate per task"
-                      onChange={() => props.handleToggleRateMethod()}
-                      checked={props.rateMethod === true}
-                    />
-                    <span style={{ width: "2vw" }} />
-                    <SectionSubtitle subtitle_text={"Total Budget:"} />
-                    <input
-                      type="radio"
-                      value="Total Budget"
-                      name="Total Budget"
-                      onChange={() => props.handleToggleRateMethod()}
-                      checked={props.rateMethod === false}
-                      style={{ marginRight: "2%" }}
-                    /> */}
                   </div>
                   <div
                     style={{
@@ -655,8 +758,6 @@ export const ModifyChecklistModal = (props) => {
                     }}
                   />
 
-
-
                   <ModifyProjectButtons
                     handleModifyOpen={props.handleModifyOpen}
                     confirm_action={props.handleModifyChecklist}
@@ -664,93 +765,6 @@ export const ModifyChecklistModal = (props) => {
                   />
                 </TabPanel>
 
-
-
-                {/* USERS TAB */}
-{/*                 
-                <TabPanel>
-                  <div
-                    style={{
-                      display: "flex",
-                      flexDirection: "row",
-                      alignItems: "center",
-                      marginLeft: "1vw",
-                      marginBottom: "2vh",
-                      width: "100%",
-                    }}
-                  >
-                    <TableCard
-                      TableCard
-                      style={{
-                        boxShadow: "1px 1px 6px 2px gray",
-                        width: "45vw",
-                      }}
-                    >
-                      <Table>
-                        <ListHead headLabel={ASSIGN_USERS_TABLE_HEADERS} />
-                        <TableBody>
-                          {props.projectUsers &&
-                            props.projectUsers
-                              .slice(
-                                page * rowsPerPage,
-                                page * rowsPerPage + rowsPerPage
-                              )
-                              .map((row) => {
-                                const {
-                                  id,
-                                  name,
-                                  role,
-                                  assigned_projects,
-                                  assigned,
-                                } = row;
-                                return (
-                                  <ProjectRow
-                                    sx={{
-                                      "&:hover": {
-                                        backgroundColor:
-                                          "rgba(145, 165, 172, 0.5)",
-                                        cursor: "pointer",
-                                      },
-                                    }}
-                                    align="center"
-                                    key={id}
-                                    tabIndex={-1}
-                                    onClick={() =>
-                                      props.handleSetUserSelected(id, assigned)
-                                    }
-                                    selected={props.userSelected === id}
-                                    // onDoubleClick={() => view_all_project_sequences(value)}
-                                  >
-                                    <ProjectCell
-                                      key={name}
-                                      entry={<strong>{name}</strong>}
-                                    />
-                                    <ProjectCell key={role} entry={role} />
-                                    <ProjectCell
-                                      key={assigned}
-                                      entry={assigned}
-                                    />
-                                    <ProjectCell
-                                      key={assigned_projects}
-                                      entry={assigned_projects}
-                                    />
-                                  </ProjectRow>
-                                );
-                              })}
-                        </TableBody>
-                      </Table>
-                    </TableCard>
-                  </div>
-                  <ModifyProjectButtons
-                    handleModifyOpen={props.handleModifyOpen}
-                    confirm_action={props.handleAssignUser}
-                    confirm_text={props.assignmentButtonText}
-                  />
-                </TabPanel> */}
-
-
-
-                
                 {/* SETTINGS TAB */}
                 <div
                   style={{
@@ -768,10 +782,7 @@ export const ModifyChecklistModal = (props) => {
                       marginLeft: "1vw",
                     }}
                   >
-                    <SectionTitle
-                      title_text={"Visibility:"}
-                      bold={true}
-                    />
+                    <SectionTitle title_text={"Visibility:"} bold={true} />
                     <span style={{ width: "3vw" }} />
                     <SectionSubtitle subtitle_text={"Public:"} bold={true} />
                     <input
@@ -883,12 +894,8 @@ export const ModifyChecklistModal = (props) => {
                       type="date"
                       value={props.dueDate}
                       onChange={(e) => props.handleSetDueDate(e)}
-                      style={{ height: "3vh",  }}
+                      style={{ height: "3vh" }}
                     />
-
-
-
-
                   </div>
                   <div
                     style={{
@@ -938,7 +945,6 @@ export const ModifyProjectButtons = (props) => {
 };
 
 export const AdminChecklistCard = (props) => {
-
   return (
     <Card
       key={props.id}
@@ -957,7 +963,9 @@ export const AdminChecklistCard = (props) => {
           id={props.id}
           value={props.id}
           checked={props.id === props.checklistSelected}
-          onChange={(e) => props.handleSetChecklistSelected(props.id, props.name)}
+          onChange={(e) =>
+            props.handleSetChecklistSelected(props.id, props.name)
+          }
           style={{ marginLeft: "1vw", marginBottom: "1vh" }}
         />
       </AdminCardMediaStyle>
@@ -969,10 +977,7 @@ export const AdminChecklistCard = (props) => {
           height: "5vh",
         }}
       >
-        <SectionTitle
-          title_text={props.name && `${props.name}`}
-          bold={true}
-        />
+        <SectionTitle title_text={props.name && `${props.name}`} bold={true} />
       </div>
 
       <div
@@ -1002,14 +1007,12 @@ export const AdminChecklistCard = (props) => {
           />
         </div>
       </div>
-
       <div
         style={{
           display: "flex",
           flexDirection: "column",
         }}
       >
-        {/* <SectionSubtitle subtitle_text={`Checklist`} bold={true} margin_bottom={'0vh'}/> */}
         <div
           style={{
             display: "flex",
@@ -1018,23 +1021,25 @@ export const AdminChecklistCard = (props) => {
             verticalAlign: "textTop",
             marginTop: "0vh",
             height: "4vh",
-
           }}
         >
-          <SectionSubtitle subtitle_text={`Complete`} bold={true} />
-          <SectionSubtitle subtitle_text={`Confirmed`} bold={true} />
-          <span style={{ width: "9vh" }} />
-          <SectionSubtitle subtitle_text={`+Add a Task`} bold={true} />
+          <span style={{ width: "28vh" }} />
+          <div
+            onClick={() =>
+              props.handleAddItemOpen(props.id, props.name, props.list_items)
+            }
+          >
+            <SectionSubtitle subtitle_text={`+Add/Edit Task`} bold={true} />
+          </div>
         </div>
 
         <div
           style={{
             display: "flex",
             flexDirection: "column",
-            height: "15vh",
+            height: "35vh",
             overflowY: "scroll",
             overflowX: "scroll",
-            // backgroundColor:'lightgrey'
           }}
         >
           {props.list_items &&
@@ -1053,30 +1058,12 @@ export const AdminChecklistCard = (props) => {
                       marginTop: "0vh",
                       marginLeft: "3vh",
                       height: "3vh",
-
                     }}
                   >
-                    <input
-                      type={"checkbox"}
-                      id={props.id}
-                      // value={props.id}
-                      // checked={props.id === props.projectSelected}
-                      // onChange={(e) =>
-                      //   props.handleSetProjectSelected(props.id, props.name)
-                      // }
-                      style={{ marginLeft: "1vw", marginRight: "6vw" }}
+                    <SectionSubtitle
+                      subtitle_text={`${number}: ${action}`}
+                      bold={true}
                     />
-                    <input
-                      type={"checkbox"}
-                      id={props.id}
-                      // value={props.id}
-                      // checked={props.id === props.projectSelected}
-                      // onChange={(e) =>
-                      //   props.handleSetProjectSelected(props.id, props.name)
-                      // }
-                      style={{ marginLeft: "0vw", marginRight: "1vw" }}
-                    />
-                    <SectionSubtitle subtitle_text={action} bold={true} />
                   </div>
                 </>
               );
@@ -1085,121 +1072,86 @@ export const AdminChecklistCard = (props) => {
       </div>
 
       <div
+        style={{
+          display: "flex",
+          flexDirection: "row",
+          justifyContent: "center",
+        }}
+      ></div>
+      <div
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          // justifyContent: "center",
+          // alignContent:'center'
+        }}
+      >
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "row",
+            justifyContent: "center",
+            marginTop: "1vh",
+          }}
+        >
+          <div
             style={{
               display: "flex",
-              flexDirection: "row",
+              flexDirection: "column",
               justifyContent: "center",
+              alignItems: "center",
+              margin: "auto",
             }}
           >
-            <div
-              style={{
-                display: "flex",
-                flexDirection: "column",
-                justifyContent: "center",
-              }}
-            >
-                <SectionSubtitle subtitle_text={'4/27/2023 @1:45 pm'} />
-                <input
-                  type="text"
-                  // value={props.checklistDescription}
-                  // onChange={(e) => props.handleSetChecklistDescription(e)}
-                  style={{ height: "4vh", marginRight: "0vw", width: "21vw",marginLeft:'2vw',marginTop:'0vh' }}
-                />
-                <SectionSubtitle subtitle_text={'4/27/2023 @1:45 pm'} />
-                <input
-                  type="text"
-                  // value={props.checklistDescription}
-                  // onChange={(e) => props.handleSetChecklistDescription(e)}
-                  style={{ height: "4vh", marginRight: "0vw", width: "21vw",marginLeft:'2vw',marginTop:'0vh' }}
-                />
-            </div>
-
-
-
-
-
+            <SectionSubtitle subtitle_text={"Rate:"} bold={true} />
+            <SectionSubtitle
+              subtitle_text={
+                props.completion_rate && `$${props.completion_rate.toFixed(2)}`
+              }
+            />
           </div>
-          <div
-              style={{
-                display: "flex",
-                flexDirection: "column",
-                // justifyContent: "center",
-                // alignContent:'center'
-              }}
-            >
 
           <div
             style={{
               display: "flex",
-              flexDirection: "row",
+              flexDirection: "column",
               justifyContent: "center",
-              marginTop:'1vh'
+              alignItems: "center",
+              margin: "auto",
             }}
           >
-            <div
-              style={{
-                display: "flex",
-                flexDirection: "column",
-                justifyContent: "center",
-                alignItems:'center',
-                margin:'auto',
-              }}
-            >
-              <SectionSubtitle subtitle_text={'Rate:'} bold={true}/>
-              <SectionSubtitle subtitle_text={props.completion_rate&&`$${props.completion_rate.toFixed(2)}`} />
+            <SectionSubtitle subtitle_text={"Due Date:"} bold={true} />
+            <SectionSubtitle subtitle_text={props.due_date} />
+          </div>
 
-            </div>
-
-            <div
-              style={{
-                display: "flex",
-                flexDirection: "column",
-                justifyContent: "center",
-                alignItems:'center',
-                margin:'auto',
-              }}
-            >
-              <SectionSubtitle subtitle_text={'Due Date:'} bold={true}/>
-              <SectionSubtitle subtitle_text={props.due_date} />
-
-            </div>
-
-
-            <div
-              style={{
-                display: "flex",
-                flexDirection: "column",
-                justifyContent: "center",
-                alignItems:'center',
-                margin:'auto',
-              }}
-            >
-              <SectionSubtitle subtitle_text={'Status:'} bold={true}/>
-              <SectionSubtitle subtitle_text={'In Progress'} />
-
-            </div>
-
-
-
+          <div
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              justifyContent: "center",
+              alignItems: "center",
+              margin: "auto",
+            }}
+          >
+            <SectionSubtitle subtitle_text={"Status:"} bold={true} />
+            <SectionSubtitle
+              subtitle_text={
+                props.completed === true && props.confirmed === true
+                  ? "Confirmed"
+                  : props.completed === true && props.confirmed !== true
+                  ? "Completed"
+                  : "In Progress"
+              }
+            />
           </div>
         </div>
-
-
+      </div>
     </Card>
   );
 };
 
-
-
-
-
-
-
-
-
-
-
 export const NewChecklistCard = (props) => {
+  console.log(props.role);
   return (
     <Card
       key={props.id}
@@ -1218,10 +1170,11 @@ export const NewChecklistCard = (props) => {
           id={props.id}
           value={props.id}
           checked={props.id === props.checklistSelected}
-          onChange={(e) => props.handleSetChecklistSelected(props.id, props.name)}
+          onChange={(e) =>
+            props.handleSetChecklistSelected(props.id, props.name)
+          }
           style={{ marginLeft: "1vw", marginBottom: "1vh" }}
         />
- 
       </AdminCardMediaStyle>
       <div
         style={{
@@ -1231,10 +1184,7 @@ export const NewChecklistCard = (props) => {
           height: "5vh",
         }}
       >
-        <SectionTitle
-          title_text={"TEST"}
-          bold={true}
-        />
+        <SectionTitle title_text={"TEST"} bold={true} />
       </div>
 
       <div
@@ -1280,10 +1230,8 @@ export const NewChecklistCard = (props) => {
             verticalAlign: "textTop",
             marginTop: "0vh",
             height: "4vh",
-
           }}
         >
-
           <SectionSubtitle subtitle_text={`Actions:`} bold={true} />
         </div>
 
@@ -1313,7 +1261,6 @@ export const NewChecklistCard = (props) => {
                       marginTop: "0vh",
                       marginLeft: "3vh",
                       height: "3vh",
-
                     }}
                   >
                     <SectionSubtitle subtitle_text={`${number}:`} bold={true} />
@@ -1325,83 +1272,376 @@ export const NewChecklistCard = (props) => {
         </div>
       </div>
 
-
+      <div
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          // justifyContent: "center",
+          // alignContent:'center'
+        }}
+      >
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "row",
+            justifyContent: "center",
+            marginTop: "1vh",
+          }}
+        >
           <div
-              style={{
-                display: "flex",
-                flexDirection: "column",
-                // justifyContent: "center",
-                // alignContent:'center'
-              }}
-            >
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              justifyContent: "center",
+              alignItems: "center",
+              margin: "auto",
+            }}
+          >
+            <SectionSubtitle subtitle_text={"Payment:"} bold={true} />
+            <SectionSubtitle
+              subtitle_text={
+                props.completion_rate && `$${props.completion_rate.toFixed(2)}`
+              }
+            />
+          </div>
 
           <div
             style={{
               display: "flex",
-              flexDirection: "row",
+              flexDirection: "column",
               justifyContent: "center",
-              marginTop:'1vh'
+              alignItems: "center",
+              margin: "auto",
             }}
           >
-            <div
-              style={{
-                display: "flex",
-                flexDirection: "column",
-                justifyContent: "center",
-                alignItems:'center',
-                margin:'auto',
-              }}
-            >
-              <SectionSubtitle subtitle_text={'Payment:'} bold={true}/>
-              <SectionSubtitle subtitle_text={props.completion_rate&&`$${props.completion_rate.toFixed(2)}`} />
+            <SectionSubtitle subtitle_text={"Due Date:"} bold={true} />
+            <SectionSubtitle subtitle_text={props.due_date} />
+          </div>
 
-            </div>
-
-            <div
-              style={{
-                display: "flex",
-                flexDirection: "column",
-                justifyContent: "center",
-                alignItems:'center',
-                margin:'auto',
-              }}
-            >
-              <SectionSubtitle subtitle_text={'Due Date:'} bold={true}/>
-              <SectionSubtitle subtitle_text={props.due_date} />
-
-            </div>
-
-
-            <div
-              style={{
-                display: "flex",
-                flexDirection: "column",
-                justifyContent: "center",
-                alignItems:'center',
-                margin:'auto',
-              }}
-            >
-              <SectionSubtitle subtitle_text={'Difficulty:'} bold={true}/>
-              <SectionSubtitle subtitle_text={props.difficulty} />
-
-            </div>
-
-
-
+          <div
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              justifyContent: "center",
+              alignItems: "center",
+              margin: "auto",
+            }}
+          >
+            <SectionSubtitle subtitle_text={"Difficulty:"} bold={true} />
+            <SectionSubtitle subtitle_text={props.difficulty} />
           </div>
         </div>
-
-
+      </div>
     </Card>
   );
 };
 
-
-
-
-
 export const UserChecklistCard = (props) => {
-console.log(props.list_items)
+  return (
+    <Card
+      key={props.id}
+      style={{
+        boxShadow: "1px 1px 6px 2px gray",
+        width: "25vw",
+        height: "78vh",
+        marginLeft: "2vw",
+        marginTop: "2vh",
+      }}
+    >
+      <AdminCardMediaStyle>
+        {props.role === "admin" ? (
+          <>
+            <input
+              type={"checkbox"}
+              id={props.id}
+              value={props.id}
+              checked={props.id === props.checklistSelected}
+              style={{ marginLeft: "1vw", marginBottom: "1vh" }}
+            />
+          </>
+        ) : (
+          <>
+            <div style={{ marginLeft: "1vw", marginBottom: "2vh" }} />
+          </>
+        )}
+      </AdminCardMediaStyle>
+      <div
+        style={{
+          display: "flex",
+          flexDirection: "row",
+          justifyContent: "center",
+          height: "5vh",
+        }}
+      >
+        <SectionTitle title_text={props.name && `${props.name}`} bold={true} />
+      </div>
+
+      <div
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          // justifyContent:'center'
+        }}
+      >
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "column",
+
+            height: "15vh",
+            width: "90%",
+            borderStyle: "solid",
+            borderWidth: "8px",
+            borderColor: "lightgrey",
+          }}
+        >
+          <SectionSubtitle subtitle_text={`Description`} bold={true} />
+          <SectionSubtitle
+            subtitle_text={props.description}
+            margin_bottom={"0vh"}
+          />
+        </div>
+      </div>
+
+      <div
+        style={{
+          display: "flex",
+          flexDirection: "column",
+        }}
+      >
+        {/* <SectionSubtitle subtitle_text={`Checklist`} bold={true} margin_bottom={'0vh'}/> */}
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "row",
+            justifyContent: "left",
+            verticalAlign: "textTop",
+            marginTop: "0vh",
+            height: "4vh",
+          }}
+        >
+          <SectionSubtitle subtitle_text={`Complete`} bold={true} />
+          <SectionSubtitle subtitle_text={`Confirmed`} bold={true} />
+        </div>
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            height: "18vh",
+            overflowY: "scroll",
+            overflowX: "scroll",
+          }}
+        >
+          {props.list_items &&
+            props.list_items.slice().map((item) => {
+              const { number, action, link, completed, confirmed } = item;
+              console.log(number);
+              return (
+                <>
+                  <div
+                    key={number}
+                    style={{
+                      display: "flex",
+                      flexDirection: "row",
+                      justifyContent: "left",
+                      alignItems: "center",
+                      verticalAlign: "textTop",
+                      marginTop: "0vh",
+                      marginLeft: "3vh",
+                      height: "3vh",
+                    }}
+                  >
+                    <input
+                      type={"checkbox"}
+                      id={number}
+                      // value={props.id}
+                      key={number}
+                      checked={completed ? completed === true : false}
+                      onChange={(e) => {
+                        props.completed !== true ? (
+                          props.handleCompleteListItem(
+                            e,
+                            number,
+                            props.id,
+                            props.name
+                          )
+                        ) : (
+                          <></>
+                        );
+                      }}
+                      style={{ marginLeft: "1vw", marginRight: "6vw" }}
+                    />
+                    <input
+                      type={"checkbox"}
+                      id={number}
+                      key={number + action}
+                      checked={confirmed === true}
+                      style={{ marginLeft: "0vw", marginRight: "1vw" }}
+                    />
+                    <SectionSubtitle
+                      key={action}
+                      subtitle_text={action}
+                      bold={true}
+                    />
+                  </div>
+                </>
+              );
+            })}
+        </div>
+      </div>
+      <div
+        style={{
+          display: "flex",
+          flexDirection: "row",
+          justifyContent: "center",
+        }}
+      >
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            justifyContent: "center",
+          }}
+        >
+          <SectionSubtitle subtitle_text={`Comments:`} />
+          <div
+            style={{
+              height: "13vh",
+              marginRight: "0vw",
+              width: "24vw",
+              margin: "auto",
+              marginTop: "0vh",
+              marginBottom: "1vh",
+              borderStyle: "solid",
+              borderWidth: "2px",
+              borderColor: "black",
+              overflowY: "scroll",
+            }}
+          >
+            {props.comments &&
+              props.comments.slice().map((item) => {
+                const { id, author, comment, role, date } = item;
+
+                return (
+                  <>
+                    <div
+                      key={id}
+                      style={{
+                        display: "flex",
+                        flexDirection: "column",
+                        justifyContent: "left",
+                        alignItems: "center",
+                        marginBottom: "5vh",
+                        paddingBottom: "2vh",
+                        height: "3vh",
+                      }}
+                    >
+                      <SectionSubtitle
+                        key={id}
+                        subtitle_text={`${role} ${author} - ${date}: ${comment}`}
+                      />
+                      <Divider />
+                      <></>
+                    </div>
+                  </>
+                );
+              })}
+          </div>
+          <div
+            style={{
+              height: "3vh",
+              marginRight: "0vw",
+              margin: "auto",
+              marginTop: "0vh",
+              marginBottom: "0vh",
+              display: "flex",
+              flexDirection: "row",
+            }}
+          >
+            <StyledButton
+              button_text={"Add Comment"}
+              button_action={() =>
+                props.handleCommentOpen(props.id, props.name)
+              }
+            />
+          </div>
+        </div>
+      </div>
+      <div
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          // justifyContent: "center",
+          // alignContent:'center'
+        }}
+      >
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "row",
+            justifyContent: "center",
+            marginTop: "1vh",
+            marginBottom: "1vh",
+          }}
+        >
+          <div
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              justifyContent: "center",
+              alignItems: "center",
+              margin: "auto",
+            }}
+          >
+            <SectionSubtitle subtitle_text={"Rate:"} bold={true} />
+            <SectionSubtitle
+              subtitle_text={
+                props.completion_rate && `$${props.completion_rate.toFixed(2)}`
+              }
+            />
+          </div>
+
+          <div
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              justifyContent: "center",
+              alignItems: "center",
+              margin: "auto",
+            }}
+          >
+            <SectionSubtitle subtitle_text={"Due Date:"} bold={true} />
+            <SectionSubtitle subtitle_text={props.due_date} />
+          </div>
+
+          <div
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              justifyContent: "center",
+              alignItems: "center",
+              margin: "auto",
+            }}
+          >
+            <SectionSubtitle subtitle_text={"Status:"} bold={true} />
+            <SectionSubtitle
+              subtitle_text={
+                props.completed === true && props.confirmed === true
+                  ? "Confirmed"
+                  : props.completed === true && props.confirmed !== true
+                  ? "Completed"
+                  : "In Progress"
+              }
+            />
+          </div>
+        </div>
+      </div>
+    </Card>
+  );
+};
+
+export const ValidatorChecklistCard = (props) => {
   return (
     <Card
       key={props.id}
@@ -1412,17 +1652,11 @@ console.log(props.list_items)
         marginLeft: "2vw",
         marginTop: "2vh",
       }}
-      // onDoubleClick={() => props.goToSource(props.url)}
     >
       <AdminCardMediaStyle>
-        <input
-          type={"checkbox"}
-          id={props.id}
-          value={props.id}
-          checked={props.id === props.checklistSelected}
-          onChange={(e) => props.handleSetChecklistSelected(props.id, props.name)}
-          style={{ marginLeft: "1vw", marginBottom: "1vh" }}
-        />
+        <>
+          <div style={{ marginLeft: "1vw", marginBottom: "2vh" }} />
+        </>
       </AdminCardMediaStyle>
       <div
         style={{
@@ -1433,7 +1667,7 @@ console.log(props.list_items)
         }}
       >
         <SectionTitle
-          title_text={props.name && `${props.name}`}
+          title_text={props.user_name && `${props.user_name}`}
           bold={true}
         />
       </div>
@@ -1481,12 +1715,10 @@ console.log(props.list_items)
             verticalAlign: "textTop",
             marginTop: "0vh",
             height: "4vh",
-
           }}
         >
           <SectionSubtitle subtitle_text={`Complete`} bold={true} />
           <SectionSubtitle subtitle_text={`Confirmed`} bold={true} />
-
         </div>
 
         <div
@@ -1501,11 +1733,12 @@ console.log(props.list_items)
         >
           {props.list_items &&
             props.list_items.slice().map((item) => {
-              const { number, action, link, completed,confirmed } = item;
+              const { number, action, link, completed, confirmed } = item;
               console.log(number);
               return (
                 <>
                   <div
+                    key={number}
                     style={{
                       display: "flex",
                       flexDirection: "row",
@@ -1515,36 +1748,31 @@ console.log(props.list_items)
                       marginTop: "0vh",
                       marginLeft: "3vh",
                       height: "3vh",
-
                     }}
                   >
-                      
-                    
                     <input
                       type={"checkbox"}
-                      id={props.id}
+                      id={number}
                       // value={props.id}
-                      checked={completed===true}
-                      onChange={(e) =>
-                        {props.completed!==true?
-                          props.handleCompleteListItem(e,number,props.id)
-                          :
-                          <></>
-                        }
-
-                      }
+                      key={number}
+                      checked={completed ? completed === true : false}
                       style={{ marginLeft: "1vw", marginRight: "6vw" }}
                     />
-
-
-
                     <input
                       type={"checkbox"}
-                      id={props.id}
-                      checked={confirmed===true}
+                      id={number}
+                      key={number + action}
+                      onChange={(e) =>
+                        props.handleConfirmItem(e, number, props.id, props.name)
+                      }
+                      checked={confirmed === true}
                       style={{ marginLeft: "0vw", marginRight: "1vw" }}
                     />
-                    <SectionSubtitle subtitle_text={action} bold={true} />
+                    <SectionSubtitle
+                      key={action}
+                      subtitle_text={action}
+                      bold={true}
+                    />
                   </div>
                 </>
               );
@@ -1553,111 +1781,304 @@ console.log(props.list_items)
       </div>
 
       <div
+        style={{
+          display: "flex",
+          flexDirection: "row",
+          justifyContent: "center",
+        }}
+      >
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            justifyContent: "center",
+          }}
+        >
+          <SectionSubtitle subtitle_text={`Comments:`} />
+          <div
             style={{
-              display: "flex",
-              flexDirection: "row",
-              justifyContent: "center",
+              height: "13vh",
+              marginRight: "0vw",
+              width: "24vw",
+              margin: "auto",
+              marginTop: "0vh",
+              marginBottom: "1vh",
+              borderStyle: "solid",
+              borderWidth: "2px",
+              borderColor: "black",
+              overflowY: "scroll",
             }}
           >
-            <div
-              style={{
-                display: "flex",
-                flexDirection: "column",
-                justifyContent: "center",
-              }}
-            >
-                <SectionSubtitle subtitle_text={'Admin comment: 4/27/2023 @1:45 pm'} />
-
-
-                <input
-                  type="text"
-                  // value={props.checklistDescription}
-                  // onChange={(e) => props.handleSetChecklistDescription(e)}
-                  style={{ height: "4vh", marginRight: "0vw", width: "21vw",marginLeft:'2vw',marginTop:'0vh' }}
-                />
-
-
-                <SectionSubtitle subtitle_text={'User comment:  4/27/2023 @1:45 pm'} />
-                <input
-                  type="text"
-                  // value={props.checklistDescription}
-                  // onChange={(e) => props.handleSetChecklistDescription(e)}
-                  style={{ height: "4vh", marginRight: "0vw", width: "21vw",marginLeft:'2vw',marginTop:'0vh' }}
-                />
-            </div>
-
-
-
-
-
+            {props.comments &&
+              props.comments.slice().map((item) => {
+                const { id, author, comment, role, date } = item;
+                console.log("ID", id, props.commentSelected);
+                return (
+                  <>
+                    <div
+                      key={id}
+                      style={{
+                        display: "flex",
+                        flexDirection: "column",
+                        justifyContent: "left",
+                        alignItems: "center",
+                        marginBottom: "2vh",
+                        paddingBottom: "1vh",
+                        height: "7vh",
+                        // backgroundColor:"lightblue"
+                        backgroundColor:
+                          props.commentSelected === id ? "lightblue" : "white",
+                      }}
+                      onClick={() => props.handleSetCommentSelected(id)}
+                    >
+                      <SectionSubtitle
+                        key={id}
+                        subtitle_text={`${role} ${author} - ${date}: ${comment}`}
+                      />
+                      <Divider />
+                      <></>
+                    </div>
+                  </>
+                );
+              })}
           </div>
           <div
-              style={{
-                display: "flex",
-                flexDirection: "column",
-                // justifyContent: "center",
-                // alignContent:'center'
-              }}
-            >
-
-          <div
             style={{
+              height: "3vh",
+              marginRight: "0vw",
+              margin: "auto",
+              marginTop: "0vh",
+              marginBottom: "0vh",
               display: "flex",
               flexDirection: "row",
-              justifyContent: "center",
-              marginTop:'1vh'
             }}
           >
-            <div
-              style={{
-                display: "flex",
-                flexDirection: "column",
-                justifyContent: "center",
-                alignItems:'center',
-                margin:'auto',
-              }}
-            >
-              <SectionSubtitle subtitle_text={'Rate:'} bold={true}/>
-              <SectionSubtitle subtitle_text={props.completion_rate&&`$${props.completion_rate.toFixed(2)}`} />
-
-            </div>
-
-            <div
-              style={{
-                display: "flex",
-                flexDirection: "column",
-                justifyContent: "center",
-                alignItems:'center',
-                margin:'auto',
-              }}
-            >
-              <SectionSubtitle subtitle_text={'Due Date:'} bold={true}/>
-              <SectionSubtitle subtitle_text={props.due_date} />
-
-            </div>
-
-
-            <div
-              style={{
-                display: "flex",
-                flexDirection: "column",
-                justifyContent: "center",
-                alignItems:'center',
-                margin:'auto',
-              }}
-            >
-              <SectionSubtitle subtitle_text={'Status:'} bold={true}/>
-              <SectionSubtitle subtitle_text={'In Progress'} />
-
-            </div>
-
-
-
+            <StyledButton
+              button_text={"Add"}
+              button_action={() =>
+                props.handleCommentOpen(props.id, props.name)
+              }
+            />
+            {props.role === "admin" ? (
+              <>
+                <StyledButton
+                  button_text={"Delete"}
+                  button_action={() => props.handleDeleteComment()}
+                />
+              </>
+            ) : (
+              <></>
+            )}
           </div>
         </div>
+      </div>
+      <div
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          // justifyContent: "center",
+          // alignContent:'center'
+        }}
+      >
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "row",
+            justifyContent: "center",
+            marginTop: "1vh",
+            marginBottom: "1vh",
+          }}
+        >
+          <div
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              justifyContent: "center",
+              alignItems: "center",
+              margin: "auto",
+            }}
+          >
+            <SectionSubtitle subtitle_text={"Due:"} bold={true} />
+            <SectionSubtitle
+              subtitle_text={
+                props.role === "user"
+                  ? `$${props.user_payment_due.toFixed(2)}`
+                  : props.role === "validator"
+                  ? `$${props.validator_payment_due.toFixed(2)}`
+                  : `$${props.total_payment_due.toFixed(2)}`
+              }
+            />
+          </div>
 
+          <div
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              justifyContent: "center",
+              alignItems: "center",
+              margin: "auto",
+            }}
+          >
+            <SectionSubtitle subtitle_text={"Due Date:"} bold={true} />
+            <SectionSubtitle subtitle_text={props.due_date} />
+          </div>
 
+          <div
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              justifyContent: "center",
+              alignItems: "center",
+              margin: "auto",
+            }}
+          >
+            <SectionSubtitle subtitle_text={"Status:"} bold={true} />
+            <SectionSubtitle
+              subtitle_text={
+                props.completed === true && props.confirmed === true
+                  ? "Confirmed"
+                  : props.completed === true && props.confirmed !== true
+                  ? "Completed"
+                  : "In Progress"
+              }
+            />
+          </div>
+        </div>
+      </div>
     </Card>
   );
 };
 
+export const AddItemModal = (props) => {
+  return (
+    <Modal open={props.addItemOpen} key="add">
+      <ModalWrapper>
+        <CloseButton close_action={props.handleAddItemOpen} />
+        <SectionTitle
+          title_text={`Add New Item to ${props.name}`}
+          bold={true}
+        />
+        <SectionSubtitle
+          bold={true}
+          subtitle_text={"Add Items to your Checklist."}
+        />
+
+        <Divider />
+        <div style={{ display: "flex", flexDirection: "column" }}>
+          {/* PAGE 2 */}
+
+          <>
+            <div
+              style={{
+                height: "30vh",
+                overflowY: "scroll",
+              }}
+            >
+              {props.listItems &&
+                props.listItems.slice().map((list_item) => {
+                  const { id, action, link, number } = list_item;
+                  return (
+                    <>
+                      <div
+                        style={{
+                          display: "flex",
+                          flexDirection: "row",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          marginLeft: "1vw",
+                          width: "100%",
+                          marginTop: "1vh",
+                          marginBottom: "1vh",
+                          backgroundColor:
+                            props.itemSelected === id ? "lightblue" : null,
+                        }}
+                        onClick={() =>
+                          props.handleEditItem(id, number, action, link)
+                        }
+                      >
+                        <SectionSubtitle
+                          subtitle_text={`Item ${number}:`}
+                          bold={true}
+                        />
+                        <SectionSubtitle subtitle_text={action} />
+                        <SectionSubtitle subtitle_text={link} />
+                      </div>
+                    </>
+                  );
+                })}
+            </div>
+
+            <div
+              style={{
+                display: "flex",
+                flexDirection: "row",
+                alignItems: "center",
+                marginLeft: "1vw",
+                width: "100%",
+                marginTop: "1vh",
+                marginBottom: "1vh",
+              }}
+            >
+              <SectionTitle title_text={"Action:"} bold={true} />
+              <input
+                type="text"
+                value={props.tempAction}
+                onChange={(e) => props.handleSetTempAction(e)}
+                style={{ height: "5vh", marginRight: "3vw", width: "95%" }}
+              />
+            </div>
+            <Divider />
+
+            <div
+              style={{
+                display: "flex",
+                flexDirection: "row",
+                alignItems: "center",
+                marginLeft: "1vw",
+                width: "100%",
+                marginTop: "1vh",
+                marginBottom: "1vh",
+              }}
+            >
+              <SectionTitle title_text={"Link:"} bold={true} />
+              <input
+                type="text"
+                value={props.tempLink}
+                onChange={(e) => props.handleSetTempLink(e)}
+                style={{ height: "5vh", marginRight: "3vw", width: "95%" }}
+              />
+            </div>
+            <Divider />
+          </>
+
+          {/* BUTTON COMPONENT */}
+          <div
+            style={{
+              display: "flex",
+              flexDirection: "row",
+              alignItems: "center",
+              marginBottom: "1vh",
+              marginTop: "2vh",
+              marginLeft: "1vw",
+              justifyContent: "center",
+            }}
+          >
+            <StyledButton
+              button_text={props.addButtonText}
+              button_action={
+                props.addButtonText === "Add"
+                  ? () => props.handleSetTempListItem()
+                  : () => props.handleEditTempListItem()
+              }
+            />
+
+            <StyledButton
+              button_text={"Update"}
+              button_action={() => props.handleUpdateListItems()}
+            />
+          </div>
+        </div>
+      </ModalWrapper>
+    </Modal>
+  );
+};

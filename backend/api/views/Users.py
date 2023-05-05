@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 from ..utils import requires_admin
 import requests
-from ..database import User, ProjectUser, Task
+from ..database import User, ProjectUser
 from flask.views import MethodView
 from flask import g, request
 from flask_jwt_extended import (
@@ -36,8 +36,8 @@ class UserAPI(MethodView):
         elif path == "first_login_update":
             return self.first_login_update()
         elif path == "reset_test_user_stats":
-            return self.reset_test_user_stats()        
-        
+            return self.reset_test_user_stats()
+
         # elif path == "register_user":
         #     return self.register_user()
         return {
@@ -177,7 +177,8 @@ class UserAPI(MethodView):
                     "joined": user.create_time,
                     "total_payout": user.paid_total,
                     "awaiting_payment": user.requested_total,
-                    "validated_tasks_amounts": user.mapping_payable_total + user.validation_payable_total,
+                    "validated_tasks_amounts": user.mapping_payable_total
+                    + user.validation_payable_total,
                     "total_tasks_mapped": user.total_tasks_mapped,
                     "total_tasks_validated": user.total_tasks_validated,
                     "total_tasks_invalidated": user.total_tasks_invalidated,
@@ -298,7 +299,10 @@ class UserAPI(MethodView):
         # Get the target email address from the request
         target_email = request.json.get("email")
         if not target_email:
-            return {"message": "target_email integration required", "status": 400}
+            return {
+                "message": "target_email integration required",
+                "status": 400,
+            }
 
         app = request.json.get("app")
         if not app:
@@ -311,7 +315,7 @@ class UserAPI(MethodView):
         # Construct the URL for sending the registration email
         url = SSO_BASE_URL + "auth/send_reg_email"
         # Send the request to the SSO API
-        response = requests.post(url, json={"email": target_email, "app":app})
+        response = requests.post(url, json={"email": target_email, "app": app})
         # Update the return object with the response from the SSO API
         return_obj["message"] = "email sent"
         return_obj["sso_response"] = response.status_code
@@ -401,21 +405,22 @@ class UserAPI(MethodView):
         return response
 
     def reset_test_user_stats(self):
-        response={}
+        response = {}
         g.user.update(
-            total_tasks_mapped = 0,
-            total_tasks_validated =0,
-            total_tasks_invalidated = 0,
-            validator_tasks_validated = 0,
-            validator_tasks_invalidated = 0,
+            total_tasks_mapped=0,
+            total_tasks_validated=0,
+            total_tasks_invalidated=0,
+            validator_tasks_validated=0,
+            validator_tasks_invalidated=0,
             payable_total=0,
             validation_payable_total=0,
-            mapping_payable_total=0
+            mapping_payable_total=0,
         )
 
-        response['message']='Stats reset'
-        response['status']=200
+        response["message"] = "Stats reset"
+        response["status"] = 200
         return response
+
     # def register_user(self):
     #     # Initialize response dictionary
     #     response = {}

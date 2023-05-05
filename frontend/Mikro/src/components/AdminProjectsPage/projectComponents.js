@@ -90,7 +90,6 @@ export const AddProjectModal = (props) => {
               marginLeft: "0vw",
             }}
           >
-            {/* <SectionTitle title_text={"Budget:"} /> */}
             <SectionTitle title_text={"Mapping Rate:"} bold={true} />
             <input
               type="number"
@@ -109,25 +108,6 @@ export const AddProjectModal = (props) => {
               onChange={(e) => props.handleSetValidationRate(e)}
               style={{ height: "5vh", marginRight: "0vw", width: "5vw" }}
             />
-            {/* <SectionTitle title_text={"Type:"} bold={true}/>
-            <SectionSubtitle subtitle_text={"rate per task:"} bold={true}/>
-            <input
-              type="radio"
-              value="rate per task"
-              name="rate per task"
-              onChange={() => props.handleToggleRateMethod()}
-              checked={props.rateMethod === true}
-            />
-
-            <SectionSubtitle subtitle_text={"Total Budget:"} bold={true}/>
-            <input
-              type="radio"
-              value="Total Budget"
-              name="Total Budget"
-              onChange={() => props.handleToggleRateMethod()}
-              checked={props.rateMethod === false}
-              style={{ marginRight: "4%" }}
-            /> */}
           </div>
 
           <div
@@ -166,7 +146,6 @@ export const AddProjectModal = (props) => {
               style={{ height: "5vh", marginRight: "0vw", width: "5vw" }}
             />
           </div>
-
           <div
             style={{
               width: "100%",
@@ -307,7 +286,7 @@ export const DeleteProjectButtons = (props) => {
   );
 };
 
-// DELETE PROJECT MODAL //
+// MODIFY PROJECT MODAL //
 export const ModifyProjectModal = (props) => {
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
@@ -393,25 +372,6 @@ export const ModifyProjectModal = (props) => {
                         width: "5vw",
                       }}
                     />
-                    {/* <SectionTitle title_text={"Type:"} />
-                    <SectionSubtitle subtitle_text={"rate per task:"} />
-                    <input
-                      type="radio"
-                      value="rate per task"
-                      name="rate per task"
-                      onChange={() => props.handleToggleRateMethod()}
-                      checked={props.rateMethod === true}
-                    />
-                    <span style={{ width: "2vw" }} />
-                    <SectionSubtitle subtitle_text={"Total Budget:"} />
-                    <input
-                      type="radio"
-                      value="Total Budget"
-                      name="Total Budget"
-                      onChange={() => props.handleToggleRateMethod()}
-                      checked={props.rateMethod === false}
-                      style={{ marginRight: "2%" }}
-                    /> */}
                   </div>
                   <div
                     style={{
@@ -529,7 +489,6 @@ export const ModifyProjectModal = (props) => {
                                       props.handleSetUserSelected(id, assigned)
                                     }
                                     selected={props.userSelected === id}
-                                    // onDoubleClick={() => view_all_project_sequences(value)}
                                   >
                                     <ProjectCell
                                       key={name}

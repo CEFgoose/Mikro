@@ -7,6 +7,7 @@ from .Transactions import TransactionAPI
 from .Tasks import TaskAPI
 from .Training import TrainingAPI
 from .Checklists import ChecklistAPI
+
 __all__ = {
     "UserAPI",
     "LoginAPI",

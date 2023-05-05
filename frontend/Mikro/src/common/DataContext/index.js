@@ -15,7 +15,8 @@ export const DataProvider = ({ children }) => {
   const [orgUsers, setOrgUsers] = useState([]);
   const [projectUsers, setProjectUsers] = useState([]);
   const [projectSelectedDetails, setProjectSelectedDetails] = useState(null);
-  const [checklistSelectedDetails, setChecklistSelectedDetails] = useState(null);
+  const [checklistSelectedDetails, setChecklistSelectedDetails] =
+    useState(null);
   const [firstName, setFirstName] = useState(null);
   const [lastName, setLastName] = useState(null);
   const [fullName, setFullName] = useState(null);
@@ -32,13 +33,18 @@ export const DataProvider = ({ children }) => {
   const [orgProjects, setorgProjects] = useState([]);
   const [orgActiveChecklists, setorgActiveChecklists] = useState([]);
   const [orgInActiveChecklists, setorgInactiveChecklists] = useState([]);
-
+  const [orgUserCompletedChecklists, setorgUserCompletedChecklists] = useState(
+    []
+  );
+  const [orgUserConfirmedChecklists, setorgUserConfirmedChecklists] = useState(
+    []
+  );
   const [userAvailableChecklists, setUserAvailableChecklists] = useState([]);
   const [userCompletedChecklists, setUserCompletedChecklists] = useState([]);
   const [userConfirmedChecklists, setUserConfirmedChecklists] = useState([]);
   const [userStartedChecklists, setUserStartedChecklists] = useState([]);
-
-
+  const [commentOpen, toggleCommentOpen] = useToggle(false);
+  const [comment, setComment] = useState(null);
   const [orgMappingTrainings, setorgMappingTrainings] = useState([]);
   const [orgValidationTrainings, setorgValidationTrainings] = useState([]);
   const [orgProjectTrainings, setorgProjectTrainings] = useState([]);
@@ -51,7 +57,6 @@ export const DataProvider = ({ children }) => {
   const [tasksMapped, setTasksMapped] = useState(null);
   const [tasksValidated, setTasksValidated] = useState(null);
   const [tasksInvalidated, setTasksInvalidated] = useState(null);
-
   const [validatorTasksValidated, setValidatorTasksValidated] = useState(null);
   const [validatorTasksInvalidated, setValidatorTasksInvalidated] =
     useState(null);
@@ -62,7 +67,13 @@ export const DataProvider = ({ children }) => {
 
   const [mappingEarnings, setMappingEarnings] = useState(null);
   const [validationEarnings, setValidationEarnings] = useState(null);
+  const [checklistsEarnings, setChecklistsEarnings] = useState(null);
   const [totalEarnings, setTotalEarnings] = useState(null);
+
+  const [confirmOpen, toggleConfirmOpen] = useToggle(false);
+  const [confirmQuestion, setConfirmQuestion] = useState("");
+  const [confirmText, setConfirmText] = useState("");
+
   const handleSetSidebarState = () => {
     toggleSidebarOpen();
   };
@@ -105,18 +116,23 @@ export const DataProvider = ({ children }) => {
       completionRate: completionRate,
       validationRate: validationRate,
       listItems: listItems,
-      dueDate:dueDate
+      dueDate: dueDate,
     };
     let createChecklistUrl = "checklist/create_checklist";
     poster(outpack, createChecklistUrl).then((response) => {
       if (response.status === 200) {
-        alert(response.message);
-        fetchAdminChecklists()
-        return;
+        if (response.created === true) {
+          setConfirmQuestion(`${checklistName} has been Created`);
+          toggleConfirmOpen();
+        }
+        fetchAdminChecklists();
+
+        return true;
       } else if (response.status === 304) {
         history("/login");
       } else {
         alert(response.message);
+        return;
       }
     });
   };
@@ -134,7 +150,7 @@ export const DataProvider = ({ children }) => {
     checklistStatus
   ) => {
     let outpack = {
-      checklistSelected:checklistSelected,
+      checklistSelected: checklistSelected,
       checklistName: checklistName,
       checklistDescription: checklistDescription,
       checklistDifficulty: checklistDifficulty,
@@ -142,14 +158,17 @@ export const DataProvider = ({ children }) => {
       completionRate: completionRate,
       validationRate: validationRate,
       listItems: listItems,
-      dueDate:dueDate,
-      checklistStatus:checklistStatus
+      dueDate: dueDate,
+      checklistStatus: checklistStatus,
     };
     let updateChecklistUrl = "checklist/update_checklist";
     poster(outpack, updateChecklistUrl).then((response) => {
       if (response.status === 200) {
-        alert(response.message);
-        fetchAdminChecklists()
+        if (response.created === true) {
+          setConfirmQuestion(`${checklistName} has been Updated`);
+          toggleConfirmOpen();
+        }
+        fetchAdminChecklists();
         return;
       } else if (response.status === 304) {
         history("/login");
@@ -159,18 +178,39 @@ export const DataProvider = ({ children }) => {
     });
   };
 
-
-  const startChecklist = (
-    checklistSelected
-  ) => {
+  const deleteChecklist = (checklistSelected, checklistName) => {
     let outpack = {
-      checklist_id:checklistSelected
+      checklist_id: checklistSelected,
+    };
+    let deleteChecklistUrl = "checklist/delete_checklist";
+    poster(outpack, deleteChecklistUrl).then((response) => {
+      if (response.status === 200) {
+        if (response.deleted === true) {
+          setConfirmQuestion(`${checklistName} has been Deleted`);
+          toggleConfirmOpen();
+        }
+        fetchAdminChecklists();
+        return;
+      } else if (response.status === 304) {
+        history("/login");
+      } else {
+        alert(response.message);
+      }
+    });
+  };
+
+  const startChecklist = (checklistSelected) => {
+    let outpack = {
+      checklist_id: checklistSelected,
     };
     let startChecklistUrl = "checklist/start_checklist";
     poster(outpack, startChecklistUrl).then((response) => {
       if (response.status === 200) {
-        alert(response.message);
-        fetchUserChecklists()
+        if (response.started === true) {
+          setConfirmQuestion(response.message);
+          toggleConfirmOpen();
+        }
+        fetchUserChecklists();
         return;
       } else if (response.status === 304) {
         history("/login");
@@ -180,20 +220,19 @@ export const DataProvider = ({ children }) => {
     });
   };
 
-
-  const completeListItem = (
-    checklistSelected,
-    itemNumber
-  ) => {
+  const completeListItem = (checklistSelected, itemNumber, checklistName) => {
     let outpack = {
-      checklist_id:checklistSelected,
-      item_number:itemNumber
+      checklist_id: checklistSelected,
+      item_number: itemNumber,
     };
     let completeItemUrl = "checklist/complete_list_item";
-    poster(outpack, completeItemUrl ).then((response) => {
+    poster(outpack, completeItemUrl).then((response) => {
       if (response.status === 200) {
-        fetchUserChecklists()
-        // fetchAdminChecklists()
+        fetchUserChecklists();
+        if (response.checklist_completed === true) {
+          setConfirmQuestion(`${checklistName} Completed!`);
+          toggleConfirmOpen();
+        }
         return;
       } else if (response.status === 304) {
         history("/login");
@@ -203,23 +242,142 @@ export const DataProvider = ({ children }) => {
     });
   };
 
+  const confirmListItem = (checklistSelected, itemNumber, checklistName) => {
+    let outpack = {
+      checklist_id: checklistSelected,
+      item_number: itemNumber,
+    };
+    let confirmItemUrl = "checklist/confirm_list_item";
+    poster(outpack, confirmItemUrl).then((response) => {
+      if (response.status === 200) {
+        fetchAdminChecklists();
+        if (response.checklist_confirmed === true) {
+          setConfirmQuestion(`${checklistName} Confirmed!`);
+          toggleConfirmOpen();
+        }
+        return response.message;
+      } else if (response.status === 304) {
+        history("/login");
+      } else {
+        alert(response.message);
+      }
+    });
+  };
 
+  const updateListItems = (checklistSelected, listItems) => {
+    let outpack = {
+      checklist_id: checklistSelected,
+      list_items: listItems,
+    };
+    let updateListItemsUrl = "checklist/update_list_items";
+    poster(outpack, updateListItemsUrl).then((response) => {
+      if (response.status === 200) {
+        fetchAdminChecklists();
+        if (response.checklist_completed === true) {
+          setConfirmQuestion(response.message);
+          toggleConfirmOpen();
+        }
+        return;
+      } else if (response.status === 304) {
+        history("/login");
+      } else {
+        alert(response.message);
+      }
+    });
+  };
 
+  const addChecklistComment = (
+    checklistSelected,
+    checklistName,
+    comment,
+    role
+  ) => {
+    let outpack = {
+      checklist_id: checklistSelected,
+      comment: comment,
+    };
+    let addChecklistCommentUrl = "checklist/add_checklist_comment";
+    poster(outpack, addChecklistCommentUrl).then((response) => {
+      if (response.status === 200) {
+        if (response.comment_added === true) {
+          setConfirmQuestion(response.message);
+          toggleConfirmOpen();
+        }
+        if (role === "admin") {
+          fetchAdminChecklists();
+        }
+        if (role === "validator") {
+          fetchValidatorChecklists();
+        } else {
+          fetchUserChecklists();
+        }
+        return;
+      } else if (response.status === 304) {
+        history("/login");
+      } else {
+        alert(response.message);
+      }
+    });
+  };
 
+  const deleteChecklistComment = (commentSelected, role) => {
+    let outpack = {
+      comment_id: commentSelected,
+    };
+    let deleteChecklistCommentUrl = "checklist/delete_checklist_comment";
+    poster(outpack, deleteChecklistCommentUrl).then((response) => {
+      if (response.status === 200) {
+        if (response.comment_deleted === true) {
+          setConfirmQuestion(response.message);
+          toggleConfirmOpen();
+        }
+        if (role === "admin") {
+          fetchAdminChecklists();
+        }
+        if (role === "validator") {
+          fetchValidatorChecklists();
+        } else {
+          fetchUserChecklists();
+        }
+        return;
+      } else if (response.status === 304) {
+        history("/login");
+      } else {
+        alert(response.message);
+      }
+    });
+  };
 
-
-   const fetchUserChecklists = () => {
+  const fetchUserChecklists = () => {
     let fetchUserChecklistsUrl = "checklist/fetch_user_checklists";
-
     fetcher(fetchUserChecklistsUrl).then((response) => {
       if (response.status === 200) {
-        console.log(response)
-        setUserAvailableChecklists(response.user_available_checklists)
-        setUserCompletedChecklists(response.user_completed_checklists)
-        setUserConfirmedChecklists(response.user_confirmed_checklists)
-        setUserStartedChecklists(response.user_started_checklists)
-        console.log(response.user_started_checklists)
-    
+        console.log(response);
+        setUserAvailableChecklists(response.user_available_checklists);
+        setUserCompletedChecklists(response.user_completed_checklists);
+        setUserConfirmedChecklists(response.user_confirmed_checklists);
+        setUserStartedChecklists(response.user_started_checklists);
+        console.log(response.user_started_checklists);
+      } else if (response.status === 304) {
+        history("/login");
+      } else {
+        alert(response.message);
+      }
+    });
+  };
+
+  const fetchValidatorChecklists = () => {
+    let fetchValidatorChecklistsUrl = "checklist/fetch_validator_checklists";
+    fetcher(fetchValidatorChecklistsUrl).then((response) => {
+      console.log("RESPONSE", response);
+      if (response.status === 200) {
+        setUserAvailableChecklists(response.user_available_checklists);
+        setUserCompletedChecklists(response.user_completed_checklists);
+        setUserConfirmedChecklists(response.user_confirmed_checklists);
+        setUserStartedChecklists(response.user_started_checklists);
+
+        setorgUserCompletedChecklists(response.ready_for_confirmation);
+        setorgUserConfirmedChecklists(response.confirmed_and_completed);
       } else if (response.status === 304) {
         history("/login");
       } else {
@@ -230,11 +388,12 @@ export const DataProvider = ({ children }) => {
 
   const fetchAdminChecklists = () => {
     let fetchAdminChecklistsUrl = "checklist/fetch_admin_checklists";
-
     fetcher(fetchAdminChecklistsUrl).then((response) => {
       if (response.status === 200) {
         setorgActiveChecklists(response.active_checklists);
         setorgInactiveChecklists(response.inactive_checklists);
+        setorgUserCompletedChecklists(response.ready_for_confirmation);
+        setorgUserConfirmedChecklists(response.confirmed_and_completed);
       } else if (response.status === 304) {
         history("/login");
       } else {
@@ -998,6 +1157,7 @@ export const DataProvider = ({ children }) => {
         if (setter) {
           setter(response.payable_total);
         }
+        setChecklistsEarnings(response.checklist_earnings);
         setMappingEarnings(response.mapping_earnings);
         setValidationEarnings(response.validation_earnings);
         setTotalEarnings(response.payable_total);
@@ -1262,24 +1422,44 @@ export const DataProvider = ({ children }) => {
     //checklists
     createChecklist,
     fetchAdminChecklists,
+    fetchValidatorChecklists,
     setChecklistSelectedDetails,
     updateChecklist,
     orgActiveChecklists,
     orgInActiveChecklists,
-    checklistSelectedDetails, 
-
-
-  userAvailableChecklists,
-   setUserAvailableChecklists,
-   userCompletedChecklists,
-   setUserCompletedChecklists,
-   userConfirmedChecklists,
-   setUserConfirmedChecklists,
-   userStartedChecklists,
-   setUserStartedChecklists,
-   fetchUserChecklists,
-   startChecklist,
-   completeListItem,
+    checklistSelectedDetails,
+    userAvailableChecklists,
+    setUserAvailableChecklists,
+    userCompletedChecklists,
+    setUserCompletedChecklists,
+    userConfirmedChecklists,
+    setUserConfirmedChecklists,
+    userStartedChecklists,
+    setUserStartedChecklists,
+    fetchUserChecklists,
+    startChecklist,
+    completeListItem,
+    confirmListItem,
+    setorgUserCompletedChecklists,
+    orgUserCompletedChecklists,
+    orgUserConfirmedChecklists,
+    setorgUserConfirmedChecklists,
+    deleteChecklist,
+    updateListItems,
+    checklistsEarnings,
+    setChecklistsEarnings,
+    confirmOpen,
+    toggleConfirmOpen,
+    confirmQuestion,
+    setConfirmQuestion,
+    confirmText,
+    setConfirmText,
+    addChecklistComment,
+    commentOpen,
+    toggleCommentOpen,
+    comment,
+    setComment,
+    deleteChecklistComment,
   };
 
   return value ? (

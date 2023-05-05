@@ -13,8 +13,9 @@ from .core import (
     TrainingCompleted,
     Checklist,
     ChecklistItem,
+    ChecklistComment,
     UserChecklist,
-    UserChecklistItem
+    UserChecklistItem,
 )
 
 __all__ = [
@@ -32,6 +33,7 @@ __all__ = [
     "TrainingCompleted",
     "Checklist",
     "ChecklistItem",
+    "ChecklistComment",
     "UserChecklist",
-    "UserChecklistItem"
+    "UserChecklistItem",
 ]

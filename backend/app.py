@@ -14,7 +14,6 @@ from flask import Flask, request
 import requests
 from dotenv import load_dotenv
 from flask import g
-from flask.globals import current_app
 
 
 def optional_jwt():
@@ -107,22 +106,24 @@ db.init_app(app)
 migrate = Migrate(app, db)
 
 
-#DEV
-app.add_url_rule("/api/login", view_func=LoginAPI.as_view("auth"))
-app.add_url_rule("/api/training/<path>", view_func=TrainingAPI.as_view("training"))
-app.add_url_rule("/api/user/<path>", view_func=UserAPI.as_view("user"))
-app.add_url_rule("/api/project/<path>", view_func=ProjectAPI.as_view("project"))
-app.add_url_rule("/api/transaction/<path>", view_func=TransactionAPI.as_view("transaction"))
-app.add_url_rule("/api/task/<path>", view_func=TaskAPI.as_view("task"))
-app.add_url_rule("/api/checklist/<path>", view_func=ChecklistAPI.as_view("checklist"))
-#PROD
-# app.add_url_rule("/login", view_func=LoginAPI.as_view("auth"))
-# app.add_url_rule("/training/<path>", view_func=TrainingAPI.as_view("training"))
-# app.add_url_rule("/user/<path>", view_func=UserAPI.as_view("user"))
-# app.add_url_rule("/project/<path>", view_func=ProjectAPI.as_view("project"))
-# app.add_url_rule("/transaction/<path>", view_func=TransactionAPI.as_view("transaction"))
-# app.add_url_rule("/task/<path>", view_func=TaskAPI.as_view("task"))
-# app.add_url_rule("/checklist/<path>", view_func=ChecklistAPI.as_view("checklist"))
+# DEV
+# app.add_url_rule("/api/login", view_func=LoginAPI.as_view("auth"))
+# app.add_url_rule("/api/training/<path>", view_func=TrainingAPI.as_view("training"))
+# app.add_url_rule("/api/user/<path>", view_func=UserAPI.as_view("user"))
+# app.add_url_rule("/api/project/<path>", view_func=ProjectAPI.as_view("project"))
+# app.add_url_rule("/api/transaction/<path>", view_func=TransactionAPI.as_view("transaction"))
+# app.add_url_rule("/api/task/<path>", view_func=TaskAPI.as_view("task"))
+# app.add_url_rule( "/api/checklist/<path>", view_func=ChecklistAPI.as_view("checklist"))
+
+# PROD
+app.add_url_rule("/login", view_func=LoginAPI.as_view("auth"))
+app.add_url_rule("/training/<path>", view_func=TrainingAPI.as_view("training"))
+app.add_url_rule("/user/<path>", view_func=UserAPI.as_view("user"))
+app.add_url_rule("/project/<path>", view_func=ProjectAPI.as_view("project"))
+app.add_url_rule("/transaction/<path>", view_func=TransactionAPI.as_view("transaction"))
+app.add_url_rule("/task/<path>", view_func=TaskAPI.as_view("task"))
+app.add_url_rule("/checklist/<path>", view_func=ChecklistAPI.as_view("checklist"))
+
 
 @app.before_request
 @jwt_required(optional=True)
@@ -145,9 +146,7 @@ def load_user():
             "int": "micro",
         }
 
-        url = (
-            SSO_BASE_URL + "auth/register_user"
-        )
+        url = SSO_BASE_URL + "auth/register_user"
         response = requests.post(
             url,
             json=body,

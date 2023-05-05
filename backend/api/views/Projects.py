@@ -118,7 +118,7 @@ class ProjectAPI(MethodView):
 
         if rateType is True:
             mapping_rate = float(mapping_rate)
-            validation_rate=float(validation_rate)
+            validation_rate = float(validation_rate)
             calculation = mapping_rate + validation_rate * totalTasks
         # elif rateType is False:
         #     rate = float(rate)
@@ -163,7 +163,14 @@ class ProjectAPI(MethodView):
         max_validators = request.json.get("max_validators")
         visibility = request.json.get("visibility")
         project_status = request.json.get("project_status")
-        required_args = ["difficulty", "validation_rate", "mapping_rate", "max_editors", "max_validators","project_id"]
+        required_args = [
+            "difficulty",
+            "validation_rate",
+            "mapping_rate",
+            "max_editors",
+            "max_validators",
+            "project_id",
+        ]
         for arg in required_args:
             if not request.json.get(arg):
                 return {"message": f"{arg} required", "status": 400}
@@ -179,11 +186,13 @@ class ProjectAPI(MethodView):
             response["status"] = 400
             return response
         # Calculate payment rate and rate based on rate type
-        if mapping_rate != 0 and validation_rate !=0:
+        if mapping_rate != 0 and validation_rate != 0:
             if rate_type is True:
-                validation_calculation = validation_rate * target_project.total_tasks
+                # validation_calculation = (
+                #     validation_rate * target_project.total_tasks
+                # )
                 mapping_calculation = mapping_rate * target_project.total_tasks
-        ##FOR TOTAL BUDGET, UNCOMMENT WHEN VALIDATION RATE CALC SORTED
+            # FOR TOTAL BUDGET, UNCOMMENT WHEN VALIDATION RATE CALC SORTED
             # elif rate_type is False:
             #     rate = float(rate)
             #     rate = rate / target_project.total_tasks
@@ -192,7 +201,7 @@ class ProjectAPI(MethodView):
             target_project.update(
                 mapping_rate_per_task=mapping_rate,
                 max_payment=float(mapping_calculation),
-                validation_rate_per_task=validation_rate
+                validation_rate_per_task=validation_rate,
             )
         target_project.update(
             visibility=visibility, difficulty=difficulty, status=project_status
@@ -250,7 +259,7 @@ class ProjectAPI(MethodView):
         mapping_rate = request.json.get("mapping_rate")
         validation_rate = request.json.get("validation_rate")
         project_id = request.json.get("project_id")
-        required_args = ["mapping_rate" ,"validation_rate"]
+        required_args = ["mapping_rate", "validation_rate"]
         # Check required inputs
         for arg in required_args:
             if not request.json.get(arg):
@@ -314,33 +323,38 @@ class ProjectAPI(MethodView):
             validation_rate = float(validation_rate)
             validation_dollars = int(validation_rate)
             validation_cents = int(validation_rate % 1 * 100)
-            validation_dollarcents = validation_dollars * 100 + validation_cents
-            projected_validation_budget = validation_dollarcents * total_tasks / 100
+            validation_dollarcents = (
+                validation_dollars * 100 + validation_cents
+            )
+            projected_validation_budget = (
+                validation_dollarcents * total_tasks / 100
+            )
 
-            total_projected_budget=projected_mapping_budget+projected_validation_budget
+            total_projected_budget = (
+                projected_mapping_budget + projected_validation_budget
+            )
             return_text = f"${mapping_rate:.2f}(Mapping) + ${validation_rate:.2f}(Validation)  x {total_tasks} Tasks = Projected Budget: ${total_projected_budget:.2f}"  # noqa: E501
 
-
             return {"calculation": return_text, "status": 200}
-        elif rate_type is False:
-            rate = float(rate)
-            dollars = int(rate)
-            cents = int(rate % 1 * 100)
-            dollarcents = dollars * 100 + cents
-            calculation = dollarcents / total_tasks
-            if calculation <= 0.10:
-                calculation /= 10
-            else:
-                calculation /= 100
-            adjusted_budget = total_tasks / 100
-            return_text = f"${rate:.2f} / {total_tasks} tasks =  ${calculation:.2f} per task."  # noqa: E501
-            adjust_budget_text = (
-                f"  - Recommended adjusted budget = ${adjusted_budget:.2f}"
-            )
-            if calculation < 0.01:
-                return_text = f"${rate:.2f} / {total_tasks} tasks =   less than $0.01 per task."  # noqa: E501
-                return_text += adjust_budget_text
-            return {"calculation": return_text, "status": 200}
+        # elif rate_type is False:
+        #     rate = float(rate)
+        #     dollars = int(rate)
+        #     cents = int(rate % 1 * 100)
+        #     dollarcents = dollars * 100 + cents
+        #     calculation = dollarcents / total_tasks
+        #     if calculation <= 0.10:
+        #         calculation /= 10
+        #     else:
+        #         calculation /= 100
+        #     adjusted_budget = total_tasks / 100
+        #     return_text = f"${rate:.2f} / {total_tasks} tasks =  ${calculation:.2f} per task."  # noqa: E501
+        #     adjust_budget_text = (
+        #         f"  - Recommended adjusted budget = ${adjusted_budget:.2f}"
+        #     )
+        #     if calculation < 0.01:
+        #         return_text = f"${rate:.2f} / {total_tasks} tasks =   less than $0.01 per task."  # noqa: E501
+        #         return_text += adjust_budget_text
+        #     return {"calculation": return_text, "status": 200}
 
     @requires_admin
     def fetch_org_projects(self):
@@ -366,7 +380,7 @@ class ProjectAPI(MethodView):
                     "max_payment": project.max_payment,
                     "payment_due": project.payment_due,
                     "total_payout": project.total_payout,
-                    "validation_rate_per_task":project.validation_rate_per_task,
+                    "validation_rate_per_task": project.validation_rate_per_task,
                     "mapping_rate_per_task": project.mapping_rate_per_task,
                     "max_editors": project.max_editors,
                     "total_editors": project.total_editors,
@@ -391,7 +405,7 @@ class ProjectAPI(MethodView):
                     "max_payment": project.max_payment,
                     "payment_due": project.payment_due,
                     "total_payout": project.total_payout,
-                    "validation_rate_per_task":project.validation_rate_per_task,
+                    "validation_rate_per_task": project.validation_rate_per_task,
                     "mapping_rate_per_task": project.mapping_rate_per_task,
                     "max_editors": project.max_editors,
                     "total_editors": project.total_editors,
@@ -439,7 +453,8 @@ class ProjectAPI(MethodView):
             project.completed for project in all_projects
         )
         mapped_tasks_count = sum(
-            task.mapped and not task.validated and not task.invalidated for task in all_tasks
+            task.mapped and not task.validated and not task.invalidated
+            for task in all_tasks
         )
         validated_tasks_count = sum(
             task.mapped and task.validated for task in all_tasks
@@ -498,7 +513,8 @@ class ProjectAPI(MethodView):
             task
             for task in all_tasks
             if task.id in all_user_task_ids
-            and task.mapped is True and task.validated is True
+            and task.mapped is True
+            and task.validated is True
         ]
         user_validated_tasks_count = len(user_validated_tasks)
         user_invalidated_tasks_count = len(
@@ -506,7 +522,8 @@ class ProjectAPI(MethodView):
                 task
                 for task in all_tasks
                 if task.id in all_user_task_ids
-                and task.mapped is True and task.invalidated is True
+                and task.mapped is True
+                and task.invalidated is True
             ]
         )
         all_user_requests = PayRequests.query.filter_by(
@@ -529,7 +546,7 @@ class ProjectAPI(MethodView):
         payouts_total = sum(
             payment.amount_paid for payment in all_user_payments
         )
-        payable_total= g.user.mapping_payable_total 
+        payable_total = g.user.mapping_payable_total
         # Construct response dictionary
         response = {
             "active_projects": all_user_assignments_count,
@@ -550,7 +567,6 @@ class ProjectAPI(MethodView):
             "status": 200,
         }
         return response
-
 
     def fetch_validator_dash_stats(self):
         # Check if user is authenticated
@@ -588,7 +604,8 @@ class ProjectAPI(MethodView):
             task
             for task in all_tasks
             if task.id in all_user_task_ids
-            and task.mapped is True and task.validated is True
+            and task.mapped is True
+            and task.validated is True
         ]
         user_validated_tasks_count = len(user_validated_tasks)
         user_invalidated_tasks_count = len(
@@ -600,21 +617,27 @@ class ProjectAPI(MethodView):
             ]
         )
 
+        validator_validated_tasks = len(
+            [
+                task
+                for task in all_tasks
+                if task.id in all_user_task_ids
+                and task.mapped is True
+                and task.validated is True
+                and task.validated_by == g.user.osm_username
+            ]
+        )
 
-        validator_validated_tasks = len([
-            task
-            for task in all_tasks
-            if task.id in all_user_task_ids
-            and task.mapped is True and task.validated is True and task.validated_by == g.user.osm_username
-        ])
-
-        validator_invalidated_tasks = len([
-            task
-            for task in all_tasks
-            if task.id in all_user_task_ids
-            and task.mapped is True and task.invalidated is True and task.validated_by == g.user.osm_username
-        ])
-
+        validator_invalidated_tasks = len(
+            [
+                task
+                for task in all_tasks
+                if task.id in all_user_task_ids
+                and task.mapped is True
+                and task.invalidated is True
+                and task.validated_by == g.user.osm_username
+            ]
+        )
 
         all_user_requests = PayRequests.query.filter_by(
             org_id=g.user.org_id, user_id=g.user.id
@@ -636,7 +659,10 @@ class ProjectAPI(MethodView):
         payouts_total = sum(
             payment.amount_paid for payment in all_user_payments
         )
-        payable_total= float(float(g.user.mapping_payable_total) + float(g.user.validation_payable_total))
+        payable_total = float(
+            float(g.user.mapping_payable_total)
+            + float(g.user.validation_payable_total)
+        )
         # Construct response dictionary
         response = {
             "active_projects": all_user_assignments_count,
@@ -657,7 +683,6 @@ class ProjectAPI(MethodView):
             "status": 200,
         }
         return response
-
 
     def fetch_user_projects(self):
         # Check if user is authenticated
@@ -689,16 +714,75 @@ class ProjectAPI(MethodView):
         ]
         # Add each project to the list
         for project in user_joined_projects:
-            user_task_ids=[relation.task_id for relation in UserTasks.query.filter_by(user_id=g.user.id).all()]
-            all_project_tasks= Task.query.filter_by(project_id=project.id).all()
-            user_project_task_ids= [task.id for task in all_project_tasks if task.id in user_task_ids]
-            user_project_tasks=[task for task in all_project_tasks if task.id in user_project_task_ids]
-            user_project_mapped_tasks=len([task for task in user_project_tasks if task.mapped == True and task.validated == False and task.invalidated==False]) 
-            user_project_approved_tasks=len([task for task in user_project_tasks if task.mapped == True and task.validated == True and task.invalidated==False])
-            user_project_unapproved_tasks=len([task for task in user_project_tasks if task.mapped == True and task.validated == False and task.invalidated==True])         
-            user_project_validated_tasks=len([task for task in all_project_tasks if task.mapped == True and task.validated == True and task.invalidated==False and task.validated_by==g.user.osm_username])            
-            user_project_invalidated_tasks=len([task for task in all_project_tasks if task.mapped == True and task.validated == False and task.invalidated==True and task.validated_by==g.user.osm_username])     
-            user_mapping_earnings= project.mapping_rate_per_task * user_project_approved_tasks
+            user_task_ids = [
+                relation.task_id
+                for relation in UserTasks.query.filter_by(
+                    user_id=g.user.id
+                ).all()
+            ]
+            all_project_tasks = Task.query.filter_by(
+                project_id=project.id
+            ).all()
+            user_project_task_ids = [
+                task.id
+                for task in all_project_tasks
+                if task.id in user_task_ids
+            ]
+            user_project_tasks = [
+                task
+                for task in all_project_tasks
+                if task.id in user_project_task_ids
+            ]
+            user_project_mapped_tasks = len(
+                [
+                    task
+                    for task in user_project_tasks
+                    if task.mapped is True
+                    and task.validated is False
+                    and task.invalidated is False
+                ]
+            )
+            user_project_approved_tasks = len(
+                [
+                    task
+                    for task in user_project_tasks
+                    if task.mapped is True
+                    and task.validated is True
+                    and task.invalidated is False
+                ]
+            )
+            user_project_unapproved_tasks = len(
+                [
+                    task
+                    for task in user_project_tasks
+                    if task.mapped is True
+                    and task.validated is False
+                    and task.invalidated is True
+                ]
+            )
+            # user_project_validated_tasks = len(
+            #     [
+            #         task
+            #         for task in all_project_tasks
+            #         if task.mapped == True
+            #         and task.validated is True
+            #         and task.invalidated is False
+            #         and task.validated_by is g.user.osm_username
+            #     ]
+            # )
+            # user_project_invalidated_tasks = len(
+            #     [
+            #         task
+            #         for task in all_project_tasks
+            #         if task.mapped is True
+            #         and task.validated is False
+            #         and task.invalidated is True
+            #         and task.validated_by is g.user.osm_username
+            #     ]
+            # )
+            user_mapping_earnings = (
+                project.mapping_rate_per_task * user_project_approved_tasks
+            )
             user_project_earnings = user_mapping_earnings
             org_active_projects.append(
                 {
@@ -708,7 +792,7 @@ class ProjectAPI(MethodView):
                     "max_payment": project.max_payment,
                     "payment_due": project.payment_due,
                     "total_payout": project.total_payout,
-                    "validation_rate_per_task":project.validation_rate_per_task,
+                    "validation_rate_per_task": project.validation_rate_per_task,
                     "mapping_rate_per_task": project.mapping_rate_per_task,
                     "max_editors": project.max_editors,
                     "total_editors": project.total_editors,
@@ -724,7 +808,7 @@ class ProjectAPI(MethodView):
                     "total_mapped": project.tasks_mapped,
                     "total_validated": project.tasks_validated,
                     "total_invalidated": project.tasks_invalidated,
-                    "user_earnings":user_project_earnings,
+                    "user_earnings": user_project_earnings,
                     "status": project.status,
                 }
             )
@@ -737,7 +821,7 @@ class ProjectAPI(MethodView):
                     "max_payment": project.max_payment,
                     "payment_due": project.payment_due,
                     "total_payout": project.total_payout,
-                    "validation_rate_per_task":project.validation_rate_per_task,
+                    "validation_rate_per_task": project.validation_rate_per_task,
                     "mapping_rate_per_task": project.mapping_rate_per_task,
                     "max_editors": project.max_editors,
                     "total_editors": project.total_editors,
@@ -747,13 +831,9 @@ class ProjectAPI(MethodView):
                     "url": project.url,
                     "source": project.source,
                     "difficulty": project.difficulty,
-                    # "tasks_mapped": user_project_mapped_tasks,
-                    # "tasks_approved": user_project_approved_tasks,
-                    # "tasks_unapproved": user_project_unapproved_tasks,
                     "total_mapped": project.tasks_mapped,
                     "total_validated": project.tasks_validated,
                     "total_invalidated": project.tasks_invalidated,
-                    # "user_earnings":user_project_earnings,
                     "status": project.status,
                 }
             )
@@ -869,9 +949,6 @@ class ProjectAPI(MethodView):
             "status": 200,
         }
 
-
-
-
     def fetch_validator_projects(self):
         # Check if user is authenticated
         if not g:
@@ -900,22 +977,90 @@ class ProjectAPI(MethodView):
             if project.id not in all_user_project_ids
             and project.total_editors < project.max_editors
         ]
-        
+
         # Add each project to the list
         for project in user_joined_projects:
-            user_task_ids=[relation.task_id for relation in UserTasks.query.filter_by(user_id=g.user.id).all()]
-            all_project_tasks= Task.query.filter_by(project_id=project.id).all()
-            user_project_task_ids= [task.id for task in all_project_tasks if task.id in user_task_ids]
-            user_project_tasks=[task for task in all_project_tasks if task.id in user_project_task_ids]
-            user_project_mapped_tasks=len([task for task in user_project_tasks if task.mapped == True and task.validated == False and task.invalidated==False]) 
-            user_project_approved_tasks=len([task for task in user_project_tasks if task.mapped == True and task.validated == True and task.invalidated==False])
-            user_project_unapproved_tasks=len([task for task in user_project_tasks if task.mapped == True and task.validated == False and task.invalidated==True])         
-            user_project_validated_tasks=len([task for task in all_project_tasks if task.mapped == True and task.validated == True and task.invalidated==False and task.validated_by==g.user.osm_username])            
-            user_project_invalidated_tasks=len([task for task in all_project_tasks if task.mapped == True and task.validated == False and task.invalidated==True and task.validated_by==g.user.osm_username])     
-            user_mapping_earnings= project.mapping_rate_per_task * user_project_approved_tasks
-            user_validator_earnings= project.validation_rate_per_task * user_project_validated_tasks
-            user_invalidator_earnings= project.validation_rate_per_task * user_project_invalidated_tasks
-            user_project_earnings = user_mapping_earnings + user_validator_earnings +user_invalidator_earnings
+            user_task_ids = [
+                relation.task_id
+                for relation in UserTasks.query.filter_by(
+                    user_id=g.user.id
+                ).all()
+            ]
+            all_project_tasks = Task.query.filter_by(
+                project_id=project.id
+            ).all()
+            user_project_task_ids = [
+                task.id
+                for task in all_project_tasks
+                if task.id in user_task_ids
+            ]
+            user_project_tasks = [
+                task
+                for task in all_project_tasks
+                if task.id in user_project_task_ids
+            ]
+            user_project_mapped_tasks = len(
+                [
+                    task
+                    for task in user_project_tasks
+                    if task.mapped is True
+                    and task.validated is False
+                    and task.invalidated is False
+                ]
+            )
+            user_project_approved_tasks = len(
+                [
+                    task
+                    for task in user_project_tasks
+                    if task.mapped is True
+                    and task.validated is True
+                    and task.invalidated is False
+                ]
+            )
+            user_project_unapproved_tasks = len(
+                [
+                    task
+                    for task in user_project_tasks
+                    if task.mapped is True
+                    and task.validated is False
+                    and task.invalidated is True
+                ]
+            )
+            user_project_validated_tasks = len(
+                [
+                    task
+                    for task in all_project_tasks
+                    if task.mapped is True
+                    and task.validated is True
+                    and task.invalidated is False
+                    and task.validated_by == g.user.osm_username
+                ]
+            )
+            user_project_invalidated_tasks = len(
+                [
+                    task
+                    for task in all_project_tasks
+                    if task.mapped is True
+                    and task.validated is False
+                    and task.invalidated is True
+                    and task.validated_by == g.user.osm_username
+                ]
+            )
+            user_mapping_earnings = (
+                project.mapping_rate_per_task * user_project_approved_tasks
+            )
+            user_validator_earnings = (
+                project.validation_rate_per_task * user_project_validated_tasks
+            )
+            user_invalidator_earnings = (
+                project.validation_rate_per_task
+                * user_project_invalidated_tasks
+            )
+            user_project_earnings = (
+                user_mapping_earnings
+                + user_validator_earnings
+                + user_invalidator_earnings
+            )
             print(user_project_earnings)
             org_active_projects.append(
                 {
@@ -925,7 +1070,7 @@ class ProjectAPI(MethodView):
                     "max_payment": project.max_payment,
                     "payment_due": project.payment_due,
                     "total_payout": project.total_payout,
-                    "validation_rate_per_task":project.validation_rate_per_task,
+                    "validation_rate_per_task": project.validation_rate_per_task,
                     "mapping_rate_per_task": project.mapping_rate_per_task,
                     "max_editors": project.max_editors,
                     "total_editors": project.total_editors,
@@ -940,7 +1085,7 @@ class ProjectAPI(MethodView):
                     "tasks unapproved": user_project_unapproved_tasks,
                     "tasks_validated": user_project_validated_tasks,
                     "tasks_invalidated": user_project_invalidated_tasks,
-                    "user_earnings":user_project_earnings,
+                    "user_earnings": user_project_earnings,
                     "status": project.status,
                 }
             )
@@ -953,7 +1098,7 @@ class ProjectAPI(MethodView):
                     "max_payment": project.max_payment,
                     "payment_due": project.payment_due,
                     "total_payout": project.total_payout,
-                    "validation_rate_per_task":project.validation_rate_per_task,
+                    "validation_rate_per_task": project.validation_rate_per_task,
                     "mapping_rate_per_task": project.mapping_rate_per_task,
                     "max_editors": project.max_editors,
                     "total_editors": project.total_editors,
@@ -968,7 +1113,7 @@ class ProjectAPI(MethodView):
                     # "tasks unapproved": user_project_unapproved_tasks,
                     # "tasks_validated": user_project_validated_tasks,
                     # "tasks_invalidated": user_project_invalidated_tasks,
-                    #"user_earnings":user_project_earnings,
+                    # "user_earnings":user_project_earnings,
                     "status": project.status,
                 }
             )

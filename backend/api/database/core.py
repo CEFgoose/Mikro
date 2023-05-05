@@ -37,6 +37,9 @@ class User(ModelWithSoftDeleteAndCRUD, SurrogatePK):
     mapping_payable_total = db.Column(
         db.Float, nullable=True, default=0, server_default="0"
     )
+    checklist_payable_total = db.Column(
+        db.Float, nullable=True, default=0, server_default="0"
+    )
     payable_total = db.Column(
         db.Float, nullable=True, default=0, server_default="0"
     )
@@ -53,6 +56,12 @@ class User(ModelWithSoftDeleteAndCRUD, SurrogatePK):
         db.BigInteger, nullable=True, default=0, server_default="0"
     )
     total_tasks_invalidated = db.Column(
+        db.Integer, nullable=False, default=0, server_default="0"
+    )
+    total_checklists_completed = db.Column(
+        db.Integer, nullable=False, default=0, server_default="0"
+    )
+    validator_total_checklists_confirmed = db.Column(
         db.Integer, nullable=False, default=0, server_default="0"
     )
     validator_tasks_invalidated = db.Column(
@@ -94,71 +103,75 @@ class Project(ModelWithSoftDeleteAndCRUD, SurrogatePK):
     completed = db.Column(db.Boolean, nullable=True, server_default="False")
 
 
-
-
-
 class Checklist(ModelWithSoftDeleteAndCRUD, SurrogatePK, db.Model):
     __tablename__ = "checklists"
     id = db.Column(db.BigInteger, primary_key=True, nullable=False)
     name = db.Column(db.String, nullable=True)
     author = db.Column(db.String, nullable=True)
     description = db.Column(db.String, nullable=True)
-    due_date = Column(DateTime, nullable = True)
+    due_date = Column(DateTime, nullable=True)
     org_id = db.Column(db.Integer, nullable=True, default=0)
     total_payout = db.Column(db.Float, nullable=True, default=0)
     validation_rate = db.Column(db.Float, nullable=True, default=100)
     completion_rate = db.Column(db.Float, nullable=True, default=100)
     difficulty = db.Column(db.String, nullable=True, default="Intermediate")
     visibility = db.Column(db.Boolean, nullable=True, server_default="False")
-    active_status= db.Column(db.Boolean, nullable=True, server_default="False")
+    active_status = db.Column(
+        db.Boolean, nullable=True, server_default="False"
+    )
     completed = db.Column(db.Boolean, nullable=True, server_default="False")
     confirmed = db.Column(db.Boolean, nullable=True, server_default="False")
 
-class ChecklistItem(ModelWithSoftDeleteAndCRUD, SurrogatePK,db.Model):
-    __tablename__ = 'checklist_item'
+
+class ChecklistItem(ModelWithSoftDeleteAndCRUD, SurrogatePK, db.Model):
+    __tablename__ = "checklist_item"
     id = db.Column(db.BigInteger, primary_key=True, nullable=False)
     checklist_id = db.Column(db.Integer)
     item_number = db.Column(db.Integer)
     item_action = db.Column(db.String)
-    item_link= db.Column(db.String)
+    item_link = db.Column(db.String)
 
 
-class ChecklistComment(ModelWithSoftDeleteAndCRUD, SurrogatePK,db.Model):
-    __tablename__ = 'checklist_comment'
+class ChecklistComment(ModelWithSoftDeleteAndCRUD, SurrogatePK, db.Model):
+    __tablename__ = "checklist_comment"
     id = db.Column(db.BigInteger, primary_key=True, nullable=False)
     checklist_id = db.Column(db.Integer)
     comment = db.Column(db.String)
     author = db.Column(db.String)
-    role= db.Column(db.String)
-    date = Column(DateTime)
+    role = db.Column(db.String)
+    date = Column(DateTime, default=func.now())
+
 
 class UserChecklist(ModelWithSoftDeleteAndCRUD, SurrogatePK, db.Model):
     __tablename__ = "user_checklists"
     id = db.Column(db.BigInteger, primary_key=True, nullable=False)
-    user_id= db.Column(db.BigInteger)
-    checklist_id=db.Column(db.BigInteger)
+    user_id = db.Column(db.BigInteger)
+    checklist_id = db.Column(db.BigInteger)
     name = db.Column(db.String, nullable=True)
     author = db.Column(db.String, nullable=True)
     description = db.Column(db.String, nullable=True)
-    due_date = Column(DateTime, nullable = True)
+    due_date = Column(DateTime, nullable=True)
     org_id = db.Column(db.Integer, nullable=True, default=0)
     total_payout = db.Column(db.Float, nullable=True, default=0)
     validation_rate = db.Column(db.Float, nullable=True, default=100)
     completion_rate = db.Column(db.Float, nullable=True, default=100)
     difficulty = db.Column(db.String, nullable=True, default="Intermediate")
     visibility = db.Column(db.Boolean, nullable=True, server_default="False")
-    active_status= db.Column(db.Boolean, nullable=True, server_default="False")
+    active_status = db.Column(
+        db.Boolean, nullable=True, server_default="False"
+    )
     completed = db.Column(db.Boolean, nullable=True, server_default="False")
     confirmed = db.Column(db.Boolean, nullable=True, server_default="False")
 
-class UserChecklistItem(ModelWithSoftDeleteAndCRUD, SurrogatePK,db.Model):
-    __tablename__ = 'user_checklist_item'
+
+class UserChecklistItem(ModelWithSoftDeleteAndCRUD, SurrogatePK, db.Model):
+    __tablename__ = "user_checklist_item"
     id = db.Column(db.BigInteger, primary_key=True, nullable=False)
-    user_id= db.Column(db.BigInteger)
-    checklist_id=db.Column(db.BigInteger)
+    user_id = db.Column(db.BigInteger)
+    checklist_id = db.Column(db.BigInteger)
     item_number = db.Column(db.Integer)
     item_action = db.Column(db.String)
-    item_link= db.Column(db.String)
+    item_link = db.Column(db.String)
     completed = db.Column(db.Boolean, default=False)
     confirmed = db.Column(db.Boolean, default=False)
 

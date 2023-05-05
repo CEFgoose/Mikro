@@ -47,7 +47,7 @@ class TransactionAPI(MethodView):
                 "id": request.id,
                 "amount_requested": request.amount_requested,
                 "user": request.user_name,
-                "osm_username":request.osm_username,
+                "osm_username": request.osm_username,
                 "user_id": request.user_id,
                 "payment_email": request.payment_email,
                 "task_ids": request.task_ids,
@@ -63,7 +63,7 @@ class TransactionAPI(MethodView):
                 "payoneer_id": payment.payoneer_id,
                 "amount_paid": payment.amount_paid,
                 "user": payment.user_name,
-                "osm_username":payment.osm_username,
+                "osm_username": payment.osm_username,
                 "user_id": payment.user_id,
                 "payment_email": payment.payment_email,
                 "task_ids": payment.task_ids,
@@ -263,8 +263,10 @@ class TransactionAPI(MethodView):
         if not g.user:
             return {"message": "User not found", "status": 304}
         notes = request.json.get("notes")
-        user_task_ids = [relation.task_id for relation in UserTasks.query.filter_by(user_id=g.user.id).all()]
-
+        user_task_ids = [
+            relation.task_id
+            for relation in UserTasks.query.filter_by(user_id=g.user.id).all()
+        ]
 
         user_validated_task_ids = [
             task.id
@@ -273,29 +275,41 @@ class TransactionAPI(MethodView):
             ).all()
             if task.id in user_task_ids
         ]
-        validator_validated_task_ids=[
+        validator_validated_task_ids = [
             task.id
             for task in Task.query.filter_by(
-                org_id=g.user.org_id, validated=True, mapped=True, validated_by=g.user.osm_username
+                org_id=g.user.org_id,
+                validated=True,
+                mapped=True,
+                validated_by=g.user.osm_username,
             ).all()
         ]
-        validator_invalidated_task_ids=[
+        validator_invalidated_task_ids = [
             task.id
             for task in Task.query.filter_by(
-                org_id=g.user.org_id, invalidated=True, mapped=True, validated_by=g.user.osm_username
+                org_id=g.user.org_id,
+                invalidated=True,
+                mapped=True,
+                validated_by=g.user.osm_username,
             ).all()
         ]
-        print(user_task_ids ,user_validated_task_ids)
+        print(user_task_ids, user_validated_task_ids)
         user_name = "%s %s" % (
             g.user.first_name.capitalize(),
             g.user.last_name.capitalize(),
         )
-        if g.user.role=='validator':
-            request_amount= g.user.mapping_payable_total+g.user.validation_payable_total
-            request_task_ids=user_validated_task_ids + validator_validated_task_ids + validator_invalidated_task_ids
+        if g.user.role == "validator":
+            request_amount = (
+                g.user.mapping_payable_total + g.user.validation_payable_total
+            )
+            request_task_ids = (
+                user_validated_task_ids
+                + validator_validated_task_ids
+                + validator_invalidated_task_ids
+            )
         else:
-            request_amount= g.user.mapping_payable_total
-            request_task_ids=user_validated_task_ids
+            request_amount = g.user.mapping_payable_total
+            request_task_ids = user_validated_task_ids
         new_request = PayRequests.create(
             org_id=g.user.org_id,
             amount_requested=request_amount,
@@ -307,7 +321,11 @@ class TransactionAPI(MethodView):
         )
         if notes:
             new_request.update(notes=notes)
-        g.user.update(requested_total=request_amount, mapping_payable_total=0.0,validation_payable_total=0.0)
+        g.user.update(
+            requested_total=request_amount,
+            mapping_payable_total=0.0,
+            validation_payable_total=0.0,
+        )
         return {
             "message": f"Payment Request {new_request.id} has been submitted",
             "status": 200,
@@ -319,11 +337,17 @@ class TransactionAPI(MethodView):
         target_user = User.query.filter_by(id=g.user.id).first()
         if not target_user:
             return {"message": "User not found", "status": 400}
-        payable_total = target_user.mapping_payable_total+target_user.validation_payable_total
-        mapping_payable_total=target_user.mapping_payable_total
-        validation_payable_total=target_user.validation_payable_total
+        payable_total = (
+            target_user.mapping_payable_total
+            + target_user.validation_payable_total
+            + target_user.checklist_payable_total
+        )
+        mapping_payable_total = target_user.mapping_payable_total
+        validation_payable_total = target_user.validation_payable_total
+        checklist_payable_total = target_user.checklist_payable_total
         return {
             "message": "payable total fetched",
+            "checklist_earnings": checklist_payable_total,
             "mapping_earnings": mapping_payable_total,
             "validation_earnings": validation_payable_total,
             "payable_total": payable_total,

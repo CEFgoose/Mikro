@@ -23,6 +23,7 @@ import { ValidatorPaymentsPage } from "components/ValidatorPaymentsPage";
 import { ValidatorProjectsPage } from "components/ValidatorProjectPage";
 import { AdminChecklistsPage } from "components/AdminChecklistsPage";
 import { UserChecklistsPage } from "components/UserChecklistsPage";
+import { ValidatorChecklistsPage } from "components/ValdatorChecklistsPage";
 import "bootstrap/dist/css/bootstrap.min.css";
 import "./App.css";
 import {
@@ -89,15 +90,15 @@ function App() {
 
               <Route
                 path="/UserChecklistsPage"
-                element={<UserChecklistsPage/>}
+                element={<UserChecklistsPage />}
               />
-              {/* <Route
-                path="/validatorProjectsPage"
-                element={<Private Component={ValidatorProjectsPage} />}
+
+              <Route
+                path="/validatorChecklistsPage"
+                element={<Private Component={ValidatorChecklistsPage} />}
               />
 
               <Route path="/UserProjectsPage" element={<UserProjectsPage />} />
- */}
 
               {/* PROJECTS PAGES */}
               <Route
