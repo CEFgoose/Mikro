@@ -14,6 +14,7 @@ export const DataProvider = ({ children }) => {
   const [sidebarOpen, toggleSidebarOpen] = useToggle(true);
   const [orgUsers, setOrgUsers] = useState([]);
   const [projectUsers, setProjectUsers] = useState([]);
+  const [checklistUsers, setChecklistUsers] = useState([]);
   const [projectSelectedDetails, setProjectSelectedDetails] = useState(null);
   const [checklistSelectedDetails, setChecklistSelectedDetails] =
     useState(null);
@@ -33,6 +34,7 @@ export const DataProvider = ({ children }) => {
   const [orgProjects, setorgProjects] = useState([]);
   const [orgActiveChecklists, setorgActiveChecklists] = useState([]);
   const [orgInActiveChecklists, setorgInactiveChecklists] = useState([]);
+  const [orgStaleChecklists, setOrgStaleChecklists] = useState([]);
   const [orgUserCompletedChecklists, setorgUserCompletedChecklists] = useState(
     []
   );
@@ -319,6 +321,38 @@ export const DataProvider = ({ children }) => {
       }
     });
   };
+  
+
+
+  const deleteChecklistItem = (itemSelected, role) => {
+    let outpack = {
+      item_id: itemSelected,
+    };
+    let deleteChecklistItemUrl = "checklist/delete_checklist_item";
+    poster(outpack, deleteChecklistItemUrl).then((response) => {
+      if (response.status === 200) {
+        if (response.item_deleted === true) {
+          setConfirmQuestion(response.message);
+          toggleConfirmOpen();
+        }
+        if (role === "admin") {
+          fetchAdminChecklists();
+        }
+        if (role === "validator") {
+          fetchValidatorChecklists();
+        } else {
+          fetchUserChecklists();
+        }
+        return;
+      } else if (response.status === 304) {
+        history("/login");
+      } else {
+        alert(response.message);
+      }
+    });
+  };
+
+
 
   const deleteChecklistComment = (commentSelected, role) => {
     let outpack = {
@@ -394,6 +428,67 @@ export const DataProvider = ({ children }) => {
         setorgInactiveChecklists(response.inactive_checklists);
         setorgUserCompletedChecklists(response.ready_for_confirmation);
         setorgUserConfirmedChecklists(response.confirmed_and_completed);
+        setOrgStaleChecklists(response.stale_started_checklists)
+      } else if (response.status === 304) {
+        history("/login");
+      } else {
+        alert(response.message);
+      }
+    });
+  };
+
+  const assignUserChecklist= (checklist_id, user_id) => {
+    let assignChecklistURL = "checklist/assign_user_checklist"
+    let outpack = {
+      checklist_id: checklist_id,
+      user_id: user_id,
+    };
+    poster(outpack, assignChecklistURL).then((response) => {
+      if (response.status === 200) {
+        fetchAdminChecklists(checklist_id);
+        fetchChecklistUsers(checklist_id);
+        setConfirmQuestion(response.message);
+        toggleConfirmOpen();
+        return;
+      } else if (response.status === 304) {
+        history("/login");
+      } else {
+        alert(response.message);
+      }
+    });
+  };
+
+  const unassignUserChecklist = (checklist_id, user_id) => {
+    let unassignChecklistURL = "checklist/unassign_user_checklist";
+    let outpack = {
+      checklist_id: checklist_id,
+      user_id: user_id,
+    };
+    poster(outpack, unassignChecklistURL).then((response) => {
+      if (response.status === 200) {
+        fetchAdminChecklists(checklist_id);
+        fetchChecklistUsers(checklist_id);
+        setConfirmQuestion(response.message);
+        toggleConfirmOpen();
+        return;
+      } else if (response.status === 304) {
+        history("/login");
+      } else {
+        alert(response.message);
+      }
+    });
+  };
+
+
+
+  const fetchChecklistUsers = (checklistSelected) => {
+    let fetchChecklistUsersURL = "checklist/fetch_checklist_users";
+    let outpack = {
+      checklist_id: checklistSelected,
+    };
+    poster(outpack, fetchChecklistUsersURL).then((response) => {
+      if (response.status === 200) {
+        setChecklistUsers(response.users);
       } else if (response.status === 304) {
         history("/login");
       } else {
@@ -1251,6 +1346,24 @@ export const DataProvider = ({ children }) => {
     });
   };
 
+
+
+
+
+    const spliceArray=(inlist,index)=>{
+      console.log(inlist,index)
+      index = inlist.indexOf(index);
+      if (index > 0) { 
+        inlist.splice(index, 1);
+      }
+      else{
+        inlist.pop()
+      }
+      console.log(inlist)
+      return inlist
+    }
+
+
   const generateRandomKey = () => {
     return Math.random().toString(36).substr(2, 9);
   };
@@ -1291,6 +1404,12 @@ export const DataProvider = ({ children }) => {
       setCSVdata(csvData);
     }
   };
+
+
+
+
+
+
 
   const value = {
     //REFS
@@ -1420,6 +1539,8 @@ export const DataProvider = ({ children }) => {
     setTotalEarnings,
     resetUserStats,
     //checklists
+
+
     createChecklist,
     fetchAdminChecklists,
     fetchValidatorChecklists,
@@ -1443,6 +1564,7 @@ export const DataProvider = ({ children }) => {
     setorgUserCompletedChecklists,
     orgUserCompletedChecklists,
     orgUserConfirmedChecklists,
+    orgStaleChecklists,
     setorgUserConfirmedChecklists,
     deleteChecklist,
     updateListItems,
@@ -1460,6 +1582,13 @@ export const DataProvider = ({ children }) => {
     comment,
     setComment,
     deleteChecklistComment,
+    deleteChecklistItem,
+    spliceArray,
+    checklistUsers,
+    setChecklistUsers,
+    fetchChecklistUsers,
+    assignUserChecklist,
+    unassignUserChecklist,
   };
 
   return value ? (

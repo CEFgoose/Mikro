@@ -46,6 +46,16 @@ export const AdminChecklistsPage = () => {
     setComment,
     addChecklistComment,
     deleteChecklistComment,
+    deleteChecklistItem,
+    spliceArray,
+    checklistUsers,
+    setChecklistUsers,
+    fetchChecklistUsers,
+    userSelected,
+    setUserSelected,
+    assignUserChecklist,
+    unassignUserChecklist,
+    orgStaleChecklists
   } = useContext(DataContext);
 
   const [page, setPage] = useState(1);
@@ -72,6 +82,8 @@ export const AdminChecklistsPage = () => {
   const [addItemOpen, toggleAddItemOpen] = useToggle(false);
   const [activeTab, setActiveTab] = useState(1);
   const [commentSelected, setCommentSelected] = useState(null);
+  const [assignmentStatus, setAssignmentStatus] = useState(null);
+  const [assignmentButtonText, setAssignmentButtonText] = useState("Assign");
 
   useEffect(() => {
     if (user) {
@@ -135,6 +147,7 @@ export const AdminChecklistsPage = () => {
   };
 
   const handleAddItemOpen = (id, name, listItems) => {
+    setItemSelected(null)
     setTempListItem({});
     setTempAction("");
     setTempLink("");
@@ -196,6 +209,16 @@ export const AdminChecklistsPage = () => {
 
   const handleSetListItems = (e) => {
     setListItems(e);
+  };
+
+  const handleSetUserSelected = (user_id, assignment_status) => {
+    setUserSelected(user_id);
+    setAssignmentStatus(assignment_status);
+    if (assignment_status === "Yes") {
+      setAssignmentButtonText("Unassign");
+    } else {
+      setAssignmentButtonText("Assign");
+    }
   };
 
   const handleSetItemSelected = (id, number, action, link) => {
@@ -319,6 +342,8 @@ export const AdminChecklistsPage = () => {
     updateListItems(checklistSelected, listItems);
     toggleAddItemOpen();
   };
+
+
   const handleCommentOpen = (id, name) => {
     setChecklistSelected(id);
     setChecklistSelectedName(name);
@@ -350,8 +375,27 @@ export const AdminChecklistsPage = () => {
     setComment("");
   };
 
+  const handleDeleteItem = (selectedItem) => {
+    deleteChecklistItem(selectedItem,user.role,listItems)
+    let targetList = listItems;
+    targetList=spliceArray(targetList,tempNumber-1)
+    handleSetListItems(targetList);
+    setTempAction("");
+    setTempLink("");
+
+
+  };
+
   const handleSetCommentSelected = (id) => {
     setCommentSelected(id);
+  };
+
+  const handleAssignUser = () => {
+    if (assignmentStatus === "No") {
+      assignUserChecklist(checklistSelected, userSelected);
+    } else {
+      unassignUserChecklist(checklistSelected, userSelected);
+    }
   };
 
   return (
@@ -416,6 +460,13 @@ export const AdminChecklistsPage = () => {
         handleSetValidationRate={handleSetValidationRate}
         handleToggleVisibility={handleToggleVisibility}
         handleModifyChecklist={handleModifyChecklist}
+        checklistUsers={checklistUsers}
+        setChecklistUsers={setChecklistUsers}
+        fetchChecklistUsers={fetchChecklistUsers}
+        userSelected={userSelected}
+        handleSetUserSelected={handleSetUserSelected}
+        assignmentButtonText={assignmentButtonText}
+        handleAssignUser ={handleAssignUser}
       />
 
       <AddItemModal
@@ -437,6 +488,7 @@ export const AdminChecklistsPage = () => {
         handleEditItem={handleEditItem}
         handleModifyChecklist={handleModifyChecklist}
         handleUpdateListItems={handleUpdateListItems}
+        handleDeleteItem={handleDeleteItem}
       />
       <ConfirmationModal
         confirmOpen={confirmOpen}
@@ -498,12 +550,18 @@ export const AdminChecklistsPage = () => {
               <Tab value={2} onClick={(e) => handleSetActiveTab(e)}>
                 Inactive
               </Tab>
+
+
               <Tab value={3} onClick={(e) => handleSetActiveTab(e)}>
                 Ready for Confirmation
               </Tab>
 
               <Tab value={4} onClick={(e) => handleSetActiveTab(e)}>
                 Completed & Confirmed
+              </Tab>
+
+              <Tab value={5} onClick={(e) => handleSetActiveTab(e)}>
+                Stale
               </Tab>
             </TabList>
             <TabPanel>
@@ -556,6 +614,20 @@ export const AdminChecklistsPage = () => {
                 role={user.role}
                 key={4}
                 checklists={orgUserConfirmedChecklists}
+                handleCommentOpen={handleCommentOpen}
+                handleSetChecklistSelected={handleSetChecklistSelected}
+                handleDeleteComment={handleDeleteComment}
+                commentSelected={commentSelected}
+                handleSetCommentSelected={handleSetCommentSelected}
+              />
+            </TabPanel>
+
+            <TabPanel>
+              <ChecklistCardGrid
+                type={"Validator"}
+                role={user.role}
+                key={5}
+                checklists={orgStaleChecklists}
                 handleCommentOpen={handleCommentOpen}
                 handleSetChecklistSelected={handleSetChecklistSelected}
                 handleDeleteComment={handleDeleteComment}

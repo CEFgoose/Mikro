@@ -27,6 +27,7 @@ class User(ModelWithSoftDeleteAndCRUD, SurrogatePK):
     create_time = Column(DateTime, default=func.now())
     role = Column(String, default="user")
     assigned_projects = Column(MutableList.as_mutable(ARRAY(Integer)))
+    assigned_checklists = Column(MutableList.as_mutable(ARRAY(Integer)))
     mapper_level = db.Column(db.Integer, default=0, nullable=True)
     mapper_points = db.Column(db.Integer, default=0, nullable=True)
     validator_points = db.Column(db.Integer, default=0, nullable=True)
@@ -147,6 +148,7 @@ class UserChecklist(ModelWithSoftDeleteAndCRUD, SurrogatePK, db.Model):
     id = db.Column(db.BigInteger, primary_key=True, nullable=False)
     user_id = db.Column(db.BigInteger)
     checklist_id = db.Column(db.BigInteger)
+    date_created = Column(DateTime, default=func.now())
     name = db.Column(db.String, nullable=True)
     author = db.Column(db.String, nullable=True)
     description = db.Column(db.String, nullable=True)
@@ -157,12 +159,13 @@ class UserChecklist(ModelWithSoftDeleteAndCRUD, SurrogatePK, db.Model):
     completion_rate = db.Column(db.Float, nullable=True, default=100)
     difficulty = db.Column(db.String, nullable=True, default="Intermediate")
     visibility = db.Column(db.Boolean, nullable=True, server_default="False")
-    active_status = db.Column(
-        db.Boolean, nullable=True, server_default="False"
-    )
+    active_status = db.Column(db.Boolean, nullable=True, server_default="False")
     completed = db.Column(db.Boolean, nullable=True, server_default="False")
     confirmed = db.Column(db.Boolean, nullable=True, server_default="False")
-
+    last_completion_date = Column(DateTime, nullable=True)
+    last_confirmation_date = Column(DateTime, nullable=True)
+    final_completion_date = Column(DateTime, nullable=True)
+    final_confirmation_date = Column(DateTime, nullable=True)
 
 class UserChecklistItem(ModelWithSoftDeleteAndCRUD, SurrogatePK, db.Model):
     __tablename__ = "user_checklist_item"
@@ -174,7 +177,8 @@ class UserChecklistItem(ModelWithSoftDeleteAndCRUD, SurrogatePK, db.Model):
     item_link = db.Column(db.String)
     completed = db.Column(db.Boolean, default=False)
     confirmed = db.Column(db.Boolean, default=False)
-
+    completion_date = Column(DateTime, nullable=True)
+    confirmation_date = Column(DateTime, nullable=True)
 
 class Training(ModelWithSoftDeleteAndCRUD, SurrogatePK, db.Model):
     __tablename__ = "training"

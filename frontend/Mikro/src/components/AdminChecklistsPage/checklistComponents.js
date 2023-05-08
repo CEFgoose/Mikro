@@ -1,8 +1,9 @@
-import React, { useState } from "react";
+import React, { useState,useEffect } from "react";
 import { styled } from "@mui/material/styles";
-import { Modal, Card, Grid } from "@mui/material";
+import { Modal, Card, Grid,Table, TableBody } from "@mui/material";
 import { Tab, TabList, TabPanel, Tabs } from "react-tabs";
 import {
+  ASSIGN_USERS_TABLE_HEADERS,
   CancelButton,
   CloseButton,
   ConfirmButton,
@@ -11,6 +12,10 @@ import {
   ModalWrapper,
   StyledButton,
   Divider,
+  TableCard,
+  ProjectRow,
+  ProjectCell,
+  ListHead,
 } from "../commonComponents/commonComponents";
 import { TextArea } from "components/commonComponents/styles";
 
@@ -622,6 +627,13 @@ export const ModifyChecklistModal = (props) => {
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
 
+  useEffect(() => {
+    if (props.checklistSelected !== null) {
+      props.fetchChecklistUsers(props.checklistSelected);
+    }
+    // eslint-disable-next-line
+  }, [props.checklistSelected]);
+
   return (
     <>
       {props.checklistSelectedDetails &&
@@ -643,7 +655,7 @@ export const ModifyChecklistModal = (props) => {
               >
                 <TabList>
                   <Tab>Details</Tab>
-
+                  <Tab>Users</Tab>
                   <Tab>Settings</Tab>
                 </TabList>
                 {/* BUDGET TAB */}
@@ -764,6 +776,91 @@ export const ModifyChecklistModal = (props) => {
                     confirm_text={"Update"}
                   />
                 </TabPanel>
+
+                {/* USERS TAB */}
+
+                <TabPanel>
+                  <div
+                    style={{
+                      display: "flex",
+                      flexDirection: "row",
+                      alignItems: "center",
+                      marginLeft: "1vw",
+                      marginBottom: "2vh",
+                      width: "100%",
+                    }}
+                  >
+                    <TableCard
+                      TableCard
+                      style={{
+                        boxShadow: "1px 1px 6px 2px gray",
+                        width: "45vw",
+                      }}
+                    >
+                      <Table>
+                        <ListHead headLabel={ASSIGN_USERS_TABLE_HEADERS} />
+                        <TableBody>
+                          {props.checklistUsers &&
+                            props.checklistUsers
+                              .slice(
+                                page * rowsPerPage,
+                                page * rowsPerPage + rowsPerPage
+                              )
+                              .map((row) => {
+                                const {
+                                  id,
+                                  name,
+                                  role,
+                                  assigned_projects,
+                                  assigned,
+                                } = row;
+                                return (
+                                  <ProjectRow
+                                    sx={{
+                                      "&:hover": {
+                                        backgroundColor:
+                                          "rgba(145, 165, 172, 0.5)",
+                                        cursor: "pointer",
+                                      },
+                                    }}
+                                    align="center"
+                                    key={id}
+                                    tabIndex={-1}
+                                    onClick={() =>
+                                      props.handleSetUserSelected(id, assigned)
+                                    }
+                                    selected={props.userSelected === id}
+                                  >
+                                    <ProjectCell
+                                      key={name}
+                                      entry={<strong>{name}</strong>}
+                                    />
+                                    <ProjectCell key={role} entry={role} />
+                                    <ProjectCell
+                                      key={assigned}
+                                      entry={assigned}
+                                    />
+                                    <ProjectCell
+                                      key={assigned_projects}
+                                      entry={assigned_projects}
+                                    />
+                                  </ProjectRow>
+                                );
+                              })}
+                        </TableBody>
+                      </Table>
+                    </TableCard>
+                  </div>
+                  <ModifyProjectButtons
+                    handleModifyOpen={props.handleModifyOpen}
+                    confirm_action={props.handleAssignUser}
+                    confirm_text={props.assignmentButtonText}
+                  />
+                </TabPanel>
+
+
+
+
 
                 {/* SETTINGS TAB */}
                 <div
@@ -2071,7 +2168,10 @@ export const AddItemModal = (props) => {
                   : () => props.handleEditTempListItem()
               }
             />
-
+            <StyledButton
+              button_text={"Delete"}
+              button_action={()=>props.handleDeleteItem(props.itemSelected)}
+            />
             <StyledButton
               button_text={"Update"}
               button_action={() => props.handleUpdateListItems()}

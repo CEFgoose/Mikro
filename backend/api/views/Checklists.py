@@ -1,4 +1,5 @@
 from ..utils import requires_admin
+from datetime import datetime
 from ..database import (
     Checklist,
     ChecklistItem,
@@ -31,6 +32,16 @@ class ChecklistAPI(MethodView):
             return self.fetch_user_checklists()
         elif path == "fetch_validator_checklists":
             return self.fetch_validator_checklists()
+        elif path == "fetch_checklist_users":
+            return self.fetch_checklist_users()   
+
+        elif path == "assign_user_checklist":
+            return self.assign_user_checklist()
+
+        elif path == "unassign_user_checklist":
+            return self.unassign_user_checklist()
+
+
         elif path == "start_checklist":
             return self.start_checklist()
         elif path == "complete_list_item":
@@ -41,6 +52,9 @@ class ChecklistAPI(MethodView):
             return self.add_checklist_comment()
         elif path == "delete_checklist_comment":
             return self.delete_checklist_comment()
+        elif path == "delete_checklist_item":
+            return self.delete_checklist_item() 
+             
         return {
             "message": "Only /project/{fetch_users,fetch_user_projects} is permitted with GET",  # noqa: E501
         }, 405
@@ -64,12 +78,8 @@ class ChecklistAPI(MethodView):
         due_date = request.json.get("dueDate")
         required_args = [
             "checklistName",
-            "checklistDescription",
-            "completionRate",
-            "validationRate",
             "checklistDifficulty",
             "listItems",
-            "dueDate",
         ]
         for arg in required_args:
             if not request.json.get(arg):
@@ -114,6 +124,9 @@ class ChecklistAPI(MethodView):
         target_checklist = Checklist.query.filter_by(
             id=int(checklist_id)
         ).first()
+        target_user_checklists=[checklist for checklist in UserChecklist.query.filter_by(
+            checklist_id = target_checklist.id
+        ).all() if checklist.checklist_id == checklist_id]
         if not target_checklist:
             response["message"] = "Checklist %s not found" % (checklist_id)
             response["status"] = 400
@@ -126,6 +139,12 @@ class ChecklistAPI(MethodView):
                 target_item.update(
                     item_action=item["action"], item_link=item["link"]
                 )
+                for checklist in target_user_checklists:
+                    item_exists=UserChecklistItem.query.filter_by(checklist_id=checklist.id,item_number=item['number']).first()
+                    if item_exists:
+                        item_exists.update(
+                            item_action=item["action"], item_link=item["link"]
+                        )
             else:
                 ChecklistItem.create(
                     checklist_id=checklist_id,
@@ -133,6 +152,14 @@ class ChecklistAPI(MethodView):
                     item_action=item["action"],
                     item_link=item["link"],
                 )
+                for checklist in target_user_checklists:
+                    UserChecklistItem.create(
+                        user_id=checklist.user_id,
+                        checklist_id=checklist.id,
+                        item_number=item["number"],
+                        item_action=item["action"],
+                        item_link=item["link"],
+                    )
         response["created"] = True
         response["message"] = "Checklist Items Updated"
         response["status"] = 200
@@ -163,6 +190,7 @@ class ChecklistAPI(MethodView):
         target_checklist = Checklist.query.filter_by(
             id=int(checklist_id)
         ).first()
+        target_user_checklists=UserChecklist.query.filter_by(checklist_id = target_checklist.id).all()
         if not target_checklist:
             response["updated"] = False
             response["message"] = "Checklist %s not found" % (checklist_id)
@@ -184,6 +212,17 @@ class ChecklistAPI(MethodView):
             validation_rate=validation_rate,
             due_date=due_date,
         )
+        for checklist in target_user_checklists:
+            checklist.update(
+                name=checklist_name,
+                description=checklist_desc,
+                visibility=visibility,
+                difficulty=difficulty,
+                active_status=active_status,
+                completion_rate=completion_rate,
+                validation_rate=validation_rate,
+                due_date=due_date,
+            )
         response["updated"] = True
         response["message"] = "Checklist Updated"
         response["status"] = 200
@@ -213,6 +252,66 @@ class ChecklistAPI(MethodView):
             response["status"] = 200
             return response
 
+
+
+    def fetch_checklist_users(self):
+        response = {}
+        if not g:
+            response["message"] = "User not found"
+            response["status"] = 304
+            return response
+        checklist_id = request.json.get("checklist_id")
+        required_args = ["checklist_id"]
+        for arg in required_args:
+            if not request.json.get(arg):
+                return {"message": f"{arg} required", "status": 400}
+            
+        users_in_org = User.query.filter_by(org_id=g.user.org_id).all()
+
+        all_assigned_user_relations = UserChecklist.query.filter_by(
+            checklist_id=checklist_id
+        ).all()
+
+        assigned_user_ids = [r.user_id for r in all_assigned_user_relations]
+
+        assigned_users = [u for u in users_in_org if u.id in assigned_user_ids]
+
+        unassigned_users = [
+            u for u in users_in_org if u.id not in assigned_user_ids
+        ]
+        checklist_users = []
+        # Loop over each user and extract relevant information
+        for user in users_in_org:
+            # Capitalize first and last name of the user
+            first_name = user.first_name.title()
+            last_name = user.last_name.title()
+            full_name = first_name + " " + last_name
+            if user in assigned_users:
+                assigned = "Yes"
+            if user in unassigned_users:
+                assigned = "No"
+            if user.assigned_checklists is not None:
+                assigned_checklists_count = len(user.assigned_checklists)
+            else:
+                assigned_checklists_count = 0
+            # Append the user information to the org_users list
+            checklist_users.append(
+                {
+                    "id": user.id,
+                    "name": full_name,
+                    "role": user.role,
+                    "joined": user.create_time,
+                    "assigned_projects": assigned_checklists_count,
+                    "assigned": assigned,
+                }
+            )
+        # Add the list of users to the return_obj dictionary
+        response["users"] = checklist_users
+        response["status"] = 200
+        # Return the final response
+        return response
+
+
     # @requires_admin
     def fetch_admin_checklists(self):
         response = {}
@@ -220,6 +319,7 @@ class ChecklistAPI(MethodView):
         inactive_checklists = []
         ready_for_confirmation = []
         confirmed_and_completed = []
+        stale_started_checklists =[]
         if not g:
             response["message"] = "User not found"
             response["status"] = 304
@@ -263,6 +363,7 @@ class ChecklistAPI(MethodView):
                 active_checklists.append(checklist_obj)
             else:
                 inactive_checklists.append(checklist_obj)
+
         for checklist in all_user_checklists:
             due_date = str(checklist.due_date).split(" 00:00:00 GMT")[0]
             due_date = str(due_date).split("00:00:00")[0]
@@ -271,11 +372,24 @@ class ChecklistAPI(MethodView):
                 user.first_name.capitalize(),
                 user.osm_username,
             )
+            stale=False
+            try:
+                diff = checklist.last_completion_date - checklist.date_created 
+                diff=str(diff).split(":")[0]
+                print(diff)
+                if diff > 72:
+                    stale=True
+            except Exception as e:
+                print('no completion date')
+
+
+
             checklist_obj = {
                 "id": checklist.id,
                 "name": checklist.name,
                 "user_name": user_name,
                 "author": checklist.author,
+                'stale':stale,
                 "description": checklist.description,
                 "due_date": due_date,
                 "validation_rate": checklist.validation_rate,
@@ -315,18 +429,23 @@ class ChecklistAPI(MethodView):
             if (
                 checklist_obj["completed"] is True
                 and checklist_obj["confirmed"] is False
+                and checklist_obj['stale'] is False
             ):
                 ready_for_confirmation.append(checklist_obj)
-            elif (
+            if (
                 checklist_obj["completed"] is True
                 and checklist_obj["confirmed"] is True
+                and checklist_obj['stale'] is False
             ):
                 confirmed_and_completed.append(checklist_obj)
+            if (checklist_obj['stale'] is True):
+                stale_started_checklists.append(checklist_obj)
         return {
             "active_checklists": active_checklists,
             "inactive_checklists": inactive_checklists,
             "confirmed_and_completed": confirmed_and_completed,
             "ready_for_confirmation": ready_for_confirmation,
+            "stale_started_checklists":stale_started_checklists,
             "status": 200,
         }
 
@@ -626,6 +745,8 @@ class ChecklistAPI(MethodView):
             "status": 200,
         }
 
+
+
     def start_checklist(self):
         response = {}
         if not g:
@@ -682,6 +803,8 @@ class ChecklistAPI(MethodView):
         response["status"] = 200
         return response
 
+
+
     def complete_list_item(self):
         response = {}
         if not g:
@@ -703,7 +826,14 @@ class ChecklistAPI(MethodView):
             user_id=g.user.id,
             id=checklist_id,
         ).first()
-        target_user_checklist_item.update(completed=True)
+        target_user_checklist_item.update(
+            completed=True,
+            completion_date=datetime.now()
+            )
+
+        target_user_checklist.update(
+            last_completion_date=datetime.now()
+        )
         all_user_checklist_items_completion = [
             item.completed
             for item in UserChecklistItem.query.filter_by(
@@ -712,7 +842,10 @@ class ChecklistAPI(MethodView):
             ).all()
         ]
         if False not in all_user_checklist_items_completion:
-            target_user_checklist.update(completed=True)
+            target_user_checklist.update(
+                completed=True,
+                final_completion_date=datetime.now()
+                )
             response["checklist_completed"] = True
             response["message"] = "Checklist %s complete!" % (
                 target_user_checklist.name
@@ -721,6 +854,8 @@ class ChecklistAPI(MethodView):
             response["checklist_completed"] = False
         response["status"] = 200
         return response
+
+
 
     def confirm_list_item(self):
         response = {}
@@ -743,7 +878,13 @@ class ChecklistAPI(MethodView):
             user_id=g.user.id,
             id=checklist_id,
         ).first()
-        target_user_checklist_item.update(confirmed=True)
+        target_user_checklist_item.update(
+            confirmed=True,
+            confirmed_date=datetime.now()
+            )
+        target_user_checklist.update(
+            last_confirmation_date =datetime.now()
+        )
         all_user_checklist_items_completion = [
             item.confirmed
             for item in UserChecklistItem.query.filter_by(
@@ -757,6 +898,7 @@ class ChecklistAPI(MethodView):
             ).first()
             target_user_checklist.update(
                 confirmed=True,
+                final_confirmation_date=datetime.now()
             )
             checklist_earnings = (
                 target_user.checklist_payable_total
@@ -775,6 +917,8 @@ class ChecklistAPI(MethodView):
             response["checklist_confirmed"] = False
         response["status"] = 200
         return response
+
+
 
     def add_checklist_comment(self):
         response = {}
@@ -820,5 +964,133 @@ class ChecklistAPI(MethodView):
         target_comment.delete(soft=False)
         response["message"] = "comment deleted"
         response["comment_deleted"] = True
+        response["status"] = 200
+        return response
+
+
+    def delete_checklist_item(self):
+        response = {}
+        if not g:
+            response["message"] = "User not found"
+            response["status"] = 304
+            return response
+        item_id = request.json.get("item_id")
+        required_args = ["item_id"]
+        for arg in required_args:
+            if not request.json.get(arg):
+                return {"message": f"{arg} required", "status": 400}
+        target_item = ChecklistItem.query.filter_by(
+            id=item_id
+        ).first()
+        target_user_checklists_ids=[checklist.id for checklist in UserChecklist.query.filter_by(checklist_id=target_item.checklist_id).all()]
+        for id in target_user_checklists_ids:
+            target_user_items=UserChecklistItem.query.filter_by(
+                checklist_id=id,item_number = target_item.item_number 
+            ).all()
+            for item in target_user_items:
+                item.delete(soft=False)
+        target_item.delete(soft=False)
+        response["message"] = "list item deleted"
+        response["item_deleted"] = True
+        response["status"] = 200
+        return response
+
+
+    def assign_user_checklist(self):
+        response = {}
+        if not g:
+            response["message"] = "User not found"
+            response["status"] = 304
+            return response
+        checklist_id = request.json.get("checklist_id")
+        user_id= request.json.get("user_id")
+        required_args = [
+            "checklist_id",
+            "user_id"
+        ]
+        for arg in required_args:
+            if not request.json.get(arg):
+                return {"message": f"{arg} required", "status": 400}
+        target_user=User.query.filter_by(id=user_id).first()
+        target_checklist = Checklist.query.filter_by(id=checklist_id).first()
+        target_checklist_items = ChecklistItem.query.filter_by(
+            checklist_id=checklist_id
+        ).all()
+        new_user_checklist = UserChecklist.query.filter_by(
+            user_id=user_id, checklist_id=checklist_id
+        ).first()
+        if not new_user_checklist:
+            new_user_checklist = UserChecklist.create(
+                checklist_id=checklist_id,
+                user_id=user_id,
+                completed=False,
+                confirmed=False,
+                name=target_checklist.name,
+                author=target_checklist.author,
+                org_id=g.user.org_id,
+                description=target_checklist.description,
+                completion_rate=target_checklist.completion_rate,
+                validation_rate=target_checklist.validation_rate,
+                visibility=target_checklist.visibility,
+                difficulty=target_checklist.difficulty,
+                active_status=False,
+                due_date=target_checklist.due_date,
+            )
+        else:
+            response["message"] = "Checklist Already Started"
+            response["status"] = 200
+            return response
+        
+        for checklist_item in target_checklist_items:
+            UserChecklistItem.create(
+                checklist_id=new_user_checklist.id,
+                user_id=user_id,
+                item_number=checklist_item.item_number,
+                item_action=checklist_item.item_action,
+                item_link=checklist_item.item_link,
+                completed=False,
+                confirmed=False,
+            )
+        response["started"] = True
+        response["message"] = "%s has been assigned to %s"%(target_user.osm_username,target_checklist.name)
+        response["status"] = 200
+        return response
+
+
+    def unassign_user_checklist(self):
+        response = {}
+        if not g:
+            response["message"] = "User not found"
+            response["status"] = 304
+            return response
+        checklist_id = request.json.get("checklist_id")
+        user_id= request.json.get("user_id")
+        required_args = [
+            "checklist_id",
+            "user_id"
+        ]
+        for arg in required_args:
+            if not request.json.get(arg):
+                return {"message": f"{arg} required", "status": 400}
+        target_user=User.query.filter_by(id=user_id).first()
+        target_checklist = Checklist.query.filter_by(id=checklist_id).first()
+
+        user_checklist = UserChecklist.query.filter_by(
+            user_id=user_id, checklist_id=target_checklist.id
+        ).first()
+        if not user_checklist:
+            response["message"] = "Checklist not found"
+            response["status"] = 400
+            return response
+        user_checklist_items=UserChecklistItem.query.filter_by(checklist_id=user_checklist.id,user_id=user_id).all()
+        if not user_checklist_items:
+            response["message"] = "Checklist items not found"
+            response["status"] = 400
+            return response
+        for checklist_item in user_checklist_items:
+            checklist_item.delete(soft=False)
+        user_checklist.delete(soft=False)
+        response["unassigned"] = True
+        response["message"] = "%s has been unassigned from %s"%(target_user.osm_username,target_checklist.name)
         response["status"] = 200
         return response
