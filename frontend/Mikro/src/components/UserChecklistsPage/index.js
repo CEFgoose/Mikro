@@ -7,6 +7,7 @@ import { Tab, TabList, TabPanel, Tabs } from "react-tabs";
 import {
   ChecklistCardGrid,
   ConfirmationModal,
+  CommentModal
 } from "../AdminChecklistsPage/checklistComponents";
 import { ButtonDivComponent } from "components/commonComponents/commonComponents";
 
@@ -27,6 +28,11 @@ export const UserChecklistsPage = () => {
     confirmQuestion,
     setConfirmQuestion,
     confirmText,
+    commentOpen,
+    addChecklistComment,
+    toggleCommentOpen,
+    comment,
+    setComment,
   } = useContext(DataContext);
 
   const [checklistSelected, setChecklistSelected] = useState(null);
@@ -72,6 +78,31 @@ export const UserChecklistsPage = () => {
     }
   };
 
+  const handleCommentOpen = (id, name) => {
+    setChecklistSelected(id);
+    setChecklistSelectedName(name);
+    setComment("");
+    toggleCommentOpen();
+  };
+
+  const handleSetComment = (e) => {
+    setComment(e.target.value);
+  };
+
+  const handleAddComment = () => {
+    addChecklistComment(
+      checklistSelected,
+      checklistSelectedName,
+      comment,
+      user.role
+    );
+    setChecklistSelected(null);
+    setChecklistSelectedName(null);
+    setComment("");
+    handleCommentOpen();
+  };
+
+
   return (
     <>
       <ConfirmationModal
@@ -80,7 +111,13 @@ export const UserChecklistsPage = () => {
         question={confirmQuestion}
         extraText={confirmText}
       />
-
+      <CommentModal
+        commentOpen={commentOpen}
+        handleCommentOpen={handleCommentOpen}
+        comment={comment}
+        handleSetComment={handleSetComment}
+        handleAddComment={handleAddComment}
+      />
       <div style={{ width: "100%", float: "left" }}>
         <Sidebar isOpen={true} />
         <div
@@ -140,6 +177,7 @@ export const UserChecklistsPage = () => {
                 role={user.role}
                 goToSource={goToSource}
                 checklists={userStartedChecklists}
+                handleCommentOpen={handleCommentOpen}
                 handleSetChecklistSelected={handleSetChecklistSelected}
                 checklistSelected={checklistSelected}
               />
@@ -152,6 +190,7 @@ export const UserChecklistsPage = () => {
                 completed={true}
                 goToSource={goToSource}
                 checklists={userCompletedChecklists}
+                handleCommentOpen={handleCommentOpen}
                 handleSetChecklistSelected={handleSetChecklistSelected}
                 checklistSelected={checklistSelected}
               />
@@ -163,6 +202,7 @@ export const UserChecklistsPage = () => {
                 key={1}
                 goToSource={goToSource}
                 checklists={userConfirmedChecklists}
+                handleCommentOpen={handleCommentOpen}
                 handleSetChecklistSelected={handleSetChecklistSelected}
                 checklistSelected={checklistSelected}
               />
