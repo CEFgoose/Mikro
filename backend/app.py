@@ -151,6 +151,9 @@ def load_user():
             url,
             json=body,
         )  # noqa: E501 E228ar
+        
+        print(response)
+
         if response.status_code == 200:
             resp = response.json()
             if resp["code"] == 0:

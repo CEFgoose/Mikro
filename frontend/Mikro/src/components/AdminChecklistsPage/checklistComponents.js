@@ -2087,7 +2087,7 @@ export const AddItemModal = (props) => {
                           marginTop: "1vh",
                           marginBottom: "1vh",
                           backgroundColor:
-                            props.itemSelected === id ? "lightblue" : null,
+                            props.tempNumber === number ? "lightblue" : null,
                         }}
                         onClick={() =>
                           props.handleEditItem(id, number, action, link)

@@ -55,7 +55,8 @@ export const AdminChecklistsPage = () => {
     setUserSelected,
     assignUserChecklist,
     unassignUserChecklist,
-    orgStaleChecklists
+    orgStaleChecklists,
+    findIndexById
   } = useContext(DataContext);
 
   const [page, setPage] = useState(1);
@@ -149,6 +150,7 @@ export const AdminChecklistsPage = () => {
   const handleAddItemOpen = (id, name, listItems) => {
     setItemSelected(null)
     setTempListItem({});
+    setTempNumber(null);
     setTempAction("");
     setTempLink("");
     setListItems([]);
@@ -238,13 +240,14 @@ export const AdminChecklistsPage = () => {
   };
 
   const handleSetTempListItem = () => {
+    let index = listItems.length + 1
     setTempListItem({
-      number: listItems.length + 1,
+      number: index,
       action: tempAction,
       link: tempLink,
     });
     let item = {
-      number: listItems.length + 1,
+      number: index,
       action: tempAction,
       link: tempLink,
     };
@@ -256,14 +259,17 @@ export const AdminChecklistsPage = () => {
   };
 
   const handleEditTempListItem = () => {
-    let item = listItems[tempNumber - 1];
+    let item_index = findIndexById(listItems,itemSelected)
+    let item =listItems[item_index]
     item.action = tempAction;
     item.link = tempLink;
     let list = listItems;
-    list[tempNumber - 1] = item;
+    list[item_index] = item;
     handleSetListItems(list);
     setTempAction("");
     setTempLink("");
+    setTempNumber(null);
+    setAddButtonText("Add");
   };
 
   const handleSetTempAction = (e) => {
@@ -341,6 +347,8 @@ export const AdminChecklistsPage = () => {
   const handleUpdateListItems = () => {
     updateListItems(checklistSelected, listItems);
     toggleAddItemOpen();
+    handleAddItemOpen()
+
   };
 
 
@@ -376,12 +384,17 @@ export const AdminChecklistsPage = () => {
   };
 
   const handleDeleteItem = (selectedItem) => {
-    deleteChecklistItem(selectedItem,user.role,listItems)
+    deleteChecklistItem(selectedItem,user.role,checklistSelected)
+
     let targetList = listItems;
-    targetList=spliceArray(targetList,tempNumber-1)
+    let index =findIndexById(targetList,selectedItem)
+    targetList=spliceArray(targetList,index)
     handleSetListItems(targetList);
+    handleUpdateListItems()
     setTempAction("");
     setTempLink("");
+    setTempNumber(null);
+    setAddButtonText('Add')
 
 
   };
@@ -474,6 +487,7 @@ export const AdminChecklistsPage = () => {
         addItemOpen={addItemOpen}
         handleAddItemOpen={handleAddItemOpen}
         itemSelected={itemSelected}
+
         name={checklistName}
         id={checklistSelected}
         listItems={listItems}

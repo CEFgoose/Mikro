@@ -152,14 +152,17 @@ class ChecklistAPI(MethodView):
                     item_action=item["action"],
                     item_link=item["link"],
                 )
+                counter=0
                 for checklist in target_user_checklists:
                     UserChecklistItem.create(
+                        index=counter,
                         user_id=checklist.user_id,
                         checklist_id=checklist.id,
                         item_number=item["number"],
                         item_action=item["action"],
                         item_link=item["link"],
                     )
+                    counter+=1
         response["created"] = True
         response["message"] = "Checklist Items Updated"
         response["status"] = 200
@@ -381,9 +384,6 @@ class ChecklistAPI(MethodView):
                     stale=True
             except Exception as e:
                 print('no completion date')
-
-
-
             checklist_obj = {
                 "id": checklist.id,
                 "name": checklist.name,
@@ -975,21 +975,46 @@ class ChecklistAPI(MethodView):
             response["status"] = 304
             return response
         item_id = request.json.get("item_id")
-        required_args = ["item_id"]
+        checklist_id = request.json.get("checklist_id")
+        required_args = ["item_id","checklist_id"]
         for arg in required_args:
             if not request.json.get(arg):
                 return {"message": f"{arg} required", "status": 400}
         target_item = ChecklistItem.query.filter_by(
             id=item_id
         ).first()
+
+
         target_user_checklists_ids=[checklist.id for checklist in UserChecklist.query.filter_by(checklist_id=target_item.checklist_id).all()]
+
         for id in target_user_checklists_ids:
             target_user_items=UserChecklistItem.query.filter_by(
                 checklist_id=id,item_number = target_item.item_number 
             ).all()
+
             for item in target_user_items:
                 item.delete(soft=False)
+                
+            all_user_items = UserChecklistItem.query.filter_by(
+                checklist_id=id
+            ).order_by(ChecklistItem.item_number).all()
+
+            for i, entry in enumerate(all_user_items):
+                entry.update(
+                    index = i
+                )
+
+
         target_item.delete(soft=False)
+
+        all_items = ChecklistItem.query.filter_by(
+            checklist_id=checklist_id
+        ).order_by(ChecklistItem.item_number).all()
+
+        for i, entry in enumerate(all_items):
+            entry.update(
+                index = i
+            )
         response["message"] = "list item deleted"
         response["item_deleted"] = True
         response["status"] = 200

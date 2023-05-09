@@ -324,10 +324,11 @@ export const DataProvider = ({ children }) => {
   
 
 
-  const deleteChecklistItem = (itemSelected, role) => {
+  const deleteChecklistItem = (itemSelected, role,checklistSelected) => {
     let outpack = {
       item_id: itemSelected,
-    };
+      checklist_id: checklistSelected
+    }; 
     let deleteChecklistItemUrl = "checklist/delete_checklist_item";
     poster(outpack, deleteChecklistItemUrl).then((response) => {
       if (response.status === 200) {
@@ -1406,6 +1407,15 @@ export const DataProvider = ({ children }) => {
   };
 
 
+  const  findIndexById =(list, id)=>{
+    for (let i = 0; i < list.length; i++) {
+      if (list[i].id === id) {
+        return i;
+      }
+    }
+    return -1;
+  }
+  
 
 
 
@@ -1589,6 +1599,7 @@ export const DataProvider = ({ children }) => {
     fetchChecklistUsers,
     assignUserChecklist,
     unassignUserChecklist,
+    findIndexById,
   };
 
   return value ? (
