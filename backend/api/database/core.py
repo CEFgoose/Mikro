@@ -270,7 +270,7 @@ class Task(ModelWithSoftDeleteAndCRUD, SurrogatePK):
     invalidated = db.Column(db.Boolean, nullable=True, default=False)
     mapped_by = db.Column(db.String(80), nullable=False)
     validated_by = db.Column(db.String(80), nullable=False)
-
+    unknown_validator=db.Column(db.Boolean, nullable=True, default=False)
 
 class PayRequests(CRUDMixin, SurrogatePK, db.Model):
     __tablename__ = "requests"

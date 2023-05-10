@@ -15,6 +15,7 @@ import account_icon from "../../images/account_icon.png";
 import checklist_icon from "../../images/checklist_icon.png";
 import mikro_icon from "../../images/5.png";
 import training_icon from "../../images/training-icon.png";
+import tasks_icon from '../../images/tasks_icon.png'
 import "./styles.css";
 import {
   Header,
@@ -71,7 +72,7 @@ const Sidebar = (props) => {
   const [accountPageLink, setAccountPageLink] = useState("/UserAccountPage");
   const [paymentsPageLink, setPaymentsPageLink] = useState("/UserPaymentsPage");
   const [trainingPageLink, setTrainingPageLink] = useState("/UserTrainingPage");
-
+  const [tasksPageLink, setTasksPageLink] = useState("/AdminTasksPage");
   const [localUser, setLocalUser] = useLocalStorageState("mikro.user", null);
   const { history, sidebarOpe, resetUserStats } = useContext(DataContext);
   const { user, refresh } = useContext(AuthContext);
@@ -205,6 +206,18 @@ const Sidebar = (props) => {
           </MenuItem>
         </NavLink>
 
+        {role === "admin" ? (
+          <NavLink to="/AdminTasksPage" style={{ textDecoration: "none" }}>
+            <MenuItem>
+              <ProjectIconContainer>
+                <ProjectIcon src={tasks_icon} />
+              </ProjectIconContainer>
+              <Header>Tasks</Header>
+            </MenuItem>
+          </NavLink>
+        ) : (
+          <></>
+        )}
         {role === "admin" ? (
           <NavLink to="/AdminUsersPage" style={{ textDecoration: "none" }}>
             <MenuItem>

@@ -24,6 +24,7 @@ import { ValidatorProjectsPage } from "components/ValidatorProjectPage";
 import { AdminChecklistsPage } from "components/AdminChecklistsPage";
 import { UserChecklistsPage } from "components/UserChecklistsPage";
 import { ValidatorChecklistsPage } from "components/ValdatorChecklistsPage";
+import { AdminTasksPage } from "components/AdminTasksPage";
 import "bootstrap/dist/css/bootstrap.min.css";
 import "./App.css";
 import {
@@ -33,6 +34,7 @@ import {
   Navigate,
 } from "react-router-dom";
 import { RegisterUser } from "components/RegisterUser";
+
 
 // APP DECLARATION
 function App() {
@@ -112,6 +114,15 @@ function App() {
               />
 
               <Route path="/UserProjectsPage" element={<UserProjectsPage />} />
+
+
+
+              <Route
+                path="/AdminTasksPage"
+                element={<Private Component={AdminTasksPage} />}
+              />
+
+
 
               <Route
                 path="/AdminUsersPage"

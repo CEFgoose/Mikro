@@ -68,6 +68,7 @@ export const ChecklistCardGrid = (props) => {
               payment_due,
               comments,
             } = card;
+            // console.log(list_items)
             return (
               <>
                 {props.type === "Admin" ? (
@@ -1142,7 +1143,6 @@ export const AdminChecklistCard = (props) => {
           {props.list_items &&
             props.list_items.slice().map((item) => {
               const { number, action, link } = item;
-              console.log(number);
               return (
                 <>
                   <div
@@ -1248,7 +1248,6 @@ export const AdminChecklistCard = (props) => {
 };
 
 export const NewChecklistCard = (props) => {
-  console.log(props.role);
   return (
     <Card
       key={props.id}
@@ -1345,7 +1344,6 @@ export const NewChecklistCard = (props) => {
           {props.list_items &&
             props.list_items.slice().map((item) => {
               const { number, action, link } = item;
-              console.log(number);
               return (
                 <>
                   <div
@@ -1533,7 +1531,6 @@ export const UserChecklistCard = (props) => {
           {props.list_items &&
             props.list_items.slice().map((item) => {
               const { number, action, link, completed, confirmed } = item;
-              console.log(number);
               return (
                 <>
                   <div
@@ -1831,7 +1828,6 @@ export const ValidatorChecklistCard = (props) => {
           {props.list_items &&
             props.list_items.slice().map((item) => {
               const { number, action, link, completed, confirmed } = item;
-              console.log(number);
               return (
                 <>
                   <div
@@ -1909,7 +1905,6 @@ export const ValidatorChecklistCard = (props) => {
             {props.comments &&
               props.comments.slice().map((item) => {
                 const { id, author, comment, role, date } = item;
-                console.log("ID", id, props.commentSelected);
                 return (
                   <>
                     <div

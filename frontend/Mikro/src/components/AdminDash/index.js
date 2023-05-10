@@ -3,14 +3,15 @@ import { DataContext } from "../../common/DataContext";
 import { AuthContext } from "../../common/AuthContext";
 import Sidebar from "../sidebar/sidebar";
 import { Table, TableBody, TablePagination } from "@mui/material";
+import { ConfirmationModal } from "components/AdminChecklistsPage/checklistComponents";
 import {
   ListHead,
+  CardMediaStyle,
   ADMIN_PROJECTS_TABLE_HEADERS,
   DashboardCard,
   ProjectRow,
   ProjectCell,
   TableCard,
-  CardMediaStyle,
 } from "components/commonComponents/commonComponents";
 
 import "./styles.css";
@@ -35,8 +36,15 @@ export const AdminDash = () => {
     paidTotal,
     activeProjectsCount,
     inactiveProjectsCount,
+    setConfirmQuestion,
+    confirmQuestion,
+    toggleConfirmOpen,
+    confirmOpen,
+    confirmText,
     admin_update_all_user_tasks,
     history,
+    externalValidations,
+    fetchExternalValidations,
   } = useContext(DataContext);
 
   const { refresh, user } = useContext(AuthContext);
@@ -63,9 +71,24 @@ export const AdminDash = () => {
       admin_update_all_user_tasks();
       fetchOrgProjects();
       fetchAdminDashStats();
+      fetchExternalValidations();
     }
     // eslint-disable-next-line
   }, []);
+
+  useEffect(() => {
+    console.log(externalValidations.length)
+    if(externalValidations.length > 0){
+      setConfirmQuestion(`You have ${externalValidations.length} tasks with unknown validators to confirm on the Tasks page`)
+      toggleConfirmOpen()
+    }
+    // eslint-disable-next-line
+  }, [externalValidations]);
+
+  const handleConfirmOpen=()=>{
+    toggleConfirmOpen()
+  }
+
 
   const handleSetProjectSelected = (e) => {
     setProjectSelected(e);
@@ -77,6 +100,12 @@ export const AdminDash = () => {
 
   return (
     <>
+      <ConfirmationModal
+        confirmOpen={confirmOpen}
+        handleConfirmOpen={handleConfirmOpen}
+        question={confirmQuestion}
+        extraText={confirmText}
+      />
       <div style={{ width: "100%", float: "left" }}>
         <Sidebar isOpen={sidebarOpen} toggleSidebar={handleViewSidebar} />
         <div

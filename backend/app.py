@@ -28,8 +28,10 @@ def load_user_from_jwt():
     if "register_user" not in request.url:
         g.user = User.query.filter_by(id=get_jwt_identity()).one_or_none()
 
-
+#DEV
 # SSO_BASE_URL = "http://127.0.0.1:5001/api/"
+
+#PROD
 SSO_BASE_URL = "https://my.kaart.com/api/"
 
 DB_key = "cjyjs1zsq0ypexp"

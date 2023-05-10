@@ -32,6 +32,7 @@ export const DataProvider = ({ children }) => {
   const [orgRequests, setOrgRequests] = useState([]);
   const [orgPayments, setOrgPayments] = useState([]);
   const [orgProjects, setorgProjects] = useState([]);
+  const [externalValidations, setExternalValidations] = useState([]);
   const [orgActiveChecklists, setorgActiveChecklists] = useState([]);
   const [orgInActiveChecklists, setorgInactiveChecklists] = useState([]);
   const [orgStaleChecklists, setOrgStaleChecklists] = useState([]);
@@ -266,10 +267,11 @@ export const DataProvider = ({ children }) => {
     });
   };
 
-  const updateListItems = (checklistSelected, listItems) => {
+  const updateListItems = (checklistSelected, listItems, deleteListItems) => {
     let outpack = {
       checklist_id: checklistSelected,
       list_items: listItems,
+      delete_list_items:deleteListItems
     };
     let updateListItemsUrl = "checklist/update_list_items";
     poster(outpack, updateListItemsUrl).then((response) => {
@@ -1280,6 +1282,39 @@ export const DataProvider = ({ children }) => {
     });
   };
 
+  const fetchExternalValidations = () => {
+    let ExternalValidationsURL = "task/fetch_external_validations";
+    fetcher(ExternalValidationsURL).then((response) => {
+      if (response.status === 200) {
+        setExternalValidations(response.external_validations);
+        return;
+      } else if (response.status === 304) {
+        history("/login");
+      } else {
+        alert(response.message);
+      }
+    });
+  }
+
+  const updateTask= (taskID,taskAction) => {
+    let outpack = {
+      task_id:taskID,
+      task_action:taskAction
+    };
+    let updateTaskURL = "task/update_task";
+    poster(outpack,updateTaskURL).then((response) => {
+      if (response.status === 200) {
+        fetchAdminDashStats()
+        fetchExternalValidations()
+        return;
+      } else if (response.status === 304) {
+        history("/login");
+      } else {
+        alert(response.message);
+      }
+    });
+  }
+
   const fetchUserDashStats = () => {
     let userDashStats = "project/fetch_user_dash_stats";
     fetcher(userDashStats).then((response) => {
@@ -1353,14 +1388,11 @@ export const DataProvider = ({ children }) => {
 
     const spliceArray=(inlist,index)=>{
       console.log(inlist,index)
-      index = inlist.indexOf(index);
-      if (index > 0) { 
+      // index = inlist.indexOf(index);
+      if (index > -1) { 
         inlist.splice(index, 1);
       }
-      else{
-        inlist.pop()
-      }
-      console.log(inlist)
+      // console.log(inlist)
       return inlist
     }
 
@@ -1464,6 +1496,27 @@ export const DataProvider = ({ children }) => {
     totalEarnings,
     validatorTasksInvalidated,
     validatorTasksValidated,
+    //checklists
+    orgActiveChecklists,
+    orgInActiveChecklists,
+    checklistSelectedDetails,
+    userAvailableChecklists,
+    userCompletedChecklists,
+    userConfirmedChecklists,
+    userStartedChecklists,
+    orgUserCompletedChecklists,
+    orgUserConfirmedChecklists,
+    orgStaleChecklists,
+    checklistsEarnings,
+    confirmOpen,
+    toggleConfirmOpen,
+    confirmQuestion,
+    confirmText,
+    commentOpen,
+    toggleCommentOpen,
+    comment,
+    checklistUsers,
+    externalValidations, 
     //STATE SETTERS
     setValidatorTasksValidated,
     setValidatorTasksInvalidated,
@@ -1514,6 +1567,8 @@ export const DataProvider = ({ children }) => {
     fetchAdminDashStats,
     fetchUserDashStats,
     fetchValidatorProjects,
+    fetchExternalValidations,
+    updateTask,
     //Transaction
     fetchOrgTransactions,
     createTransaction,
@@ -1549,57 +1604,40 @@ export const DataProvider = ({ children }) => {
     setTotalEarnings,
     resetUserStats,
     //checklists
-
-
     createChecklist,
     fetchAdminChecklists,
     fetchValidatorChecklists,
     setChecklistSelectedDetails,
     updateChecklist,
-    orgActiveChecklists,
-    orgInActiveChecklists,
-    checklistSelectedDetails,
-    userAvailableChecklists,
     setUserAvailableChecklists,
-    userCompletedChecklists,
     setUserCompletedChecklists,
-    userConfirmedChecklists,
     setUserConfirmedChecklists,
-    userStartedChecklists,
     setUserStartedChecklists,
     fetchUserChecklists,
     startChecklist,
     completeListItem,
     confirmListItem,
     setorgUserCompletedChecklists,
-    orgUserCompletedChecklists,
-    orgUserConfirmedChecklists,
-    orgStaleChecklists,
     setorgUserConfirmedChecklists,
     deleteChecklist,
     updateListItems,
-    checklistsEarnings,
     setChecklistsEarnings,
-    confirmOpen,
-    toggleConfirmOpen,
-    confirmQuestion,
     setConfirmQuestion,
-    confirmText,
     setConfirmText,
     addChecklistComment,
-    commentOpen,
-    toggleCommentOpen,
-    comment,
     setComment,
     deleteChecklistComment,
     deleteChecklistItem,
     spliceArray,
-    checklistUsers,
     setChecklistUsers,
     fetchChecklistUsers,
     assignUserChecklist,
     unassignUserChecklist,
     findIndexById,
+    setExternalValidations,
+
+
+
   };
 
   return value ? (

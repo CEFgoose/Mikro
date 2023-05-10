@@ -39,6 +39,7 @@ export const AdminChecklistsPage = () => {
     confirmOpen,
     toggleConfirmOpen,
     confirmQuestion,
+    setConfirmQuestion,
     confirmText,
     commentOpen,
     toggleCommentOpen,
@@ -68,6 +69,7 @@ export const AdminChecklistsPage = () => {
   const [completionRate, setCompletionRate] = useState(0.0);
   const [validationRate, setValidationRate] = useState(0.0);
   const [listItems, setListItems] = useState([]);
+  const [deleteListItems, setDeleteListItems] = useState([]);
   const [tempListItem, setTempListItem] = useState({});
   const [addButtonText, setAddButtonText] = useState("Add");
   const [tempAction, setTempAction] = useState(null);
@@ -99,6 +101,9 @@ export const AdminChecklistsPage = () => {
     fetchAdminChecklists();
     // eslint-disable-next-line
   }, []);
+
+
+
 
   const handleSetActiveTab = (e) => {
     setActiveTab(e.target.value);
@@ -240,7 +245,7 @@ export const AdminChecklistsPage = () => {
   };
 
   const handleSetTempListItem = () => {
-    let index = listItems.length + 1
+      let index = listItems.length + 1
     setTempListItem({
       number: index,
       action: tempAction,
@@ -254,6 +259,7 @@ export const AdminChecklistsPage = () => {
     let list = listItems;
     list.push(item);
     handleSetListItems(list);
+    handleUpdateListItems(true)
     setTempAction("");
     setTempLink("");
   };
@@ -344,10 +350,16 @@ export const AdminChecklistsPage = () => {
     handleSetItemSelected(id, number, action, link);
   };
 
-  const handleUpdateListItems = () => {
-    updateListItems(checklistSelected, listItems);
-    toggleAddItemOpen();
-    handleAddItemOpen()
+  const handleUpdateListItems = (stopToggle=false,list=null) => {
+    if(stopToggle){
+      updateListItems(checklistSelected, listItems, deleteListItems);
+    }
+    if(!stopToggle){
+      updateListItems(checklistSelected, listItems, deleteListItems);
+      toggleAddItemOpen();
+      handleAddItemOpen()
+    }
+
 
   };
 
@@ -384,17 +396,25 @@ export const AdminChecklistsPage = () => {
   };
 
   const handleDeleteItem = (selectedItem) => {
-    deleteChecklistItem(selectedItem,user.role,checklistSelected)
-
+    // deleteChecklistItem(selectedItem,user.role,checklistSelected)
     let targetList = listItems;
+
     let index =findIndexById(targetList,selectedItem)
+    console.log(index)
+
+    let delete_item =targetList[index]
+    let deletionList= deleteListItems
+    deletionList.push(delete_item)
+    setDeleteListItems(deletionList)
     targetList=spliceArray(targetList,index)
+
     handleSetListItems(targetList);
-    handleUpdateListItems()
+    handleUpdateListItems(true)
     setTempAction("");
     setTempLink("");
     setTempNumber(null);
     setAddButtonText('Add')
+
 
 
   };

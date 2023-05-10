@@ -113,6 +113,7 @@ class ChecklistAPI(MethodView):
     @requires_admin
     def update_list_items(self):
         response = {}
+        target_user_checklists_ids=[]
         # Check if user is authenticated
         if not g:
             response["message"] = "User not found"
@@ -121,6 +122,8 @@ class ChecklistAPI(MethodView):
         # Check if required data is provided
         checklist_id = request.json.get("checklist_id")
         list_items = request.json.get("list_items")
+        delete_list_items =  request.json.get("delete_list_items")
+        print('delete_list_items',delete_list_items)
         target_checklist = Checklist.query.filter_by(
             id=int(checklist_id)
         ).first()
@@ -131,13 +134,37 @@ class ChecklistAPI(MethodView):
             response["message"] = "Checklist %s not found" % (checklist_id)
             response["status"] = 400
             return response
-        for item in list_items:
+        if delete_list_items is not None:
+            for delete_item in delete_list_items:
+
+                target_delete_item = ChecklistItem.query.filter_by(
+                    checklist_id=checklist_id, item_number=delete_item["number"]
+                ).first()
+                if target_delete_item is not None:
+                    target_user_checklists_ids=[checklist.id for checklist in UserChecklist.query.filter_by(checklist_id=target_delete_item.checklist_id).all()]
+                    for id in target_user_checklists_ids:
+                        target_user_items=UserChecklistItem.query.filter_by(
+                            checklist_id=id,item_number = target_delete_item.item_number 
+                        ).all()
+                        for item in target_user_items:
+                            item.delete(soft=False)
+
+
+                    target_delete_item.delete(soft=False)
+
+
+
+
+
+        for i, item in enumerate(list_items):
+
             target_item = ChecklistItem.query.filter_by(
                 checklist_id=checklist_id, item_number=item["number"]
             ).first()
+ 
             if target_item:
                 target_item.update(
-                    item_action=item["action"], item_link=item["link"]
+                    item_action=item["action"], item_link=item["link"], item_number=i+1
                 )
                 for checklist in target_user_checklists:
                     item_exists=UserChecklistItem.query.filter_by(checklist_id=checklist.id,item_number=item['number']).first()
@@ -145,6 +172,7 @@ class ChecklistAPI(MethodView):
                         item_exists.update(
                             item_action=item["action"], item_link=item["link"]
                         )
+
             else:
                 ChecklistItem.create(
                     checklist_id=checklist_id,
@@ -155,18 +183,40 @@ class ChecklistAPI(MethodView):
                 counter=0
                 for checklist in target_user_checklists:
                     UserChecklistItem.create(
-                        index=counter,
                         user_id=checklist.user_id,
                         checklist_id=checklist.id,
                         item_number=item["number"],
                         item_action=item["action"],
                         item_link=item["link"],
                     )
-                    counter+=1
+
+        if len(target_user_checklists_ids)>0:
+            for id in target_user_checklists_ids:
+
+                all_user_items = UserChecklistItem.query.filter_by(
+                    checklist_id=id
+                ).order_by(UserChecklistItem.item_number).all()
+                for i, entry in enumerate(all_user_items):
+                    entry.update(
+                        item_number = i+1
+                    )
+
+        all_items = ChecklistItem.query.filter_by(
+            checklist_id=checklist_id
+        ).order_by(ChecklistItem.item_number).all()
+        print(all_items,len(all_items))
+
+        for i, entry in enumerate(all_items):
+            print(i,entry.item_number)
+            entry.update(
+                item_number = i+1
+            )
         response["created"] = True
         response["message"] = "Checklist Items Updated"
         response["status"] = 200
         return response
+    
+
 
     @requires_admin
     def update_checklist(self):
@@ -353,7 +403,7 @@ class ChecklistAPI(MethodView):
             }
             checklist_items = ChecklistItem.query.filter_by(
                 checklist_id=checklist.id
-            ).all()
+            ).order_by(ChecklistItem.item_number).all()
             for item in checklist_items:
                 item_obj = {
                     "id": item.id,
@@ -379,7 +429,7 @@ class ChecklistAPI(MethodView):
             try:
                 diff = checklist.last_completion_date - checklist.date_created 
                 diff=str(diff).split(":")[0]
-                print(diff)
+
                 if diff > 72:
                     stale=True
             except Exception as e:
@@ -402,9 +452,9 @@ class ChecklistAPI(MethodView):
                 "list_items": [],
                 "comments": [],
             }
-            checklist_items = UserChecklistItem.query.filter_by(
-                checklist_id=checklist.id
-            ).all()
+            checklist_items = UserChecklistItem.query.filter(
+                UserChecklistItem.checklist_id==checklist.id
+            ).order_by(UserChecklistItem.item_number).all()
             for item in checklist_items:
                 item_obj = {
                     "number": item.item_number,
@@ -498,7 +548,7 @@ class ChecklistAPI(MethodView):
                 if checklist in user_checklists:
                     checklist_items = UserChecklistItem.query.filter_by(
                         checklist_id=checklist.id, user_id=g.user.id
-                    ).all()
+                    ).order_by(UserChecklistItem.item_number).all()
                     for item in checklist_items:
                         item_obj = {
                             "number": item.item_number,
@@ -523,7 +573,7 @@ class ChecklistAPI(MethodView):
                 else:
                     checklist_items = ChecklistItem.query.filter_by(
                         checklist_id=checklist.id
-                    ).all()
+                    ).order_by(ChecklistItem.item_number).all()
                     for item in checklist_items:
                         item_obj = {
                             "number": item.item_number,
@@ -578,9 +628,11 @@ class ChecklistAPI(MethodView):
         user_checklists = UserChecklist.query.filter_by(
             user_id=g.user.id
         ).all()
+        # comment last line in following list comprehension to allow validator to validate own checklists for testing
         all_user_checklists = [
             checklist
-            for checklist in UserChecklist.query.filter_by(org_id=org_id).all()
+            for checklist in UserChecklist.query.filter_by(org_id=org_id).all() 
+            if checklist.user_id is not g.user.id
         ]
         user_checklist_ids = [
             checklist.checklist_id for checklist in user_checklists
@@ -618,7 +670,7 @@ class ChecklistAPI(MethodView):
                 if checklist in user_checklists:
                     checklist_items = UserChecklistItem.query.filter_by(
                         checklist_id=checklist.id, user_id=g.user.id
-                    ).all()
+                    ).order_by(UserChecklistItem.item_number).all()
                     for item in checklist_items:
                         item_obj = {
                             "number": item.item_number,
@@ -643,7 +695,7 @@ class ChecklistAPI(MethodView):
                 else:
                     checklist_items = ChecklistItem.query.filter_by(
                         checklist_id=checklist.id
-                    ).all()
+                    ).order_by(ChecklistItem.item_number).all()
                     for item in checklist_items:
                         item_obj = {
                             "number": item.item_number,
@@ -675,6 +727,8 @@ class ChecklistAPI(MethodView):
                     and checklist.confirmed is not True
                 ):
                     user_available_checklists.append(checklist_obj)
+
+
         # USER CHECKLISTS
         for checklist in all_user_checklists:
             due_date = str(checklist.due_date).split(" 00:00:00 GMT")[0]
@@ -703,7 +757,7 @@ class ChecklistAPI(MethodView):
             }
             checklist_items = UserChecklistItem.query.filter_by(
                 checklist_id=checklist.id
-            ).all()
+            ).order_by(UserChecklistItem.item_number).all()
             for item in checklist_items:
                 item_obj = {
                     "number": item.item_number,
@@ -725,16 +779,22 @@ class ChecklistAPI(MethodView):
                     "date": comment.date,
                 }
                 checklist_obj["comments"].append(comment_obj)
+
             if (
                 checklist_obj["completed"] is True
                 and checklist_obj["confirmed"] is False
+                # and checklist_obj['id'] not in user_checklist_ids 
             ):
+                
                 ready_for_confirmation.append(checklist_obj)
+
             elif (
                 checklist_obj["completed"] is True
                 and checklist_obj["confirmed"] is True
+                # and checklist_obj['id'] not in user_checklist_ids 
             ):
                 confirmed_and_completed.append(checklist_obj)
+                
         return {
             "user_started_checklists": user_started_checklists,
             "user_completed_checklists": user_completed_checklists,

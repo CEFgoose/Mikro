@@ -105,6 +105,7 @@ export const ADMIN_PROJECTS_TABLE_HEADERS = [
   { id: "Validated/Mapped", label: "Validated/ Mapped", alignLeft: true },
   { id: "Invalidated", label: "Invalidated", alignLeft: true },
 ];
+
 export const USER_PROJECTS_TABLE_HEADERS = [
   { id: "name", label: "Project Name", alignLeft: true },
   { id: "Difficulty", label: "Project Difficulty", alignLeft: true },
@@ -159,6 +160,19 @@ export const REQUEST_TABLE_HEADERS = [
   { id: "Request ID", label: "Request ID", alignRight: false },
   { id: "Amount Requested", label: "Amount Requested", alignRight: false },
   { id: "Date Requested", label: "Date Requested", alignRight: false },
+];
+
+export const EXTERNAL_VALIDATIONS_HEADERS = [
+  { id: "Task ID", label: "Task ID", alignLeft: true },
+  { id: "Project_Name", label: "Project Name", alignLeft: true },
+  { id: "Project_ID", label: "Project ID", alignLeft: true },
+  { id: "Mapped By", label: "Mapped By", alignLeft: true },
+  { id: "Validated By", label: "Validated By", alignLeft: true },
+  // { id: "Difficulty", label: "Project Difficulty", alignLeft: true },
+  // { id: "Budget", label: "Total Budget", alignLeft: true },
+  // { id: "Current Payout", label: "Current Payout", alignLeft: true },
+  // { id: "Validated/Mapped", label: "Validated/ Mapped", alignLeft: true },
+  // { id: "Invalidated", label: "Invalidated", alignLeft: true },
 ];
 
 // COMPONENTS

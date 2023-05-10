@@ -44,9 +44,9 @@ SSO_BASE_URL = "https://my.kaart.com/api/"
 
 CHANGE APP_BASE URL and SSO_URL in mikro.env line 4
 
+CHANGE app.py line 32 change SSO_BASE_URL to PROD
 
-CHANGE
-
+CHANGE:
 #DEV
 app.add_url_rule("/api/login", view_func=LoginAPI.as_view("auth"))
 app.add_url_rule("/api/training/<path>", view_func=TrainingAPI.as_view("training"))
@@ -54,6 +54,7 @@ app.add_url_rule("/api/user/<path>", view_func=UserAPI.as_view("user"))
 app.add_url_rule("/api/project/<path>", view_func=ProjectAPI.as_view("project"))
 app.add_url_rule("/api/transaction/<path>", view_func=TransactionAPI.as_view("transaction"))
 app.add_url_rule("/api/task/<path>", view_func=TaskAPI.as_view("task"))
+TO:
 #PROD
 # app.add_url_rule("/login", view_func=LoginAPI.as_view("auth"))
 # app.add_url_rule("/training/<path>", view_func=TrainingAPI.as_view("training"))

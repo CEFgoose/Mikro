@@ -38,10 +38,7 @@ export const Login = () => {
     setPassword(e.target.value);
   };
 
-  useEffect(() => {
-    console.log(user);
-    // eslint-disable-next-line
-  }, [user]);
+
 
   //LOGIN FUNCTION - CHANGE URL FOR DEPLOYMENT
   const login = () => {
@@ -116,7 +113,7 @@ export const Login = () => {
               if (response.ok) {
                 login();
               } else {
-                console.log(response);
+                // console.log(response);
                 throw response;
               }
             });
