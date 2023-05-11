@@ -244,7 +244,7 @@ export const AdminChecklistsPage = () => {
     }
   };
 
-  const handleSetTempListItem = () => {
+  const handleSetTempListItem = (update) => {
       let index = listItems.length + 1
     setTempListItem({
       number: index,
@@ -259,7 +259,9 @@ export const AdminChecklistsPage = () => {
     let list = listItems;
     list.push(item);
     handleSetListItems(list);
-    handleUpdateListItems(true)
+    if(update){
+      handleUpdateListItems(true)
+    }
     setTempAction("");
     setTempLink("");
   };

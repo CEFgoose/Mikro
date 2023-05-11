@@ -493,7 +493,7 @@ export const AddChecklistModal = (props) => {
               <>
                 <StyledButton
                   button_text={"Create"}
-                  button_action={() => props.handleCreateChecklist()}
+                  button_action={() => props.handleCreateChecklist(false)}
                 />
               </>
             ) : (

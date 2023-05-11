@@ -151,17 +151,11 @@ class ChecklistAPI(MethodView):
 
 
                     target_delete_item.delete(soft=False)
-
-
-
-
-
         for i, item in enumerate(list_items):
-
             target_item = ChecklistItem.query.filter_by(
                 checklist_id=checklist_id, item_number=item["number"]
             ).first()
- 
+
             if target_item:
                 target_item.update(
                     item_action=item["action"], item_link=item["link"], item_number=i+1
@@ -172,7 +166,6 @@ class ChecklistAPI(MethodView):
                         item_exists.update(
                             item_action=item["action"], item_link=item["link"]
                         )
-
             else:
                 ChecklistItem.create(
                     checklist_id=checklist_id,
@@ -379,9 +372,12 @@ class ChecklistAPI(MethodView):
             return response
         org_id = g.user.org_id
         org_checklists = Checklist.query.filter_by(org_id=org_id).all()
-        all_user_checklists = UserChecklist.query.filter_by(
-            org_id=org_id
-        ).all()
+        # comment last line in following list comprehension to allow validator to validate own checklists for testing
+        all_user_checklists = [
+            checklist
+            for checklist in UserChecklist.query.filter_by(org_id=org_id).all() 
+            if checklist.user_id is not g.user.id
+        ]
         for checklist in org_checklists:
             due_date = str(checklist.due_date).split(" 00:00:00 GMT")[0]
             due_date = str(due_date).split("00:00:00")[0]
@@ -938,10 +934,12 @@ class ChecklistAPI(MethodView):
             user_id=g.user.id,
             id=checklist_id,
         ).first()
+
         target_user_checklist_item.update(
             confirmed=True,
             confirmed_date=datetime.now()
             )
+        
         target_user_checklist.update(
             last_confirmation_date =datetime.now()
         )
