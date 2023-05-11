@@ -40,8 +40,7 @@ export const UserDashboard = () => {
   } = useContext(DataContext);
 
   const { refresh, user } = useContext(AuthContext);
-  const [page, setPage] = useState(0);
-  const [rowsPerPage, setRowsPerPage] = useState(10);
+
   const [projectSelected, setProjectSelected] = useState(null);
 
   useEffect(() => {
@@ -65,12 +64,6 @@ export const UserDashboard = () => {
     // eslint-disable-next-line
   }, []);
 
-  // useEffect(() => {
-
-  //   console.log(tasksMapped)
-  //   // eslint-disable-next-line
-  // }, [tasksMapped]);
-
   const handleViewSidebar = () => {
     handleSetSidebarState();
   };
@@ -79,9 +72,6 @@ export const UserDashboard = () => {
     setProjectSelected(e);
   };
 
-  const handleChangeRowsPerPage = (e) => {
-    setRowsPerPage(e.target.value);
-  };
 
   return (
     <>
@@ -168,14 +158,12 @@ export const UserDashboard = () => {
             <TableCard style={{ boxShadow: "1px 1px 6px 2px gray" }}>
               <CardMediaStyle />
               <Table>
+              <div style={{height:'40vh', width:'77.5vw',overflowY:'scroll'}}>
                 <ListHead headLabel={USER_PROJECTS_TABLE_HEADERS} />
                 <TableBody>
                   {activeProjects &&
                     activeProjects
-                      .slice(
-                        page * rowsPerPage,
-                        page * rowsPerPage + rowsPerPage
-                      )
+                      .slice()
                       .map((row) => {
                         const {
                           id,
@@ -226,17 +214,8 @@ export const UserDashboard = () => {
                         );
                       })}
                 </TableBody>
+                </div>
               </Table>
-              <TablePagination
-                style={{ width: "100%" }}
-                rowsPerPageOptions={[5, 10, 15]}
-                component="div"
-                count={orgProjects ? orgProjects.length : 5}
-                rowsPerPage={rowsPerPage}
-                page={page}
-                onPageChange={(e, page) => setPage(page)}
-                onRowsPerPageChange={(e) => handleChangeRowsPerPage(e)}
-              />
             </TableCard>
           </div>
         </div>

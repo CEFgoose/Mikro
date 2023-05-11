@@ -219,6 +219,7 @@ export const UserTrainingTable = (props) => {
       <TableCard style={{ boxShadow: "1px 1px 6px 2px gray" }}>
         <CardMediaStyle />
         <Table>
+        <div style={{height:'40vh', width:'77.5vw',overflowY:'scroll'}}>
           <ListHead headLabel={USER_TRAINING_HEADERS} />
           <TableBody>
             {props.orgTrainings &&
@@ -273,17 +274,8 @@ export const UserTrainingTable = (props) => {
                   );
                 })}
           </TableBody>
+          </div>
         </Table>
-        <TablePagination
-          style={{ width: "auto" }}
-          rowsPerPageOptions={[5, 10, 15]}
-          component="div"
-          count={props.pay_requests ? props.pay_requests.length : 5}
-          rowsPerPage={props.rowsPerPage}
-          page={props.page}
-          onPageChange={(e, page) => props.setPage(page)}
-          onRowsPerPageChange={(e) => props.handleChangeRowsPerPage(e)}
-        />
       </TableCard>
     </div>
   );

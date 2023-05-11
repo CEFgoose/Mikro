@@ -73,7 +73,7 @@ export const ButtonDiv = styled("div")(({ theme }) => ({
 }));
 
 export const ProjectRow = styled(TableRow)(() => ({
-  width: "100%",
+  width: "77.75vw",
   marginLeft: "2vw",
 }));
 
@@ -99,7 +99,7 @@ export const ADMIN_PROJECTS_TABLE_HEADERS = [
   { id: "mapping_Rate", label: "Mapping Rate", alignLeft: true },
   { id: "mapping_Rate", label: "Validation Rate", alignLeft: true },
   { id: "Tasks", label: "Total Tasks", alignLeft: true },
-  { id: "Difficulty", label: "Project Difficulty", alignLeft: true },
+  // { id: "Difficulty", label: "Project Difficulty", alignLeft: true },
   { id: "Budget", label: "Total Budget", alignLeft: true },
   { id: "Current Payout", label: "Current Payout", alignLeft: true },
   { id: "Validated/Mapped", label: "Validated/ Mapped", alignLeft: true },
@@ -241,7 +241,7 @@ export const DashboardCard = (props) => {
 // PROJECT DESCRIPTION CELL//
 export const ProjectCell = (props) => {
   return (
-    <TableCell align="left" component="th" scope="row">
+    <TableCell align="left" component="th" scope="row" >
       <Typography variant="subtitle2" noWrap style={{ textAlign: "center" }}>
         {props.entry}
       </Typography>
@@ -453,7 +453,7 @@ export const ListHead = (props) => {
           <TableCell
             key={headCell.id}
             style={{
-              width: "10vw",
+              width: "20vw",
               textAlign: "center",
               fontSize: props.fontSize,
             }}
@@ -573,21 +573,19 @@ export const AdminPayRequestsTable = (props) => {
         display: "flex",
         flexDirection: "row",
         marginLeft: "3.5vw",
-        height: "70vh",
+        height: "78vh",
         width: "77.5vw",
       }}
     >
       <TableCard style={{ boxShadow: "1px 1px 6px 2px gray" }}>
         <CardMediaStyle />
         <Table>
+        <div style={{height:'40vh', width:'77.5vw',overflowY:'scroll'}}>
           <ListHead headLabel={REQUEST_TABLE_HEADERS} />
           <TableBody>
             {props.orgRequests &&
               props.orgRequests
-                .slice(
-                  props.page * props.rowsPerPage,
-                  props.page * props.rowsPerPage + props.rowsPerPage
-                )
+                .slice()
                 .map((row) => {
                   const {
                     id,
@@ -630,17 +628,9 @@ export const AdminPayRequestsTable = (props) => {
                   );
                 })}
           </TableBody>
+          </div>
         </Table>
-        <TablePagination
-          style={{ width: "auto" }}
-          rowsPerPageOptions={[5, 10, 15]}
-          component="div"
-          count={props.pay_requests ? props.pay_requests.length : 5}
-          rowsPerPage={props.rowsPerPage}
-          page={props.page}
-          onPageChange={(e, page) => props.setPage(page)}
-          onRowsPerPageChange={(e) => props.handleChangeRowsPerPage(e)}
-        />
+
       </TableCard>
     </div>
   );
@@ -660,14 +650,13 @@ export const AdminPaymentsTable = (props) => {
       <TableCard style={{ boxShadow: "1px 1px 6px 2px gray" }}>
         <CardMediaStyle />
         <Table>
+          
+        <div style={{height:'40vh', width:'77.5vw',overflowY:'scroll'}}>
           <ListHead headLabel={REQUEST_TABLE_HEADERS} />
           <TableBody>
             {props.orgPayments &&
               props.orgPayments
-                .slice(
-                  props.page * props.rowsPerPage,
-                  props.page * props.rowsPerPage + props.rowsPerPage
-                )
+                .slice()
                 .map((row) => {
                   const {
                     id,
@@ -682,6 +671,7 @@ export const AdminPaymentsTable = (props) => {
                   } = row;
                   return (
                     <ProjectRow
+
                       sx={{
                         "&:hover": {
                           backgroundColor: "rgba(145, 165, 172, 0.5)",
@@ -706,7 +696,7 @@ export const AdminPaymentsTable = (props) => {
                       }
                       selected={props.paymentSelected === id}
                     >
-                      <ProjectCell entry={user} />
+                      <ProjectCell entry={<strong>{user}</strong>} />
                       <ProjectCell entry={id} />
                       <ProjectCell entry={`$${amount_paid}`} />
                       <ProjectCell entry={date_paid} />
@@ -714,17 +704,8 @@ export const AdminPaymentsTable = (props) => {
                   );
                 })}
           </TableBody>
+          </div>
         </Table>
-        <TablePagination
-          style={{ width: "auto" }}
-          rowsPerPageOptions={[5, 10, 15]}
-          component="div"
-          count={props.pay_requests ? props.pay_requests.length : 5}
-          rowsPerPage={props.rowsPerPage}
-          page={props.page}
-          onPageChange={(e, page) => props.setPage(page)}
-          onRowsPerPageChange={(e) => props.handleChangeRowsPerPage(e)}
-        />
       </TableCard>
     </div>
   );

@@ -32,8 +32,6 @@ export const AdminUsersPage = () => {
 
   const { sidebarOpen, handleSetSidebarState } = useContext(DataContext);
   const { refresh, user } = useContext(AuthContext);
-  const [page, setPage] = useState(0);
-  const [rowsPerPage, setRowsPerPage] = useState(5);
   const [addOpen, toggleAddOpen] = useToggle(false);
   const [deleteOpen, toggleDeleteOpen] = useToggle(false);
   const [modifyOpen, toggleModifyOpen] = useToggle(false);
@@ -56,9 +54,6 @@ export const AdminUsersPage = () => {
     // eslint-disable-next-line
   }, []);
 
-  const handleChangeRowsPerPage = (e) => {
-    setRowsPerPage(e.target.value);
-  };
 
   const handleAddOpen = () => {
     toggleAddOpen(!addOpen);
@@ -190,14 +185,13 @@ export const AdminUsersPage = () => {
             <TableCard style={{ boxShadow: "1px 1px 6px 2px gray" }}>
               <CardMediaStyle />
               <Table>
+
+              <div style={{height:'40vh', width:'78.75vw',overflowY:'scroll'}}>
                 <ListHead headLabel={USERS_TABLE_HEADERS} />
                 <TableBody>
                   {orgUsers &&
                     orgUsers
-                      .slice(
-                        page * rowsPerPage,
-                        page * rowsPerPage + rowsPerPage
-                      )
+                      .slice()
                       .map((row) => {
                         const {
                           id,
@@ -244,8 +238,9 @@ export const AdminUsersPage = () => {
                         );
                       })}
                 </TableBody>
+                </div>
               </Table>
-              <TablePagination
+              {/* <TablePagination
                 style={{ width: "100%" }}
                 rowsPerPageOptions={[5, 10, 15]}
                 component="div"
@@ -254,7 +249,7 @@ export const AdminUsersPage = () => {
                 page={page}
                 onPageChange={(e, page) => setPage(page)}
                 onRowsPerPageChange={(e) => handleChangeRowsPerPage(e)}
-              />
+              /> */}
             </TableCard>
           </div>
         </div>

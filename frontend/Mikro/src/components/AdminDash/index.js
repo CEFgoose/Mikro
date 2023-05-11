@@ -2,7 +2,7 @@ import React, { useContext, useEffect, useState } from "react";
 import { DataContext } from "../../common/DataContext";
 import { AuthContext } from "../../common/AuthContext";
 import Sidebar from "../sidebar/sidebar";
-import { Table, TableBody, TablePagination } from "@mui/material";
+import { Table, TableBody} from "@mui/material";
 import { ConfirmationModal } from "components/AdminChecklistsPage/checklistComponents";
 import {
   ListHead,
@@ -48,8 +48,6 @@ export const AdminDash = () => {
   } = useContext(DataContext);
 
   const { refresh, user } = useContext(AuthContext);
-  const [page, setPage] = useState(0);
-  const [rowsPerPage, setRowsPerPage] = useState(10);
   const [projectSelected, setProjectSelected] = useState(null);
   // SETS STATE OF CONTROL SIDEBAR OPEN / COLLAPSED //
   const handleViewSidebar = () => {
@@ -94,9 +92,7 @@ export const AdminDash = () => {
     setProjectSelected(e);
   };
 
-  const handleChangeRowsPerPage = (e) => {
-    setRowsPerPage(e.target.value);
-  };
+
 
   return (
     <>
@@ -187,20 +183,17 @@ export const AdminDash = () => {
           >
             <TableCard style={{ boxShadow: "1px 1px 6px 2px gray" }}>
               <CardMediaStyle />
-              <Table>
+              <Table style={{}}>
+                <div style={{height:'40vh', width:'77.5vw',overflowY:'scroll'}}>
                 <ListHead headLabel={ADMIN_PROJECTS_TABLE_HEADERS} />
-                <TableBody>
+                <TableBody >
                   {activeProjects &&
                     activeProjects
-                      .slice(
-                        page * rowsPerPage,
-                        page * rowsPerPage + rowsPerPage
-                      )
+                      .slice()
                       .map((row) => {
                         const {
                           id,
                           name,
-                          difficulty,
                           mapping_rate_per_task,
                           validation_rate_per_task,
                           total_tasks,
@@ -240,7 +233,7 @@ export const AdminDash = () => {
                               }`}
                             />
                             <ProjectCell entry={total_tasks} />
-                            <ProjectCell entry={difficulty} />
+                            {/* <ProjectCell entry={difficulty} /> */}
                             <ProjectCell
                               entry={`$${
                                 max_payment && max_payment.toFixed(2)
@@ -259,17 +252,8 @@ export const AdminDash = () => {
                         );
                       })}
                 </TableBody>
+                </div>
               </Table>
-              <TablePagination
-                style={{ width: "100%" }}
-                rowsPerPageOptions={[5, 10, 15]}
-                component="div"
-                count={orgProjects ? orgProjects.length : 5}
-                rowsPerPage={rowsPerPage}
-                page={page}
-                onPageChange={(e, page) => setPage(page)}
-                onRowsPerPageChange={(e) => handleChangeRowsPerPage(e)}
-              />
             </TableCard>
           </div>
         </div>

@@ -355,13 +355,14 @@ export const AdminTasksPage = () => {
               display: "flex",
               flexDirection: "row",
               marginLeft: "3.5vw",
-              height: "42vh",
+              height: "82vh",
               width: "77.5vw",
             }}
           >
             <TableCard style={{ boxShadow: "1px 1px 6px 2px gray" }}>
               <CardMediaStyle />
               <Table>
+              <div style={{height:'40vh', width:'77.5vw',overflowY:'scroll'}}>
                 <ListHead headLabel={EXTERNAL_VALIDATIONS_HEADERS} />
                 <TableBody>
                   {externalValidations &&
@@ -399,22 +400,12 @@ export const AdminTasksPage = () => {
                             <ProjectCell entry={project_id}/>
                             <ProjectCell entry={mapped_by}/>
                             <ProjectCell entry={validated_by} />
-
                           </ProjectRow>
                         );
                       })}
                 </TableBody>
+                </div>
               </Table>
-              <TablePagination
-                style={{ width: "100%" }}
-                rowsPerPageOptions={[5, 10, 15]}
-                component="div"
-                count={externalValidations ? externalValidations.length : 5}
-                rowsPerPage={rowsPerPage}
-                page={page}
-                onPageChange={(e, page) => setPage(page)}
-                onRowsPerPageChange={(e) => handleChangeRowsPerPage(e)}
-              />
             </TableCard>
             </div>
             </TabPanel>
