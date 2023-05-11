@@ -72,9 +72,9 @@ export const UserChecklistsPage = () => {
     toggleConfirmOpen();
   };
 
-  const handleCompleteListItem = (e, itemNumber, id, name) => {
+  const handleCompleteListItem = (e, itemNumber, id, userID, name) => {
     if (e.target.checked) {
-      completeListItem(id, itemNumber, name);
+      completeListItem(id, itemNumber, userID, name);
     }
   };
 

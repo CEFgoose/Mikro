@@ -337,9 +337,9 @@ export const AdminChecklistsPage = () => {
     handleAddOpen();
   };
 
-  const handleConfirmItem = (e, itemNumber, id) => {
+  const handleConfirmItem = (e, itemNumber, id, user_id) => {
     if (e.target.checked) {
-      confirmListItem(id, itemNumber);
+      confirmListItem(id, itemNumber, user_id);
     }
   };
 

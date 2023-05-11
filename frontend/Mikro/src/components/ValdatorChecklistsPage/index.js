@@ -68,9 +68,9 @@ export const ValidatorChecklistsPage = () => {
     setChecklistSelectedName(name);
   };
 
-  const handleConfirmItem = (e, itemNumber, id, name) => {
+  const handleConfirmItem = (e, itemNumber, id, userID, name) => {
     if (e.target.checked) {
-      confirmListItem(id, itemNumber, name);
+      confirmListItem(id, itemNumber, userID, name);
     }
   };
 
@@ -78,9 +78,9 @@ export const ValidatorChecklistsPage = () => {
     startChecklist(checklistSelected);
   };
 
-  const handleCompleteListItem = (e, itemNumber, id, name) => {
+  const handleCompleteListItem = (e, itemNumber, id, userID, name) => {
     if (e.target.checked) {
-      completeListItem(id, itemNumber, name);
+      completeListItem(id, itemNumber, userID, name);
     }
   };
 

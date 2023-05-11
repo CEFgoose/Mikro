@@ -36,12 +36,8 @@ export const DataProvider = ({ children }) => {
   const [orgActiveChecklists, setorgActiveChecklists] = useState([]);
   const [orgInActiveChecklists, setorgInactiveChecklists] = useState([]);
   const [orgStaleChecklists, setOrgStaleChecklists] = useState([]);
-  const [orgUserCompletedChecklists, setorgUserCompletedChecklists] = useState(
-    []
-  );
-  const [orgUserConfirmedChecklists, setorgUserConfirmedChecklists] = useState(
-    []
-  );
+  const [orgUserCompletedChecklists, setorgUserCompletedChecklists] = useState([]);
+  const [orgUserConfirmedChecklists, setorgUserConfirmedChecklists] = useState([]);
   const [userAvailableChecklists, setUserAvailableChecklists] = useState([]);
   const [userCompletedChecklists, setUserCompletedChecklists] = useState([]);
   const [userConfirmedChecklists, setUserConfirmedChecklists] = useState([]);
@@ -61,18 +57,15 @@ export const DataProvider = ({ children }) => {
   const [tasksValidated, setTasksValidated] = useState(null);
   const [tasksInvalidated, setTasksInvalidated] = useState(null);
   const [validatorTasksValidated, setValidatorTasksValidated] = useState(null);
-  const [validatorTasksInvalidated, setValidatorTasksInvalidated] =
-    useState(null);
+  const [validatorTasksInvalidated, setValidatorTasksInvalidated] = useState(null);
   const [payableTotal, setPayableTotal] = useState(null);
   const [requestsTotal, setRequestsTotal] = useState(null);
   const [paidTotal, setPaidTotal] = useState(null);
   const [CSVdata, setCSVdata] = useState([]);
-
   const [mappingEarnings, setMappingEarnings] = useState(null);
   const [validationEarnings, setValidationEarnings] = useState(null);
   const [checklistsEarnings, setChecklistsEarnings] = useState(null);
   const [totalEarnings, setTotalEarnings] = useState(null);
-
   const [confirmOpen, toggleConfirmOpen] = useToggle(false);
   const [confirmQuestion, setConfirmQuestion] = useState("");
   const [confirmText, setConfirmText] = useState("");
@@ -223,10 +216,11 @@ export const DataProvider = ({ children }) => {
     });
   };
 
-  const completeListItem = (checklistSelected, itemNumber, checklistName) => {
+  const completeListItem = (checklistSelected, itemNumber, userID,checklistName) => {
     let outpack = {
       checklist_id: checklistSelected,
       item_number: itemNumber,
+      user_id:userID
     };
     let completeItemUrl = "checklist/complete_list_item";
     poster(outpack, completeItemUrl).then((response) => {
@@ -245,10 +239,11 @@ export const DataProvider = ({ children }) => {
     });
   };
 
-  const confirmListItem = (checklistSelected, itemNumber, checklistName) => {
+  const confirmListItem = (checklistSelected, itemNumber, userID,checklistName) => {
     let outpack = {
       checklist_id: checklistSelected,
       item_number: itemNumber,
+      user_id:userID
     };
     let confirmItemUrl = "checklist/confirm_list_item";
     poster(outpack, confirmItemUrl).then((response) => {

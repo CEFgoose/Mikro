@@ -432,6 +432,7 @@ class ChecklistAPI(MethodView):
                 print('no completion date')
             checklist_obj = {
                 "id": checklist.id,
+                "user_id":checklist.user_id,
                 "name": checklist.name,
                 "user_name": user_name,
                 "author": checklist.author,
@@ -526,6 +527,7 @@ class ChecklistAPI(MethodView):
                 due_date = str(due_date).split("00:00:00")[0]
                 checklist_obj = {
                     "id": checklist.id,
+                    "user_id":checklist.user_id,
                     "name": checklist.name,
                     "author": checklist.author,
                     "description": checklist.description,
@@ -869,17 +871,18 @@ class ChecklistAPI(MethodView):
             return response
         checklist_id = request.json.get("checklist_id")
         item_number = request.json.get("item_number")
-        required_args = ["checklist_id", "item_number"]
+        user_id = request.json.get("user_id")
+        required_args = ["checklist_id", "item_number","user_id"]
         for arg in required_args:
             if not request.json.get(arg):
                 return {"message": f"{arg} required", "status": 400}
         target_user_checklist_item = UserChecklistItem.query.filter_by(
-            user_id=g.user.id,
+            user_id=user_id,
             checklist_id=checklist_id,
             item_number=item_number,
         ).first()
         target_user_checklist = UserChecklist.query.filter_by(
-            user_id=g.user.id,
+            user_id=user_id,
             id=checklist_id,
         ).first()
         target_user_checklist_item.update(
@@ -893,7 +896,7 @@ class ChecklistAPI(MethodView):
         all_user_checklist_items_completion = [
             item.completed
             for item in UserChecklistItem.query.filter_by(
-                user_id=g.user.id,
+                user_id=user_id,
                 checklist_id=checklist_id,
             ).all()
         ]
@@ -921,17 +924,19 @@ class ChecklistAPI(MethodView):
             return response
         checklist_id = request.json.get("checklist_id")
         item_number = request.json.get("item_number")
-        required_args = ["checklist_id", "item_number"]
+        user_id = request.json.get("user_id")
+        required_args = ["checklist_id", "item_number","user_id"]
         for arg in required_args:
             if not request.json.get(arg):
                 return {"message": f"{arg} required", "status": 400}
         target_user_checklist_item = UserChecklistItem.query.filter_by(
-            user_id=g.user.id,
+            user_id=user_id,
             checklist_id=checklist_id,
             item_number=item_number,
         ).first()
+
         target_user_checklist = UserChecklist.query.filter_by(
-            user_id=g.user.id,
+            user_id=user_id,
             id=checklist_id,
         ).first()
 
@@ -946,7 +951,7 @@ class ChecklistAPI(MethodView):
         all_user_checklist_items_completion = [
             item.confirmed
             for item in UserChecklistItem.query.filter_by(
-                user_id=g.user.id,
+                user_id=user_id,
                 checklist_id=checklist_id,
             ).all()
         ]

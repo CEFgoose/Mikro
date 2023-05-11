@@ -67,6 +67,7 @@ export const ChecklistCardGrid = (props) => {
               confirmed,
               payment_due,
               comments,
+              user_id
             } = card;
             // console.log(list_items)
             return (
@@ -131,6 +132,7 @@ export const ChecklistCardGrid = (props) => {
                     <UserChecklistCard
                       id={id}
                       name={name}
+                      user_id={user_id}
                       description={description}
                       comments={comments}
                       role={props.role}
@@ -160,6 +162,7 @@ export const ChecklistCardGrid = (props) => {
                     <ValidatorChecklistCard
                       id={id}
                       name={name}
+                      user_id={user_id}
                       role={props.role}
                       user_name={user_name}
                       completed={completed}
@@ -1558,6 +1561,7 @@ export const UserChecklistCard = (props) => {
                             e,
                             number,
                             props.id,
+                            props.user_id,
                             props.name
                           )
                         ) : (
@@ -1735,6 +1739,7 @@ export const UserChecklistCard = (props) => {
   );
 };
 
+
 export const ValidatorChecklistCard = (props) => {
   return (
     <Card
@@ -1793,14 +1798,12 @@ export const ValidatorChecklistCard = (props) => {
           />
         </div>
       </div>
-
       <div
         style={{
           display: "flex",
           flexDirection: "column",
         }}
       >
-        {/* <SectionSubtitle subtitle_text={`Checklist`} bold={true} margin_bottom={'0vh'}/> */}
         <div
           style={{
             display: "flex",
@@ -1814,7 +1817,6 @@ export const ValidatorChecklistCard = (props) => {
           <SectionSubtitle subtitle_text={`Complete`} bold={true} />
           <SectionSubtitle subtitle_text={`Confirmed`} bold={true} />
         </div>
-
         <div
           style={{
             display: "flex",
@@ -1822,7 +1824,6 @@ export const ValidatorChecklistCard = (props) => {
             height: "15vh",
             overflowY: "scroll",
             overflowX: "scroll",
-            // backgroundColor:'lightgrey'
           }}
         >
           {props.list_items &&
@@ -1856,7 +1857,7 @@ export const ValidatorChecklistCard = (props) => {
                       id={number}
                       key={number + action}
                       onChange={(e) =>
-                        props.handleConfirmItem(e, number, props.id, props.name)
+                        props.handleConfirmItem(e, number, props.id, props.user_id, props.name)
                       }
                       checked={confirmed === true}
                       style={{ marginLeft: "0vw", marginRight: "1vw" }}
@@ -1872,7 +1873,6 @@ export const ValidatorChecklistCard = (props) => {
             })}
         </div>
       </div>
-
       <div
         style={{
           display: "flex",
