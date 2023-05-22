@@ -160,7 +160,7 @@ class TaskAPI(MethodView):
             if validator_exists is not None:
                 for task in c["validatedTasks"]:
                     task_exists = Task.query.filter_by(
-                        id=task, project_id=projectID
+                        task_id=task, project_id=projectID
                     ).first()
                     if task_exists is not None:
                         if (
@@ -276,7 +276,7 @@ class TaskAPI(MethodView):
         target_project = Project.query.filter_by(id=project_id).first()
         for task_id in user_task_ids:
             target_user = User.query.filter_by(id=user.id).first()
-            target_task = Task.query.filter_by(id=task_id).first()
+            target_task = Task.query.filter_by(task_id=task_id).first()
             if not target_task.invalidated:
                 invalid_tasks_url = (
                     "https://tasks.kaart.com/api/v2/projects/%s/tasks/%s/"
@@ -338,16 +338,15 @@ class TaskAPI(MethodView):
                     osm_username=contributor["username"]
                 ).first()
                 for task in contributor["mappedTasks"]:
-
                     task_exists = Task.query.filter_by(
-                        id=task,
+                        task_id=task,
                         project_id=projectID,
                         mapped_by=mapper.osm_username,
                     ).first()
                     if task_exists is None:
                         newMappedTasks.append(task)
                         new_task = Task.create(
-                            id=task,
+                            task_id=task,
                             org_id=g.user.org_id,
                             project_id=projectID,
                             mapping_rate=target_project.mapping_rate_per_task,
@@ -529,7 +528,7 @@ class TaskAPI(MethodView):
             return {"message": "User not found", "status": 304}
         task_id = request.json.get("task_id")
         task_action = request.json.get("task_action")
-        target_task=Task.query.filter_by(id=task_id).first()
+        target_task=Task.query.filter_by(task_id=task_id).first()
         target_project=Project.query.filter_by(id=target_task.project_id).first()
         target_mapper=User.query.filter_by(osm_username=target_task.mapped_by).first()
         if task_action == 'Validate':

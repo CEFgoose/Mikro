@@ -15,7 +15,7 @@ from .common import ModelWithSoftDeleteAndCRUD, SurrogatePK, CRUDMixin, db
 
 class User(ModelWithSoftDeleteAndCRUD, SurrogatePK):
     __tablename__ = "users"
-    id = db.Column(db.Integer, primary_key=True, autoincrement=False)
+    id = db.Column(db.BigInteger, primary_key=True, nullable=False)
     email = Column(String, unique=True, nullable=True)
     payment_email = Column(String, unique=True, nullable=True)
     city = Column(String, nullable=True)
@@ -257,6 +257,7 @@ class UserTasks(CRUDMixin, SurrogatePK, db.Model):
 class Task(ModelWithSoftDeleteAndCRUD, SurrogatePK):
     __tablename__ = "tasks"
     id = db.Column(db.BigInteger, primary_key=True, nullable=False)
+    task_id = db.Column(db.BigInteger,  nullable=True)
     org_id = db.Column(db.Integer, nullable=True, default=0)
     project_id = db.Column(
         db.BigInteger,
