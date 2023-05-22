@@ -5,17 +5,17 @@ import { SSO_URL } from "components/constants";
 import React, { useContext, useEffect, useState } from "react";
 import { NavLink } from "react-router-dom";
 import styled, { css } from "styled-components";
-import dashicon from "../../images/bullet-list-50.png";
-import leftArrow from "../../images/left-arrow-50.png";
-import logouticon from "../../images/log-out-50.png";
-import projects_icon from "../../images/project_icon.png";
-import users_icon from "../../images/users_icon.png";
-import payments_icon from "../../images/payments_icon.png";
-import account_icon from "../../images/account_icon.png";
-import checklist_icon from "../../images/checklist_icon.png";
+import dashicon from "../../images/newIcons/dashboard.png";
+import leftArrow from "../../images/newIcons/kaart back.png";
+import logouticon from "../../images/newIcons/log out.png";
+import projects_icon from "../../images/newIcons/projects.png";
+import users_icon from "../../images/newIcons/users.png";
+import payments_icon from "../../images/newIcons/payments.png";
+import account_icon from "../../images/newIcons/account.png";
+import checklist_icon from "../../images/newIcons/checklists.png";
 import mikro_icon from "../../images/5.png";
-import training_icon from "../../images/training-icon.png";
-import tasks_icon from '../../images/tasks_icon.png'
+import training_icon from "../../images/newIcons/training.png";
+import tasks_icon from '../../images/newIcons/tasks alt.png'
 import "./styles.css";
 import {
   Header,

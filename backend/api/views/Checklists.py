@@ -525,9 +525,9 @@ class ChecklistAPI(MethodView):
             for checklist in list:
                 due_date = str(checklist.due_date).split(" 00:00:00 GMT")[0]
                 due_date = str(due_date).split("00:00:00")[0]
+
                 checklist_obj = {
                     "id": checklist.id,
-                    "user_id":checklist.user_id,
                     "name": checklist.name,
                     "author": checklist.author,
                     "description": checklist.description,
@@ -544,6 +544,7 @@ class ChecklistAPI(MethodView):
                     "comments": [],
                 }
                 if checklist in user_checklists:
+                    checklist_obj['user_id']=checklist.user_id
                     checklist_items = UserChecklistItem.query.filter_by(
                         checklist_id=checklist.id, user_id=g.user.id
                     ).order_by(UserChecklistItem.item_number).all()

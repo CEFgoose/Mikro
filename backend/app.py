@@ -28,11 +28,7 @@ def load_user_from_jwt():
     if "register_user" not in request.url:
         g.user = User.query.filter_by(id=get_jwt_identity()).one_or_none()
 
-#DEV
-# SSO_BASE_URL = "http://127.0.0.1:5001/api/"
 
-#PROD
-SSO_BASE_URL = "https://my.kaart.com/api/"
 
 DB_key = "cjyjs1zsq0ypexp"
 DB_secret = "d4q5mgo3i0sy9y3"
@@ -117,6 +113,7 @@ migrate = Migrate(app, db)
 # app.add_url_rule("/api/transaction/<path>", view_func=TransactionAPI.as_view("transaction"))
 # app.add_url_rule("/api/task/<path>", view_func=TaskAPI.as_view("task"))
 # app.add_url_rule( "/api/checklist/<path>", view_func=ChecklistAPI.as_view("checklist"))
+# SSO_BASE_URL = "http://127.0.0.1:5001/api/"
 
 # PROD
 app.add_url_rule("/login", view_func=LoginAPI.as_view("auth"))
@@ -126,6 +123,7 @@ app.add_url_rule("/project/<path>", view_func=ProjectAPI.as_view("project"))
 app.add_url_rule("/transaction/<path>", view_func=TransactionAPI.as_view("transaction"))
 app.add_url_rule("/task/<path>", view_func=TaskAPI.as_view("task"))
 app.add_url_rule("/checklist/<path>", view_func=ChecklistAPI.as_view("checklist"))
+SSO_BASE_URL = "https://my.kaart.com/api/"
 
 
 @app.before_request
