@@ -6,8 +6,9 @@ You will need to set up a local database instance  named "mikro" and with your r
 
 You will then need to exit psql, cd into the back end folder, and run "flask db migrate" and the n "flask db upgrade" which will configure the new local database according to the slqalchemy setup in viewer
 
-
-
+psql
+CREATE USER mikro;
+GRANT ALL PRIVILEGES ON DATABASE mikro TO mikro;
 
 
 

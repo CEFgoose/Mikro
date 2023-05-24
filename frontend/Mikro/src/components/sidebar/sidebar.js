@@ -5,17 +5,26 @@ import { SSO_URL } from "components/constants";
 import React, { useContext, useEffect, useState } from "react";
 import { NavLink } from "react-router-dom";
 import styled, { css } from "styled-components";
-import dashicon from "../../images/newIcons/dashboard.png";
-import leftArrow from "../../images/newIcons/kaart back.png";
-import logouticon from "../../images/newIcons/log out.png";
-import projects_icon from "../../images/newIcons/projects.png";
-import users_icon from "../../images/newIcons/users.png";
-import payments_icon from "../../images/newIcons/payments.png";
-import account_icon from "../../images/newIcons/account.png";
-import checklist_icon from "../../images/newIcons/checklists.png";
+import dashicon from "../../images/newIcons/round2/dashboard_1.png";
+import checklist_icon from "../../images/newIcons/round2/checklists.png";
+import projects_icon from "../../images/newIcons/round2/projects_1.png";
+import tasks_icon from '../../images/newIcons/round2/tasks.png'
+import users_icon from "../../images/newIcons/round2/users_1.png";
+import training_icon from "../../images/newIcons/round2/training_1.png";
+import payments_icon from "../../images/newIcons/round2/payments.png";
+import account_icon from "../../images/newIcons/round2/account.png";
+import logouticon from "../../images/newIcons/round2/log out.png";
+import leftArrow from "../../images/newIcons/round2/kaart back_1.png";
+
+
+
+
+
+
+
 import mikro_icon from "../../images/5.png";
-import training_icon from "../../images/newIcons/training.png";
-import tasks_icon from '../../images/newIcons/tasks alt.png'
+
+
 import "./styles.css";
 import {
   Header,
