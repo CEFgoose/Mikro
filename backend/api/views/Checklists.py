@@ -417,76 +417,77 @@ class ChecklistAPI(MethodView):
             due_date = str(checklist.due_date).split(" 00:00:00 GMT")[0]
             due_date = str(due_date).split("00:00:00")[0]
             user = User.query.filter_by(id=checklist.user_id).first()
-            user_name = "%s (%s)" % (
-                user.first_name.capitalize(),
-                user.osm_username,
-            )
-            stale=False
-            try:
-                diff = checklist.last_completion_date - checklist.date_created 
-                diff=str(diff).split(":")[0]
+            if user != None:
+                user_name = "%s (%s)" % (
+                    user.first_name.capitalize(),
+                    user.osm_username,
+                )
+                stale=False
+                try:
+                    diff = checklist.last_completion_date - checklist.date_created 
+                    diff=str(diff).split(":")[0]
 
-                if diff > 72:
-                    stale=True
-            except Exception as e:
-                print('no completion date')
-            checklist_obj = {
-                "id": checklist.id,
-                "user_id":checklist.user_id,
-                "name": checklist.name,
-                "user_name": user_name,
-                "author": checklist.author,
-                'stale':stale,
-                "description": checklist.description,
-                "due_date": due_date,
-                "validation_rate": checklist.validation_rate,
-                "completion_rate": checklist.completion_rate,
-                "difficulty": checklist.difficulty,
-                "visibility": checklist.visibility,
-                "active_status": checklist.active_status,
-                "completed": checklist.completed,
-                "confirmed": checklist.confirmed,
-                "list_items": [],
-                "comments": [],
-            }
-            checklist_items = UserChecklistItem.query.filter(
-                UserChecklistItem.checklist_id==checklist.id
-            ).order_by(UserChecklistItem.item_number).all()
-            for item in checklist_items:
-                item_obj = {
-                    "number": item.item_number,
-                    "action": item.item_action,
-                    "link": item.item_link,
-                    "completed": item.completed,
-                    "confirmed": item.confirmed,
+                    if diff > 72:
+                        stale=True
+                except Exception as e:
+                    print('no completion date')
+                checklist_obj = {
+                    "id": checklist.id,
+                    "user_id":checklist.user_id,
+                    "name": checklist.name,
+                    "user_name": user_name,
+                    "author": checklist.author,
+                    'stale':stale,
+                    "description": checklist.description,
+                    "due_date": due_date,
+                    "validation_rate": checklist.validation_rate,
+                    "completion_rate": checklist.completion_rate,
+                    "difficulty": checklist.difficulty,
+                    "visibility": checklist.visibility,
+                    "active_status": checklist.active_status,
+                    "completed": checklist.completed,
+                    "confirmed": checklist.confirmed,
+                    "list_items": [],
+                    "comments": [],
                 }
-                checklist_obj["list_items"].append(item_obj)
-            checklist_comments = ChecklistComment.query.filter_by(
-                checklist_id=checklist.id
-            ).all()
-            for comment in checklist_comments:
-                comment_obj = {
-                    "id": comment.id,
-                    "comment": comment.comment,
-                    "author": comment.author,
-                    "role": comment.role,
-                    "date": comment.date,
-                }
-                checklist_obj["comments"].append(comment_obj)
-            if (
-                checklist_obj["completed"] is True
-                and checklist_obj["confirmed"] is False
-                and checklist_obj['stale'] is False
-            ):
-                ready_for_confirmation.append(checklist_obj)
-            if (
-                checklist_obj["completed"] is True
-                and checklist_obj["confirmed"] is True
-                and checklist_obj['stale'] is False
-            ):
-                confirmed_and_completed.append(checklist_obj)
-            if (checklist_obj['stale'] is True):
-                stale_started_checklists.append(checklist_obj)
+                checklist_items = UserChecklistItem.query.filter(
+                    UserChecklistItem.checklist_id==checklist.id
+                ).order_by(UserChecklistItem.item_number).all()
+                for item in checklist_items:
+                    item_obj = {
+                        "number": item.item_number,
+                        "action": item.item_action,
+                        "link": item.item_link,
+                        "completed": item.completed,
+                        "confirmed": item.confirmed,
+                    }
+                    checklist_obj["list_items"].append(item_obj)
+                checklist_comments = ChecklistComment.query.filter_by(
+                    checklist_id=checklist.id
+                ).all()
+                for comment in checklist_comments:
+                    comment_obj = {
+                        "id": comment.id,
+                        "comment": comment.comment,
+                        "author": comment.author,
+                        "role": comment.role,
+                        "date": comment.date,
+                    }
+                    checklist_obj["comments"].append(comment_obj)
+                if (
+                    checklist_obj["completed"] is True
+                    and checklist_obj["confirmed"] is False
+                    and checklist_obj['stale'] is False
+                ):
+                    ready_for_confirmation.append(checklist_obj)
+                if (
+                    checklist_obj["completed"] is True
+                    and checklist_obj["confirmed"] is True
+                    and checklist_obj['stale'] is False
+                ):
+                    confirmed_and_completed.append(checklist_obj)
+                if (checklist_obj['stale'] is True):
+                    stale_started_checklists.append(checklist_obj)
         return {
             "active_checklists": active_checklists,
             "inactive_checklists": inactive_checklists,
