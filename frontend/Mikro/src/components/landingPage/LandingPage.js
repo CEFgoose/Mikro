@@ -17,7 +17,7 @@ export const LandingPage = (props) => {
     <>
       <div
         style={{
-          backgroundColor: "black",
+          background: 'linear-gradient(to bottom right, black, #555555)',
           width: "100%",
           height: "100%",
           display: "flex",
