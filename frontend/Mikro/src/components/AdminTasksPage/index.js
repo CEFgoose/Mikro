@@ -85,7 +85,6 @@ export const AdminTasksPage = () => {
   useEffect(() => {
 
     
-    console.log(externalValidations)
     // eslint-disable-next-line
   }, [externalValidations]);
 

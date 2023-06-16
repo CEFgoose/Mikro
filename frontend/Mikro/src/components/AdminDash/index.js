@@ -75,7 +75,6 @@ export const AdminDash = () => {
   }, []);
 
   useEffect(() => {
-    console.log(externalValidations.length)
     if(externalValidations.length > 0){
       setConfirmQuestion(`You have ${externalValidations.length} tasks with unknown validators to confirm on the Tasks page`)
       toggleConfirmOpen()

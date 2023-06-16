@@ -742,6 +742,7 @@ class ChecklistAPI(MethodView):
                 "id": checklist.id,
                 "name": checklist.name,
                 "user_name": user_name,
+                "user_id": user.id,
                 "author": checklist.author,
                 "description": checklist.description,
                 "due_date": due_date,
@@ -927,6 +928,7 @@ class ChecklistAPI(MethodView):
         checklist_id = request.json.get("checklist_id")
         item_number = request.json.get("item_number")
         user_id = request.json.get("user_id")
+        print(user_id)
         required_args = ["checklist_id", "item_number","user_id"]
         for arg in required_args:
             if not request.json.get(arg):

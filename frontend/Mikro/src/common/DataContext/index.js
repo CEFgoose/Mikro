@@ -79,7 +79,6 @@ export const DataProvider = ({ children }) => {
   };
 
   const handleAdminDashStates = (e) => {
-    console.log(e);
     setActiveProjectsCount(e.active_projects);
     setInactiveProjectsCount(e.inactive_projects);
     setCompletedProjects(e.completed_projects);
@@ -245,6 +244,7 @@ export const DataProvider = ({ children }) => {
       item_number: itemNumber,
       user_id:userID
     };
+    
     let confirmItemUrl = "checklist/confirm_list_item";
     poster(outpack, confirmItemUrl).then((response) => {
       if (response.status === 200) {
@@ -384,12 +384,10 @@ export const DataProvider = ({ children }) => {
     let fetchUserChecklistsUrl = "checklist/fetch_user_checklists";
     fetcher(fetchUserChecklistsUrl).then((response) => {
       if (response.status === 200) {
-        console.log(response);
         setUserAvailableChecklists(response.user_available_checklists);
         setUserCompletedChecklists(response.user_completed_checklists);
         setUserConfirmedChecklists(response.user_confirmed_checklists);
         setUserStartedChecklists(response.user_started_checklists);
-        console.log(response.user_started_checklists);
       } else if (response.status === 304) {
         history("/login");
       } else {
@@ -401,7 +399,7 @@ export const DataProvider = ({ children }) => {
   const fetchValidatorChecklists = () => {
     let fetchValidatorChecklistsUrl = "checklist/fetch_validator_checklists";
     fetcher(fetchValidatorChecklistsUrl).then((response) => {
-      console.log("RESPONSE", response);
+
       if (response.status === 200) {
         setUserAvailableChecklists(response.user_available_checklists);
         setUserCompletedChecklists(response.user_completed_checklists);
@@ -1382,12 +1380,9 @@ export const DataProvider = ({ children }) => {
 
 
     const spliceArray=(inlist,index)=>{
-      console.log(inlist,index)
-      // index = inlist.indexOf(index);
       if (index > -1) { 
         inlist.splice(index, 1);
       }
-      // console.log(inlist)
       return inlist
     }
 

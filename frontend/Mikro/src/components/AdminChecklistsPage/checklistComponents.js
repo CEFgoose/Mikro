@@ -69,7 +69,6 @@ export const ChecklistCardGrid = (props) => {
               comments,
               user_id
             } = card;
-            // console.log(list_items)
             return (
               <>
                 {props.type === "Admin" ? (
@@ -1857,7 +1856,7 @@ export const ValidatorChecklistCard = (props) => {
                       id={number}
                       key={number + action}
                       onChange={(e) =>
-                        props.handleConfirmItem(e, number, props.id, props.user_id, props.name)
+                        props.handleConfirmItem(e,number, props.id, props.user_id, props.name)
                       }
                       checked={confirmed === true}
                       style={{ marginLeft: "0vw", marginRight: "1vw" }}
