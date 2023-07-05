@@ -13,9 +13,13 @@ export const UserTrainingPage = () => {
     sidebarOpen,
     handleSetSidebarState,
     orgMappingTrainings,
+    setOrgMappingTrainings,
     orgValidationTrainings,
+    setOrgValidationTrainings,
     orgProjectTrainings,
+    setOrgProjectTrainings,
     userCompletedTrainings,
+    setUserCompletedTrainings,
     fetchUserTrainings,
     shuffleArray,
     history,
@@ -234,13 +238,13 @@ export const UserTrainingPage = () => {
         confirmButtonText={confirmButtonText}
         handleCompleteTraining={handleCompleteTraining}
       />
-      <div style={{ width: "100%", float: "left" }}>
+      <div style={{ width: "90%", float: "left" }}>
         <Sidebar isOpen={sidebarOpen} toggleSidebar={handleViewSidebar} />
         <div
           style={{
             display: "flex",
             position: "relative",
-            left: "15vw",
+            left: "5vw",
             flexDirection: "column",
             height: "100vh",
           }}
@@ -251,7 +255,7 @@ export const UserTrainingPage = () => {
             <h1 style={{ marginTop: "1vw", paddingBottom: "2vh" }}>
               <strong>Training:</strong>
             </h1>
-            <div style={{ marginLeft: "50vw", marginTop: "1vh" }}>
+            <div style={{ marginLeft: "40vw", marginTop: "1vh" }}>
               <ButtonDivComponent
                 button1={true}
                 button1_text={"View"}
@@ -265,7 +269,11 @@ export const UserTrainingPage = () => {
           </div>
           <Tabs>
             <TabList
-              style={{ marginLeft: "3vw", marginTop: "0vh", paddingTop: "0vh" }}
+              style={{ 
+                marginLeft: "3vw", 
+                marginTop: "0vh", 
+                paddingTop: "0vh" 
+              }}
             >
               <Tab value={1} onClick={(e) => handleSetActiveTab(e)}>
                 Mapping
@@ -287,6 +295,7 @@ export const UserTrainingPage = () => {
                 setPage={setPage}
                 handleChangeRowsPerPage={handleChangeRowsPerPage}
                 orgTrainings={orgMappingTrainings}
+                setOrgTrainings={setOrgMappingTrainings}
                 trainingSelected={trainingSelected}
                 handleSetTrainingSelected={handleSetTrainingSelected}
               />
@@ -299,6 +308,7 @@ export const UserTrainingPage = () => {
                 handleChangeRowsPerPage={handleChangeRowsPerPage}
                 trainingSelected={trainingSelected}
                 orgTrainings={orgValidationTrainings}
+                setOrgTrainings={setOrgValidationTrainings}
                 handleSetTrainingSelected={handleSetTrainingSelected}
               />
             </TabPanel>
@@ -311,6 +321,7 @@ export const UserTrainingPage = () => {
                 trainingSelected={trainingSelected}
                 handleSetTrainingSelected={handleSetTrainingSelected}
                 orgTrainings={orgProjectTrainings}
+                setOrgTrainings={setOrgProjectTrainings}
               />
             </TabPanel>
             <TabPanel>
@@ -322,6 +333,7 @@ export const UserTrainingPage = () => {
                 trainingSelected={trainingSelected}
                 handleSetTrainingSelected={handleSetTrainingSelected}
                 orgTrainings={userCompletedTrainings}
+                setOrgTrainings={setUserCompletedTrainings}
               />
             </TabPanel>
           </Tabs>

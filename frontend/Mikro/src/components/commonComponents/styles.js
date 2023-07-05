@@ -17,6 +17,8 @@ export const Button = styled.div`
   height: 4vh;
   border-radius: 6px;
   padding: 1px 1px;
+  text-align: center;
+  line-height: 2.5em;
   &:hover {
     cursor: pointer;
     background-color: #91a5ac;
@@ -82,3 +84,4 @@ export const TextArea = styled.textarea`
   border-radius: 6px;
   box-sizing: border-box;
 `;
+

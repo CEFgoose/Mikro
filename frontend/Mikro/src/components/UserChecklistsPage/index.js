@@ -14,6 +14,8 @@ import { ButtonDivComponent } from "components/commonComponents/commonComponents
 export const UserChecklistsPage = () => {
   const { refresh, user } = useContext(AuthContext);
   const {
+    sideBarOpen,
+    handleSetSidebarState,
     userAvailableChecklists,
     userCompletedChecklists,
     userConfirmedChecklists,
@@ -102,6 +104,10 @@ export const UserChecklistsPage = () => {
     handleCommentOpen();
   };
 
+  const handleViewSidebar = () => {
+    handleSetSidebarState();
+  };
+
 
   return (
     <>
@@ -118,21 +124,31 @@ export const UserChecklistsPage = () => {
         handleSetComment={handleSetComment}
         handleAddComment={handleAddComment}
       />
-      <div style={{ width: "100%", float: "left" }}>
-        <Sidebar isOpen={true} />
+      <div style={{ width: "90%", float: "left" }}>
+        <Sidebar isOpen={sideBarOpen}toggleSidebar={handleViewSidebar}/>
         <div
           style={{
             display: "flex",
             position: "relative",
-            left: "15vw",
+            left: "5vw",
             flexDirection: "column",
             height: "100vh",
           }}
         >
           <div
-            style={{ display: "flex", marginLeft: "6vh", flexDirection: "row" }}
+            style={{ 
+              display: "flex", 
+              marginLeft: "6vh", 
+              flexDirection: "row" 
+            }}
           >
-            <h1 style={{ marginTop: "1vw", paddingBottom: "2vh" }}>
+            <h1 
+              style={{ 
+               // marginLeft: "3vw", 
+                marginTop: "1vw", 
+                paddingBottom: "2vh" 
+              }}
+            >
               <strong>Checklists:</strong>
             </h1>
             <div
@@ -154,7 +170,7 @@ export const UserChecklistsPage = () => {
           </div>
           <Tabs>
             <TabList
-              style={{ marginLeft: "3vw", marginTop: "0vh", paddingTop: "0vh" }}
+              style={{ marginLeft: "vw", marginTop: "0vh", paddingTop: "0vh" }}
             >
               <Tab value={1} onClick={(e) => handleSetActiveTab(e)}>
                 In Progress

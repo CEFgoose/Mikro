@@ -67,7 +67,7 @@ class UserAPI(MethodView):
 
     def first_login_update(self):
         # Check if the user is already logged in
-        if not g:
+        if not g.user:
             # If user is not logged in, return appropriate error message and status code  # noqa: E501
             return {"message": "User not found", "status": 304}
         # Get required fields from the JSON request, returning appropriate error messages if missing  # noqa: E501

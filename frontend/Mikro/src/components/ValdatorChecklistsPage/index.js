@@ -14,6 +14,8 @@ import {
 export const ValidatorChecklistsPage = () => {
   const { refresh, user } = useContext(AuthContext);
   const {
+    sideBarOpen,
+    handleSetSidebarState,
     userAvailableChecklists,
     userCompletedChecklists,
     userConfirmedChecklists,
@@ -108,6 +110,10 @@ export const ValidatorChecklistsPage = () => {
     handleCommentOpen();
   };
 
+  const handleViewSidebar = () => {
+    handleSetSidebarState();
+  };
+
   return (
     <>
       <CommentModal
@@ -125,21 +131,30 @@ export const ValidatorChecklistsPage = () => {
         extraText={confirmText}
       />
 
-      <div style={{ width: "100%", float: "left" }}>
-        <Sidebar isOpen={true} />
+      <div style={{ width: "90%", float: "left" }}>
+      <Sidebar isOpen={sideBarOpen}toggleSidebar={handleViewSidebar}/>
         <div
           style={{
             display: "flex",
             position: "relative",
-            left: "15vw",
+            left: "5vw",
             flexDirection: "column",
             height: "100vh",
           }}
         >
           <div
-            style={{ display: "flex", marginLeft: "6vh", flexDirection: "row" }}
+            style={{ 
+              display: "flex", 
+              arginLeft: "6vh", 
+              flexDirection: "row" }}
           >
-            <h1 style={{ marginTop: "1vw", paddingBottom: "2vh" }}>
+            <h1 
+              style={{ 
+                marginLeft: "3vw", 
+                marginTop: "1vw",
+                paddingBottom: "2vh" 
+              }}
+            >
               <strong>Checklists:</strong>
             </h1>
             <div

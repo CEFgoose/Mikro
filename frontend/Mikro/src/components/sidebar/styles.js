@@ -1,7 +1,6 @@
 import styled from "styled-components";
-import whiteKaartLogo from "../../images/20-KAART-White.svg";
 import close_icon from "../../images/close-icon.svg";
-import kaartLogo from "../../images/logo-kaart-standard.svg";
+import mikroLogo from "../../images/5.png";
 import menu_icon from "../../images/menu-icon.png";
 
 export const SidebarOpenedContainer = styled.div`
@@ -49,26 +48,32 @@ export const MenuItemTop = styled.div`
   }
 `;
 
-export const KaartLogoOpen = styled.div`
-  background-image: url(${kaartLogo});
+export const MikroLogoOpen = styled.div`
+  background-image: url(${mikroLogo});
   background-repeat: no-repeat;
   background-position: 50%;
+  background-size: contain;
   max-width: 100%;
-  width: 100px;
-  height: 80px;
-  /* position: relative; */
+  height: 5vh;
+  width: 5vw;
+  
+  position: relative; 
   &:hover {
     cursor: pointer;
   }
 `;
 
-export const KaartLogoClosed = styled.div`
-  background-image: url(${whiteKaartLogo});
+export const MikroLogoClosed = styled.div`
+  background-image: url(${mikroLogo});
   background-repeat: no-repeat;
+  background-origin: padding-box;
+  padding-left: 50%;
+  padding-top: 50%;
   background-position: 50%;
+  background-size: 60%;
   max-width: 100%;
-  width: 100px;
-  height: 80px;
+  height: 4vh;
+  width: 4vw;
   position: relative;
   &:hover {
     cursor: pointer;

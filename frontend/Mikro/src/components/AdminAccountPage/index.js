@@ -75,19 +75,28 @@ export const AdminAccountPage = () => {
         button_2_text="Cancel"
         button_2_action={handleModalOpen}
       />
-      <div style={{ width: "100%", float: "left" }}>
+      <div 
+        style={{ 
+          width: "90%", 
+          float: "left" 
+          }}
+        >
         <Sidebar isOpen={sidebarOpen} toggleSidebar={handleViewSidebar} />
         <div
           style={{
             display: "flex",
             position: "relative",
-            left: "15vw",
+            left: "5vw",
             flexDirection: "column",
             height: "100vh",
           }}
         >
           <div
-            style={{ display: "flex", marginLeft: "5vh", flexDirection: "row" }}
+            style={{ 
+              display: "flex", 
+              marginLeft: "5vh", 
+              flexDirection: "row" 
+            }}
           >
             <h1
               style={{
@@ -122,7 +131,11 @@ export const AdminAccountPage = () => {
               width: "79vw",
             }}
           >
-            <TableCard style={{ boxShadow: "1px 1px 6px 2px gray" }}>
+            <TableCard 
+              style={{ 
+                boxShadow: "1px 1px 6px 2px gray" 
+              }}
+            >
               <CardMediaStyle />
 
               <div
@@ -213,7 +226,11 @@ export const AdminAccountPage = () => {
                     type="text"
                     value={city}
                     onChange={(e) => handleUserDetailsStates("city", e)}
-                    style={{ height: "5vh", marginRight: "5vw", width: "15vw" }}
+                    style={{ 
+                      height: "5vh", 
+                      marginRight: "5vw", 
+                      width: "15vw" 
+                    }}
                   />
                 </div>
 
@@ -229,7 +246,11 @@ export const AdminAccountPage = () => {
                     type="text"
                     value={country}
                     onChange={(e) => handleUserDetailsStates("country", e)}
-                    style={{ height: "5vh", marginRight: "5vw", width: "15vw" }}
+                    style={{ 
+                      height: "5vh", 
+                      marginRight: "5vw", 
+                      width: "15vw" 
+                    }}
                   />
                 </div>
               </div>
@@ -264,7 +285,11 @@ export const AdminAccountPage = () => {
                     type="text"
                     value={email}
                     onChange={(e) => handleUserDetailsStates("email", e)}
-                    style={{ height: "5vh", marginRight: "5vw", width: "20vw" }}
+                    style={{ 
+                      height: "5vh", 
+                      marginRight: "5vw", 
+                      width: "20vw" 
+                    }}
                   />
                 </div>
 
@@ -280,7 +305,11 @@ export const AdminAccountPage = () => {
                     type="text"
                     value={payEmail}
                     onChange={(e) => handleUserDetailsStates("pay_email", e)}
-                    style={{ height: "5vh", marginRight: "5vw", width: "20vw" }}
+                    style={{ 
+                      height: "5vh", 
+                      marginRight: "5vw", 
+                      width: "20vw" 
+                    }}
                   />
                 </div>
               </div>

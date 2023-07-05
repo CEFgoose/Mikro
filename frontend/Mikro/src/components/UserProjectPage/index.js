@@ -86,25 +86,38 @@ export const UserProjectsPage = () => {
           activeTab === 1 ? handleUserLeaveProject : handleUserJoinProject
         }
       />
-      <div style={{ width: "100%", float: "left" }}>
+      <div style={{ width: "80%", float: "left" }}>
         <Sidebar isOpen={sidebarOpen} toggleSidebar={handleViewSidebar} />
         <div
           style={{
             display: "flex",
             position: "relative",
-            left: "15vw",
+            left: "5vw",
             flexDirection: "column",
             height: "100vh",
           }}
         >
           <div
-            style={{ display: "flex", marginLeft: "6vh", flexDirection: "row" }}
+            style={{ 
+              display: "flex", 
+              marginLeft: "6vh", 
+              flexDirection: "row" 
+            }}
           >
-            <h1 style={{ marginTop: "1vw", paddingBottom: "2vh" }}>
+            <h1 
+              style={{ 
+                marginTop: "1vw", 
+                paddingBottom: "2vh" 
+              }}
+            >
               <strong>Projects:</strong>
             </h1>
             <div
-              style={{ marginTop: "1vw", position: "relative", left: "60vw" }}
+              style={{ 
+                marginTop: "1vw", 
+                position: "relative", 
+                left: "45vw" 
+              }}
             >
               <ButtonDivComponent
                 button1={true}

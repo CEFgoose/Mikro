@@ -31,24 +31,29 @@ export const DataProvider = ({ children }) => {
   const [userSelected, setUserSelected] = useState(null);
   const [orgRequests, setOrgRequests] = useState([]);
   const [orgPayments, setOrgPayments] = useState([]);
-  const [orgProjects, setorgProjects] = useState([]);
+  const [orgProjects, setOrgProjects] = useState([]);
   const [externalValidations, setExternalValidations] = useState([]);
   const [orgActiveChecklists, setorgActiveChecklists] = useState([]);
   const [orgInActiveChecklists, setorgInactiveChecklists] = useState([]);
   const [orgStaleChecklists, setOrgStaleChecklists] = useState([]);
-  const [orgUserCompletedChecklists, setorgUserCompletedChecklists] = useState([]);
-  const [orgUserConfirmedChecklists, setorgUserConfirmedChecklists] = useState([]);
+  const [orgUserCompletedChecklists, setorgUserCompletedChecklists] = useState(
+    []
+  );
+  const [orgUserConfirmedChecklists, setorgUserConfirmedChecklists] = useState(
+    []
+  );
   const [userAvailableChecklists, setUserAvailableChecklists] = useState([]);
   const [userCompletedChecklists, setUserCompletedChecklists] = useState([]);
   const [userConfirmedChecklists, setUserConfirmedChecklists] = useState([]);
   const [userStartedChecklists, setUserStartedChecklists] = useState([]);
   const [commentOpen, toggleCommentOpen] = useToggle(false);
   const [comment, setComment] = useState(null);
-  const [orgMappingTrainings, setorgMappingTrainings] = useState([]);
-  const [orgValidationTrainings, setorgValidationTrainings] = useState([]);
-  const [orgProjectTrainings, setorgProjectTrainings] = useState([]);
+  const [orgTrainings, setOrgTrainings] = useState([]);
+  const [orgMappingTrainings, setOrgMappingTrainings] = useState([]);
+  const [orgValidationTrainings, setOrgValidationTrainings] = useState([]);
+  const [orgProjectTrainings, setOrgProjectTrainings] = useState([]);
   const [userCompletedTrainings, setUserCompletedTrainings] = useState([]);
-  const [activeProjects, setActiveProjects] = useState(null);
+  const [activeProjects, setActiveProjects] = useState([]);
   const [inactiveProjects, setInactiveProjects] = useState(null);
   const [activeProjectsCount, setActiveProjectsCount] = useState(null);
   const [inactiveProjectsCount, setInactiveProjectsCount] = useState(null);
@@ -57,7 +62,8 @@ export const DataProvider = ({ children }) => {
   const [tasksValidated, setTasksValidated] = useState(null);
   const [tasksInvalidated, setTasksInvalidated] = useState(null);
   const [validatorTasksValidated, setValidatorTasksValidated] = useState(null);
-  const [validatorTasksInvalidated, setValidatorTasksInvalidated] = useState(null);
+  const [validatorTasksInvalidated, setValidatorTasksInvalidated] =
+    useState(null);
   const [payableTotal, setPayableTotal] = useState(null);
   const [requestsTotal, setRequestsTotal] = useState(null);
   const [paidTotal, setPaidTotal] = useState(null);
@@ -215,11 +221,16 @@ export const DataProvider = ({ children }) => {
     });
   };
 
-  const completeListItem = (checklistSelected, itemNumber, userID,checklistName) => {
+  const completeListItem = (
+    checklistSelected,
+    itemNumber,
+    userID,
+    checklistName
+  ) => {
     let outpack = {
       checklist_id: checklistSelected,
       item_number: itemNumber,
-      user_id:userID
+      user_id: userID,
     };
     let completeItemUrl = "checklist/complete_list_item";
     poster(outpack, completeItemUrl).then((response) => {
@@ -238,13 +249,18 @@ export const DataProvider = ({ children }) => {
     });
   };
 
-  const confirmListItem = (checklistSelected, itemNumber, userID,checklistName) => {
+  const confirmListItem = (
+    checklistSelected,
+    itemNumber,
+    userID,
+    checklistName
+  ) => {
     let outpack = {
       checklist_id: checklistSelected,
       item_number: itemNumber,
-      user_id:userID
+      user_id: userID,
     };
-    
+
     let confirmItemUrl = "checklist/confirm_list_item";
     poster(outpack, confirmItemUrl).then((response) => {
       if (response.status === 200) {
@@ -266,7 +282,7 @@ export const DataProvider = ({ children }) => {
     let outpack = {
       checklist_id: checklistSelected,
       list_items: listItems,
-      delete_list_items:deleteListItems
+      delete_list_items: deleteListItems,
     };
     let updateListItemsUrl = "checklist/update_list_items";
     poster(outpack, updateListItemsUrl).then((response) => {
@@ -318,14 +334,12 @@ export const DataProvider = ({ children }) => {
       }
     });
   };
-  
 
-
-  const deleteChecklistItem = (itemSelected, role,checklistSelected) => {
+  const deleteChecklistItem = (itemSelected, role, checklistSelected) => {
     let outpack = {
       item_id: itemSelected,
-      checklist_id: checklistSelected
-    }; 
+      checklist_id: checklistSelected,
+    };
     let deleteChecklistItemUrl = "checklist/delete_checklist_item";
     poster(outpack, deleteChecklistItemUrl).then((response) => {
       if (response.status === 200) {
@@ -349,8 +363,6 @@ export const DataProvider = ({ children }) => {
       }
     });
   };
-
-
 
   const deleteChecklistComment = (commentSelected, role) => {
     let outpack = {
@@ -399,7 +411,6 @@ export const DataProvider = ({ children }) => {
   const fetchValidatorChecklists = () => {
     let fetchValidatorChecklistsUrl = "checklist/fetch_validator_checklists";
     fetcher(fetchValidatorChecklistsUrl).then((response) => {
-
       if (response.status === 200) {
         setUserAvailableChecklists(response.user_available_checklists);
         setUserCompletedChecklists(response.user_completed_checklists);
@@ -424,7 +435,7 @@ export const DataProvider = ({ children }) => {
         setorgInactiveChecklists(response.inactive_checklists);
         setorgUserCompletedChecklists(response.ready_for_confirmation);
         setorgUserConfirmedChecklists(response.confirmed_and_completed);
-        setOrgStaleChecklists(response.stale_started_checklists)
+        setOrgStaleChecklists(response.stale_started_checklists);
       } else if (response.status === 304) {
         history("/login");
       } else {
@@ -433,8 +444,8 @@ export const DataProvider = ({ children }) => {
     });
   };
 
-  const assignUserChecklist= (checklist_id, user_id) => {
-    let assignChecklistURL = "checklist/assign_user_checklist"
+  const assignUserChecklist = (checklist_id, user_id) => {
+    let assignChecklistURL = "checklist/assign_user_checklist";
     let outpack = {
       checklist_id: checklist_id,
       user_id: user_id,
@@ -474,8 +485,6 @@ export const DataProvider = ({ children }) => {
       }
     });
   };
-
-
 
   const fetchChecklistUsers = (checklistSelected) => {
     let fetchChecklistUsersURL = "checklist/fetch_checklist_users";
@@ -1058,9 +1067,9 @@ export const DataProvider = ({ children }) => {
     let fetchTrainingsURL = "training/fetch_org_trainings";
     fetcher(fetchTrainingsURL).then((response) => {
       if (response.status === 200) {
-        setorgMappingTrainings(response.org_mapping_trainings);
-        setorgValidationTrainings(response.org_validation_trainings);
-        setorgProjectTrainings(response.org_project_trainings);
+        setOrgMappingTrainings(response.org_mapping_trainings);
+        setOrgValidationTrainings(response.org_validation_trainings);
+        setOrgProjectTrainings(response.org_project_trainings);
         return;
       } else if (response.status === 304) {
         history("/login");
@@ -1074,9 +1083,9 @@ export const DataProvider = ({ children }) => {
     let fetchTrainingsURL = "training/fetch_user_trainings";
     fetcher(fetchTrainingsURL).then((response) => {
       if (response.status === 200) {
-        setorgMappingTrainings(response.org_mapping_trainings);
-        setorgValidationTrainings(response.org_validation_trainings);
-        setorgProjectTrainings(response.org_project_trainings);
+        setOrgMappingTrainings(response.org_mapping_trainings);
+        setOrgValidationTrainings(response.org_validation_trainings);
+        setOrgProjectTrainings(response.org_project_trainings);
         setUserCompletedTrainings(response.user_completed_trainings);
         return;
       } else if (response.status === 304) {
@@ -1287,18 +1296,18 @@ export const DataProvider = ({ children }) => {
         alert(response.message);
       }
     });
-  }
+  };
 
-  const updateTask= (taskID,taskAction) => {
+  const updateTask = (taskID, taskAction) => {
     let outpack = {
-      task_id:taskID,
-      task_action:taskAction
+      task_id: taskID,
+      task_action: taskAction,
     };
     let updateTaskURL = "task/update_task";
-    poster(outpack,updateTaskURL).then((response) => {
+    poster(outpack, updateTaskURL).then((response) => {
       if (response.status === 200) {
-        fetchAdminDashStats()
-        fetchExternalValidations()
+        fetchAdminDashStats();
+        fetchExternalValidations();
         return;
       } else if (response.status === 304) {
         history("/login");
@@ -1306,7 +1315,7 @@ export const DataProvider = ({ children }) => {
         alert(response.message);
       }
     });
-  }
+  };
 
   const fetchUserDashStats = () => {
     let userDashStats = "project/fetch_user_dash_stats";
@@ -1375,17 +1384,15 @@ export const DataProvider = ({ children }) => {
     });
   };
 
-
-
-
-
-    const spliceArray=(inlist,index)=>{
-      if (index > -1) { 
-        inlist.splice(index, 1);
-      }
-      return inlist
+  const spliceArray = (inlist, index) => {
+    console.log(inlist, index);
+    // index = inlist.indexOf(index);
+    if (index > -1) {
+      inlist.splice(index, 1);
     }
-
+    // console.log(inlist)
+    return inlist;
+  };
 
   const generateRandomKey = () => {
     return Math.random().toString(36).substr(2, 9);
@@ -1428,20 +1435,14 @@ export const DataProvider = ({ children }) => {
     }
   };
 
-
-  const  findIndexById =(list, id)=>{
+  const findIndexById = (list, id) => {
     for (let i = 0; i < list.length; i++) {
       if (list[i].id === id) {
         return i;
       }
     }
     return -1;
-  }
-  
-
-
-
-
+  };
 
   const value = {
     //REFS
@@ -1506,13 +1507,15 @@ export const DataProvider = ({ children }) => {
     toggleCommentOpen,
     comment,
     checklistUsers,
-    externalValidations, 
+    externalValidations,
+    orgTrainings,
     //STATE SETTERS
     setValidatorTasksValidated,
     setValidatorTasksInvalidated,
+    setActiveProjects,
     setActiveProjectsCount,
     setInactiveProjectsCount,
-    setorgProjects,
+    setOrgProjects,
     setCSVdata,
     setOrgRequests,
     setOrgPayments,
@@ -1571,11 +1574,12 @@ export const DataProvider = ({ children }) => {
     update_validator_tasks,
     admin_update_all_user_tasks,
     //Training
+    setOrgTrainings,
     fetchOrgTrainings,
     fetchUserTrainings,
-    setorgMappingTrainings,
-    setorgValidationTrainings,
-    setorgProjectTrainings,
+    setOrgMappingTrainings,
+    setOrgValidationTrainings,
+    setOrgProjectTrainings,
     createTraining,
     deleteTraining,
     modifyTraining,
@@ -1625,9 +1629,7 @@ export const DataProvider = ({ children }) => {
     unassignUserChecklist,
     findIndexById,
     setExternalValidations,
-
-
-
+    setOrgUsers,
   };
 
   return value ? (

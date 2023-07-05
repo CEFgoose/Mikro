@@ -617,6 +617,11 @@ export const ModifyTrainingModal = (props) => {
 };
 
 export const AdminTrainingTable = (props) => {
+  //console.log(props);
+  const updateData = (sortedData) => {
+    props.setOrgTrainings(sortedData);
+  };
+
   return (
     <div
       style={{
@@ -629,14 +634,16 @@ export const AdminTrainingTable = (props) => {
     >
       <TableCard style={{ boxShadow: "1px 1px 6px 2px gray" }}>
         <CardMediaStyle />
-        <Table>
-          <div style={{height:'40vh', width:'77.5vw',overflowY:'scroll'}}>
-          <ListHead headLabel={ADMIN_TRAINING_HEADERS} />
-          <TableBody>
-            {props.orgTrainings &&
-              props.orgTrainings
-                .slice()
-                .map((row) => {
+        <Table style={{}}>
+          <div style={{ height: "40vh", width: "77.5vw", overflowY: "scroll" }}>
+            <ListHead
+              headLabel={ADMIN_TRAINING_HEADERS}
+              tableData={props.orgTrainings}
+              updateData={updateData}
+            />
+            <TableBody>
+              {props.orgTrainings &&
+                props.orgTrainings.slice().map((row) => {
                   const {
                     id,
                     title,
@@ -684,7 +691,7 @@ export const AdminTrainingTable = (props) => {
                     </ProjectRow>
                   );
                 })}
-          </TableBody>
+            </TableBody>
           </div>
         </Table>
       </TableCard>

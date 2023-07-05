@@ -17,7 +17,9 @@ export const UserPaymentsPage = () => {
     sidebarOpen,
     handleSetSidebarState,
     orgPayments,
+    setOrgPayments,
     orgRequests,
+    setOrgRequests,
     CSVdata,
     submitPayRequest,
     fetchUserPayable,
@@ -165,13 +167,13 @@ export const UserPaymentsPage = () => {
         task_ids={taskIDs}
         notes={notes}
       />
-      <div style={{ width: "100%", float: "left" }}>
+      <div style={{ width: "90%", float: "left" }}>
         <Sidebar isOpen={sidebarOpen} toggleSidebar={handleViewSidebar} />
         <div
           style={{
             display: "flex",
             position: "relative",
-            left: "15vw",
+            left: "4vw",
             flexDirection: "column",
             height: "100vh",
           }}
@@ -263,6 +265,7 @@ export const UserPaymentsPage = () => {
                 setPage={setPage}
                 handleChangeRowsPerPage={handleChangeRowsPerPage}
                 orgRequests={orgRequests}
+                setOrgRequests={setOrgRequests}
                 requestSelected={requestSelected}
                 handleSetRequestSelected={handleSetRequestSelected}
               />
@@ -274,6 +277,7 @@ export const UserPaymentsPage = () => {
                 setPage={setPage}
                 handleChangeRowsPerPage={handleChangeRowsPerPage}
                 orgPayments={orgPayments}
+                setOrgPayments={setOrgPayments}
                 paymentSelected={paymentSelected}
                 handleSetPaymentSelected={handleSetPaymentSelected}
               />

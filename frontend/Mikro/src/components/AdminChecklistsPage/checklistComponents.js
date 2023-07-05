@@ -1,6 +1,6 @@
 import React, { useState,useEffect } from "react";
 import { styled } from "@mui/material/styles";
-import { Modal, Card, Grid,Table, TableBody } from "@mui/material";
+import { Modal, Card, Grid,Table, TableBody, Typography } from "@mui/material";
 import { Tab, TabList, TabPanel, Tabs } from "react-tabs";
 import {
   ASSIGN_USERS_TABLE_HEADERS,
@@ -36,7 +36,7 @@ export const AdminCardMediaStyle = styled("div")(({ theme }) => ({
 
 export const ChecklistCardGrid = (props) => {
   return (
-    <div style={{ overflowY: "scroll", width: "85vw", height: "83vh" }}>
+    <div style={{ overflowY: "scroll", overflowX: "auto", width: "85vw", height: "83vh" }}>
       <Grid
         sx={{
           height: "auto",
@@ -451,7 +451,11 @@ export const AddChecklistModal = (props) => {
                   type="text"
                   value={props.tempLink}
                   onChange={(e) => props.handleSetTempLink(e)}
-                  style={{ height: "5vh", marginRight: "3vw", width: "95%" }}
+                  style={{ 
+                    height: "5vh", 
+                    marginRight: "3vw", 
+                    width: "95%" 
+                  }}
                 />
               </div>
               <Divider />
@@ -529,7 +533,11 @@ export const CommentModal = (props) => {
             type="text"
             value={props.checklistName}
             onChange={(e) => props.handleSetComment(e)}
-            style={{ height: "15vh", width: "95%", overflowY: "scroll" }}
+            style={{ 
+              height: "15vh", 
+              width: "95%", 
+              overflowY: "scroll" 
+            }}
           />
         </div>
         <div
@@ -1054,6 +1062,8 @@ export const AdminChecklistCard = (props) => {
         height: "75vh",
         marginLeft: "2vw",
         marginTop: "2vh",
+        whiteSpace: "normal",
+
       }}
       // onDoubleClick={() => props.goToSource(props.url)}
     >
@@ -1066,7 +1076,12 @@ export const AdminChecklistCard = (props) => {
           onChange={(e) =>
             props.handleSetChecklistSelected(props.id, props.name)
           }
-          style={{ marginLeft: "1vw", marginBottom: "1vh" }}
+          style={{ 
+            marginLeft: "1vw", 
+            marginBottom: "1vh", 
+            whiteSpace: "normal",
+
+          }}
         />
       </AdminCardMediaStyle>
       <div
@@ -1075,6 +1090,8 @@ export const AdminChecklistCard = (props) => {
           flexDirection: "row",
           justifyContent: "center",
           height: "5vh",
+          whiteSpace: "normal",
+
         }}
       >
         <SectionTitle title_text={props.name && `${props.name}`} bold={true} />
@@ -1123,13 +1140,13 @@ export const AdminChecklistCard = (props) => {
             height: "4vh",
           }}
         >
-          <span style={{ width: "28vh" }} />
+          <span style={{ paddingLeft: "1.2vw" }} />
           <div
             onClick={() =>
               props.handleAddItemOpen(props.id, props.name, props.list_items)
             }
           >
-            <SectionSubtitle subtitle_text={`+Add/Edit Task`} bold={true} />
+            <StyledButton button_text={`+Add/Edit Task`} bold={true}  />
           </div>
         </div>
 
@@ -1149,19 +1166,21 @@ export const AdminChecklistCard = (props) => {
                 <>
                   <div
                     style={{
-                      display: "flex",
+                      display: "contents",
                       flexDirection: "row",
                       justifyContent: "left",
-                      alignItems: "center",
+                      alignItems: "left",
                       verticalAlign: "textTop",
                       marginTop: "0vh",
                       marginLeft: "3vh",
                       height: "3vh",
+                      
                     }}
                   >
                     <SectionSubtitle
                       subtitle_text={`${number}: ${action}`}
                       bold={true}
+                      align="left"
                     />
                   </div>
                 </>
@@ -2055,7 +2074,12 @@ export const AddItemModal = (props) => {
         />
 
         <Divider />
-        <div style={{ display: "flex", flexDirection: "column" }}>
+        <div 
+          style={{ 
+            display: "flex", 
+            flexDirection: "column" 
+          }}
+        >
           {/* PAGE 2 */}
 
           <>
@@ -2115,11 +2139,14 @@ export const AddItemModal = (props) => {
                 type="text"
                 value={props.tempAction}
                 onChange={(e) => props.handleSetTempAction(e)}
-                style={{ height: "5vh", marginRight: "3vw", width: "95%" }}
+                style={{ 
+                  height: "5vh", 
+                  marginRight: "3vw", 
+                  width: "95%" 
+                }}
               />
             </div>
             <Divider />
-
             <div
               style={{
                 display: "flex",
@@ -2136,12 +2163,15 @@ export const AddItemModal = (props) => {
                 type="text"
                 value={props.tempLink}
                 onChange={(e) => props.handleSetTempLink(e)}
-                style={{ height: "5vh", marginRight: "3vw", width: "95%" }}
+                style={{ 
+                  height: "5vh", 
+                  marginRight: "3vw", 
+                  width: "95%" 
+                }}
               />
             </div>
             <Divider />
           </>
-
           {/* BUTTON COMPONENT */}
           <div
             style={{

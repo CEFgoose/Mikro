@@ -22,7 +22,10 @@ import {
 
 export const AdminUsersPage = () => {
   const {
+    sidebarOpen,
+    handleSetSidebarState,
     orgUsers,
+    setOrgUsers,
     fetchOrgUsers,
     inviteUser,
     removeUser,
@@ -30,7 +33,6 @@ export const AdminUsersPage = () => {
     history,
   } = useContext(DataContext);
 
-  const { sidebarOpen, handleSetSidebarState } = useContext(DataContext);
   const { refresh, user } = useContext(AuthContext);
   const [addOpen, toggleAddOpen] = useToggle(false);
   const [deleteOpen, toggleDeleteOpen] = useToggle(false);
@@ -100,13 +102,18 @@ export const AdminUsersPage = () => {
       toggleDeleteOpen();
     }
   };
-
+  
   const do_invite_user = () => {
     if (inviteEmail) {
       inviteUser(inviteEmail, "mikro");
       alert("Invitation Email Sent");
       toggleAddOpen();
     }
+  };
+
+
+  const updateData = (sortedData) => {
+    setOrgUsers(sortedData);
   };
 
   return (
@@ -132,19 +139,23 @@ export const AdminUsersPage = () => {
         handleRoleSelected={handleRoleSelected}
         do_modify_user={do_modify_user}
       />
-      <div style={{ width: "100%", float: "left" }}>
+      <div style={{ width: "90%", float: "left" }}>
         <Sidebar isOpen={sidebarOpen} toggleSidebar={handleViewSidebar} />
         <div
           style={{
             display: "flex",
             position: "relative",
-            left: "15vw",
+            left: "5vw",
             flexDirection: "column",
             height: "100vh",
           }}
         >
           <div
-            style={{ display: "flex", marginLeft: "5vh", flexDirection: "row" }}
+            style={{ 
+              display: "flex", 
+              marginLeft: "5vh", 
+              flexDirection: "row" 
+            }}
           >
             <h1
               style={{
@@ -156,7 +167,11 @@ export const AdminUsersPage = () => {
               <strong>Users:</strong>
             </h1>
             <div
-              style={{ marginTop: "1vw", position: "relative", left: "44vw" }}
+              style={{ 
+                marginTop: "1vw", 
+                position: "relative", 
+                left: "44vw" 
+              }}
             >
               <ButtonDivComponent
                 role={"admin"}
@@ -184,10 +199,19 @@ export const AdminUsersPage = () => {
           >
             <TableCard style={{ boxShadow: "1px 1px 6px 2px gray" }}>
               <CardMediaStyle />
-              <Table>
-
-              <div style={{height:'40vh', width:'78.75vw',overflowY:'scroll'}}>
-                <ListHead headLabel={USERS_TABLE_HEADERS} />
+              <Table style={{}}>
+              <div 
+                style={{
+                  height:'40vh', 
+                  width:'77.5vw',
+                  overflowY:'scroll'
+                }}
+              >
+                <ListHead 
+                  headLabel={USERS_TABLE_HEADERS}
+                  tableData={orgUsers}
+                  updateData={setOrgUsers}
+                />
                 <TableBody>
                   {orgUsers &&
                     orgUsers

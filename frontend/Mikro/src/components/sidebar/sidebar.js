@@ -13,21 +13,17 @@ import users_icon from "../../images/newIcons/round2/users_1.png";
 import training_icon from "../../images/newIcons/round2/training_1.png";
 import payments_icon from "../../images/newIcons/round2/payments.png";
 import account_icon from "../../images/newIcons/round2/account.png";
+import faq_icon from "../../images/question.png";
 import logouticon from "../../images/newIcons/round2/log out.png";
 import leftArrow from "../../images/newIcons/round2/kaart back_1.png";
-
-
-
-
-
-
-
 import mikro_icon from "../../images/5.png";
 
 
 import "./styles.css";
 import {
   Header,
+  MikroLogoClosed,
+  MikroLogoOpen,
   MenuItem,
   MenuItemTop,
   ProjectIcon,
@@ -35,6 +31,7 @@ import {
   RoleBarWrapper,
   RoleHeader,
   RoleSubHeader,
+  SidebarClosedContainer,
   SidebarOpenedContainer,
 } from "./styles.js";
 import { ConfirmButton } from "components/commonComponents/commonComponents";
@@ -75,16 +72,19 @@ const Sidebar = (props) => {
   const [name, setName] = useState("");
   const [dashboardLink, setDashboardLink] = useState("/dashboard");
   const [projectPageLink, setProjectPageLink] = useState("/UserProjectsPage");
-  const [checklistPageLink, setChecklistPageLink] = useState(
-    "/UserChecklistsPage"
-  );
+  const [checklistPageLink, setChecklistPageLink] = useState("/UserChecklistsPage");
   const [accountPageLink, setAccountPageLink] = useState("/UserAccountPage");
   const [paymentsPageLink, setPaymentsPageLink] = useState("/UserPaymentsPage");
   const [trainingPageLink, setTrainingPageLink] = useState("/UserTrainingPage");
   const [tasksPageLink, setTasksPageLink] = useState("/AdminTasksPage");
+  const [faqPageLink, setFaqPageLink] = useState("/UserAccountPage")
   const [localUser, setLocalUser] = useLocalStorageState("mikro.user", null);
-  const { history, sidebarOpe, resetUserStats } = useContext(DataContext);
+  const { history, resetUserStats } = useContext(DataContext);
   const { user, refresh } = useContext(AuthContext);
+
+  const {
+    sidebarOpen
+  } = useContext(DataContext);
 
   useEffect(() => {
     if (user === null) {
@@ -95,6 +95,7 @@ const Sidebar = (props) => {
     }
     setRole(user.role);
     setName(user.name);
+    setFaqPageLink("/FAQPage")
     if (user.role === "admin") {
       setDashboardLink("/admindash");
       setProjectPageLink("/AdminProjectsPage");
@@ -121,26 +122,19 @@ const Sidebar = (props) => {
     }).then(() => {
       setLocalUser(null);
       history("/login");
+      history.go("/login")
     });
   };
 
   return (
     <div>
+       {sidebarOpen ? (
       <SidebarOpenedContainer>
-        <MenuItemTop>
-          <div
-            style={{
-              display: "flex",
-              flexDirection: "column",
-              marginTop: "5%",
-            }}
-          >
-            <div style={{ marginLeft: ".7vw" }}></div>
-          </div>
-        </MenuItemTop>
-
-        <MenuItemTop style={{ marginBottom: "10%" }}>
-          <RoleBarWrapper>
+       <MenuItemTop 
+        style={{ marginBottom: "10%" }}
+        onClick={props.toggleSidebar}
+        >
+        <RoleBarWrapper>
             <div
               style={{
                 display: "flex",
@@ -155,7 +149,16 @@ const Sidebar = (props) => {
                   alignItems: "center",
                 }}
               >
-                <img
+                <MikroLogoOpen />
+                  </div>
+                  <div
+                    style={{
+                      display: "flex",
+                      flexDirection: "column",
+                      alignItems: "center",
+                    }}
+                  >
+                {/* <img
                   style={{
                     height: "5vh",
                     marginLeft: ".8vw",
@@ -171,7 +174,7 @@ const Sidebar = (props) => {
                   flexDirection: "column",
                   alignItems: "center",
                 }}
-              >
+              > */}
                 <RoleHeader>{<strong>{name}</strong>}</RoleHeader>
                 <RoleSubHeader>{<strong>{role}</strong>}</RoleSubHeader>
               </div>
@@ -267,6 +270,15 @@ const Sidebar = (props) => {
           </MenuItem>
         </NavLink>
 
+        <NavLink to={faqPageLink} style={{ textDecoration: "none" }}>
+          <MenuItem>
+            <ProjectIconContainer>
+              <ProjectIcon src={faq_icon} />
+            </ProjectIconContainer>
+            <Header>FAQ</Header>
+          </MenuItem>
+        </NavLink>
+
         <MenuItem onClick={logout}>
           <ProjectIconContainer>
             <ProjectIcon onClick={logout} src={logouticon} />
@@ -288,6 +300,18 @@ const Sidebar = (props) => {
             confirm_text={"Reset Stats"}
           /> */}
       </SidebarOpenedContainer>
+       ):(
+        <SidebarClosedContainer>
+            <MenuItemTop>
+              <MikroLogoClosed onClick={props.toggleSidebar} />
+              {/* <OpenMenuIconContainer>
+                <OpenMenuIconButton>
+                  <OpenMenuIcon onClick={props.toggleSidebar} />
+                </OpenMenuIconButton>
+              </OpenMenuIconContainer> */}
+            </MenuItemTop>
+          </SidebarClosedContainer>
+        )}
     </div>
   );
 };

@@ -16,9 +16,9 @@ import {
 
 export const USER_TRAINING_HEADERS = [
   { id: "name", label: "Title", alignRight: false },
-  { id: "Difficulty", label: "Difficulty", alignRight: false },
-  { id: "Point Value", label: "Point Value", alignRight: false },
-  { id: "Link", label: "Link", alignRight: false },
+  { id: "difficulty", label: "Difficulty", alignRight: false },
+  { id: "point_value", label: "Point Value", alignRight: false },
+  { id: "link", label: "Link", alignRight: false },
 ];
 
 export const TrainingQuizModal = (props) => {
@@ -206,6 +206,11 @@ export const TrainingQuizModal = (props) => {
 };
 
 export const UserTrainingTable = (props) => {
+    //console.log(props);
+  const updateData = (sortedData) => {
+    props.setOrgTrainings(sortedData);
+  };
+
   return (
     <div
       style={{
@@ -218,9 +223,13 @@ export const UserTrainingTable = (props) => {
     >
       <TableCard style={{ boxShadow: "1px 1px 6px 2px gray" }}>
         <CardMediaStyle />
-        <Table>
+        <Table style={{}}>
         <div style={{height:'40vh', width:'77.5vw',overflowY:'scroll'}}>
-          <ListHead headLabel={USER_TRAINING_HEADERS} />
+          <ListHead 
+            headLabel={USER_TRAINING_HEADERS}
+            tableData={props.orgTrainings}
+            updateData={updateData}
+           />
           <TableBody>
             {props.orgTrainings &&
               props.orgTrainings

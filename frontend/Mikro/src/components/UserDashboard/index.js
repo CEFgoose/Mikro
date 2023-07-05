@@ -21,6 +21,7 @@ export const UserDashboard = () => {
     orgProjects,
     goToSource,
     activeProjects,
+    setActiveProjects,
     completedProjects,
     tasksMapped,
     mapped_tasks,
@@ -72,16 +73,19 @@ export const UserDashboard = () => {
     setProjectSelected(e);
   };
 
+  const updateData = (sortedData) => {
+    setActiveProjects(sortedData);
+  };
 
   return (
     <>
-      <div style={{ width: "100%", float: "left" }}>
+      <div style={{ width: "90%", height: "90%", float: "left" }}>
         <Sidebar isOpen={sidebarOpen} toggleSidebar={handleViewSidebar} />
         <div
           style={{
             display: "flex",
             position: "relative",
-            left: "15vw",
+            left: "5vw",
             flexDirection: "column",
             height: "100vh",
           }}
@@ -113,9 +117,7 @@ export const UserDashboard = () => {
               subtitle_text_2={"Available:"}
               subtitle_text_3={"Completed:"}
               value_1={activeProjectsCount ? activeProjectsCount : "-"}
-              value_2={
-                inactiveProjectsCount !== null ? inactiveProjectsCount : "-"
-              }
+              value_2={inactiveProjectsCount !== null ? inactiveProjectsCount : "-"}
               value_3={completedProjects !== null ? completedProjects : "-"}
             />
             <DashboardCard
@@ -158,8 +160,12 @@ export const UserDashboard = () => {
             <TableCard style={{ boxShadow: "1px 1px 6px 2px gray" }}>
               <CardMediaStyle />
               <Table>
-              <div style={{height:'40vh', width:'77.5vw',overflowY:'scroll'}}>
-                <ListHead headLabel={USER_PROJECTS_TABLE_HEADERS} />
+              <div style={{height:'40vh', width:'77.5vw',overflowY:'hidden'}}>
+                <ListHead 
+                  headLabel={USER_PROJECTS_TABLE_HEADERS}
+                  tableData={activeProjects} 
+                  updateData={setActiveProjects} 
+                />
                 <TableBody>
                   {activeProjects &&
                     activeProjects

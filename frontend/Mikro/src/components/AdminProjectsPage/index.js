@@ -282,25 +282,43 @@ export const AdminProjectsPage = () => {
         projectStatus={projectStatus}
         handleSetProjectStatus={handleSetProjectStatus}
       />
-      <div style={{ width: "100%", float: "left" }}>
+      <div 
+        style={{ 
+          width: "90%", 
+          float: "left" 
+        }}
+      >
         <Sidebar isOpen={sidebarOpen} toggleSidebar={handleViewSidebar} />
         <div
           style={{
             display: "flex",
             position: "relative",
-            left: "15vw",
+            left: "5vw",
             flexDirection: "column",
             height: "100vh",
           }}
         >
           <div
-            style={{ display: "flex", marginLeft: "6vh", flexDirection: "row" }}
+            style={{ 
+              display: "flex", 
+              marginLeft: "6vh", 
+              flexDirection: "row" 
+            }}
           >
-            <h1 style={{ marginTop: "1vw", paddingBottom: "2vh" }}>
+            <h1 
+              style={{ 
+                marginTop: "1vw", 
+                paddingBottom: "2vh" 
+              }}
+            >
               <strong>Projects:</strong>
             </h1>
             <div
-              style={{ marginTop: "1vw", position: "relative", left: "41.5vw" }}
+              style={{ 
+                marginTop: "1vw", 
+                position: "relative", 
+                left: "45vw" 
+              }}
             >
               <ButtonDivComponent
                 role={"admin"}
@@ -318,7 +336,11 @@ export const AdminProjectsPage = () => {
           </div>
           <Tabs>
             <TabList
-              style={{ marginLeft: "3vw", marginTop: "0vh", paddingTop: "0vh" }}
+              style={{ 
+                marginLeft: "3vw", 
+                marginTop: "0vh", 
+                paddingTop: "0vh" 
+              }}
             >
               <Tab value={1} onClick={(e) => handleSetActiveTab(e)}>
                 Active

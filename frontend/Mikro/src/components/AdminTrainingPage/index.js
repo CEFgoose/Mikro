@@ -19,9 +19,14 @@ export const AdminTrainingPage = () => {
     handleSetSidebarState,
     createTraining,
     orgMappingTrainings,
+    setOrgMappingTrainings,
     orgValidationTrainings,
+    setOrgValidationTrainings,
     orgProjectTrainings,
+    setOrgProjectTrainings,
     fetchOrgTrainings,
+    orgTrainings,
+    setOrgTrainings,
     deleteTraining,
     modifyTraining,
     history,
@@ -55,7 +60,6 @@ export const AdminTrainingPage = () => {
   const [incorrect3_1, setIncorrect3_1] = useState(null);
   const [incorrect3_2, setIncorrect3_2] = useState(null);
   const [incorrect3_3, setIncorrect3_3] = useState(null);
-
   const [activeTab, setActiveTab] = useState(1);
 
   useEffect(() => {
@@ -408,24 +412,38 @@ export const AdminTrainingPage = () => {
         training_title={title}
         handleDeleteTraining={handleDeleteTraining}
       />
-      <div style={{ width: "100%", float: "left" }}>
+      <div style={{ width: "90%", float: "left" }}>
         <Sidebar isOpen={sidebarOpen} toggleSidebar={handleViewSidebar} />
         <div
           style={{
             display: "flex",
             position: "relative",
-            left: "15vw",
+            left: "5vw",
             flexDirection: "column",
             height: "100vh",
           }}
         >
           <div
-            style={{ display: "flex", marginLeft: "6vh", flexDirection: "row" }}
+            style={{ 
+              display: "flex", 
+              marginLeft: "6vh", 
+              flexDirection: "row" 
+            }}
           >
-            <h1 style={{ marginTop: "1vw", paddingBottom: "2vh" }}>
+            <h1 
+              style={{ 
+                marginTop: "1vw", 
+                paddingBottom: "2vh" 
+              }}
+            >
               <strong>Training:</strong>
             </h1>
-            <div style={{ marginLeft: "40vw", marginTop: "1vh" }}>
+            <div 
+              style={{ 
+                marginLeft: "40vw", 
+                marginTop: "1vh" 
+              }}
+            >
               <ButtonDivComponent
                 button1={true}
                 button1_text={"Add"}
@@ -441,7 +459,11 @@ export const AdminTrainingPage = () => {
           </div>
           <Tabs>
             <TabList
-              style={{ marginLeft: "3vw", marginTop: "0vh", paddingTop: "0vh" }}
+              style={{ 
+                marginLeft: "3vw", 
+                marginTop: "0vh", 
+                paddingTop: "0vh" 
+              }}
             >
               <Tab value={1} onClick={(e) => handleSetActiveTab(e)}>
                 Mapping
@@ -460,6 +482,7 @@ export const AdminTrainingPage = () => {
                 setPage={setPage}
                 handleChangeRowsPerPage={handleChangeRowsPerPage}
                 orgTrainings={orgMappingTrainings}
+                setOrgTrainings={setOrgMappingTrainings}
                 trainingSelected={trainingSelected}
                 handleSetTrainingSelected={handleSetTrainingSelected}
               />
@@ -472,6 +495,7 @@ export const AdminTrainingPage = () => {
                 handleChangeRowsPerPage={handleChangeRowsPerPage}
                 trainingSelected={trainingSelected}
                 orgTrainings={orgValidationTrainings}
+                setOrgTrainings={setOrgValidationTrainings}
                 handleSetTrainingSelected={handleSetTrainingSelected}
               />
             </TabPanel>
@@ -484,6 +508,7 @@ export const AdminTrainingPage = () => {
                 trainingSelected={trainingSelected}
                 handleSetTrainingSelected={handleSetTrainingSelected}
                 orgTrainings={orgProjectTrainings}
+                setOrgTrainings={setOrgProjectTrainings}
               />
             </TabPanel>
           </Tabs>

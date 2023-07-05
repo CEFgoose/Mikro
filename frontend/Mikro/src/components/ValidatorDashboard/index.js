@@ -21,6 +21,7 @@ export const ValidatorDashboard = () => {
     orgProjects,
     goToSource,
     activeProjects,
+    setActiveProjects,
     completedProjects,
     tasksMapped,
     tasksValidated,
@@ -69,43 +70,63 @@ export const ValidatorDashboard = () => {
     setProjectSelected(e);
   };
 
+  const updateData = (sortedData) => {
+    setActiveProjects(sortedData);
+  };
 
 
   return (
     <>
-      <div style={{ width: "100%", float: "left" }}>
+      <div 
+        style={{ 
+          width: "90%", 
+          float: "left" 
+        }}
+      >
         <Sidebar isOpen={sidebarOpen} toggleSidebar={handleViewSidebar} />
         <div
           style={{
             display: "flex",
             position: "relative",
-            left: "15vw",
+            left: "5vw",
             flexDirection: "column",
             height: "100vh",
           }}
         >
           <div
-            style={{ display: "flex", marginLeft: "6vh", flexDirection: "row" }}
+            style={{ 
+              display: "flex", 
+              marginLeft: "6vh", 
+              flexDirection: "row" 
+            }}
           >
-            <h1 style={{ marginTop: "1vw", paddingBottom: "2vh" }}>
+            <h1 
+              style={{ 
+                marginTop: "1vw", 
+                paddingBottom: "2vh" 
+              }}
+            >
               <strong>Dashboard:</strong>
             </h1>
             <div
-              style={{ marginTop: "1vw", position: "relative", left: "37.5vw" }}
+              style={{ 
+                marginTop: "1vw", 
+                position: "relative", 
+                left: "37.5vw" 
+              }}
             ></div>
           </div>
           <div
             style={{
               display: "flex",
               flexDirection: "row",
-
               height: "44vh",
             }}
           >
             <DashboardCard
               marginLeft={"3.5vw"}
               marginRight={"1.25vw"}
-              width={"17vw"}
+              width={"18.35vw"}
               title={"Projects Overview"}
               subtitle_text_1={"Joined:"}
               subtitle_text_2={"Available:"}
@@ -120,7 +141,7 @@ export const ValidatorDashboard = () => {
             <DashboardCard
               marginLeft={"0vw"}
               marginRight={"1.25vw"}
-              width={"17vw"}
+              width={"18.35vw"}
               title={"Mapper Overview"}
               subtitle_text_1={"Mapped:"}
               subtitle_text_2={"Approved:"}
@@ -133,7 +154,7 @@ export const ValidatorDashboard = () => {
             <DashboardCard
               marginLeft={"0vw"}
               marginRight={"1.25vw"}
-              width={"17vw"}
+              width={"18.35vw"}
               title={"Validator Overview"}
               subtitle_text_1={"Validated:"}
               subtitle_text_2={"Invalidated:"}
@@ -152,7 +173,7 @@ export const ValidatorDashboard = () => {
             <DashboardCard
               marginLeft={"0vw"}
               marginRight={"1vw"}
-              width={"22.75vw"}
+              width={"18.35vw"}
               title={"Payment Overview"}
               subtitle_text_1={"Payable Total:"}
               subtitle_text_2={"Payout Requests:"}
@@ -178,8 +199,18 @@ export const ValidatorDashboard = () => {
             <TableCard style={{ boxShadow: "1px 1px 6px 2px gray" }}>
               <CardMediaStyle />
               <Table>
-              <div style={{height:'40vh', width:'77.5vw',overflowY:'scroll'}}>
-                <ListHead headLabel={VALIDATOR_PROJECTS_TABLE_HEADERS} />
+              <div 
+                style={{
+                  height:'40vh', 
+                  width:'77.5vw',
+                  overflowY:'scroll'
+                }}
+              >
+                <ListHead 
+                  headLabel={VALIDATOR_PROJECTS_TABLE_HEADERS}
+                  tableData={activeProjects} 
+                  updateData={setActiveProjects} 
+                />
                 <TableBody>
                   {activeProjects &&
                     activeProjects
@@ -242,7 +273,6 @@ export const ValidatorDashboard = () => {
                 </TableBody>
                 </div>
               </Table>
-
             </TableCard>
           </div>
         </div>

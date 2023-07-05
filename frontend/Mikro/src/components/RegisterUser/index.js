@@ -82,7 +82,7 @@ export const RegisterUser = () => {
           />
 
           <RegisterInput
-            type="text"
+            type="password"
             name="Password"
             placeholder="Password"
             onChange={(e) => {

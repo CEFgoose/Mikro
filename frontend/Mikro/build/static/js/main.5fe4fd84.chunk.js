@@ -8050,7 +8050,7 @@
                     Object(u.jsx)("div", {
                       style: { marginTop: "2vh" },
                       children: Object(u.jsx)(Pt, {
-                        button_text: "Begin",
+                        button_text: "Start",
                         button_action: function () {
                           return Y();
                         },

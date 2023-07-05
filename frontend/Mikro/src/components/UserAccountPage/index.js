@@ -77,19 +77,23 @@ export const UserAccountPage = () => {
         button_2_text="Cancel"
         button_2_action={handleModalOpen}
       />
-      <div style={{ width: "100%", float: "left" }}>
+      <div style={{ width: "90%", float: "left" }}>
         <Sidebar isOpen={sidebarOpen} toggleSidebar={handleViewSidebar} />
         <div
           style={{
             display: "flex",
             position: "relative",
-            left: "15vw",
+            left: "5vw",
             flexDirection: "column",
             height: "100vh",
           }}
         >
           <div
-            style={{ display: "flex", marginLeft: "5vh", flexDirection: "row" }}
+            style={{ 
+              display: "flex", 
+              marginLeft: "5vh", 
+              flexDirection: "row" 
+            }}
           >
             <h1
               style={{
@@ -148,7 +152,11 @@ export const UserAccountPage = () => {
                     type="text"
                     value={firstName}
                     onChange={(e) => handleUserDetailsStates("first_name", e)}
-                    style={{ height: "5vh", marginRight: "2vw", width: "13vw" }}
+                    style={{ 
+                      height: "5vh", 
+                      marginRight: "2vw", 
+                      width: "13vw" 
+                    }}
                   />
                 </div>
 
@@ -164,7 +172,11 @@ export const UserAccountPage = () => {
                     type="text"
                     value={lastName}
                     onChange={(e) => handleUserDetailsStates("last_name", e)}
-                    style={{ height: "5vh", marginRight: "2vw", width: "13vw" }}
+                    style={{ 
+                      height: "5vh", 
+                      marginRight: "2vw", 
+                      width: "13vw" 
+                    }}
                   />
                 </div>
 
@@ -180,7 +192,11 @@ export const UserAccountPage = () => {
                     type="text"
                     value={OSMname}
                     onChange={(e) => handleUserDetailsStates("osm_name", e)}
-                    style={{ height: "5vh", marginRight: "2vw", width: "13vw" }}
+                    style={{ 
+                      height: "5vh", 
+                      marginRight: "2vw", 
+                      width: "13vw" 
+                    }}
                   />
                 </div>
               </div>
@@ -266,7 +282,11 @@ export const UserAccountPage = () => {
                     type="text"
                     value={email}
                     onChange={(e) => handleUserDetailsStates("email", e)}
-                    style={{ height: "5vh", marginRight: "5vw", width: "20vw" }}
+                    style={{ 
+                      height: "5vh", 
+                      marginRight: "5vw", 
+                      width: "20vw" 
+                    }}
                   />
                 </div>
 
@@ -282,7 +302,11 @@ export const UserAccountPage = () => {
                     type="text"
                     value={payEmail}
                     onChange={(e) => handleUserDetailsStates("pay_email", e)}
-                    style={{ height: "5vh", marginRight: "5vw", width: "20vw" }}
+                    style={{ 
+                      height: "5vh", 
+                      marginRight: "5vw", 
+                      width: "20vw" 
+                    }}
                   />
                 </div>
               </div>

@@ -25,6 +25,7 @@ import { AdminChecklistsPage } from "components/AdminChecklistsPage";
 import { UserChecklistsPage } from "components/UserChecklistsPage";
 import { ValidatorChecklistsPage } from "components/ValdatorChecklistsPage";
 import { AdminTasksPage } from "components/AdminTasksPage";
+import { FAQPage } from "components/FAQ";
 import "bootstrap/dist/css/bootstrap.min.css";
 import "./App.css";
 import {
@@ -154,6 +155,9 @@ function App() {
               <Route path="/UserTrainingPage" element={<UserTrainingPage />} />
 
               <Route path="/UserAccountPage" element={<UserAccountPage />} />
+
+              <Route path="/FAQPage" element={<FAQPage />} />
+
 
               <Route path="/registerUser" element={<RegisterUser />} />
 

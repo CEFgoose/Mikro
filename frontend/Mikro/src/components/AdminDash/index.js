@@ -27,6 +27,7 @@ export const AdminDash = () => {
     goToSource,
     fetchAdminDashStats,
     activeProjects,
+    setActiveProjects,
     completedProjects,
     tasksMapped,
     tasksValidated,
@@ -75,21 +76,24 @@ export const AdminDash = () => {
   }, []);
 
   useEffect(() => {
-    if (externalValidations.length > 0) {
-      setConfirmQuestion(
-        `You have ${externalValidations.length} tasks with unknown validators to confirm on the Tasks page`
-      );
-      toggleConfirmOpen();
+    //console.log(externalValidations.length)
+    if(externalValidations.length > 0){
+      setConfirmQuestion(`You have ${externalValidations.length} tasks with unknown validators to confirm on the Tasks page`)
+      toggleConfirmOpen()
     }
     // eslint-disable-next-line
   }, [externalValidations]);
 
-  const handleConfirmOpen = () => {
-    toggleConfirmOpen();
-  };
+  const handleConfirmOpen=()=>{
+    toggleConfirmOpen()
+  }
 
   const handleSetProjectSelected = (e) => {
     setProjectSelected(e);
+  };
+
+  const updateData = (sortedData) => {
+    setActiveProjects(sortedData);
   };
 
   return (
@@ -100,26 +104,40 @@ export const AdminDash = () => {
         question={confirmQuestion}
         extraText={confirmText}
       />
-      <div style={{ width: "100%", float: "left" }}>
+      <div style={{ width: "90%", float: "left" }}>
         <Sidebar isOpen={sidebarOpen} toggleSidebar={handleViewSidebar} />
         <div
           style={{
             display: "flex",
             position: "relative",
-            left: "15vw",
+            left: "5vw",
             flexDirection: "column",
             height: "100vh",
           }}
         >
           <div
-            style={{ display: "flex", marginLeft: "6vh", flexDirection: "row" }}
+            style={{ 
+              display: "flex", 
+              marginLeft: "6vh", 
+              flexDirection: "row" 
+            }}
           >
-            <h1 style={{ marginTop: "1vw", paddingBottom: "2vh" }}>
+            <h1 
+              style={{ 
+                marginTop: "1vw", 
+                paddingBottom: "2vh" 
+              }}
+            >
               <strong>Dashboard:</strong>
             </h1>
             <div
-              style={{ marginTop: "1vw", position: "relative", left: "37.5vw" }}
-            ></div>
+              style={{ 
+                marginTop: "1vw", 
+                position: "relative", 
+                left: "37.5vw" 
+              }}
+            >
+            </div>
           </div>
           <div
             style={{
@@ -182,17 +200,23 @@ export const AdminDash = () => {
             <TableCard style={{ boxShadow: "1px 1px 6px 2px gray" }}>
               <CardMediaStyle />
               <Table style={{}}>
-                <div
+                <div 
                   style={{
-                    height: "40vh",
-                    width: "77.5vw",
-                    overflowY: "scroll",
+                    height:'40vh', 
+                    width:'77.5vw',
+                    overflowY:'scroll'
                   }}
                 >
-                  <ListHead headLabel={ADMIN_PROJECTS_TABLE_HEADERS} />
-                  <TableBody>
-                    {activeProjects &&
-                      activeProjects.slice().map((row) => {
+                <ListHead 
+                  headLabel={ADMIN_PROJECTS_TABLE_HEADERS} 
+                  tableData={activeProjects} 
+                  updateData={setActiveProjects} 
+                />
+                <TableBody >
+                  {activeProjects &&
+                    activeProjects
+                      .slice()
+                      .map((row) => {
                         const {
                           id,
                           name,

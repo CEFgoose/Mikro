@@ -1,8 +1,10 @@
 import { CSVLink } from "react-csv";
 import { styled } from "@mui/material/styles";
-import React from "react";
+import React, { useState, useCallback, useContext, useEffect } from "react";
 import close_icon from "../../images/close_icon.png";
 import { Button, ButtonLabel, Container } from "./styles";
+import { DataContext } from "../../common/DataContext";
+
 import {
   Card,
   TableCell,
@@ -96,14 +98,14 @@ export const AdminCardMediaStyle = styled("div")(({ theme }) => ({
 
 export const ADMIN_PROJECTS_TABLE_HEADERS = [
   { id: "name", label: "Name", alignLeft: true },
-  { id: "mapping_Rate", label: "Mapping Rate", alignLeft: true },
-  { id: "mapping_Rate", label: "Validation Rate", alignLeft: true },
-  { id: "Tasks", label: "Total Tasks", alignLeft: true },
+  { id: "mapping_rate_per_task", label: "Mapping Rate", alignLeft: true },
+  { id: "validation_rate_per_task", label: "Validation Rate", alignLeft: true },
+  { id: "total_tasks", label: "Total Tasks", alignLeft: true },
   // { id: "Difficulty", label: "Project Difficulty", alignLeft: true },
-  { id: "Budget", label: "Total Budget", alignLeft: true },
-  { id: "Current Payout", label: "Current Payout", alignLeft: true },
-  { id: "Validated/Mapped", label: "Validated/ Mapped", alignLeft: true },
-  { id: "Invalidated", label: "Invalidated", alignLeft: true },
+  { id: "max_payment", label: "Total Budget", alignLeft: true },
+  { id: "payment_due", label: "Current Payout", alignLeft: true },
+  { id: "total_validated"/"total_mapped", label: "Validated/ Mapped", alignLeft: true },
+  { id: "total_invalidated", label: "Invalidated", alignLeft: true },
 ];
 
 export const USER_PROJECTS_TABLE_HEADERS = [
@@ -131,12 +133,12 @@ export const VALIDATOR_PROJECTS_TABLE_HEADERS = [
 export const USERS_TABLE_HEADERS = [
   { id: "name", label: "Username", alignRight: false },
   { id: "role", label: "Role", alignRight: false },
-  { id: "assinged projects", label: "Assinged Projects", alignRight: false },
-  { id: "tasks Mapped", label: "Tasks Mapped", alignRight: false },
-  { id: "tasks validated", label: "Tasks Validated", alignRight: false },
-  { id: "tasks invalidated", label: "Tasks Invalidated", alignRight: false },
-  { id: "awaiting payment", label: "Awaiting Payment", alignRight: false },
-  { id: "total payout", label: "Total Payout", alignRight: false },
+  { id: "assinged_projects", label: "Assinged Projects", alignRight: false },
+  { id: "total_tasks_mapped", label: "Tasks Mapped", alignRight: false },
+  { id: "total_tasks_validated", label: "Tasks Validated", alignRight: false },
+  { id: "total_tasks_invalidated", label: "Tasks Invalidated", alignRight: false },
+  { id: "awaiting_payment", label: "Awaiting Payment", alignRight: false },
+  { id: "total_payout", label: "Total Payout", alignRight: false },
 ];
 
 export const ASSIGN_USERS_TABLE_HEADERS = [
@@ -156,18 +158,18 @@ export const PAYOUT_TABLE_HEADERS = [
 ];
 
 export const REQUEST_TABLE_HEADERS = [
-  { id: "name", label: "User", alignRight: false },
-  { id: "Request ID", label: "Request ID", alignRight: false },
-  { id: "Amount Requested", label: "Amount Requested", alignRight: false },
-  { id: "Date Requested", label: "Date Requested", alignRight: false },
+  { id: "user", label: "User", alignRight: false },
+  { id: "id", label: "Request ID", alignRight: false },
+  { id: "amount_requested", label: "Amount Requested", alignRight: false },
+  { id: "date_requested", label: "Date Requested", alignRight: false },
 ];
 
 export const EXTERNAL_VALIDATIONS_HEADERS = [
-  { id: "Task ID", label: "Task ID", alignLeft: true },
-  { id: "Project_Name", label: "Project Name", alignLeft: true },
-  { id: "Project_ID", label: "Project ID", alignLeft: true },
-  { id: "Mapped By", label: "Mapped By", alignLeft: true },
-  { id: "Validated By", label: "Validated By", alignLeft: true },
+  { id: "id", label: "Task ID", alignLeft: true },
+  { id: "project_name", label: "Project Name", alignLeft: true },
+  { id: "project_id", label: "Project ID", alignLeft: true },
+  { id: "mapped_by", label: "Mapped By", alignLeft: true },
+  { id: "validated_by", label: "Validated By", alignLeft: true },
   // { id: "Difficulty", label: "Project Difficulty", alignLeft: true },
   // { id: "Budget", label: "Total Budget", alignLeft: true },
   // { id: "Current Payout", label: "Current Payout", alignLeft: true },
@@ -206,21 +208,33 @@ export const DashboardCard = (props) => {
         </div>
         <Divider />
         <div
-          style={{ display: "flex", flexDirection: "row", marginBottom: "4vh" }}
+          style={{
+            display: "flex",
+            flexDirection: "row",
+            marginBottom: "2vh",
+          }}
         >
           <SectionTitle title_text={props.subtitle_text_1} bold={true} />
           <SectionTitle title_text={props.value_1} />
         </div>
         <Divider />
         <div
-          style={{ display: "flex", flexDirection: "row", marginBottom: "4vh" }}
+          style={{
+            display: "flex",
+            flexDirection: "row",
+            marginBottom: "2vh",
+          }}
         >
           <SectionTitle title_text={props.subtitle_text_2} bold={true} />
           <SectionTitle title_text={props.value_2} />
         </div>
         <Divider />
         <div
-          style={{ display: "flex", flexDirection: "row", marginBottom: "1vh" }}
+          style={{
+            display: "flex",
+            flexDirection: "row",
+            marginBottom: "2hv",
+          }}
         >
           <SectionTitle title_text={props.subtitle_text_3} bold={true} />
           <SectionTitle title_text={props.value_3} />
@@ -241,7 +255,7 @@ export const DashboardCard = (props) => {
 // PROJECT DESCRIPTION CELL//
 export const ProjectCell = (props) => {
   return (
-    <TableCell align="left" component="th" scope="row" >
+    <TableCell align="left" component="th" scope="row">
       <Typography variant="subtitle2" noWrap style={{ textAlign: "center" }}>
         {props.entry}
       </Typography>
@@ -300,7 +314,6 @@ export const ConfirmButton = (props) => {
 export const SectionTitle = (props) => {
   return (
     <Typography
-      variant="h5"
       align="center"
       style={{
         paddingLeft: "1vw",
@@ -325,8 +338,7 @@ export const SectionTitle = (props) => {
 export const SectionSubtitle = (props) => {
   return (
     <Typography
-      variant="body1"
-      align="center"
+      align={props.align ? props.align : "center"}
       style={{
         paddingLeft: "1vw",
         paddingRight:
@@ -391,7 +403,11 @@ export const StyledButton = (props) => {
   return (
     <Button
       onClick={props.button_action}
-      style={{ boxShadow: "1px 1px 6px 2px gray", textAlign: "center" }}
+      style={{
+        boxShadow: "1px 1px 6px 2px gray",
+        textAlign: "center",
+        lineHeight: "2.0em",
+      }}
     >
       <ButtonLabel>{props.button_text}</ButtonLabel>
     </Button>
@@ -445,46 +461,71 @@ export const ButtonDivComponent = (props) => {
 };
 
 //TABLE HEADER COMPONENT
-export const ListHead = (props) => {
-  return (
-    <TableHead>
-      <TableRow style={{ margin: "0", textAlign: "center" }}>
-        {props.headLabel.map((headCell) => (
-          <TableCell
-            key={headCell.id}
-            style={{
-              width: "20vw",
-              textAlign: "center",
-              fontSize: props.fontSize,
-            }}
-          >
-            <TableSortLabel
-              direction={props.operator === true ? "desc" : "asc"}
-              onClick={(e) => props.sortOrgProjects(headCell.label, "asc")}
-            >
-              <strong>{headCell.label}</strong>
-            </TableSortLabel>
-          </TableCell>
-        ))}
-      </TableRow>
-    </TableHead>
-  );
-};
+export const ListHead = ({ headLabel, tableData, updateData }) => {
+  const [sort, setSort] = useState({ column: "", order: "asc" });
+  const [sortedData, setSortedData] = useState(tableData);
+  const [isSorting, setIsSorting] = useState(false);
 
-export const ProjectHead = (props) => {
+  // const { updateData } = useContext(DataContext);
+
+  const handleSort = (column) => {
+    setSort((prevSort) => {
+      let order;
+      if (prevSort.column === column) {
+        order = prevSort.order === "asc" ? "desc" : "asc";
+      } else {
+        order = "asc";
+      }
+      return { column, order };
+    });
+  };
+
+  useEffect(() => {
+    if (isSorting) {
+      const sortData = () => {
+        if (sort.column === "") {
+          setSortedData(tableData);
+          return;
+        }
+
+        const newData = [...tableData].sort((a, b) => {
+          const valueA = a[sort.column];
+          const valueB = b[sort.column];
+
+          if (typeof valueA === "number" && typeof valueB === "number") {
+            return sort.order === "asc" ? valueA - valueB : valueB - valueA;
+          } else {
+            const stringA = String(valueA).toUpperCase();
+            const stringB = String(valueB).toUpperCase();
+            if (stringA < stringB) return sort.order === "asc" ? -1 : 1;
+            if (stringA > stringB) return sort.order === "asc" ? 1 : -1;
+            return 0;
+          }
+        });
+
+        setSortedData(newData);
+        updateData(newData);
+      };
+
+      sortData();
+      setIsSorting(false);
+    }
+  }, [isSorting, sort, tableData, updateData]);
+
+  useEffect(() => {
+    setIsSorting(true);
+  }, [sort]);
+
   return (
     <TableHead>
-      <TableRow style={{ margin: "0", textAlign: "center" }}>
-        {props.headLabel.map((headCell) => (
-          <TableCell
-            key={headCell.id}
-            style={{
-              width: "9vw",
-              textAlign: "center",
-              fontSize: props.fontSize,
-            }}
-          >
-            <TableSortLabel hideSortIcon direction={"asc"}>
+      <TableRow>
+        {headLabel.map((headCell) => (
+          <TableCell key={headCell.id}>
+            <TableSortLabel
+              active={sort.column === headCell.id}
+              direction={sort.column === headCell.id ? sort.order : "asc"}
+              onClick={() => handleSort(headCell.id)}
+            >
               {headCell.label}
             </TableSortLabel>
           </TableCell>
@@ -567,6 +608,11 @@ export const ConfirmModalCommon = (props) => {
 };
 
 export const AdminPayRequestsTable = (props) => {
+  
+  const updateData = (sortedData) => {
+    props.setOrgRequests(sortedData);
+  };
+
   return (
     <div
       style={{
@@ -577,16 +623,26 @@ export const AdminPayRequestsTable = (props) => {
         width: "77.5vw",
       }}
     >
-      <TableCard style={{ boxShadow: "1px 1px 6px 2px gray" }}>
+      <TableCard 
+        style={{ boxShadow: "1px 1px 6px 2px gray" }}
+        >
         <CardMediaStyle />
         <Table>
-        <div style={{height:'40vh', width:'77.5vw',overflowY:'scroll'}}>
-          <ListHead headLabel={REQUEST_TABLE_HEADERS} />
-          <TableBody>
-            {props.orgRequests &&
-              props.orgRequests
-                .slice()
-                .map((row) => {
+          <div 
+            style={{ 
+              height: "40vh", 
+              width: "77.5vw", 
+              overflowY: "scroll" 
+            }}
+          >
+            <ListHead
+              headLabel={REQUEST_TABLE_HEADERS}
+              tableData={props.orgRequests}
+              updateData={props.setOrgRequests}
+            />
+            <TableBody>
+              {props.orgRequests &&
+                props.orgRequests.slice().map((row) => {
                   const {
                     id,
                     payment_email,
@@ -627,16 +683,20 @@ export const AdminPayRequestsTable = (props) => {
                     </ProjectRow>
                   );
                 })}
-          </TableBody>
+            </TableBody>
           </div>
         </Table>
-
       </TableCard>
     </div>
   );
 };
 
 export const AdminPaymentsTable = (props) => {
+
+  const updateData = (sortedData) => {
+    props.setOrgPayments(sortedData);
+  };
+
   return (
     <div
       style={{
@@ -650,14 +710,21 @@ export const AdminPaymentsTable = (props) => {
       <TableCard style={{ boxShadow: "1px 1px 6px 2px gray" }}>
         <CardMediaStyle />
         <Table>
-          
-        <div style={{height:'40vh', width:'77.5vw',overflowY:'scroll'}}>
-          <ListHead headLabel={REQUEST_TABLE_HEADERS} />
-          <TableBody>
-            {props.orgPayments &&
-              props.orgPayments
-                .slice()
-                .map((row) => {
+          <div 
+            style={{ 
+              height: "40vh", 
+              width: "77.5vw", 
+              overflowY: "scroll" 
+            }}
+          >
+            <ListHead
+              headLabel={REQUEST_TABLE_HEADERS}
+              tableData={props.orgPayments}
+              updateData={props.setOrgPayments}
+            />
+            <TableBody>
+              {props.orgPayments &&
+                props.orgPayments.slice().map((row) => {
                   const {
                     id,
                     payment_email,
@@ -671,7 +738,6 @@ export const AdminPaymentsTable = (props) => {
                   } = row;
                   return (
                     <ProjectRow
-
                       sx={{
                         "&:hover": {
                           backgroundColor: "rgba(145, 165, 172, 0.5)",
@@ -703,7 +769,7 @@ export const AdminPaymentsTable = (props) => {
                     </ProjectRow>
                   );
                 })}
-          </TableBody>
+            </TableBody>
           </div>
         </Table>
       </TableCard>
@@ -808,7 +874,10 @@ export const ProjectCard = (props) => {
           value={props.id}
           checked={props.id === props.projectSelected}
           onChange={(e) => props.handleSetProjectSelected(props.id, props.name)}
-          style={{ marginLeft: "1vw", marginBottom: "1vh" }}
+          style={{ 
+            marginLeft: "1vw", 
+            marginBottom: "1vh" 
+          }}
         />
       </AdminCardMediaStyle>
       <div

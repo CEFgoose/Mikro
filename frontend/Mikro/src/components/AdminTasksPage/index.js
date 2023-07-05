@@ -6,13 +6,13 @@ import Sidebar from "../sidebar/sidebar";
 import "./styles.css";
 import { Table, TableBody, TablePagination } from "@mui/material";
 import { Tab, TabList, TabPanel, Tabs } from "react-tabs";
-import { 
+import {
   ProjectRow,
   ProjectCell,
   TableCard,
   ListHead,
   CardMediaStyle,
-  EXTERNAL_VALIDATIONS_HEADERS
+  EXTERNAL_VALIDATIONS_HEADERS,
 } from "components/commonComponents/commonComponents";
 import {
   AddProjectModal,
@@ -32,6 +32,7 @@ export const AdminTasksPage = () => {
     handleSetSidebarState,
     outputRate,
     externalValidations,
+    setExternalValidations,
     fetchProjectUsers,
     projectUsers,
     deleteProject,
@@ -79,16 +80,13 @@ export const AdminTasksPage = () => {
     if (user !== null && user.role !== "admin") {
       history("/login");
     }
-    fetchExternalValidations()
+    fetchExternalValidations();
     // eslint-disable-next-line
   }, []);
   useEffect(() => {
-
-    
+    console.log(externalValidations);
     // eslint-disable-next-line
   }, [externalValidations]);
-
-
 
   const handleSetActiveTab = (e) => {
     setActiveTab(e.target.value);
@@ -236,12 +234,12 @@ export const AdminTasksPage = () => {
     setRowsPerPage(e.target.value);
   };
 
-  const handleValidateTask=()=>{
-    updateTask(projectSelected,"Validate")
-  }
-  const handleInvalidateTask=()=>{
-    updateTask(projectSelected,"Invalidate")
-  }
+  const handleValidateTask = () => {
+    updateTask(projectSelected, "Validate");
+  };
+  const handleInvalidateTask = () => {
+    updateTask(projectSelected, "Invalidate");
+  };
 
   return (
     <>
@@ -308,25 +306,38 @@ export const AdminTasksPage = () => {
         projectStatus={projectStatus}
         handleSetProjectStatus={handleSetProjectStatus}
       />
-      <div style={{ width: "100%", float: "left" }}>
+      <div style={{ width: "90%", float: "left" }}>
         <Sidebar isOpen={sidebarOpen} toggleSidebar={handleViewSidebar} />
         <div
           style={{
             display: "flex",
             position: "relative",
-            left: "15vw",
+            left: "5vw",
             flexDirection: "column",
             height: "100vh",
           }}
         >
           <div
-            style={{ display: "flex", marginLeft: "6vh", flexDirection: "row" }}
+            style={{
+              display: "flex",
+              marginLeft: "6vh",
+              flexDirection: "row",
+            }}
           >
-            <h1 style={{ marginTop: "1vw", paddingBottom: "2vh" }}>
+            <h1
+              style={{
+                marginTop: "1vw",
+                paddingBottom: "2vh",
+              }}
+            >
               <strong>Tasks:</strong>
             </h1>
             <div
-              style={{ marginTop: "1vw", position: "relative", left: "52.5vw" }}
+              style={{
+                marginTop: "1vw",
+                position: "relative",
+                left: "52.5vw",
+              }}
             >
               <ButtonDivComponent
                 role={"admin"}
@@ -341,7 +352,11 @@ export const AdminTasksPage = () => {
           </div>
           <Tabs>
             <TabList
-              style={{ marginLeft: "3vw", marginTop: "0vh", paddingTop: "0vh" }}
+              style={{
+                marginLeft: "3vw",
+                marginTop: "0vh",
+                paddingTop: "0vh",
+              }}
             >
               <Tab value={1} onClick={(e) => handleSetActiveTab(e)}>
                 External Validations:
@@ -349,66 +364,76 @@ export const AdminTasksPage = () => {
             </TabList>
 
             <TabPanel>
-            <div
-            style={{
-              display: "flex",
-              flexDirection: "row",
-              marginLeft: "3.5vw",
-              height: "82vh",
-              width: "77.5vw",
-            }}
-          >
-            <TableCard style={{ boxShadow: "1px 1px 6px 2px gray" }}>
-              <CardMediaStyle />
-              <Table>
-              <div style={{height:'40vh', width:'77.5vw',overflowY:'scroll'}}>
-                <ListHead headLabel={EXTERNAL_VALIDATIONS_HEADERS} />
-                <TableBody>
-                  {externalValidations &&
-                    externalValidations
-                      .slice(
-                        page * rowsPerPage,
-                        page * rowsPerPage + rowsPerPage
-                      )
-                      .map((row) => {
-                        const {
-                          id,
-                          project_id,
-                          project_name,
-                          project_url,
-                          mapped_by,
-                          validated_by,
-                        } = row;
-                        return (
-                          <ProjectRow
-                            sx={{
-                              "&:hover": {
-                                backgroundColor: "rgba(145, 165, 172, 0.5)",
-                                cursor: "pointer",
-                              },
-                            }}
-                            align="center"
-                            key={id}
-                            tabIndex={-1}
-                            onClick={() => handleSetProjectSelected(id)}
-                            selected={projectSelected === id}
-                            onDoubleClick={() => goToSource(project_url)}
-                          >
-                            <ProjectCell entry={id} />
-                            <ProjectCell entry={project_name} />
-                            <ProjectCell entry={project_id}/>
-                            <ProjectCell entry={mapped_by}/>
-                            <ProjectCell entry={validated_by} />
-                          </ProjectRow>
-                        );
-                      })}
-                </TableBody>
-                </div>
-              </Table>
-            </TableCard>
-            </div>
+              <div
+                style={{
+                  display: "flex",
+                  flexDirection: "row",
+                  marginLeft: "3.5vw",
+                  height: "82vh",
+                  width: "77.5vw",
+                }}
+              >
+                <TableCard style={{ boxShadow: "1px 1px 6px 2px gray" }}>
+                  <CardMediaStyle />
+                  <Table>
+                    <div
+                      style={{
+                        height: "40vh",
+                        width: "77.5vw",
+                        overflowY: "scroll",
+                      }}
+                    >
+                      <ListHead
+                        headLabel={EXTERNAL_VALIDATIONS_HEADERS}
+                        tableData={externalValidations}
+                        updateData={setExternalValidations}
+                      />
+                      <TableBody>
+                        {externalValidations &&
+                          externalValidations
+                            .slice(
+                              page * rowsPerPage,
+                              page * rowsPerPage + rowsPerPage
+                            )
+                            .map((row) => {
+                              const {
+                                id,
+                                project_id,
+                                project_name,
+                                project_url,
+                                mapped_by,
+                                validated_by,
+                              } = row;
+                              return (
+                                <ProjectRow
+                                  sx={{
+                                    "&:hover": {
+                                      backgroundColor:
+                                        "rgba(145, 165, 172, 0.5)",
+                                      cursor: "pointer",
+                                    },
+                                  }}
+                                  align="center"
+                                  key={id}
+                                  tabIndex={-1}
+                                  onClick={() => handleSetProjectSelected(id)}
+                                  selected={projectSelected === id}
+                                  onDoubleClick={() => goToSource(project_url)}
+                                >
+                                  <ProjectCell entry={id} />
+                                  <ProjectCell entry={project_name} />
+                                  <ProjectCell entry={project_id} />
+                                  <ProjectCell entry={mapped_by} />
+                                  <ProjectCell entry={validated_by} />
+                                </ProjectRow>
+                              );
+                            })}
+                      </TableBody>
+                    </div>
+                  </Table>
+                </TableCard>
+              </div>
             </TabPanel>
-            
           </Tabs>
         </div>
       </div>

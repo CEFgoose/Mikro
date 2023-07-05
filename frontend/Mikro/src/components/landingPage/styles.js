@@ -63,7 +63,7 @@ export const KaartLogoOpen = styled.div`
 `;
 
 export const KaartLogoClosed = styled.div`
-  background-image: url(${whiteKaartLogo});
+  background-image: url(${kaartLogo});
   background-repeat: no-repeat;
   background-position: 50%;
   max-width: 100%;

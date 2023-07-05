@@ -24,7 +24,9 @@ export const AdminPaymentsPage = () => {
     sidebarOpen,
     handleSetSidebarState,
     orgPayments,
+    setOrgPayments,
     orgRequests,
+    setOrgRequests,
     fetchOrgTransactions,
     createTransaction,
     deleteTransaction,
@@ -245,26 +247,39 @@ export const AdminPaymentsPage = () => {
         notes={notes}
       />
 
-      <div style={{ width: "100%", float: "left" }}>
+      <div style={{ width: "90%", float: "left" }}>
         <Sidebar isOpen={sidebarOpen} toggleSidebar={handleViewSidebar} />
         <div
           style={{
             display: "flex",
             position: "relative",
-            left: "15vw",
+            left: "5vw",
             flexDirection: "column",
             height: "100vh",
           }}
         >
           <div
-            style={{ display: "flex", marginLeft: "6vh", flexDirection: "row" }}
+            style={{ 
+              display: "flex", 
+              marginLeft: "6vh", 
+              flexDirection: "row" 
+            }}
           >
-            <h1 style={{ marginTop: "1vw", paddingBottom: "2vh" }}>
+            <h1 
+              style={{ 
+                marginTop: "1vw", 
+                paddingBottom: "2vh" 
+              }}
+            >
               <strong>Payments:</strong>
             </h1>
 
             <div
-              style={{ marginTop: "1vw", position: "relative", left: "38.5vw" }}
+              style={{ 
+                marginTop: "1vw", 
+                position: "relative", 
+                left: "38.5vw" 
+              }}
             >
               <ButtonDivComponent
                 data={CSVdata}
@@ -285,7 +300,11 @@ export const AdminPaymentsPage = () => {
           </div>
           <Tabs>
             <TabList
-              style={{ marginLeft: "3vw", marginTop: "0vh", paddingTop: "0vh" }}
+              style={{ 
+                marginLeft: "3vw", 
+                marginTop: "0vh", 
+                paddingTop: "0vh" 
+              }}
             >
               <Tab value={1} onClick={(e) => handleSetActiveTab(e)}>
                 Pay Requests
@@ -301,6 +320,7 @@ export const AdminPaymentsPage = () => {
                 setPage={setPage}
                 handleChangeRowsPerPage={handleChangeRowsPerPage}
                 orgRequests={orgRequests}
+                setOrgRequests={setOrgRequests}
                 requestSelected={requestSelected}
                 handleSetRequestSelected={handleSetRequestSelected}
               />
@@ -312,6 +332,7 @@ export const AdminPaymentsPage = () => {
                 setPage={setPage}
                 handleChangeRowsPerPage={handleChangeRowsPerPage}
                 orgPayments={orgPayments}
+                setOrgPayments={setOrgPayments}
                 paymentSelected={paymentSelected}
                 handleSetPaymentSelected={handleSetPaymentSelected}
               />
