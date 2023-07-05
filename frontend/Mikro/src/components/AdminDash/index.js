@@ -2,7 +2,7 @@ import React, { useContext, useEffect, useState } from "react";
 import { DataContext } from "../../common/DataContext";
 import { AuthContext } from "../../common/AuthContext";
 import Sidebar from "../sidebar/sidebar";
-import { Table, TableBody} from "@mui/material";
+import { Table, TableBody } from "@mui/material";
 import { ConfirmationModal } from "components/AdminChecklistsPage/checklistComponents";
 import {
   ListHead,
@@ -75,23 +75,22 @@ export const AdminDash = () => {
   }, []);
 
   useEffect(() => {
-    if(externalValidations.length > 0){
-      setConfirmQuestion(`You have ${externalValidations.length} tasks with unknown validators to confirm on the Tasks page`)
-      toggleConfirmOpen()
+    if (externalValidations.length > 0) {
+      setConfirmQuestion(
+        `You have ${externalValidations.length} tasks with unknown validators to confirm on the Tasks page`
+      );
+      toggleConfirmOpen();
     }
     // eslint-disable-next-line
   }, [externalValidations]);
 
-  const handleConfirmOpen=()=>{
-    toggleConfirmOpen()
-  }
-
+  const handleConfirmOpen = () => {
+    toggleConfirmOpen();
+  };
 
   const handleSetProjectSelected = (e) => {
     setProjectSelected(e);
   };
-
-
 
   return (
     <>
@@ -183,13 +182,17 @@ export const AdminDash = () => {
             <TableCard style={{ boxShadow: "1px 1px 6px 2px gray" }}>
               <CardMediaStyle />
               <Table style={{}}>
-                <div style={{height:'40vh', width:'77.5vw',overflowY:'scroll'}}>
-                <ListHead headLabel={ADMIN_PROJECTS_TABLE_HEADERS} />
-                <TableBody >
-                  {activeProjects &&
-                    activeProjects
-                      .slice()
-                      .map((row) => {
+                <div
+                  style={{
+                    height: "40vh",
+                    width: "77.5vw",
+                    overflowY: "scroll",
+                  }}
+                >
+                  <ListHead headLabel={ADMIN_PROJECTS_TABLE_HEADERS} />
+                  <TableBody>
+                    {activeProjects &&
+                      activeProjects.slice().map((row) => {
                         const {
                           id,
                           name,
@@ -250,7 +253,7 @@ export const AdminDash = () => {
                           </ProjectRow>
                         );
                       })}
-                </TableBody>
+                  </TableBody>
                 </div>
               </Table>
             </TableCard>
