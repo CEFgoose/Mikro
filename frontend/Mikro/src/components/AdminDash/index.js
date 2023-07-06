@@ -76,17 +76,18 @@ export const AdminDash = () => {
   }, []);
 
   useEffect(() => {
-    //console.log(externalValidations.length)
-    if(externalValidations.length > 0){
-      setConfirmQuestion(`You have ${externalValidations.length} tasks with unknown validators to confirm on the Tasks page`)
-      toggleConfirmOpen()
+    if (externalValidations.length > 0) {
+      setConfirmQuestion(
+        `You have ${externalValidations.length} tasks with unknown validators to confirm on the Tasks page`
+      );
+      toggleConfirmOpen();
     }
     // eslint-disable-next-line
   }, [externalValidations]);
 
-  const handleConfirmOpen=()=>{
-    toggleConfirmOpen()
-  }
+  const handleConfirmOpen = () => {
+    toggleConfirmOpen();
+  };
 
   const handleSetProjectSelected = (e) => {
     setProjectSelected(e);
@@ -116,28 +117,27 @@ export const AdminDash = () => {
           }}
         >
           <div
-            style={{ 
-              display: "flex", 
-              marginLeft: "6vh", 
-              flexDirection: "row" 
+            style={{
+              display: "flex",
+              marginLeft: "6vh",
+              flexDirection: "row",
             }}
           >
-            <h1 
-              style={{ 
-                marginTop: "1vw", 
-                paddingBottom: "2vh" 
+            <h1
+              style={{
+                marginTop: "1vw",
+                paddingBottom: "2vh",
               }}
             >
               <strong>Dashboard:</strong>
             </h1>
             <div
-              style={{ 
-                marginTop: "1vw", 
-                position: "relative", 
-                left: "37.5vw" 
+              style={{
+                marginTop: "1vw",
+                position: "relative",
+                left: "37.5vw",
               }}
-            >
-            </div>
+            ></div>
           </div>
           <div
             style={{
@@ -200,23 +200,21 @@ export const AdminDash = () => {
             <TableCard style={{ boxShadow: "1px 1px 6px 2px gray" }}>
               <CardMediaStyle />
               <Table style={{}}>
-                <div 
+                <div
                   style={{
-                    height:'40vh', 
-                    width:'77.5vw',
-                    overflowY:'scroll'
+                    height: "40vh",
+                    width: "77.5vw",
+                    overflowY: "scroll",
                   }}
                 >
-                <ListHead 
-                  headLabel={ADMIN_PROJECTS_TABLE_HEADERS} 
-                  tableData={activeProjects} 
-                  updateData={setActiveProjects} 
-                />
-                <TableBody >
-                  {activeProjects &&
-                    activeProjects
-                      .slice()
-                      .map((row) => {
+                  <ListHead
+                    headLabel={ADMIN_PROJECTS_TABLE_HEADERS}
+                    tableData={activeProjects}
+                    updateData={setActiveProjects}
+                  />
+                  <TableBody>
+                    {activeProjects &&
+                      activeProjects.slice().map((row) => {
                         const {
                           id,
                           name,
