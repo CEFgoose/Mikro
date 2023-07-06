@@ -83,7 +83,8 @@ const Sidebar = (props) => {
   const { user, refresh } = useContext(AuthContext);
 
   const {
-    sidebarOpen
+    sidebarOpen,
+    BarOptionSelected
   } = useContext(DataContext);
 
   useEffect(() => {
@@ -114,6 +115,16 @@ const Sidebar = (props) => {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+
+
+
+
+  useEffect(() => {
+    console.log(BarOptionSelected)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [BarOptionSelected]);
+
 
   // LOG THE CURRENT USER OUT & Navigate TO LOGIN PAGE //
   const logout = () => {
@@ -192,8 +203,16 @@ const Sidebar = (props) => {
         </MenuItemTop>
 
         <NavLink to={dashboardLink} style={{ textDecoration: "none" }}>
-          <MenuItem>
-            <ProjectIconContainer>
+          <MenuItem style={{
+            backgroundColor: BarOptionSelected && BarOptionSelected === 'dashboard' ? '#fd7e14' : 'transparent',
+            // zIndex:BarOptionSelected&&BarOptionSelected==='dashboard'?9999:1200,
+            // opacity:BarOptionSelected&&BarOptionSelected==='dashboard'?1:0.5,
+          }}>
+            <ProjectIconContainer
+
+            // style={{ zIndex: BarOptionSelected === "dashboard" ? 9999: 1200 }}
+            // style={{ opacity: BarOptionSelected === "dashboard" ? 1 : 0.5 }}
+            >
               <ProjectIcon src={dashicon} />
             </ProjectIconContainer>
             <Header>Dashboard</Header>
@@ -201,8 +220,12 @@ const Sidebar = (props) => {
         </NavLink>
 
         <NavLink to={checklistPageLink} style={{ textDecoration: "none" }}>
-          <MenuItem>
-            <ProjectIconContainer>
+          <MenuItem
+            style={{ backgroundColor: BarOptionSelected && BarOptionSelected === 'checklist' ? '#fd7e14' : 'transparent' }}
+          >
+            <ProjectIconContainer
+
+            >
               <ProjectIcon src={checklist_icon} />
             </ProjectIconContainer>
             <Header>Checklists</Header>
@@ -210,8 +233,12 @@ const Sidebar = (props) => {
         </NavLink>
 
         <NavLink to={projectPageLink} style={{ textDecoration: "none" }}>
-          <MenuItem>
-            <ProjectIconContainer>
+          <MenuItem
+            style={{ backgroundColor: BarOptionSelected && BarOptionSelected === 'project' ? '#fd7e14' : 'transparent' }}
+          >
+            <ProjectIconContainer
+
+            >
               <ProjectIcon src={projects_icon} />
             </ProjectIconContainer>
             <Header>Projects</Header>
@@ -244,7 +271,9 @@ const Sidebar = (props) => {
         )}
 
         <NavLink to={trainingPageLink} style={{ textDecoration: "none" }}>
-          <MenuItem>
+          <MenuItem
+            style={{ backgroundColor: BarOptionSelected && BarOptionSelected === 'training' ? '#fd7e14' : 'transparent' }}
+          >
             <ProjectIconContainer>
               <ProjectIcon src={training_icon} />
             </ProjectIconContainer>
@@ -253,7 +282,9 @@ const Sidebar = (props) => {
         </NavLink>
 
         <NavLink to={paymentsPageLink} style={{ textDecoration: "none" }}>
-          <MenuItem>
+          <MenuItem
+            style={{ backgroundColor: BarOptionSelected && BarOptionSelected === 'payments' ? '#fd7e14' : 'transparent' }}
+          >
             <ProjectIconContainer>
               <ProjectIcon src={payments_icon} />
             </ProjectIconContainer>
@@ -262,7 +293,9 @@ const Sidebar = (props) => {
         </NavLink>
 
         <NavLink to={accountPageLink} style={{ textDecoration: "none" }}>
-          <MenuItem>
+          <MenuItem
+            style={{ backgroundColor: BarOptionSelected && BarOptionSelected === 'account' ? '#fd7e14' : 'transparent' }}
+          >
             <ProjectIconContainer>
               <ProjectIcon src={account_icon} />
             </ProjectIconContainer>

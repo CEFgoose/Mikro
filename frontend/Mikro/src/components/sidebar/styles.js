@@ -28,6 +28,7 @@ export const SidebarClosedContainer = styled.div`
 
 export const MenuItem = styled.a`
   position: relative;
+  z-index: 9999;
   color: #253e45 !important;
   padding-left: 4rem;
   padding: 1rem;

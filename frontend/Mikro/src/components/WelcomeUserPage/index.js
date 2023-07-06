@@ -88,8 +88,9 @@ export const WelcomeUserPage = () => {
         payoneerEmail,
         country,
         city,
-        termsAgreement
+        termsAgreement,
       );
+      localStorage.setItem('firstLogin', 'true');
       history("/dashboard");
     }
   };

@@ -3,6 +3,7 @@ import { DataContext } from "../../common/DataContext";
 import { AuthContext } from "../../common/AuthContext";
 import Sidebar from "../sidebar/sidebar";
 import { Table, TableBody, TablePagination } from "@mui/material";
+import useToggle from "../../hooks/useToggle.js";
 import "./styles.css";
 import {
   ListHead,
@@ -12,6 +13,7 @@ import {
   ProjectCell,
   TableCard,
   CardMediaStyle,
+  TutorialDialog,
 } from "components/commonComponents/commonComponents";
 
 export const UserDashboard = () => {
@@ -38,11 +40,19 @@ export const UserDashboard = () => {
     fetchUserProjects,
     update_user_tasks,
     history,
+    BarOptionSelected,
+    setBarOptionSelected,
+    tutorialStepTitle,
+    setTutorialStepTitle,
+    tutorialStepContent,
+    setTutorialStepContent
   } = useContext(DataContext);
 
   const { refresh, user } = useContext(AuthContext);
 
   const [projectSelected, setProjectSelected] = useState(null);
+  const [showTutorial, setShowTutorial] = useToggle(false);
+  const [tutorialStep, setTutorialStep] = useState(0);
 
   useEffect(() => {
     if (user) {
@@ -62,7 +72,15 @@ export const UserDashboard = () => {
       fetchUserProjects();
     }
 
-    // eslint-disable-next-line
+    // Check if it's user's first login from local storage
+    if (localStorage.getItem('firstLogin') === 'true') {
+      // Set showTutorial to true to display tutorial
+      setShowTutorial(true);
+      setTutorialStepTitle('Welcome to Mikro!')
+      setTutorialStepContent('This is an example')
+      setTutorialStep(0);
+      localStorage.setItem('firstLogin', 'false');
+    }
   }, []);
 
   const handleViewSidebar = () => {
@@ -73,13 +91,80 @@ export const UserDashboard = () => {
     setProjectSelected(e);
   };
 
-  const updateData = (sortedData) => {
-    setActiveProjects(sortedData);
+  const handleDialogClose = () => {
+    setBarOptionSelected('')
+    setShowTutorial(false);
   };
+
+  const navigateToFirstTraining = () => {
+   history("/UserTrainingPage")
+  }
+
+  const nextTutorialStep = () => {
+    let tempStep=tutorialStep 
+    tempStep+=1
+    setTutorialStep(tempStep);
+    setDialogContent(tempStep);
+  }
+
+  const previousTutorialStep = () => {
+    let tempStep=tutorialStep 
+    tempStep-=1
+    setTutorialStep(tempStep);
+    setDialogContent(tempStep);
+  }
+
+  const setDialogContent = (tutorialStep) => {
+    if( tutorialStep == 0 ) {
+      setTutorialStepTitle('Welcome to Mikro!')
+      setTutorialStepContent('This is an example')
+    } else if( tutorialStep == 1 ) {
+      setTutorialStepTitle('Dashboard')
+      setTutorialStepContent(
+        "Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry's standard dummy text ever since the 1500s, when an unknown printer took a galley of type and scrambled it to make a type specimen book. It has survived not only five centuries, but also the leap into electronic typesetting, remaining essentially unchanged. It was popularised in the 1960s with the release of Letraset sheets containing Lorem Ipsum passages, and more recently with desktop publishing software like Aldus PageMaker including versions of Lore")
+      setBarOptionSelected('dashboard')
+    } else if( tutorialStep == 2 ) {
+      setTutorialStepTitle('Checklists')
+      setTutorialStepContent('This is an example')
+      setBarOptionSelected('checklist')
+    } else if( tutorialStep == 3 ) {
+      setTutorialStepTitle('Projects')
+      setTutorialStepContent('This is an example')
+      setBarOptionSelected('project')
+    } else if( tutorialStep == 4 ) {
+      setTutorialStepTitle('Training')
+      setTutorialStepContent('This is an example')
+      setBarOptionSelected('training')
+    } else if( tutorialStep == 5 ) {
+      setTutorialStepTitle('Payments')
+      setTutorialStepContent('This is an example')
+      setBarOptionSelected('payments')
+    } else if( tutorialStep == 6 ) {
+      setTutorialStepTitle('Account')
+      setTutorialStepContent('This is an example')
+      setBarOptionSelected('account')
+    } else if( tutorialStep == 7 ) {
+      setTutorialStepTitle('Congrats')
+      setTutorialStepContent('Welcome to the team! Complete your first training to begin mapping!')
+      setBarOptionSelected('')
+    }
+  }
 
   return (
     <>
-      <div style={{ width: "90%", height: "90%", float: "left" }}>
+    {showTutorial && (
+      <TutorialDialog
+        open ={true}
+        onClose = {handleDialogClose}
+        title ={tutorialStepTitle}
+        content = {tutorialStepContent}
+        button_1_text= {tutorialStep >= 1 ? "Previous" : "Skip" }
+        button_1_action ={tutorialStep === 0 ? handleDialogClose : previousTutorialStep}
+        button_2_text={tutorialStep === 7 ? "Go to Training" : "Next"}
+        button_2_action = {tutorialStep === 7 ? navigateToFirstTraining : nextTutorialStep}
+      />
+    )}
+      <div style={{ width: "100%", float: "left" }}>
         <Sidebar isOpen={sidebarOpen} toggleSidebar={handleViewSidebar} />
         <div
           style={{
@@ -92,6 +177,7 @@ export const UserDashboard = () => {
         >
           <div
             style={{ display: "flex", marginLeft: "6vh", flexDirection: "row" }}
+
           >
             <h1 style={{ marginTop: "1vw", paddingBottom: "2vh" }}>
               <strong>Dashboard:</strong>
@@ -139,12 +225,10 @@ export const UserDashboard = () => {
               subtitle_text_1={"Payable Total:"}
               subtitle_text_2={"Payout Requests:"}
               subtitle_text_3={"Payouts to Date:"}
-              value_1={`$${
-                payableTotal !== null ? payableTotal.toFixed(2) : "-"
-              }`}
-              value_2={`$${
-                requestsTotal !== null ? requestsTotal.toFixed(2) : "-"
-              }`}
+              value_1={`$${payableTotal !== null ? payableTotal.toFixed(2) : "-"
+                }`}
+              value_2={`$${requestsTotal !== null ? requestsTotal.toFixed(2) : "-"
+                }`}
               value_3={`$${paidTotal !== null ? paidTotal.toFixed(2) : "-"}`}
             />
           </div>
@@ -208,18 +292,17 @@ export const UserDashboard = () => {
                             />
                             <ProjectCell entry={total_tasks} />
 
-                            <ProjectCell entry={tasks_mapped} />
-                            <ProjectCell entry={tasks_approved} />
-                            <ProjectCell entry={tasks_unapproved} />
-                            <ProjectCell
-                              entry={`$${
-                                user_earnings && user_earnings.toFixed(2)
-                              }`}
-                            />
-                          </ProjectRow>
-                        );
-                      })}
-                </TableBody>
+                              <ProjectCell entry={tasks_mapped} />
+                              <ProjectCell entry={tasks_approved} />
+                              <ProjectCell entry={tasks_unapproved} />
+                              <ProjectCell
+                                entry={`$${user_earnings && user_earnings.toFixed(2)
+                                  }`}
+                              />
+                            </ProjectRow>
+                          );
+                        })}
+                  </TableBody>
                 </div>
               </Table>
             </TableCard>

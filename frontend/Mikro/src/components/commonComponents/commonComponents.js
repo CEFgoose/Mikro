@@ -17,6 +17,11 @@ import {
   TableBody,
   TablePagination,
   Grid,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogContentText,
+  DialogActions
 } from "@mui/material";
 
 export const TopDiv = styled("div")(({ theme }) => ({
@@ -557,6 +562,49 @@ export const ModalButtons = (props) => {
   );
 };
 
+export const TutorialDialog = (props) => {
+  return (
+    <Dialog
+      open={props.open}
+      onClose={props.onClose}
+      aria-labelledby="alert-dialog-title"
+      aria-describedby="alert-dialog-description"
+    >
+      <DialogTitle id="alert-dialog-title">
+        {props.title}
+      </DialogTitle>
+      <DialogContent>
+        <DialogContentText id="alert-dialog-description">
+          {props.content}
+        </DialogContentText>
+      </DialogContent>
+      <DialogActions>
+      <div
+          style={{
+            display: "flex",
+            flexDirection: "row",
+            justifyContent: "center",
+            alignItems: "center",
+          }}
+        >
+          <Button
+            style={{ marginLeft: "1vw", marginRight: "1vw" }}
+            onClick={() => props.button_1_action()}
+          >
+            {props.button_1_text}
+          </Button>
+          <Button
+            style={{ marginLeft: "1vw", marginRight: "1vw" }}
+            onClick={() => props.button_2_action()}
+          >
+            {props.button_2_text}
+          </Button>
+        </div>
+      </DialogActions>
+    </Dialog>
+  );
+};
+
 export const ConfirmModalCommon = (props) => {
   const modal_body = (
     <ModalWrapper>
@@ -928,9 +976,8 @@ export const ProjectCard = (props) => {
             margin_bottom={"0vh"}
           />
           <SectionSubtitle
-            subtitle_text={`${
-              props.visibility === true ? `Public` : `Private`
-            }`}
+            subtitle_text={`${props.visibility === true ? `Public` : `Private`
+              }`}
             margin_bottom={"0vh"}
           />
         </div>
@@ -1173,9 +1220,8 @@ export const ProjectCard = (props) => {
                 margin_bottom={"0vh"}
               />
               <SectionSubtitle
-                subtitle_text={`$${
-                  props.total_payout && (props.total_payout / 100).toFixed(2)
-                }`}
+                subtitle_text={`$${props.total_payout && (props.total_payout / 100).toFixed(2)
+                  }`}
               />
             </div>
             <div
@@ -1191,9 +1237,8 @@ export const ProjectCard = (props) => {
                 margin_bottom={"0vh"}
               />
               <SectionSubtitle
-                subtitle_text={`$${
-                  props.max_payment && props.max_payment.toFixed(2)
-                }`}
+                subtitle_text={`$${props.max_payment && props.max_payment.toFixed(2)
+                  }`}
               />
             </div>
           </div>

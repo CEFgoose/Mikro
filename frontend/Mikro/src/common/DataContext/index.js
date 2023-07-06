@@ -76,6 +76,10 @@ export const DataProvider = ({ children }) => {
   const [confirmQuestion, setConfirmQuestion] = useState("");
   const [confirmText, setConfirmText] = useState("");
 
+  const [tutorialStepTitle, setTutorialStepTitle] = useState("");
+  const [tutorialStepContent, setTutorialStepContent] = useState("");
+  const [BarOptionSelected,setBarOptionSelected]=useState(null)
+
   const handleSetSidebarState = () => {
     toggleSidebarOpen();
   };
@@ -1629,7 +1633,14 @@ export const DataProvider = ({ children }) => {
     unassignUserChecklist,
     findIndexById,
     setExternalValidations,
-    setOrgUsers,
+
+    BarOptionSelected,
+    setBarOptionSelected,
+    tutorialStepTitle,
+    setTutorialStepTitle,
+    tutorialStepContent,
+    setTutorialStepContent
+
   };
 
   return value ? (
