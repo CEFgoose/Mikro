@@ -260,11 +260,7 @@ export const DataProvider = ({ children }) => {
       item_number: itemNumber,
       user_id: userID,
     };
-<<<<<<< Updated upstream
 
-=======
-    
->>>>>>> Stashed changes
     let confirmItemUrl = "checklist/confirm_list_item";
     poster(outpack, confirmItemUrl).then((response) => {
       if (response.status === 200) {
@@ -415,10 +411,6 @@ export const DataProvider = ({ children }) => {
   const fetchValidatorChecklists = () => {
     let fetchValidatorChecklistsUrl = "checklist/fetch_validator_checklists";
     fetcher(fetchValidatorChecklistsUrl).then((response) => {
-<<<<<<< Updated upstream
-=======
-
->>>>>>> Stashed changes
       if (response.status === 200) {
         setUserAvailableChecklists(response.user_available_checklists);
         setUserCompletedChecklists(response.user_completed_checklists);
@@ -1392,25 +1384,10 @@ export const DataProvider = ({ children }) => {
     });
   };
 
-<<<<<<< Updated upstream
   const spliceArray = (inlist, index) => {
-    console.log(inlist, index);
-    // index = inlist.indexOf(index);
     if (index > -1) {
       inlist.splice(index, 1);
-=======
-
-
-
-
-    const spliceArray=(inlist,index)=>{
-      if (index > -1) { 
-        inlist.splice(index, 1);
-      }
-      return inlist
->>>>>>> Stashed changes
     }
-    // console.log(inlist)
     return inlist;
   };
 
