@@ -56,13 +56,8 @@ class UserAPI(MethodView):
             for user in json_data:
                 # Extract the necessary information from the user object
                 email = user.get('email')
-                payment_email = user.get('payment_email')
-                city = user.get('city')
-                country = user.get('country')
-                osm_username = user.get('osm_username')
                 first_name = user.get('first_name')
                 last_name = user.get('last_name')
-                role = user.get('role')
                 
                 # Create a new user registration payload
                 registration_payload = {
