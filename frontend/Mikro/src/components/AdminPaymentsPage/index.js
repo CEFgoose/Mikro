@@ -276,9 +276,9 @@ export const AdminPaymentsPage = () => {
 
             <div
               style={{ 
-                marginTop: "1vw", 
+                marginTop: "2vw", 
                 position: "relative", 
-                left: "38.5vw" 
+                left: "47vw" 
               }}
             >
               <ButtonDivComponent

@@ -439,9 +439,10 @@ export const AdminTrainingPage = () => {
               <strong>Training:</strong>
             </h1>
             <div 
-              style={{ 
-                marginLeft: "40vw", 
-                marginTop: "1vh" 
+               style={{ 
+                marginTop: "2vw", 
+                position: "relative", 
+                left: "48vw" 
               }}
             >
               <ButtonDivComponent

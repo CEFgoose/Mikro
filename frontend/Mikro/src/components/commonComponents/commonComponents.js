@@ -455,6 +455,14 @@ export const ButtonDivComponent = (props) => {
         />
       ) : (
         <></>
+        )}
+      {props.button4 ? (
+        <StyledButton
+          button_action={props.button4_action}
+          button_text={props.button4_text}
+        />
+      ) : (
+        <></>
       )}
     </Container>
   );
@@ -873,7 +881,13 @@ export const ProjectCard = (props) => {
           id={props.id}
           value={props.id}
           checked={props.id === props.projectSelected}
-          onChange={(e) => props.handleSetProjectSelected(props.id, props.name)}
+          onChange={(e) => {
+            if (props.id === props.projectSelected) {
+              props.handleSetProjectSelected(null, props.name); //Uncheck the checkbox
+            } else {
+              props.handleSetProjectSelected(props.id, props.name); //Check the checkbox  
+            }
+          }} 
           style={{ 
             marginLeft: "1vw", 
             marginBottom: "1vh" 

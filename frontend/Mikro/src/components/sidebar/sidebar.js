@@ -8,7 +8,7 @@ import styled, { css } from "styled-components";
 import dashicon from "../../images/newIcons/round2/dashboard_1.png";
 import checklist_icon from "../../images/newIcons/round2/checklists.png";
 import projects_icon from "../../images/newIcons/round2/projects_1.png";
-import tasks_icon from '../../images/newIcons/round2/tasks.png'
+import tasks_icon from "../../images/newIcons/round2/tasks.png";
 import users_icon from "../../images/newIcons/round2/users_1.png";
 import training_icon from "../../images/newIcons/round2/training_1.png";
 import payments_icon from "../../images/newIcons/round2/payments.png";
@@ -17,7 +17,6 @@ import faq_icon from "../../images/question.png";
 import logouticon from "../../images/newIcons/round2/log out.png";
 import leftArrow from "../../images/newIcons/round2/kaart back_1.png";
 import mikro_icon from "../../images/5.png";
-
 
 import "./styles.css";
 import {
@@ -77,14 +76,11 @@ const Sidebar = (props) => {
   const [paymentsPageLink, setPaymentsPageLink] = useState("/UserPaymentsPage");
   const [trainingPageLink, setTrainingPageLink] = useState("/UserTrainingPage");
   const [tasksPageLink, setTasksPageLink] = useState("/AdminTasksPage");
-  const [faqPageLink, setFaqPageLink] = useState("/UserAccountPage")
+  const [faqPageLink, setFaqPageLink] = useState("/FAQPage");
   const [localUser, setLocalUser] = useLocalStorageState("mikro.user", null);
   const { history, resetUserStats } = useContext(DataContext);
   const { user, refresh } = useContext(AuthContext);
-
-  const {
-    sidebarOpen
-  } = useContext(DataContext);
+  const { sidebarOpen } = useContext(DataContext);
 
   useEffect(() => {
     if (user === null) {
@@ -95,7 +91,7 @@ const Sidebar = (props) => {
     }
     setRole(user.role);
     setName(user.name);
-    setFaqPageLink("/FAQPage")
+    setFaqPageLink("/FAQPage");
     if (user.role === "admin") {
       setDashboardLink("/admindash");
       setProjectPageLink("/AdminProjectsPage");
@@ -122,26 +118,19 @@ const Sidebar = (props) => {
     }).then(() => {
       setLocalUser(null);
       history("/login");
-      history.go("/login")
+      history.go("/login");
     });
   };
 
   return (
     <div>
-       {sidebarOpen ? (
-      <SidebarOpenedContainer>
-       <MenuItemTop 
-        style={{ marginBottom: "10%" }}
-        onClick={props.toggleSidebar}
-        >
-        <RoleBarWrapper>
-            <div
-              style={{
-                display: "flex",
-                flexDirection: "row",
-                alignItems: "center",
-              }}
-            >
+      {sidebarOpen ? (
+        <SidebarOpenedContainer>
+          <MenuItemTop
+            style={{ marginBottom: "10%" }}
+            onClick={props.toggleSidebar}
+          >
+            <RoleBarWrapper>
               <div
                 style={{
                   display: "flex",
@@ -149,16 +138,23 @@ const Sidebar = (props) => {
                   alignItems: "center",
                 }}
               >
-                <MikroLogoOpen />
-                  </div>
-                  <div
-                    style={{
-                      display: "flex",
-                      flexDirection: "column",
-                      alignItems: "center",
-                    }}
-                  >
-                {/* <img
+                <div
+                  style={{
+                    display: "flex",
+                    flexDirection: "row",
+                    alignItems: "center",
+                  }}
+                >
+                  <MikroLogoOpen />
+                </div>
+                <div
+                  style={{
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "center",
+                  }}
+                >
+                  {/* <img
                   style={{
                     height: "5vh",
                     marginLeft: ".8vw",
@@ -175,143 +171,143 @@ const Sidebar = (props) => {
                   alignItems: "center",
                 }}
               > */}
-                <RoleHeader>{<strong>{name}</strong>}</RoleHeader>
-                <RoleSubHeader>{<strong>{role}</strong>}</RoleSubHeader>
+                  <RoleHeader>{<strong>{name}</strong>}</RoleHeader>
+                  <RoleSubHeader>{<strong>{role}</strong>}</RoleSubHeader>
+                </div>
               </div>
-            </div>
 
-            <div
-              style={{
-                width: "100%",
-                backgroundColor: "black",
-                height: ".05vh",
-                marginTop: "5%",
-              }}
-            />
-          </RoleBarWrapper>
-        </MenuItemTop>
+              <div
+                style={{
+                  width: "100%",
+                  backgroundColor: "black",
+                  height: ".05vh",
+                  marginTop: "5%",
+                }}
+              />
+            </RoleBarWrapper>
+          </MenuItemTop>
 
-        <NavLink to={dashboardLink} style={{ textDecoration: "none" }}>
-          <MenuItem>
-            <ProjectIconContainer>
-              <ProjectIcon src={dashicon} />
-            </ProjectIconContainer>
-            <Header>Dashboard</Header>
-          </MenuItem>
-        </NavLink>
-
-        <NavLink to={checklistPageLink} style={{ textDecoration: "none" }}>
-          <MenuItem>
-            <ProjectIconContainer>
-              <ProjectIcon src={checklist_icon} />
-            </ProjectIconContainer>
-            <Header>Checklists</Header>
-          </MenuItem>
-        </NavLink>
-
-        <NavLink to={projectPageLink} style={{ textDecoration: "none" }}>
-          <MenuItem>
-            <ProjectIconContainer>
-              <ProjectIcon src={projects_icon} />
-            </ProjectIconContainer>
-            <Header>Projects</Header>
-          </MenuItem>
-        </NavLink>
-
-        {role === "admin" ? (
-          <NavLink to="/AdminTasksPage" style={{ textDecoration: "none" }}>
+          <NavLink to={dashboardLink} style={{ textDecoration: "none" }}>
             <MenuItem>
               <ProjectIconContainer>
-                <ProjectIcon src={tasks_icon} />
+                <ProjectIcon src={dashicon} />
               </ProjectIconContainer>
-              <Header>Tasks</Header>
+              <Header>Dashboard</Header>
             </MenuItem>
           </NavLink>
-        ) : (
-          <></>
-        )}
-        {role === "admin" ? (
-          <NavLink to="/AdminUsersPage" style={{ textDecoration: "none" }}>
+
+          <NavLink to={checklistPageLink} style={{ textDecoration: "none" }}>
             <MenuItem>
               <ProjectIconContainer>
-                <ProjectIcon src={users_icon} />
+                <ProjectIcon src={checklist_icon} />
               </ProjectIconContainer>
-              <Header>Users</Header>
+              <Header>Checklists</Header>
             </MenuItem>
           </NavLink>
-        ) : (
-          <></>
-        )}
 
-        <NavLink to={trainingPageLink} style={{ textDecoration: "none" }}>
-          <MenuItem>
+          <NavLink to={projectPageLink} style={{ textDecoration: "none" }}>
+            <MenuItem>
+              <ProjectIconContainer>
+                <ProjectIcon src={projects_icon} />
+              </ProjectIconContainer>
+              <Header>Projects</Header>
+            </MenuItem>
+          </NavLink>
+
+          {role === "admin" ? (
+            <NavLink to="/AdminTasksPage" style={{ textDecoration: "none" }}>
+              <MenuItem>
+                <ProjectIconContainer>
+                  <ProjectIcon src={tasks_icon} />
+                </ProjectIconContainer>
+                <Header>Tasks</Header>
+              </MenuItem>
+            </NavLink>
+          ) : (
+            <></>
+          )}
+          {role === "admin" ? (
+            <NavLink to="/AdminUsersPage" style={{ textDecoration: "none" }}>
+              <MenuItem>
+                <ProjectIconContainer>
+                  <ProjectIcon src={users_icon} />
+                </ProjectIconContainer>
+                <Header>Users</Header>
+              </MenuItem>
+            </NavLink>
+          ) : (
+            <></>
+          )}
+
+          <NavLink to={trainingPageLink} style={{ textDecoration: "none" }}>
+            <MenuItem>
+              <ProjectIconContainer>
+                <ProjectIcon src={training_icon} />
+              </ProjectIconContainer>
+              <Header>Training</Header>
+            </MenuItem>
+          </NavLink>
+
+          <NavLink to={paymentsPageLink} style={{ textDecoration: "none" }}>
+            <MenuItem>
+              <ProjectIconContainer>
+                <ProjectIcon src={payments_icon} />
+              </ProjectIconContainer>
+              <Header>Payments</Header>
+            </MenuItem>
+          </NavLink>
+
+          <NavLink to={accountPageLink} style={{ textDecoration: "none" }}>
+            <MenuItem>
+              <ProjectIconContainer>
+                <ProjectIcon src={account_icon} />
+              </ProjectIconContainer>
+              <Header>Account</Header>
+            </MenuItem>
+          </NavLink>
+
+          <NavLink to={faqPageLink} style={{ textDecoration: "none" }}>
+            <MenuItem>
+              <ProjectIconContainer>
+                <ProjectIcon src={faq_icon} />
+              </ProjectIconContainer>
+              <Header>FAQ</Header>
+            </MenuItem>
+          </NavLink>
+
+          <MenuItem onClick={logout}>
             <ProjectIconContainer>
-              <ProjectIcon src={training_icon} />
+              <ProjectIcon onClick={logout} src={logouticon} />
             </ProjectIconContainer>
-            <Header>Training</Header>
+            <Header onClick={logout}>Log Out</Header>
           </MenuItem>
-        </NavLink>
 
-        <NavLink to={paymentsPageLink} style={{ textDecoration: "none" }}>
-          <MenuItem>
+          <MenuItem href={map_url} target="_blank">
             <ProjectIconContainer>
-              <ProjectIcon src={payments_icon} />
+              <ProjectIcon href={map_url} target="_blank" src={leftArrow} />
             </ProjectIconContainer>
-            <Header>Payments</Header>
+            <Header href={map_url} target="_blank">
+              Kaart.com
+            </Header>
           </MenuItem>
-        </NavLink>
 
-        <NavLink to={accountPageLink} style={{ textDecoration: "none" }}>
-          <MenuItem>
-            <ProjectIconContainer>
-              <ProjectIcon src={account_icon} />
-            </ProjectIconContainer>
-            <Header>Account</Header>
-          </MenuItem>
-        </NavLink>
-
-        <NavLink to={faqPageLink} style={{ textDecoration: "none" }}>
-          <MenuItem>
-            <ProjectIconContainer>
-              <ProjectIcon src={faq_icon} />
-            </ProjectIconContainer>
-            <Header>FAQ</Header>
-          </MenuItem>
-        </NavLink>
-
-        <MenuItem onClick={logout}>
-          <ProjectIconContainer>
-            <ProjectIcon onClick={logout} src={logouticon} />
-          </ProjectIconContainer>
-          <Header onClick={logout}>Log Out</Header>
-        </MenuItem>
-
-        <MenuItem href={map_url} target="_blank">
-          <ProjectIconContainer>
-            <ProjectIcon href={map_url} target="_blank" src={leftArrow} />
-          </ProjectIconContainer>
-          <Header href={map_url} target="_blank">
-            Kaart.com
-          </Header>
-        </MenuItem>
-
-        {/* <ConfirmButton 
+          {/* <ConfirmButton 
             confirm_action={()=>resetUserStats()}
             confirm_text={"Reset Stats"}
           /> */}
-      </SidebarOpenedContainer>
-       ):(
+        </SidebarOpenedContainer>
+      ) : (
         <SidebarClosedContainer>
-            <MenuItemTop>
-              <MikroLogoClosed onClick={props.toggleSidebar} />
-              {/* <OpenMenuIconContainer>
+          <MenuItemTop>
+            <MikroLogoClosed onClick={props.toggleSidebar} />
+            {/* <OpenMenuIconContainer>
                 <OpenMenuIconButton>
                   <OpenMenuIcon onClick={props.toggleSidebar} />
                 </OpenMenuIconButton>
               </OpenMenuIconContainer> */}
-            </MenuItemTop>
-          </SidebarClosedContainer>
-        )}
+          </MenuItemTop>
+        </SidebarClosedContainer>
+      )}
     </div>
   );
 };

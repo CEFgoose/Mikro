@@ -185,8 +185,13 @@ export const AdminProjectsPage = () => {
   };
 
   const handleSetProjectSelected = (id, name) => {
-    setProjectSelected(parseInt(id));
-    setProjectSelectedName(name);
+    if (id !== null && id !== undefined) {
+      setProjectSelected(parseInt(id));
+      setProjectSelectedName(name);
+    } else {
+      setProjectSelected(null);
+      setProjectSelectedName("");
+    }
   };
 
   const handleDeleteProject = () => {
@@ -315,9 +320,9 @@ export const AdminProjectsPage = () => {
             </h1>
             <div
               style={{ 
-                marginTop: "1vw", 
+                marginTop: "2vw", 
                 position: "relative", 
-                left: "45vw" 
+                left: "48vw" 
               }}
             >
               <ButtonDivComponent

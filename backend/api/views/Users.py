@@ -1,12 +1,11 @@
 #!/usr/bin/env python3
+from backend import app
 from ..utils import requires_admin
 import requests
 from ..database import User, ProjectUser
 from flask.views import MethodView
 from flask import g, request
-from flask_jwt_extended import (
-    jwt_required,
-)
+from flask_jwt_extended import (jwt_required)
 from ..static_variables import SSO_BASE_URL
 
 
@@ -37,12 +36,65 @@ class UserAPI(MethodView):
             return self.first_login_update()
         elif path == "reset_test_user_stats":
             return self.reset_test_user_stats()
-
+        elif path == "import_users":
+            return self.import_users()
         # elif path == "register_user":
         #     return self.register_user()
         return {
             "message": "Only /project/{fetch_users,fetch_user_projects} is permitted with GET",  # noqa: E501
         }, 405
+
+    # MASS IMPORT
+    # @app.route('/import_users', methods=['POST'])
+    # @requires_admin
+    def import_users(self):
+    # Get the JSON data from the request body
+        json_data = request.json
+
+        if json_data:
+            # Create new user profiles from the JSON data
+            for user in json_data:
+                # Extract the necessary information from the user object
+                email = user.get('email')
+                payment_email = user.get('payment_email')
+                city = user.get('city')
+                country = user.get('country')
+                osm_username = user.get('osm_username')
+                first_name = user.get('first_name')
+                last_name = user.get('last_name')
+                role = user.get('role')
+                
+                # Create a new user registration payload
+                registration_payload = {
+                    'email': email,
+                    'firstName': first_name,
+                    'lastName': last_name,
+                    'password': 'password',
+                    'org': 'org',
+                    'int': 'micro',
+                }
+
+                # Send a POST request to the SSO server's register_user endpoint
+                url = SSO_BASE_URL + 'auth/register_user'
+                response = requests.post(url, json=registration_payload)
+
+                if response.status_code == 200:
+                    resp = response.json()
+                    if resp['code'] == 0:
+                        message = f"User {email} registered successfully"
+                    else:
+                        message = f"Error registering user {email}: {resp['message']}"
+                else:
+                    message = f"Error registering user {email}: {response.text}"
+
+                # Print or store the registration message as needed
+                print(message)
+
+        # Return a success response
+        return {
+            "message": "User profiles created successfully",
+            "status": 200
+        }
 
     # FETCH USER ROLE ON LOGIN FOR UI RENDER
     def fetch_user_role(self):

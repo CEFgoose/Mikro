@@ -1073,9 +1073,13 @@ export const AdminChecklistCard = (props) => {
           id={props.id}
           value={props.id}
           checked={props.id === props.checklistSelected}
-          onChange={(e) =>
-            props.handleSetChecklistSelected(props.id, props.name)
-          }
+          onChange={(e) => {
+            if (props.id === props.checklistSelected) {
+              props.handleSetChecklistSelected(null, props.name); // Uncheck the checkbox
+            } else {
+              props.handleSetChecklistSelected(props.id, props.name); // Check the checkbox
+            }
+          }}
           style={{ 
             marginLeft: "1vw", 
             marginBottom: "1vh", 

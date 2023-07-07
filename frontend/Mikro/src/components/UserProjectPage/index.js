@@ -114,9 +114,9 @@ export const UserProjectsPage = () => {
             </h1>
             <div
               style={{ 
-                marginTop: "1vw", 
+                marginTop: "2vw", 
                 position: "relative", 
-                left: "45vw" 
+                left: "58vw" 
               }}
             >
               <ButtonDivComponent

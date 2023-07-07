@@ -106,10 +106,10 @@ export const UserAccountPage = () => {
             </h1>
             <div
               style={{
-                marginTop: "1vw",
+                marginTop: "2vw",
                 position: "relative",
                 top: "2vh",
-                left: "61.5vw",
+                left: "65vw",
               }}
             >
               <StyledButton

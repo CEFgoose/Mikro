@@ -202,8 +202,8 @@ export const ValidatorPaymentsPage = () => {
             <div
               style={
                 activeTab === 1
-                  ? { marginTop: ".5vw", position: "relative", left: "58svw" }
-                  : { marginTop: ".5vw", position: "relative", left: "48.5vw" }
+                  ? { marginTop: "2vw", position: "relative", left: "61.75svw" }
+                  : { marginTop: "2vw", position: "relative", left: "54.5vw" }
               }
             >
               <ButtonDivComponent

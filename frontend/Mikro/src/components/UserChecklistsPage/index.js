@@ -153,7 +153,7 @@ export const UserChecklistsPage = () => {
             </h1>
             <div
               style={{
-                marginTop: "1vw",
+                marginTop: "2vw",
                 position: "relative",
                 left: activeTab !== 4 ? "40.5vw" : "60.5vw",
               }}

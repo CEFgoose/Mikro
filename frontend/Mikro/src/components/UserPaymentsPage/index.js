@@ -186,14 +186,19 @@ export const UserPaymentsPage = () => {
               height: "7vh",
             }}
           >
-            <h1 style={{ marginTop: "1vw", paddingBottom: "0vh" }}>
+            <h1 
+              style={{ 
+                marginTop: "1vw", 
+                paddingBottom: "0vh" 
+              }}
+            >
               <strong>Payments:</strong>
             </h1>
             <div
               style={
                 activeTab === 1
-                  ? { marginTop: ".5vw", position: "relative", left: "58svw" }
-                  : { marginTop: ".5vw", position: "relative", left: "48.5vw" }
+                  ? { marginTop: "2vw", position: "relative", left: "63vw" }
+                  : { marginTop: "2vw", position: "relative", left: "55vw" }
               }
             >
               <ButtonDivComponent

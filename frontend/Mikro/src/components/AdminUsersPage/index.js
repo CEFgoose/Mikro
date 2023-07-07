@@ -1,4 +1,6 @@
-import React, { useContext, useState, useEffect } from "react";
+import React, { useContext, useState, useEffect, useRef } from "react";
+import csvtojson from "csvtojson";
+import { poster } from "calls";
 import { DataContext } from "common/DataContext";
 import { AuthContext } from "common/AuthContext";
 import Sidebar from "../sidebar/sidebar";
@@ -41,6 +43,7 @@ export const AdminUsersPage = () => {
   const [roleSelected, setRoleSelected] = useState(null);
   const [inviteEmail, setInviteEmail] = useState(null);
   const [form, setForm] = useState({ name: "", desc: "" });
+  const [selectedFile, setSelectedFile] = useState(null);
 
   useEffect(() => {
     if (user) {
@@ -55,7 +58,6 @@ export const AdminUsersPage = () => {
     fetchOrgUsers();
     // eslint-disable-next-line
   }, []);
-
 
   const handleAddOpen = () => {
     toggleAddOpen(!addOpen);
@@ -102,7 +104,7 @@ export const AdminUsersPage = () => {
       toggleDeleteOpen();
     }
   };
-  
+
   const do_invite_user = () => {
     if (inviteEmail) {
       inviteUser(inviteEmail, "mikro");
@@ -111,9 +113,51 @@ export const AdminUsersPage = () => {
     }
   };
 
-
   const updateData = (sortedData) => {
     setOrgUsers(sortedData);
+  };
+
+  const handleFileSelect = async (event) => {
+    const files = event.target.files;
+    if (files && files.length > 0) {
+      const file = files[0];
+      const reader = new FileReader();
+      reader.onload = async (event) => {
+        const fileContents = event.target.result;
+        const json = await csvtojson().fromString(fileContents);
+        console.log(json);
+
+        // Send the JSON data to the backend for user creation
+        try {
+          let response = poster(json, "user/import_users");
+          console.log("RESPONSE!",response);
+          // const response = await fetch(
+          //   "../../../../backend/api/views/Users/import_users",
+          //   {
+          //     method: "POST",
+          //     headers: {
+          //       "Content-Type": "application/json",
+          //     },
+          //     body: JSON.stringify(json),
+          //   }
+          // );
+
+          // // Handle the response from the backend
+          // if (response.ok) {
+          //   const data = await response.json();
+          //   console.log(data);
+          //   // Optionally, perform any necessary UI updates or show a success message
+          // } else {
+          //   console.error("Failed to import users:", response.statusText);
+          //   // Optionally, show an error message or handle the error
+          // }
+        } catch (error) {
+          console.error("Error importing users:", error);
+          // Optionally, show an error message or handle the error
+        }
+      };
+      reader.readAsText(file);
+    }
   };
 
   return (
@@ -151,10 +195,10 @@ export const AdminUsersPage = () => {
           }}
         >
           <div
-            style={{ 
-              display: "flex", 
-              marginLeft: "5vh", 
-              flexDirection: "row" 
+            style={{
+              display: "flex",
+              marginLeft: "5vh",
+              flexDirection: "row",
             }}
           >
             <h1
@@ -167,23 +211,33 @@ export const AdminUsersPage = () => {
               <strong>Users:</strong>
             </h1>
             <div
-              style={{ 
-                marginTop: "1vw", 
-                position: "relative", 
-                left: "44vw" 
+              style={{
+                marginTop: "2vw",
+                position: "relative",
+                left: "44vw",
               }}
             >
               <ButtonDivComponent
+                handleFileSelect={handleFileSelect}
                 role={"admin"}
                 button1={true}
                 button2={true}
                 button3={true}
+                button4={true}
                 button1_text={"Add"}
                 button2_text={"Edit"}
                 button3_text={"Delete"}
+                button4_text={"Import"}
                 button1_action={handleAddOpen}
                 button2_action={handleModifyOpen}
                 button3_action={handleDeleteOpen}
+                button4_action={() => {
+                  const input = document.createElement("input");
+                  input.type = "file";
+                  input.accept = ".csv";
+                  input.onchange = handleFileSelect;
+                  input.click();
+                }}
               />
             </div>
           </div>
@@ -200,23 +254,21 @@ export const AdminUsersPage = () => {
             <TableCard style={{ boxShadow: "1px 1px 6px 2px gray" }}>
               <CardMediaStyle />
               <Table style={{}}>
-              <div 
-                style={{
-                  height:'40vh', 
-                  width:'77.5vw',
-                  overflowY:'scroll'
-                }}
-              >
-                <ListHead 
-                  headLabel={USERS_TABLE_HEADERS}
-                  tableData={orgUsers}
-                  updateData={setOrgUsers}
-                />
-                <TableBody>
-                  {orgUsers &&
-                    orgUsers
-                      .slice()
-                      .map((row) => {
+                <div
+                  style={{
+                    height: "40vh",
+                    width: "77.5vw",
+                    overflowY: "scroll",
+                  }}
+                >
+                  <ListHead
+                    headLabel={USERS_TABLE_HEADERS}
+                    tableData={orgUsers}
+                    updateData={setOrgUsers}
+                  />
+                  <TableBody>
+                    {orgUsers &&
+                      orgUsers.slice().map((row) => {
                         const {
                           id,
                           name,
@@ -261,7 +313,7 @@ export const AdminUsersPage = () => {
                           </ProjectRow>
                         );
                       })}
-                </TableBody>
+                  </TableBody>
                 </div>
               </Table>
               {/* <TablePagination

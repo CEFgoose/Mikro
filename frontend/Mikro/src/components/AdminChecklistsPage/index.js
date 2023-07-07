@@ -289,8 +289,13 @@ export const AdminChecklistsPage = () => {
   };
 
   const handleSetChecklistSelected = (id, name) => {
-    setChecklistSelected(parseInt(id));
-    setChecklistSelectedName(name);
+    if (id !== null && id !== undefined) {
+      setChecklistSelected(parseInt(id));
+      setChecklistSelectedName(name);
+    } else {
+      setChecklistSelected(null);
+      setChecklistSelectedName("");
+    }
   };
 
   const handleModifyChecklist = (openModal = true) => {
@@ -574,9 +579,9 @@ export const AdminChecklistsPage = () => {
             </h1>
             <div
               style={{ 
-                marginTop: "1vw", 
+                marginTop: "2vw", 
                 position: "relative", 
-                left: "40.5vw" 
+                left: "46.25vw" 
               }}
             >
               <ButtonDivComponent

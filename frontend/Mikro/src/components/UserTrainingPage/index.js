@@ -250,12 +250,27 @@ export const UserTrainingPage = () => {
           }}
         >
           <div
-            style={{ display: "flex", marginLeft: "6vh", flexDirection: "row" }}
+            style={{ 
+              display: "flex", 
+              marginLeft: "6vh", 
+              flexDirection: "row" 
+            }}
           >
-            <h1 style={{ marginTop: "1vw", paddingBottom: "2vh" }}>
+            <h1 
+              style={{ 
+                marginTop: "1vw", 
+                paddingBottom: "2vh" 
+              }}
+            >
               <strong>Training:</strong>
             </h1>
-            <div style={{ marginLeft: "40vw", marginTop: "1vh" }}>
+            <div 
+               style={{ 
+                marginTop: "2vw", 
+                position: "relative", 
+                left: "56.5vw" 
+              }}
+            >
               <ButtonDivComponent
                 button1={true}
                 button1_text={"View"}

@@ -333,9 +333,9 @@ export const AdminTasksPage = () => {
             </h1>
             <div
               style={{
-                marginTop: "1vw",
+                marginTop: "2vw",
                 position: "relative",
-                left: "52.5vw",
+                left: "58vw",
               }}
             >
               <ButtonDivComponent

@@ -17,7 +17,7 @@ export const LandingPage = (props) => {
     <>
       <div
         style={{
-          background: 'linear-gradient(to bottom right, black, #555555)',
+          background: "linear-gradient(to bottom right, black, #555555)",
           width: "100%",
           height: "100%",
           display: "flex",
@@ -36,7 +36,7 @@ export const LandingPage = (props) => {
             <Button
               style={{
                 marginRight: "9vw",
-                marginTop: "4vh",
+                marginTop: "5vh",
                 backgroundColor: "#f4753c",
                 color: "black",
               }}

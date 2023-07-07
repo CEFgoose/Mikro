@@ -26,6 +26,7 @@ import { UserChecklistsPage } from "components/UserChecklistsPage";
 import { ValidatorChecklistsPage } from "components/ValdatorChecklistsPage";
 import { AdminTasksPage } from "components/AdminTasksPage";
 import { FAQPage } from "components/FAQ";
+
 import "bootstrap/dist/css/bootstrap.min.css";
 import "./App.css";
 import {
@@ -35,7 +36,6 @@ import {
   Navigate,
 } from "react-router-dom";
 import { RegisterUser } from "components/RegisterUser";
-
 
 // APP DECLARATION
 function App() {
@@ -57,9 +57,37 @@ function App() {
     //eslint-disable-next-line
   }, []);
 
+  const googleTranslateElementInit = () => {
+    new window.google.translate.TranslateElement(
+      {
+        pageLanguage: "en",
+        autoDisplay: false,
+      },
+      "google_translate_element"
+    );
+  };
+  useEffect(() => {
+    var addScript = document.createElement("script");
+    addScript.setAttribute(
+      "src",
+      "//translate.google.com/translate_a/element.js?cb=googleTranslateElementInit"
+    );
+    document.body.appendChild(addScript);
+    window.googleTranslateElementInit = googleTranslateElementInit;
+  }, []);
+
   // COMPONENT RENDER - APP PAGE ROUTER
   return (
     <>
+      <div
+        id="google_translate_element"
+        style={{
+          position: "fixed",
+          right: "10vw",
+          zIndex: "1",
+        }}
+      ></div>
+
       <Router>
         <InteractionProvider>
           <DataProvider>
@@ -69,6 +97,8 @@ function App() {
               <Route path="/login" element={<Login />} />
 
               <Route path="/welcome" element={<WelcomeUserPage />} />
+
+              <Route path="/FAQPage" element={<FAQPage />} />
 
               {/* DASHBOARDS */}
 
@@ -116,14 +146,10 @@ function App() {
 
               <Route path="/UserProjectsPage" element={<UserProjectsPage />} />
 
-
-
               <Route
                 path="/AdminTasksPage"
                 element={<Private Component={AdminTasksPage} />}
               />
-
-
 
               <Route
                 path="/AdminUsersPage"
@@ -155,9 +181,6 @@ function App() {
               <Route path="/UserTrainingPage" element={<UserTrainingPage />} />
 
               <Route path="/UserAccountPage" element={<UserAccountPage />} />
-
-              <Route path="/FAQPage" element={<FAQPage />} />
-
 
               <Route path="/registerUser" element={<RegisterUser />} />
 
