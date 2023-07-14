@@ -76,7 +76,7 @@ function App() {
     window.googleTranslateElementInit = googleTranslateElementInit;
   }, []);
 
-  // COMPONENT RENDER - APP PAGE ROUTER
+  
   return (
     <>
       <div
@@ -88,6 +88,7 @@ function App() {
         }}
       ></div>
 
+      // COMPONENT RENDER - APP PAGE ROUTER
       <Router>
         <InteractionProvider>
           <DataProvider>

@@ -112,13 +112,22 @@ export const AdminAccountPage = () => {
                 marginTop: "2vw",
                 position: "relative",
                 top: "2vh",
-                left: "65.7vw",
+                left: "59vw",
               }}
             >
               <StyledButton
                 button_text={"submit"}
                 button_action={handleConfirmUpdateUserDetails}
               />
+              <StyledButton
+              button_text={"password reset"}
+              button_action={ onclick =>
+                window.open(
+                  "https://my.kaart.com/password-reset",
+                  "_blank",
+                  "width=800, height=600"
+                )}
+                />
             </div>
           </div>
           <div
