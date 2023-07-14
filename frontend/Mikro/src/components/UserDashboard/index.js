@@ -144,6 +144,10 @@ export const UserDashboard = () => {
       setTutorialStepContent('This is an example')
       setBarOptionSelected('account')
     } else if( tutorialStep == 7 ) {
+      setTutorialStepTitle('FAQ')
+      setTutorialStepContent('This is an example')
+      setBarOptionSelected('faq')
+    } else if( tutorialStep == 8 ) {
       setTutorialStepTitle('Congrats')
       setTutorialStepContent('Welcome to the team! Complete your first training to begin mapping!')
       setBarOptionSelected('')
@@ -152,6 +156,7 @@ export const UserDashboard = () => {
 
   return (
     <>
+    <div style={{ width: "90%", height: "90%", float: "left" }}>
     {showTutorial && (
       <TutorialDialog
         open ={true}
@@ -160,11 +165,10 @@ export const UserDashboard = () => {
         content = {tutorialStepContent}
         button_1_text= {tutorialStep >= 1 ? "Previous" : "Skip" }
         button_1_action ={tutorialStep === 0 ? handleDialogClose : previousTutorialStep}
-        button_2_text={tutorialStep === 7 ? "Go to Training" : "Next"}
-        button_2_action = {tutorialStep === 7 ? navigateToFirstTraining : nextTutorialStep}
+        button_2_text={tutorialStep === 8 ? "Go to Training" : "Next"}
+        button_2_action = {tutorialStep === 8 ? navigateToFirstTraining : nextTutorialStep}
       />
     )}
-      <div style={{ width: "100%", float: "left" }}>
         <Sidebar isOpen={sidebarOpen} toggleSidebar={handleViewSidebar} />
         <div
           style={{

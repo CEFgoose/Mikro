@@ -116,16 +116,6 @@ const Sidebar = (props) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-
-
-
-
-  useEffect(() => {
-    console.log(BarOptionSelected)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [BarOptionSelected]);
-
-
   // LOG THE CURRENT USER OUT & Navigate TO LOGIN PAGE //
   const logout = () => {
     fetch(SSO_URL.concat("auth/logout"), {
@@ -205,13 +195,8 @@ const Sidebar = (props) => {
         <NavLink to={dashboardLink} style={{ textDecoration: "none" }}>
           <MenuItem style={{
             backgroundColor: BarOptionSelected && BarOptionSelected === 'dashboard' ? '#fd7e14' : 'transparent',
-            // zIndex:BarOptionSelected&&BarOptionSelected==='dashboard'?9999:1200,
-            // opacity:BarOptionSelected&&BarOptionSelected==='dashboard'?1:0.5,
           }}>
             <ProjectIconContainer
-
-            // style={{ zIndex: BarOptionSelected === "dashboard" ? 9999: 1200 }}
-            // style={{ opacity: BarOptionSelected === "dashboard" ? 1 : 0.5 }}
             >
               <ProjectIcon src={dashicon} />
             </ProjectIconContainer>
@@ -304,7 +289,9 @@ const Sidebar = (props) => {
         </NavLink>
 
         <NavLink to={faqPageLink} style={{ textDecoration: "none" }}>
-          <MenuItem>
+          <MenuItem
+            style={{ backgroundColor: BarOptionSelected && BarOptionSelected === 'faq' ? '#fd7e14' : 'transparent' }}
+          >
             <ProjectIconContainer>
               <ProjectIcon src={faq_icon} />
             </ProjectIconContainer>

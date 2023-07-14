@@ -57,6 +57,27 @@ function App() {
     //eslint-disable-next-line
   }, []);
 
+
+  useEffect(() => {
+    const injectScript = document.createElement('script');
+    injectScript.src = "https://cdn.botpress.cloud/webchat/v0/inject.js";
+
+    const configScript = document.createElement('script');
+    configScript.src = "https://mediafiles.botpress.cloud/b5e5cfc0-5667-4616-a753-06d7b89006d5/webchat/config.js";
+    configScript.defer = true;
+
+    // const botStyleSheet = document.createElement('script');
+    // styleScript.
+
+    document.head.appendChild(injectScript);
+    document.head.appendChild(configScript);
+
+    return () => {
+      document.head.removeChild(injectScript);
+      document.head.removeChild(configScript);
+    };
+  }, []);
+
   // COMPONENT RENDER - APP PAGE ROUTER
   return (
     <>
