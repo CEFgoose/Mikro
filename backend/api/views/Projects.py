@@ -380,7 +380,7 @@ class ProjectAPI(MethodView):
                     "max_payment": project.max_payment,
                     "payment_due": project.payment_due,
                     "total_payout": project.total_payout,
-                    "validation_rate_per_task": project.validation_rate_per_task,
+                    "validation_rate_per_task": project.validation_rate_per_task,  # noqa: E501
                     "mapping_rate_per_task": project.mapping_rate_per_task,
                     "max_editors": project.max_editors,
                     "total_editors": project.total_editors,
@@ -405,7 +405,7 @@ class ProjectAPI(MethodView):
                     "max_payment": project.max_payment,
                     "payment_due": project.payment_due,
                     "total_payout": project.total_payout,
-                    "validation_rate_per_task": project.validation_rate_per_task,
+                    "validation_rate_per_task": project.validation_rate_per_task,  # noqa: E501
                     "mapping_rate_per_task": project.mapping_rate_per_task,
                     "max_editors": project.max_editors,
                     "total_editors": project.total_editors,
@@ -792,7 +792,7 @@ class ProjectAPI(MethodView):
                     "max_payment": project.max_payment,
                     "payment_due": project.payment_due,
                     "total_payout": project.total_payout,
-                    "validation_rate_per_task": project.validation_rate_per_task,
+                    "validation_rate_per_task": project.validation_rate_per_task,  # noqa: E501
                     "mapping_rate_per_task": project.mapping_rate_per_task,
                     "max_editors": project.max_editors,
                     "total_editors": project.total_editors,
@@ -821,7 +821,7 @@ class ProjectAPI(MethodView):
                     "max_payment": project.max_payment,
                     "payment_due": project.payment_due,
                     "total_payout": project.total_payout,
-                    "validation_rate_per_task": project.validation_rate_per_task,
+                    "validation_rate_per_task": project.validation_rate_per_task,  # noqa: E501
                     "mapping_rate_per_task": project.mapping_rate_per_task,
                     "max_editors": project.max_editors,
                     "total_editors": project.total_editors,
@@ -1070,7 +1070,7 @@ class ProjectAPI(MethodView):
                     "max_payment": project.max_payment,
                     "payment_due": project.payment_due,
                     "total_payout": project.total_payout,
-                    "validation_rate_per_task": project.validation_rate_per_task,
+                    "validation_rate_per_task": project.validation_rate_per_task,  # noqa: E501
                     "mapping_rate_per_task": project.mapping_rate_per_task,
                     "max_editors": project.max_editors,
                     "total_editors": project.total_editors,
@@ -1098,7 +1098,7 @@ class ProjectAPI(MethodView):
                     "max_payment": project.max_payment,
                     "payment_due": project.payment_due,
                     "total_payout": project.total_payout,
-                    "validation_rate_per_task": project.validation_rate_per_task,
+                    "validation_rate_per_task": project.validation_rate_per_task,  # noqa: E501
                     "mapping_rate_per_task": project.mapping_rate_per_task,
                     "max_editors": project.max_editors,
                     "total_editors": project.total_editors,

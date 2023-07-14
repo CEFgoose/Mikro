@@ -71,7 +71,9 @@ const Sidebar = (props) => {
   const [name, setName] = useState("");
   const [dashboardLink, setDashboardLink] = useState("/dashboard");
   const [projectPageLink, setProjectPageLink] = useState("/UserProjectsPage");
-  const [checklistPageLink, setChecklistPageLink] = useState("/UserChecklistsPage");
+  const [checklistPageLink, setChecklistPageLink] = useState(
+    "/UserChecklistsPage"
+  );
   const [accountPageLink, setAccountPageLink] = useState("/UserAccountPage");
   const [paymentsPageLink, setPaymentsPageLink] = useState("/UserPaymentsPage");
   const [trainingPageLink, setTrainingPageLink] = useState("/UserTrainingPage");
@@ -126,10 +128,7 @@ const Sidebar = (props) => {
     <div>
       {sidebarOpen ? (
         <SidebarOpenedContainer>
-          <MenuItemTop
-            style={{ marginBottom: "10%" }}
-            onClick={props.toggleSidebar}
-          >
+          <MenuItemTop style={{ marginBottom: "20%" }}>
             <RoleBarWrapper>
               <div
                 style={{
@@ -154,62 +153,44 @@ const Sidebar = (props) => {
                     alignItems: "center",
                   }}
                 >
-                  {/* <img
-                  style={{
-                    height: "5vh",
-                    marginLeft: ".8vw",
-                    marginRight: "1vw",
-                  }}
-                  src={mikro_icon}
-                  alt="Kaart Logo"
-                />
-              </div>
-              <div
-                style={{
-                  display: "flex",
-                  flexDirection: "column",
-                  alignItems: "center",
-                }}
-              > */}
                   <RoleHeader>{<strong>{name}</strong>}</RoleHeader>
                   <RoleSubHeader>{<strong>{role}</strong>}</RoleSubHeader>
                 </div>
               </div>
-
               <div
                 style={{
                   width: "100%",
                   backgroundColor: "black",
                   height: ".05vh",
-                  marginTop: "5%",
+                  marginTop: "0%",
+                  marginBottom: "2vh",
                 }}
               />
             </RoleBarWrapper>
           </MenuItemTop>
 
           <NavLink to={dashboardLink} style={{ textDecoration: "none" }}>
+            {/* <MenuItem style={{paddingLeft:'1vw',marginBottom:'1vh'}}> */}
             <MenuItem>
-              <ProjectIconContainer>
-                <ProjectIcon src={dashicon} />
-              </ProjectIconContainer>
+              <ProjectIcon src={dashicon} />
+
               <Header>Dashboard</Header>
+              {/* </MenuItem> */}
             </MenuItem>
           </NavLink>
 
           <NavLink to={checklistPageLink} style={{ textDecoration: "none" }}>
             <MenuItem>
-              <ProjectIconContainer>
-                <ProjectIcon src={checklist_icon} />
-              </ProjectIconContainer>
+              <ProjectIcon src={checklist_icon} />
+
               <Header>Checklists</Header>
             </MenuItem>
           </NavLink>
 
           <NavLink to={projectPageLink} style={{ textDecoration: "none" }}>
             <MenuItem>
-              <ProjectIconContainer>
-                <ProjectIcon src={projects_icon} />
-              </ProjectIconContainer>
+              <ProjectIcon src={projects_icon} />
+
               <Header>Projects</Header>
             </MenuItem>
           </NavLink>
@@ -217,9 +198,8 @@ const Sidebar = (props) => {
           {role === "admin" ? (
             <NavLink to="/AdminTasksPage" style={{ textDecoration: "none" }}>
               <MenuItem>
-                <ProjectIconContainer>
-                  <ProjectIcon src={tasks_icon} />
-                </ProjectIconContainer>
+                <ProjectIcon src={tasks_icon} />
+
                 <Header>Tasks</Header>
               </MenuItem>
             </NavLink>
@@ -229,9 +209,8 @@ const Sidebar = (props) => {
           {role === "admin" ? (
             <NavLink to="/AdminUsersPage" style={{ textDecoration: "none" }}>
               <MenuItem>
-                <ProjectIconContainer>
-                  <ProjectIcon src={users_icon} />
-                </ProjectIconContainer>
+                <ProjectIcon src={users_icon} />
+
                 <Header>Users</Header>
               </MenuItem>
             </NavLink>
@@ -241,51 +220,43 @@ const Sidebar = (props) => {
 
           <NavLink to={trainingPageLink} style={{ textDecoration: "none" }}>
             <MenuItem>
-              <ProjectIconContainer>
-                <ProjectIcon src={training_icon} />
-              </ProjectIconContainer>
+              <ProjectIcon src={training_icon} />
+
               <Header>Training</Header>
             </MenuItem>
           </NavLink>
 
           <NavLink to={paymentsPageLink} style={{ textDecoration: "none" }}>
             <MenuItem>
-              <ProjectIconContainer>
-                <ProjectIcon src={payments_icon} />
-              </ProjectIconContainer>
+              <ProjectIcon src={payments_icon} />
+
               <Header>Payments</Header>
             </MenuItem>
           </NavLink>
 
           <NavLink to={accountPageLink} style={{ textDecoration: "none" }}>
             <MenuItem>
-              <ProjectIconContainer>
-                <ProjectIcon src={account_icon} />
-              </ProjectIconContainer>
+              <ProjectIcon src={account_icon} />
               <Header>Account</Header>
             </MenuItem>
           </NavLink>
 
           <NavLink to={faqPageLink} style={{ textDecoration: "none" }}>
             <MenuItem>
-              <ProjectIconContainer>
-                <ProjectIcon src={faq_icon} />
-              </ProjectIconContainer>
+              <ProjectIcon src={faq_icon} />
+
               <Header>FAQ</Header>
             </MenuItem>
           </NavLink>
 
           <MenuItem onClick={logout}>
-            <ProjectIconContainer>
-              <ProjectIcon onClick={logout} src={logouticon} />
-            </ProjectIconContainer>
+            <ProjectIcon onClick={logout} src={logouticon} />
             <Header onClick={logout}>Log Out</Header>
           </MenuItem>
 
           <MenuItem href={map_url} target="_blank">
-            <ProjectIconContainer>
-              <ProjectIcon href={map_url} target="_blank" src={leftArrow} />
-            </ProjectIconContainer>
+            <ProjectIcon href={map_url} target="_blank" src={leftArrow} />
+
             <Header href={map_url} target="_blank">
               Kaart.com
             </Header>

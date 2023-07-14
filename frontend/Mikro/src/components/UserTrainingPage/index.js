@@ -238,120 +238,130 @@ export const UserTrainingPage = () => {
         confirmButtonText={confirmButtonText}
         handleCompleteTraining={handleCompleteTraining}
       />
-      <div style={{ width: "90%", float: "left" }}>
+      <div
+        style={{
+          display: "flex",
+          flexDirection: "row",
+          width: "100%",
+          height: "100%",
+          float: "left",
+        }}
+      >
         <Sidebar isOpen={sidebarOpen} toggleSidebar={handleViewSidebar} />
-        <div
-          style={{
-            display: "flex",
-            position: "relative",
-            left: "5vw",
-            flexDirection: "column",
-            height: "100vh",
-          }}
-        >
+        <div style={{ width: "100%", height: "100%" }}>
           <div
-            style={{ 
-              display: "flex", 
-              marginLeft: "6vh", 
-              flexDirection: "row" 
+            style={{
+              display: "flex",
+              position: "relative",
+              marginLeft: ".5vw",
+              flexDirection: "column",
+              height: "100vh",
             }}
           >
-            <h1 
-              style={{ 
-                marginTop: "1vw", 
-                paddingBottom: "2vh" 
+            <div
+              style={{
+                display: "flex",
+                marginLeft: "6vh",
+                flexDirection: "row",
               }}
             >
-              <strong>Training:</strong>
-            </h1>
-            <div 
-               style={{ 
-                marginTop: "2vw", 
-                position: "relative", 
-                left: "56.5vw" 
-              }}
-            >
-              <ButtonDivComponent
-                button1={true}
-                button1_text={"View"}
-                button1_action={handleViewTraining}
-                button2={true}
-                button2_text={"Test Out"}
-                button2_action={handleQuizOpen}
-                button3={false}
-              />
+              <h1
+                style={{
+                  marginTop: "1vw",
+                  paddingBottom: "2vh",
+                }}
+              >
+                <strong>Training:</strong>
+              </h1>
+              <div
+                style={{
+                  marginTop: "2vw",
+                  position: "relative",
+                  left: "50vw",
+                }}
+              >
+                <ButtonDivComponent
+                  button1={true}
+                  button1_text={"View"}
+                  button1_action={handleViewTraining}
+                  button2={true}
+                  button2_text={"Test Out"}
+                  button2_action={handleQuizOpen}
+                  button3={false}
+                />
+              </div>
             </div>
+            <Tabs>
+              <TabList
+                style={{
+                  marginLeft: "3vw",
+                  marginTop: "0vh",
+                  paddingTop: "0vh",
+                }}
+              >
+                <Tab value={1} onClick={(e) => handleSetActiveTab(e)}>
+                  Mapping
+                </Tab>
+                <Tab value={2} onClick={(e) => handleSetActiveTab(e)}>
+                  Validation
+                </Tab>
+                <Tab value={3} onClick={(e) => handleSetActiveTab(e)}>
+                  Project Specific
+                </Tab>
+                <Tab value={4} onClick={(e) => handleSetActiveTab(e)}>
+                  Completed
+                </Tab>
+              </TabList>
+              <TabPanel>
+                <UserTrainingTable
+                  rowsPerPage={rowsPerPage}
+                  page={page}
+                  setPage={setPage}
+                  handleChangeRowsPerPage={handleChangeRowsPerPage}
+                  orgTrainings={orgMappingTrainings}
+                  setOrgTrainings={setOrgMappingTrainings}
+                  trainingSelected={trainingSelected}
+                  handleSetTrainingSelected={handleSetTrainingSelected}
+                />
+              </TabPanel>
+              <TabPanel>
+                <UserTrainingTable
+                  rowsPerPage={rowsPerPage}
+                  page={page}
+                  setPage={setPage}
+                  handleChangeRowsPerPage={handleChangeRowsPerPage}
+                  trainingSelected={trainingSelected}
+                  orgTrainings={orgValidationTrainings}
+                  setOrgTrainings={setOrgValidationTrainings}
+                  handleSetTrainingSelected={handleSetTrainingSelected}
+                />
+              </TabPanel>
+              <TabPanel>
+                <UserTrainingTable
+                  rowsPerPage={rowsPerPage}
+                  page={page}
+                  setPage={setPage}
+                  handleChangeRowsPerPage={handleChangeRowsPerPage}
+                  trainingSelected={trainingSelected}
+                  handleSetTrainingSelected={handleSetTrainingSelected}
+                  orgTrainings={orgProjectTrainings}
+                  setOrgTrainings={setOrgProjectTrainings}
+                />
+              </TabPanel>
+              <TabPanel>
+                <UserTrainingTable
+                  rowsPerPage={rowsPerPage}
+                  page={page}
+                  setPage={setPage}
+                  handleChangeRowsPerPage={handleChangeRowsPerPage}
+                  trainingSelected={trainingSelected}
+                  handleSetTrainingSelected={handleSetTrainingSelected}
+                  orgTrainings={userCompletedTrainings}
+                  setOrgTrainings={setUserCompletedTrainings}
+                />
+              </TabPanel>
+            </Tabs>
           </div>
-          <Tabs>
-            <TabList
-              style={{ 
-                marginLeft: "3vw", 
-                marginTop: "0vh", 
-                paddingTop: "0vh" 
-              }}
-            >
-              <Tab value={1} onClick={(e) => handleSetActiveTab(e)}>
-                Mapping
-              </Tab>
-              <Tab value={2} onClick={(e) => handleSetActiveTab(e)}>
-                Validation
-              </Tab>
-              <Tab value={3} onClick={(e) => handleSetActiveTab(e)}>
-                Project Specific
-              </Tab>
-              <Tab value={4} onClick={(e) => handleSetActiveTab(e)}>
-                Completed
-              </Tab>
-            </TabList>
-            <TabPanel>
-              <UserTrainingTable
-                rowsPerPage={rowsPerPage}
-                page={page}
-                setPage={setPage}
-                handleChangeRowsPerPage={handleChangeRowsPerPage}
-                orgTrainings={orgMappingTrainings}
-                setOrgTrainings={setOrgMappingTrainings}
-                trainingSelected={trainingSelected}
-                handleSetTrainingSelected={handleSetTrainingSelected}
-              />
-            </TabPanel>
-            <TabPanel>
-              <UserTrainingTable
-                rowsPerPage={rowsPerPage}
-                page={page}
-                setPage={setPage}
-                handleChangeRowsPerPage={handleChangeRowsPerPage}
-                trainingSelected={trainingSelected}
-                orgTrainings={orgValidationTrainings}
-                setOrgTrainings={setOrgValidationTrainings}
-                handleSetTrainingSelected={handleSetTrainingSelected}
-              />
-            </TabPanel>
-            <TabPanel>
-              <UserTrainingTable
-                rowsPerPage={rowsPerPage}
-                page={page}
-                setPage={setPage}
-                handleChangeRowsPerPage={handleChangeRowsPerPage}
-                trainingSelected={trainingSelected}
-                handleSetTrainingSelected={handleSetTrainingSelected}
-                orgTrainings={orgProjectTrainings}
-                setOrgTrainings={setOrgProjectTrainings}
-              />
-            </TabPanel>
-            <TabPanel>
-              <UserTrainingTable
-                rowsPerPage={rowsPerPage}
-                page={page}
-                setPage={setPage}
-                handleChangeRowsPerPage={handleChangeRowsPerPage}
-                trainingSelected={trainingSelected}
-                handleSetTrainingSelected={handleSetTrainingSelected}
-                orgTrainings={userCompletedTrainings}
-                setOrgTrainings={setUserCompletedTrainings}
-              />
-            </TabPanel>
-          </Tabs>
         </div>
       </div>
     </>

@@ -7,7 +7,7 @@ import { Tab, TabList, TabPanel, Tabs } from "react-tabs";
 import {
   ChecklistCardGrid,
   ConfirmationModal,
-  CommentModal
+  CommentModal,
 } from "../AdminChecklistsPage/checklistComponents";
 import { ButtonDivComponent } from "components/commonComponents/commonComponents";
 
@@ -108,7 +108,6 @@ export const UserChecklistsPage = () => {
     handleSetSidebarState();
   };
 
-
   return (
     <>
       <ConfirmationModal
@@ -124,116 +123,130 @@ export const UserChecklistsPage = () => {
         handleSetComment={handleSetComment}
         handleAddComment={handleAddComment}
       />
-      <div style={{ width: "90%", float: "left" }}>
-        <Sidebar isOpen={sideBarOpen}toggleSidebar={handleViewSidebar}/>
-        <div
-          style={{
-            display: "flex",
-            position: "relative",
-            left: "5vw",
-            flexDirection: "column",
-            height: "100vh",
-          }}
-        >
+      <div
+        style={{
+          display: "flex",
+          flexDirection: "row",
+          width: "100%",
+          height: "100%",
+          float: "left",
+        }}
+      >
+        <Sidebar isOpen={sideBarOpen} />
+        <div style={{ width: "100%", height: "100%" }}>
           <div
-            style={{ 
-              display: "flex", 
-              marginLeft: "6vh", 
-              flexDirection: "row" 
+            style={{
+              display: "flex",
+              position: "relative",
+              marginLeft: ".5vw",
+              flexDirection: "column",
+              height: "100vh",
             }}
           >
-            <h1 
-              style={{ 
-               // marginLeft: "3vw", 
-                marginTop: "1vw", 
-                paddingBottom: "2vh" 
-              }}
-            >
-              <strong>Checklists:</strong>
-            </h1>
             <div
               style={{
-                marginTop: "2vw",
-                position: "relative",
-                left: activeTab !== 4 ? "40.5vw" : "60.5vw",
+                display: "flex",
+                marginLeft: "6vh",
+                flexDirection: "row",
               }}
             >
-              <ButtonDivComponent
-                role={"admin"}
-                button1={false}
-                button2={false}
-                button3={activeTab !== 4 ? false : true}
-                button3_text={"Start"}
-                button3_action={handleStartChecklist}
-              />
+              <h1
+                style={{
+                  // marginLeft: "3vw",
+                  marginTop: "1vw",
+                  paddingBottom: "2vh",
+                }}
+              >
+                <strong>Checklists:</strong>
+              </h1>
+              <div
+                style={{
+                  marginTop: "2vw",
+                  position: "relative",
+                  left: activeTab !== 4 ? "38.5vw" : "58.5vw",
+                }}
+              >
+                <ButtonDivComponent
+                  role={"admin"}
+                  button1={false}
+                  button2={false}
+                  button3={activeTab !== 4 ? false : true}
+                  button3_text={"Start"}
+                  button3_action={handleStartChecklist}
+                />
+              </div>
             </div>
+            <Tabs>
+              <TabList
+                style={{
+                  marginLeft: "vw",
+                  marginTop: "0vh",
+                  paddingTop: "0vh",
+                }}
+              >
+                <Tab value={1} onClick={(e) => handleSetActiveTab(e)}>
+                  In Progress
+                </Tab>
+                <Tab value={2} onClick={(e) => handleSetActiveTab(e)}>
+                  Completed
+                </Tab>
+                <Tab value={3} onClick={(e) => handleSetActiveTab(e)}>
+                  Confirmed
+                </Tab>
+                <Tab value={4} onClick={(e) => handleSetActiveTab(e)}>
+                  New
+                </Tab>
+              </TabList>
+              <TabPanel>
+                <ChecklistCardGrid
+                  handleCompleteListItem={handleCompleteListItem}
+                  key={1}
+                  type="User"
+                  role={user.role}
+                  goToSource={goToSource}
+                  checklists={userStartedChecklists}
+                  handleCommentOpen={handleCommentOpen}
+                  handleSetChecklistSelected={handleSetChecklistSelected}
+                  checklistSelected={checklistSelected}
+                />
+              </TabPanel>
+              <TabPanel>
+                <ChecklistCardGrid
+                  role={user.role}
+                  key={1}
+                  type="User"
+                  completed={true}
+                  goToSource={goToSource}
+                  checklists={userCompletedChecklists}
+                  handleCommentOpen={handleCommentOpen}
+                  handleSetChecklistSelected={handleSetChecklistSelected}
+                  checklistSelected={checklistSelected}
+                />
+              </TabPanel>
+              <TabPanel>
+                <ChecklistCardGrid
+                  role={user.role}
+                  type="User"
+                  key={1}
+                  goToSource={goToSource}
+                  checklists={userConfirmedChecklists}
+                  handleCommentOpen={handleCommentOpen}
+                  handleSetChecklistSelected={handleSetChecklistSelected}
+                  checklistSelected={checklistSelected}
+                />
+              </TabPanel>
+              <TabPanel>
+                <ChecklistCardGrid
+                  type="New"
+                  role={user.role}
+                  key={1}
+                  checklists={userAvailableChecklists}
+                  handleSetChecklistSelected={handleSetChecklistSelected}
+                  checklistSelected={checklistSelected}
+                />
+              </TabPanel>
+            </Tabs>
           </div>
-          <Tabs>
-            <TabList
-              style={{ marginLeft: "vw", marginTop: "0vh", paddingTop: "0vh" }}
-            >
-              <Tab value={1} onClick={(e) => handleSetActiveTab(e)}>
-                In Progress
-              </Tab>
-              <Tab value={2} onClick={(e) => handleSetActiveTab(e)}>
-                Completed
-              </Tab>
-              <Tab value={3} onClick={(e) => handleSetActiveTab(e)}>
-                Confirmed
-              </Tab>
-              <Tab value={4} onClick={(e) => handleSetActiveTab(e)}>
-                New
-              </Tab>
-            </TabList>
-            <TabPanel>
-              <ChecklistCardGrid
-                handleCompleteListItem={handleCompleteListItem}
-                key={1}
-                type="User"
-                role={user.role}
-                goToSource={goToSource}
-                checklists={userStartedChecklists}
-                handleCommentOpen={handleCommentOpen}
-                handleSetChecklistSelected={handleSetChecklistSelected}
-                checklistSelected={checklistSelected}
-              />
-            </TabPanel>
-            <TabPanel>
-              <ChecklistCardGrid
-                role={user.role}
-                key={1}
-                type="User"
-                completed={true}
-                goToSource={goToSource}
-                checklists={userCompletedChecklists}
-                handleCommentOpen={handleCommentOpen}
-                handleSetChecklistSelected={handleSetChecklistSelected}
-                checklistSelected={checklistSelected}
-              />
-            </TabPanel>
-            <TabPanel>
-              <ChecklistCardGrid
-                role={user.role}
-                type="User"
-                key={1}
-                goToSource={goToSource}
-                checklists={userConfirmedChecklists}
-                handleCommentOpen={handleCommentOpen}
-                handleSetChecklistSelected={handleSetChecklistSelected}
-                checklistSelected={checklistSelected}
-              />
-            </TabPanel>
-            <TabPanel>
-              <ChecklistCardGrid
-                type="New"
-                role={user.role}
-                key={1}
-                checklists={userAvailableChecklists}
-                handleSetChecklistSelected={handleSetChecklistSelected}
-                checklistSelected={checklistSelected}
-              />
-            </TabPanel>
-          </Tabs>
         </div>
       </div>
     </>

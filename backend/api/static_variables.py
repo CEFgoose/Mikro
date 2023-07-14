@@ -27,10 +27,10 @@ ASCII_LINE_FEED = b"\x0A"
 
 # PROD
 
-# SSO_BASE_URL = "https://my.kaart.com/api/"
-# API_BASE_URL = "https://mikro.kaart.com/api"
+SSO_BASE_URL = "https://my.kaart.com/api/"
+API_BASE_URL = "https://mikro.kaart.com/api"
 
 # DEV
 
-SSO_BASE_URL = "http://127.0.0.1:5001/api/"
-API_BASE_URL = "http://127.0.0.1:3000/api"
+# SSO_BASE_URL = "http://127.0.0.1:5001/api/"
+# API_BASE_URL = "http://127.0.0.1:3000/api"

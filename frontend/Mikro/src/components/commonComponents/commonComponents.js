@@ -104,7 +104,11 @@ export const ADMIN_PROJECTS_TABLE_HEADERS = [
   // { id: "Difficulty", label: "Project Difficulty", alignLeft: true },
   { id: "max_payment", label: "Total Budget", alignLeft: true },
   { id: "payment_due", label: "Current Payout", alignLeft: true },
-  { id: "total_validated"/"total_mapped", label: "Validated/ Mapped", alignLeft: true },
+  {
+    id: "total_validated" / "total_mapped",
+    label: "Validated/ Mapped",
+    alignLeft: true,
+  },
   { id: "total_invalidated", label: "Invalidated", alignLeft: true },
 ];
 
@@ -136,7 +140,11 @@ export const USERS_TABLE_HEADERS = [
   { id: "assinged_projects", label: "Assinged Projects", alignRight: false },
   { id: "total_tasks_mapped", label: "Tasks Mapped", alignRight: false },
   { id: "total_tasks_validated", label: "Tasks Validated", alignRight: false },
-  { id: "total_tasks_invalidated", label: "Tasks Invalidated", alignRight: false },
+  {
+    id: "total_tasks_invalidated",
+    label: "Tasks Invalidated",
+    alignRight: false,
+  },
   { id: "awaiting_payment", label: "Awaiting Payment", alignRight: false },
   { id: "total_payout", label: "Total Payout", alignRight: false },
 ];
@@ -455,7 +463,7 @@ export const ButtonDivComponent = (props) => {
         />
       ) : (
         <></>
-        )}
+      )}
       {props.button4 ? (
         <StyledButton
           button_action={props.button4_action}
@@ -616,7 +624,6 @@ export const ConfirmModalCommon = (props) => {
 };
 
 export const AdminPayRequestsTable = (props) => {
-  
   const updateData = (sortedData) => {
     props.setOrgRequests(sortedData);
   };
@@ -627,20 +634,18 @@ export const AdminPayRequestsTable = (props) => {
         display: "flex",
         flexDirection: "row",
         marginLeft: "3.5vw",
-        height: "78vh",
+        height: "76vh",
         width: "77.5vw",
       }}
     >
-      <TableCard 
-        style={{ boxShadow: "1px 1px 6px 2px gray" }}
-        >
+      <TableCard style={{ boxShadow: "1px 1px 6px 2px gray" }}>
         <CardMediaStyle />
         <Table>
-          <div 
-            style={{ 
-              height: "40vh", 
-              width: "77.5vw", 
-              overflowY: "scroll" 
+          <div
+            style={{
+              height: "40vh",
+              width: "77.5vw",
+              overflowY: "scroll",
             }}
           >
             <ListHead
@@ -700,7 +705,6 @@ export const AdminPayRequestsTable = (props) => {
 };
 
 export const AdminPaymentsTable = (props) => {
-
   const updateData = (sortedData) => {
     props.setOrgPayments(sortedData);
   };
@@ -718,11 +722,11 @@ export const AdminPaymentsTable = (props) => {
       <TableCard style={{ boxShadow: "1px 1px 6px 2px gray" }}>
         <CardMediaStyle />
         <Table>
-          <div 
-            style={{ 
-              height: "40vh", 
-              width: "77.5vw", 
-              overflowY: "scroll" 
+          <div
+            style={{
+              height: "40vh",
+              width: "77.5vw",
+              overflowY: "scroll",
             }}
           >
             <ListHead
@@ -885,12 +889,12 @@ export const ProjectCard = (props) => {
             if (props.id === props.projectSelected) {
               props.handleSetProjectSelected(null, props.name); //Uncheck the checkbox
             } else {
-              props.handleSetProjectSelected(props.id, props.name); //Check the checkbox  
+              props.handleSetProjectSelected(props.id, props.name); //Check the checkbox
             }
-          }} 
-          style={{ 
-            marginLeft: "1vw", 
-            marginBottom: "1vh" 
+          }}
+          style={{
+            marginLeft: "1vw",
+            marginBottom: "1vh",
           }}
         />
       </AdminCardMediaStyle>

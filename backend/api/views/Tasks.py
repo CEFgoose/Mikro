@@ -8,7 +8,7 @@ from ..database import (
     User,
 )
 from flask.views import MethodView
-from flask import g,request
+from flask import g, request
 from flask_jwt_extended import (
     jwt_required,
 )
@@ -24,7 +24,7 @@ class TaskAPI(MethodView):
         elif path == "fetch_external_validations":
             return self.admin_fetch_external_validations()
         elif path == "update_task":
-            return self.update_task()        
+            return self.update_task()
         return {
             "message": "Only /project/{fetch_users,fetch_user_projects} is permitted with GET",  # noqa: E501
         }, 405
@@ -173,15 +173,15 @@ class TaskAPI(MethodView):
                             ).first()
                             if task_exists.invalidated is True:
                                 mapper.update(
-                                    total_tasks_validated=mapper.total_tasks_validated
+                                    total_tasks_validated=mapper.total_tasks_validated  # noqa: E501
                                     - 1,
                                 )
                                 validator_exists.update(
-                                    validator_tasks_invalidated=validator_exists.validator_tasks_invalidated
+                                    validator_tasks_invalidated=validator_exists.validator_tasks_invalidated  # noqa: E501
                                     - 1
                                 )
                                 target_project.update(
-                                    tasks_invalidated=target_project.tasks_invalidated
+                                    tasks_invalidated=target_project.tasks_invalidated  # noqa: E501
                                     - 1
                                 )
                             task_exists.update(
@@ -230,9 +230,9 @@ class TaskAPI(MethodView):
                                 )
 
                             validator_exists.update(
-                                validator_tasks_validated=validator_exists.validator_tasks_validated
+                                validator_tasks_validated=validator_exists.validator_tasks_validated  # noqa: E501
                                 + 1,
-                                validation_payable_total=currentValidationsPayment,
+                                validation_payable_total=currentValidationsPayment,  # noqa: E501
                             )
 
                             target_project.update(
@@ -262,7 +262,7 @@ class TaskAPI(MethodView):
                             task_exists.update(
                                 validated_by=c["username"],
                                 validated=False,
-                                unknown_validator=True
+                                unknown_validator=True,
                             )
         return {"response": "complete"}
 
@@ -294,9 +294,9 @@ class TaskAPI(MethodView):
                         ).first()
                         if validator_exists:
                             validator_exists.update(
-                                validator_tasks_invalidated=validator_exists.validator_tasks_invalidated
+                                validator_tasks_invalidated=validator_exists.validator_tasks_invalidated  # noqa: E501
                                 + 1,
-                                validation_payable_total=validator_exists.validation_payable_total
+                                validation_payable_total=validator_exists.validation_payable_total  # noqa: E501
                                 + target_task.validation_rate,
                             )
                             target_task.update(
@@ -350,7 +350,7 @@ class TaskAPI(MethodView):
                             org_id=g.user.org_id,
                             project_id=projectID,
                             mapping_rate=target_project.mapping_rate_per_task,
-                            validation_rate=target_project.validation_rate_per_task,
+                            validation_rate=target_project.validation_rate_per_task,  # noqa: E501
                             paid_out=False,
                             mapped=True,
                             mapped_by=contributor["username"],
@@ -491,73 +491,80 @@ class TaskAPI(MethodView):
 
     @requires_admin
     def admin_fetch_external_validations(self):
-        response={}
+        response = {}
         # Check if user is authenticated
         if not g:
             return {"message": "User not found", "status": 304}
-        unknown_validator_tasks=Task.query.filter_by(org_id=g.user.org_id,unknown_validator=True).all()
-        external_validations=[]
+        unknown_validator_tasks = Task.query.filter_by(
+            org_id=g.user.org_id, unknown_validator=True
+        ).all()
+        external_validations = []
         for task in unknown_validator_tasks:
-            task_project=Project.query.filter_by(id=task.project_id).first()
-            task_obj={
-                'id' :task.id,
-                'project_id':task.project_id,
-                'project_name':task_project.name,
-                'project_url':task_project.url,
-                'validation_rate':task.validation_rate,
-                'mapping_rate':task.mapping_rate,
-                'paid_out':task.paid_out,
-                'mapped':task.mapped,
-                'validated':task.validated,
-                'invalidated' :task.invalidated,
-                'mapped_by':task.mapped_by,
-                'validated_by':task.validated_by,
-                'unknown_validator':task.unknown_validator
+            task_project = Project.query.filter_by(id=task.project_id).first()
+            task_obj = {
+                "id": task.id,
+                "project_id": task.project_id,
+                "project_name": task_project.name,
+                "project_url": task_project.url,
+                "validation_rate": task.validation_rate,
+                "mapping_rate": task.mapping_rate,
+                "paid_out": task.paid_out,
+                "mapped": task.mapped,
+                "validated": task.validated,
+                "invalidated": task.invalidated,
+                "mapped_by": task.mapped_by,
+                "validated_by": task.validated_by,
+                "unknown_validator": task.unknown_validator,
             }
             external_validations.append(task_obj)
-        response['external_validations']=external_validations
-        response['status']=200
+        response["external_validations"] = external_validations
+        response["status"] = 200
         return response
-
 
     @requires_admin
     def update_task(self):
-        response={}
+        response = {}
         # Check if user is authenticated
         if not g:
             return {"message": "User not found", "status": 304}
         task_id = request.json.get("task_id")
         task_action = request.json.get("task_action")
-        target_task=Task.query.filter_by(task_id=task_id).first()
-        target_project=Project.query.filter_by(id=target_task.project_id).first()
-        target_mapper=User.query.filter_by(osm_username=target_task.mapped_by).first()
-        if task_action == 'Validate':
+        target_task = Task.query.filter_by(task_id=task_id).first()
+        target_project = Project.query.filter_by(
+            id=target_task.project_id
+        ).first()
+        target_mapper = User.query.filter_by(
+            osm_username=target_task.mapped_by
+        ).first()
+        if task_action == "Validate":
             target_task.update(
-                validated = True,
+                validated=True,
                 invalidated=False,
                 validated_by=g.user.osm_username,
-                unknown_validator=False
+                unknown_validator=False,
             )
             target_mapper.update(
-                total_tasks_validated=target_mapper.total_tasks_validated+1,
-                mapping_payable_total=target_mapper.mapping_payable_total+target_task.mapping_rate
+                total_tasks_validated=target_mapper.total_tasks_validated + 1,
+                mapping_payable_total=target_mapper.mapping_payable_total
+                + target_task.mapping_rate,
             )
             target_project.update(
-                tasks_validated=target_project.tasks_validated+1
+                tasks_validated=target_project.tasks_validated + 1
             )
 
-        if task_action == 'Invalidate':
+        if task_action == "Invalidate":
             target_task.update(
-                validated = False,
+                validated=False,
                 invalidated=True,
                 validated_by=g.user.osm_username,
-                unknown_validator=False
+                unknown_validator=False,
             )
             target_mapper.update(
-                total_tasks_invalidated=target_mapper.total_tasks_invalidated+1
+                total_tasks_invalidated=target_mapper.total_tasks_invalidated
+                + 1
             )
             target_project.update(
-                tasks_validated=target_project.tasks_invalidated+1
+                tasks_validated=target_project.tasks_invalidated + 1
             )
-        response['status']=200
+        response["status"] = 200
         return response

@@ -6,13 +6,14 @@ import menu_icon from "../../images/menu-icon.png";
 export const SidebarOpenedContainer = styled.div`
   border-width: 0px;
   z-index: 9999;
-  position: absolute;
+  position: relative;
   box-shadow: 3px 0px 5px #253e45;
   left: 0;
   height: 100%;
   width: 220px;
   transition: left 0.3s ease-in-out;
   background-color: white;
+  marginright: 0.5vw;
 `;
 
 export const SidebarClosedContainer = styled.div`
@@ -27,12 +28,14 @@ export const SidebarClosedContainer = styled.div`
 `;
 
 export const MenuItem = styled.a`
-  position: relative;
+  display: flex;
+  flexdirection: row;
+  align-items: center;
+  height: 6vh;
+  padding-left: 1vw;
+  margin-top: 3vh;
   color: #253e45 !important;
-  padding-left: 4rem;
-  padding: 1rem;
-  display: block;
-  text-decoration: none;
+  // display: block;
   box-sizing: border-box;
   &:hover {
     cursor: pointer;
@@ -56,8 +59,8 @@ export const MikroLogoOpen = styled.div`
   max-width: 100%;
   height: 5vh;
   width: 5vw;
-  
-  position: relative; 
+
+  position: relative;
   &:hover {
     cursor: pointer;
   }
@@ -81,12 +84,16 @@ export const MikroLogoClosed = styled.div`
   }
 `;
 export const ProjectIconContainer = styled.span`
-  border-radius: 50%;
-  height: 16px;
-  width: 16px;
-  text-align: center;
-  box-sizing: border-box;
-  font-size: var(--h3);
+  // display:flex;
+  // // flex-direction:column;
+  // align-items:center;
+  // border-radius: 50%;
+  height: 19px;
+  width: 25px;
+  // text-align: center;
+  // box-sizing: border-box;
+  // font-size: var(--h3);
+  margintop: 1vh;
 `;
 
 export const ProjectIcon = styled.img`
@@ -161,7 +168,7 @@ export const RoleBarWrapper = styled.div`
   margin: auto;
   margin-top: 1rem;
   margin-bottom: 1rem;
-  height: 4rem;
+  height: 1.5rem;
   width: 16rem;
   // background: rgba(145, 165, 172, 0.2);
   border-radius: 6px;

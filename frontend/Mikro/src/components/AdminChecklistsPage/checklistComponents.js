@@ -1,6 +1,6 @@
-import React, { useState,useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { styled } from "@mui/material/styles";
-import { Modal, Card, Grid,Table, TableBody, Typography } from "@mui/material";
+import { Modal, Card, Grid, Table, TableBody, Typography } from "@mui/material";
 import { Tab, TabList, TabPanel, Tabs } from "react-tabs";
 import {
   ASSIGN_USERS_TABLE_HEADERS,
@@ -36,7 +36,14 @@ export const AdminCardMediaStyle = styled("div")(({ theme }) => ({
 
 export const ChecklistCardGrid = (props) => {
   return (
-    <div style={{ overflowY: "scroll", overflowX: "auto", width: "85vw", height: "83vh" }}>
+    <div
+      style={{
+        overflowY: "scroll",
+        overflowX: "auto",
+        width: "85vw",
+        height: "83vh",
+      }}
+    >
       <Grid
         sx={{
           height: "auto",
@@ -67,7 +74,7 @@ export const ChecklistCardGrid = (props) => {
               confirmed,
               payment_due,
               comments,
-              user_id
+              user_id,
             } = card;
             return (
               <>
@@ -451,10 +458,10 @@ export const AddChecklistModal = (props) => {
                   type="text"
                   value={props.tempLink}
                   onChange={(e) => props.handleSetTempLink(e)}
-                  style={{ 
-                    height: "5vh", 
-                    marginRight: "3vw", 
-                    width: "95%" 
+                  style={{
+                    height: "5vh",
+                    marginRight: "3vw",
+                    width: "95%",
                   }}
                 />
               </div>
@@ -533,10 +540,10 @@ export const CommentModal = (props) => {
             type="text"
             value={props.checklistName}
             onChange={(e) => props.handleSetComment(e)}
-            style={{ 
-              height: "15vh", 
-              width: "95%", 
-              overflowY: "scroll" 
+            style={{
+              height: "15vh",
+              width: "95%",
+              overflowY: "scroll",
             }}
           />
         </div>
@@ -869,10 +876,6 @@ export const ModifyChecklistModal = (props) => {
                   />
                 </TabPanel>
 
-
-
-
-
                 {/* SETTINGS TAB */}
                 <div
                   style={{
@@ -1063,7 +1066,6 @@ export const AdminChecklistCard = (props) => {
         marginLeft: "2vw",
         marginTop: "2vh",
         whiteSpace: "normal",
-
       }}
       // onDoubleClick={() => props.goToSource(props.url)}
     >
@@ -1080,11 +1082,10 @@ export const AdminChecklistCard = (props) => {
               props.handleSetChecklistSelected(props.id, props.name); // Check the checkbox
             }
           }}
-          style={{ 
-            marginLeft: "1vw", 
-            marginBottom: "1vh", 
+          style={{
+            marginLeft: "1vw",
+            marginBottom: "1vh",
             whiteSpace: "normal",
-
           }}
         />
       </AdminCardMediaStyle>
@@ -1095,7 +1096,6 @@ export const AdminChecklistCard = (props) => {
           justifyContent: "center",
           height: "5vh",
           whiteSpace: "normal",
-
         }}
       >
         <SectionTitle title_text={props.name && `${props.name}`} bold={true} />
@@ -1150,7 +1150,7 @@ export const AdminChecklistCard = (props) => {
               props.handleAddItemOpen(props.id, props.name, props.list_items)
             }
           >
-            <StyledButton button_text={`+Add/Edit Task`} bold={true}  />
+            <StyledButton button_text={`+Add/Edit Task`} bold={true} />
           </div>
         </div>
 
@@ -1178,7 +1178,6 @@ export const AdminChecklistCard = (props) => {
                       marginTop: "0vh",
                       marginLeft: "3vh",
                       height: "3vh",
-                      
                     }}
                   >
                     <SectionSubtitle
@@ -1761,7 +1760,6 @@ export const UserChecklistCard = (props) => {
   );
 };
 
-
 export const ValidatorChecklistCard = (props) => {
   return (
     <Card
@@ -1879,7 +1877,13 @@ export const ValidatorChecklistCard = (props) => {
                       id={number}
                       key={number + action}
                       onChange={(e) =>
-                        props.handleConfirmItem(e,number, props.id, props.user_id, props.name)
+                        props.handleConfirmItem(
+                          e,
+                          number,
+                          props.id,
+                          props.user_id,
+                          props.name
+                        )
                       }
                       checked={confirmed === true}
                       style={{ marginLeft: "0vw", marginRight: "1vw" }}
@@ -2078,10 +2082,10 @@ export const AddItemModal = (props) => {
         />
 
         <Divider />
-        <div 
-          style={{ 
-            display: "flex", 
-            flexDirection: "column" 
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "column",
           }}
         >
           {/* PAGE 2 */}
@@ -2143,10 +2147,10 @@ export const AddItemModal = (props) => {
                 type="text"
                 value={props.tempAction}
                 onChange={(e) => props.handleSetTempAction(e)}
-                style={{ 
-                  height: "5vh", 
-                  marginRight: "3vw", 
-                  width: "95%" 
+                style={{
+                  height: "5vh",
+                  marginRight: "3vw",
+                  width: "95%",
                 }}
               />
             </div>
@@ -2167,10 +2171,10 @@ export const AddItemModal = (props) => {
                 type="text"
                 value={props.tempLink}
                 onChange={(e) => props.handleSetTempLink(e)}
-                style={{ 
-                  height: "5vh", 
-                  marginRight: "3vw", 
-                  width: "95%" 
+                style={{
+                  height: "5vh",
+                  marginRight: "3vw",
+                  width: "95%",
                 }}
               />
             </div>
@@ -2198,7 +2202,7 @@ export const AddItemModal = (props) => {
             />
             <StyledButton
               button_text={"Delete"}
-              button_action={()=>props.handleDeleteItem(props.itemSelected)}
+              button_action={() => props.handleDeleteItem(props.itemSelected)}
             />
             <StyledButton
               button_text={"Update"}

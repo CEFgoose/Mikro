@@ -159,13 +159,16 @@ class UserChecklist(ModelWithSoftDeleteAndCRUD, SurrogatePK, db.Model):
     completion_rate = db.Column(db.Float, nullable=True, default=100)
     difficulty = db.Column(db.String, nullable=True, default="Intermediate")
     visibility = db.Column(db.Boolean, nullable=True, server_default="False")
-    active_status = db.Column(db.Boolean, nullable=True, server_default="False")
+    active_status = db.Column(
+        db.Boolean, nullable=True, server_default="False"
+    )
     completed = db.Column(db.Boolean, nullable=True, server_default="False")
     confirmed = db.Column(db.Boolean, nullable=True, server_default="False")
     last_completion_date = Column(DateTime, nullable=True)
     last_confirmation_date = Column(DateTime, nullable=True)
     final_completion_date = Column(DateTime, nullable=True)
     final_confirmation_date = Column(DateTime, nullable=True)
+
 
 class UserChecklistItem(ModelWithSoftDeleteAndCRUD, SurrogatePK, db.Model):
     __tablename__ = "user_checklist_item"
@@ -179,6 +182,7 @@ class UserChecklistItem(ModelWithSoftDeleteAndCRUD, SurrogatePK, db.Model):
     confirmed = db.Column(db.Boolean, default=False)
     completion_date = Column(DateTime, nullable=True)
     confirmation_date = Column(DateTime, nullable=True)
+
 
 class Training(ModelWithSoftDeleteAndCRUD, SurrogatePK, db.Model):
     __tablename__ = "training"
@@ -257,7 +261,7 @@ class UserTasks(CRUDMixin, SurrogatePK, db.Model):
 class Task(ModelWithSoftDeleteAndCRUD, SurrogatePK):
     __tablename__ = "tasks"
     id = db.Column(db.BigInteger, primary_key=True, nullable=False)
-    task_id = db.Column(db.BigInteger,  nullable=True)
+    task_id = db.Column(db.BigInteger, nullable=True)
     org_id = db.Column(db.Integer, nullable=True, default=0)
     project_id = db.Column(
         db.BigInteger,
@@ -271,7 +275,8 @@ class Task(ModelWithSoftDeleteAndCRUD, SurrogatePK):
     invalidated = db.Column(db.Boolean, nullable=True, default=False)
     mapped_by = db.Column(db.String(80), nullable=False)
     validated_by = db.Column(db.String(80), nullable=False)
-    unknown_validator=db.Column(db.Boolean, nullable=True, default=False)
+    unknown_validator = db.Column(db.Boolean, nullable=True, default=False)
+
 
 class PayRequests(CRUDMixin, SurrogatePK, db.Model):
     __tablename__ = "requests"

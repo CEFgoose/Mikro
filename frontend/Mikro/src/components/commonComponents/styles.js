@@ -87,4 +87,3 @@ export const TextArea = styled.textarea`
   border-radius: 6px;
   box-sizing: border-box;
 `;
-

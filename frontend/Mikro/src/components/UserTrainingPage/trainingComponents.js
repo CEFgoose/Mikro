@@ -206,7 +206,7 @@ export const TrainingQuizModal = (props) => {
 };
 
 export const UserTrainingTable = (props) => {
-    //console.log(props);
+  //console.log(props);
   const updateData = (sortedData) => {
     props.setOrgTrainings(sortedData);
   };
@@ -224,65 +224,65 @@ export const UserTrainingTable = (props) => {
       <TableCard style={{ boxShadow: "1px 1px 6px 2px gray" }}>
         <CardMediaStyle />
         <Table style={{}}>
-        <div style={{height:'40vh', width:'77.5vw',overflowY:'scroll'}}>
-          <ListHead 
-            headLabel={USER_TRAINING_HEADERS}
-            tableData={props.orgTrainings}
-            updateData={updateData}
-           />
-          <TableBody>
-            {props.orgTrainings &&
-              props.orgTrainings
-                .slice(
-                  props.page * props.rowsPerPage,
-                  props.page * props.rowsPerPage + props.rowsPerPage
-                )
-                .map((row) => {
-                  const {
-                    id,
-                    title,
-                    training_url,
-                    training_type,
-                    point_value,
-                    difficulty,
-                    question1,
-                    answer1,
-                    incorrect1_1,
-                    incorrect1_2,
-                    incorrect1_3,
-                    question2,
-                    answer2,
-                    incorrect2_1,
-                    incorrect2_2,
-                    incorrect2_3,
-                    question3,
-                    answer3,
-                    incorrect3_1,
-                    incorrect3_2,
-                    incorrect3_3,
-                  } = row;
-                  return (
-                    <ProjectRow
-                      sx={{
-                        "&:hover": {
-                          backgroundColor: "rgba(145, 165, 172, 0.5)",
-                          cursor: "pointer",
-                        },
-                      }}
-                      align="center"
-                      key={row}
-                      tabIndex={-1}
-                      onClick={() => props.handleSetTrainingSelected(row)}
-                      selected={props.trainingSelected === id}
-                    >
-                      <ProjectCell entry={<strong>{title}</strong>} />
-                      <ProjectCell entry={difficulty} />
-                      <ProjectCell entry={point_value} />
-                      <ProjectCell entry={training_url} />
-                    </ProjectRow>
-                  );
-                })}
-          </TableBody>
+          <div style={{ height: "40vh", width: "77.5vw", overflowY: "scroll" }}>
+            <ListHead
+              headLabel={USER_TRAINING_HEADERS}
+              tableData={props.orgTrainings}
+              updateData={updateData}
+            />
+            <TableBody>
+              {props.orgTrainings &&
+                props.orgTrainings
+                  .slice(
+                    props.page * props.rowsPerPage,
+                    props.page * props.rowsPerPage + props.rowsPerPage
+                  )
+                  .map((row) => {
+                    const {
+                      id,
+                      title,
+                      training_url,
+                      training_type,
+                      point_value,
+                      difficulty,
+                      question1,
+                      answer1,
+                      incorrect1_1,
+                      incorrect1_2,
+                      incorrect1_3,
+                      question2,
+                      answer2,
+                      incorrect2_1,
+                      incorrect2_2,
+                      incorrect2_3,
+                      question3,
+                      answer3,
+                      incorrect3_1,
+                      incorrect3_2,
+                      incorrect3_3,
+                    } = row;
+                    return (
+                      <ProjectRow
+                        sx={{
+                          "&:hover": {
+                            backgroundColor: "rgba(145, 165, 172, 0.5)",
+                            cursor: "pointer",
+                          },
+                        }}
+                        align="center"
+                        key={row}
+                        tabIndex={-1}
+                        onClick={() => props.handleSetTrainingSelected(row)}
+                        selected={props.trainingSelected === id}
+                      >
+                        <ProjectCell entry={<strong>{title}</strong>} />
+                        <ProjectCell entry={difficulty} />
+                        <ProjectCell entry={point_value} />
+                        <ProjectCell entry={training_url} />
+                      </ProjectRow>
+                    );
+                  })}
+            </TableBody>
           </div>
         </Table>
       </TableCard>
