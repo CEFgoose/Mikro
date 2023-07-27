@@ -117,35 +117,36 @@ export const UserDashboard = () => {
   const setDialogContent = (tutorialStep) => {
     if( tutorialStep == 0 ) {
       setTutorialStepTitle('Welcome to Mikro!')
-      setTutorialStepContent('This is an example')
+      setTutorialStepContent('')
     } else if( tutorialStep == 1 ) {
       setTutorialStepTitle('Dashboard')
       setTutorialStepContent(
-        "Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry's standard dummy text ever since the 1500s, when an unknown printer took a galley of type and scrambled it to make a type specimen book. It has survived not only five centuries, but also the leap into electronic typesetting, remaining essentially unchanged. It was popularised in the 1960s with the release of Letraset sheets containing Lorem Ipsum passages, and more recently with desktop publishing software like Aldus PageMaker including versions of Lore")
+        "On the dashboard page you'll find a summary of your mapping activity and a payment overview"
+      )
       setBarOptionSelected('dashboard')
     } else if( tutorialStep == 2 ) {
       setTutorialStepTitle('Checklists')
-      setTutorialStepContent('This is an example')
+      setTutorialStepContent("On the checklist page you'll be able to see avaliable and assigned non-mapping projects")
       setBarOptionSelected('checklist')
     } else if( tutorialStep == 3 ) {
       setTutorialStepTitle('Projects')
-      setTutorialStepContent('This is an example')
+      setTutorialStepContent("On the project page page you'll be able to see avaliable and assigned mapping projects")
       setBarOptionSelected('project')
     } else if( tutorialStep == 4 ) {
       setTutorialStepTitle('Training')
-      setTutorialStepContent('This is an example')
+      setTutorialStepContent("You must complete quizzes on the training page to begin mapping and level up your SOME LANGUAGE HERE ABOUT BECOMING A HIGHER LEVEL MAPPER.")
       setBarOptionSelected('training')
     } else if( tutorialStep == 5 ) {
       setTutorialStepTitle('Payments')
-      setTutorialStepContent('This is an example')
+      setTutorialStepContent("summary of past and potential payments and the ability to request a payment")
       setBarOptionSelected('payments')
     } else if( tutorialStep == 6 ) {
       setTutorialStepTitle('Account')
-      setTutorialStepContent('This is an example')
+      setTutorialStepContent('If you ever want to change any of your account information this is the page for you')
       setBarOptionSelected('account')
     } else if( tutorialStep == 7 ) {
       setTutorialStepTitle('FAQ')
-      setTutorialStepContent('This is an example')
+      setTutorialStepContent("I'm sure many of your questions still need to be answered here. The FAQ will go into more depth. Interact with our chatbot to have your questions answered fast.")
       setBarOptionSelected('faq')
     } else if( tutorialStep == 8 ) {
       setTutorialStepTitle('Congrats')

@@ -26,6 +26,7 @@ import { UserChecklistsPage } from "components/UserChecklistsPage";
 import { ValidatorChecklistsPage } from "components/ValdatorChecklistsPage";
 import { AdminTasksPage } from "components/AdminTasksPage";
 import { FAQPage } from "components/FAQ";
+import useScript from 'hooks/useScript';
 import "bootstrap/dist/css/bootstrap.min.css";
 import "./App.css";
 import {
@@ -57,26 +58,9 @@ function App() {
     //eslint-disable-next-line
   }, []);
 
-
-  useEffect(() => {
-    const injectScript = document.createElement('script');
-    injectScript.src = "https://cdn.botpress.cloud/webchat/v0/inject.js";
-
-    const configScript = document.createElement('script');
-    configScript.src = "https://mediafiles.botpress.cloud/b5e5cfc0-5667-4616-a753-06d7b89006d5/webchat/config.js";
-    configScript.defer = true;
-
-    // const botStyleSheet = document.createElement('script');
-    // styleScript.
-
-    document.head.appendChild(injectScript);
-    document.head.appendChild(configScript);
-
-    return () => {
-      document.head.removeChild(injectScript);
-      document.head.removeChild(configScript);
-    };
-  }, []);
+  // //BOTPRESS STUDIO CHATBOT 
+  const injectLoaded = useScript("https://cdn.botpress.cloud/webchat/v0/inject.js");
+  useScript("https://mediafiles.botpress.cloud/b5e5cfc0-5667-4616-a753-06d7b89006d5/webchat/config.js", [injectLoaded]);
 
   // COMPONENT RENDER - APP PAGE ROUTER
   return (

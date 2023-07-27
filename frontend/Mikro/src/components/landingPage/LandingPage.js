@@ -80,7 +80,6 @@ export const LandingPage = (props) => {
               <br />
               Make a Difference
               <br />
-              with
               <div
                 style={{
                   display: "flex",
