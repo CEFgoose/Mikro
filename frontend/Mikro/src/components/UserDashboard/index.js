@@ -77,19 +77,89 @@ export const UserDashboard = () => {
     setActiveProjects(sortedData);
   };
 
+  const navigateToFirstTraining = () => {
+   history("/UserTrainingPage")
+  }
+
+  const nextTutorialStep = () => {
+    let tempStep=tutorialStep 
+    tempStep+=1
+    setTutorialStep(tempStep);
+    setDialogContent(tempStep);
+  }
+
+  const previousTutorialStep = () => {
+    let tempStep=tutorialStep 
+    tempStep-=1
+    setTutorialStep(tempStep);
+    setDialogContent(tempStep);
+  }
+
+  const setDialogContent = (tutorialStep) => {
+    if( tutorialStep == 0 ) {
+      setTutorialStepTitle('Welcome to Mikro!')
+      setTutorialStepContent('This is an example')
+    } else if( tutorialStep == 1 ) {
+      setTutorialStepTitle('Dashboard')
+      setTutorialStepContent(
+        "Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry's standard dummy text ever since the 1500s, when an unknown printer took a galley of type and scrambled it to make a type specimen book. It has survived not only five centuries, but also the leap into electronic typesetting, remaining essentially unchanged. It was popularised in the 1960s with the release of Letraset sheets containing Lorem Ipsum passages, and more recently with desktop publishing software like Aldus PageMaker including versions of Lore")
+      setBarOptionSelected('dashboard')
+    } else if( tutorialStep == 2 ) {
+      setTutorialStepTitle('Checklists')
+      setTutorialStepContent('This is an example')
+      setBarOptionSelected('checklist')
+    } else if( tutorialStep == 3 ) {
+      setTutorialStepTitle('Projects')
+      setTutorialStepContent('This is an example')
+      setBarOptionSelected('project')
+    } else if( tutorialStep == 4 ) {
+      setTutorialStepTitle('Training')
+      setTutorialStepContent('This is an example')
+      setBarOptionSelected('training')
+    } else if( tutorialStep == 5 ) {
+      setTutorialStepTitle('Payments')
+      setTutorialStepContent('This is an example')
+      setBarOptionSelected('payments')
+    } else if( tutorialStep == 6 ) {
+      setTutorialStepTitle('Account')
+      setTutorialStepContent('This is an example')
+      setBarOptionSelected('account')
+    } else if( tutorialStep == 7 ) {
+      setTutorialStepTitle('FAQ')
+      setTutorialStepContent('This is an example')
+      setBarOptionSelected('faq')
+    } else if( tutorialStep == 8 ) {
+      setTutorialStepTitle('Congrats')
+      setTutorialStepContent('Welcome to the team! Complete your first training to begin mapping!')
+      setBarOptionSelected('')
+    }
+  }
+
   return (
     <>
-      <div
-        style={{
-          display: "flex",
-          flexDirection: "row",
-          width: "100%",
-          height: "100%",
-          float: "left",
-        }}
-      >
-        <Sidebar isOpen={sidebarOpen} />
-        <div style={{ width: "100%", height: "100%" }}>
+    <div style={{ width: "90%", height: "90%", float: "left" }}>
+    {showTutorial && (
+      <TutorialDialog
+        open ={true}
+        onClose = {handleDialogClose}
+        title ={tutorialStepTitle}
+        content = {tutorialStepContent}
+        button_1_text= {tutorialStep >= 1 ? "Previous" : "Skip" }
+        button_1_action ={tutorialStep === 0 ? handleDialogClose : previousTutorialStep}
+        button_2_text={tutorialStep === 8 ? "Go to Training" : "Next"}
+        button_2_action = {tutorialStep === 8 ? navigateToFirstTraining : nextTutorialStep}
+      />
+    )}
+        <Sidebar isOpen={sidebarOpen} toggleSidebar={handleViewSidebar} />
+        <div
+          style={{
+            display: "flex",
+            position: "relative",
+            left: "5vw",
+            flexDirection: "column",
+            height: "100vh",
+          }}
+        >
           <div
             style={{
               display: "flex",

@@ -97,7 +97,7 @@ Make sure your virtual environment is activated
 
 cd into the backend folder
 
-run command `flask run -p 5003 --reload`
+run command `flask run -p 5004 --reload`
 
 - Tabula Rasa is set up to run it's API on port 5003 by default so as not to conflict with the conventional ports on which we run our dev versions of Viewer(5002), Mikro(5004) and Gem(5000).
 
