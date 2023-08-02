@@ -95,7 +95,7 @@ class UserAPI(MethodView):
         # initialize an empty dictionary to store the response
         response = {}
         # check if the user information is available in the global context
-        if not g:
+        if not g.user:
             response["message"] = "User not found"
             response["status"] = 304
             return response

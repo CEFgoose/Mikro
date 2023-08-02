@@ -83,7 +83,11 @@ const Sidebar = (props) => {
   const [localUser, setLocalUser] = useLocalStorageState("mikro.user", null);
   const { history, resetUserStats } = useContext(DataContext);
   const { user, refresh } = useContext(AuthContext);
-  const { sidebarOpen } = useContext(DataContext);
+
+  const {
+    sidebarOpen,
+    BarOptionSelected
+  } = useContext(DataContext);
 
   useEffect(() => {
     if (user === null) {

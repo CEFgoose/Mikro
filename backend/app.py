@@ -143,7 +143,9 @@ SSO_BASE_URL = "http://127.0.0.1:5001/api/"
 @jwt_required(optional=True)
 def load_user():
     if "register_user" not in request.url:
+        print(1)
         if optional_jwt():
+            print(2)
             load_user_from_jwt()
     else:
         email = request.json.get("email")

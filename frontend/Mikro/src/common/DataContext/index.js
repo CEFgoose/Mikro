@@ -77,6 +77,11 @@ export const DataProvider = ({ children }) => {
   const [confirmText, setConfirmText] = useState("");
   const [trainingQuestions, setTrainingQuestions] = useState([]);
   const [questionCounter, setQuestionCounter] = useState(0);
+
+  const [tutorialStepTitle, setTutorialStepTitle] = useState("");
+  const [tutorialStepContent, setTutorialStepContent] = useState("");
+  const [BarOptionSelected,setBarOptionSelected]=useState(null)
+
   const handleSetSidebarState = () => {
     toggleSidebarOpen();
   };
@@ -1580,6 +1585,14 @@ export const DataProvider = ({ children }) => {
     setTrainingQuestions,
     questionCounter,
     setQuestionCounter,
+
+    BarOptionSelected,
+    setBarOptionSelected,
+    tutorialStepTitle,
+    setTutorialStepTitle,
+    tutorialStepContent,
+    setTutorialStepContent
+
   };
 
   return value ? (

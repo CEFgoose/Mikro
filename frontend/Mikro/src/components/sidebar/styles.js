@@ -28,12 +28,8 @@ export const SidebarClosedContainer = styled.div`
 `;
 
 export const MenuItem = styled.a`
-  display: flex;
-  flexdirection: row;
-  align-items: center;
-  height: 6vh;
-  padding-left: 1vw;
-  margin-top: 1.5vh;
+  position: relative;
+  z-index: 9999;
   color: #253e45 !important;
   // display: block;
   box-sizing: border-box;

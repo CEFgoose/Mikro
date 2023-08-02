@@ -44,6 +44,7 @@ class LoginAPI(MethodView):
                 org_id = jwt_user["company_id"]
                 # Get the user information from the SSO
                 url = SSO_BASE_URL
+                print('loginurl',url)
                 current_app.logger.error(url)
                 resp = s.get(
                     url + f"users/{jwt_user['id']}",

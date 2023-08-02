@@ -35,8 +35,8 @@ export const LandingPage = (props) => {
           <NavLink to={"/login"} style={{ textDecoration: "none" }}>
             <Button
               style={{
-                marginRight: "9vw",
-                marginTop: "5vh",
+                marginRight: "1vw",
+                marginTop: "4vh",
                 backgroundColor: "#f4753c",
                 color: "black",
               }}
@@ -45,6 +45,21 @@ export const LandingPage = (props) => {
               onClick={() => handleSetRedirect()}
             >
               Login
+            </Button>
+          </NavLink>
+          <NavLink to={"/registerUser"} style={{ textDecoration: "none" }}>
+            <Button
+              style={{
+                marginRight: "9vw",
+                marginTop: "4vh",
+                backgroundColor: "#f4753c",
+                color: "black",
+              }}
+              size="large"
+              variant="contained"
+              onClick={() => handleSetRedirect()}
+            >
+              Sign Up
             </Button>
           </NavLink>
         </div>
@@ -65,7 +80,6 @@ export const LandingPage = (props) => {
               <br />
               Make a Difference
               <br />
-              with
               <div
                 style={{
                   display: "flex",
