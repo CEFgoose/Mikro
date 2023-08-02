@@ -680,6 +680,85 @@ export const ConfirmModalCommon = (props) => {
   );
 };
 
+
+
+export const CompleteQuizModal = (props) => {
+  const modal_body = (
+    <ModalWrapper>
+      <Card>
+        <Typography
+          variant="h5"
+          align="center"
+          style={{ marginLeft: "1vw", marginRight: "1vw" }}
+        >
+          {`Training Quiz ${props.quizStatus}`}
+        </Typography>
+        <Typography
+          variant="h5"
+          align="center"
+          style={{ marginLeft: "1vw", marginRight: "1vw" }}
+        >
+          {props.quizStatusText}
+        </Typography>
+        <Divider style={{ marginTop: "1vh" }} />
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "row",
+            justifyContent: "center",
+            alignItems: "center",
+            marginTop:'1vh'
+          }}
+        >
+          {props.button1===true?
+          <>
+          <Button
+          style={{ marginLeft: "1vw", marginRight: "1vw" ,marginBottom:'1vh'}}
+          onClick={() => props.button_1_action()}
+          >
+            {props.button_1_text}
+          </Button>
+          </>
+          :
+          <>
+          </>
+          }
+
+          {props.button2===true?
+          <>
+          <Button
+          style={{ marginLeft: "1vw", marginRight: "1vw" ,marginBottom:'1vh'}}
+          onClick={() => props.button_2_action()}
+          >
+            {props.button_2_text}
+          </Button>
+          </>
+          :
+          <>
+          </>
+          }
+        </div>
+      </Card>
+    </ModalWrapper>
+  );
+
+  //COMPONENT RENDER
+  return (
+    <Modal
+      open={props.modal_open}
+      onClose={props.handleOpenCloseModal}
+      aria-labelledby="simple-modal-title"
+      aria-describedby="simple-modal-description"
+    >
+      {modal_body}
+    </Modal>
+  );
+};
+
+
+
+
+
 export const AdminPayRequestsTable = (props) => {
   const updateData = (sortedData) => {
     props.setOrgRequests(sortedData);

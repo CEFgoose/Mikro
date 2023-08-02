@@ -13,7 +13,7 @@ import users_icon from "../../images/newIcons/round2/users_1.png";
 import training_icon from "../../images/newIcons/round2/training_1.png";
 import payments_icon from "../../images/newIcons/round2/payments.png";
 import account_icon from "../../images/newIcons/round2/account.png";
-import faq_icon from "../../images/faq alt 2.jpg";
+import faq_icon from "../../images/faq alt 2.png";
 import logouticon from "../../images/newIcons/round2/log out.png";
 import leftArrow from "../../images/newIcons/round2/kaart back_1.png";
 
@@ -143,14 +143,14 @@ const Sidebar = (props) => {
                 height: "auto",
                 alignItems: "left",
                 justifyContent: "left",
-                // backgroundColor:'lightgreen'
+                // backgroundColor:'lightblue'
               }}
             >
               <div
                 style={{
                   display: "flex",
                   flexDirection: "column",
-                  // backgroundColor:'lightgrey',
+                  backgroundColor:'lightgrey',
                   marginLeft: "5%",
                   marginTop: "5%",
                   width: "auto",
@@ -192,6 +192,7 @@ const Sidebar = (props) => {
           </MenuItemTop>
           <div
             style={{
+
               width: "100%",
               backgroundColor: "black",
               height: ".05vh",
@@ -199,26 +200,60 @@ const Sidebar = (props) => {
               marginBottom: "2vh",
             }}
           />
-          <NavLink to={dashboardLink} style={{ textDecoration: "none" }}>
-            {/* <MenuItem style={{paddingLeft:'1vw',marginBottom:'1vh'}}> */}
-            <MenuItem>
-              <ProjectIcon src={dashicon} />
 
+          
+          <NavLink 
+          to={dashboardLink} 
+          style={{
+            display:'flex',
+            flexDirection:'row',
+            alignItems:'center', 
+            textDecoration: "none", 
+            paddingLeft:'1vw',
+            marginBottom:'1vh',
+            height:'6vh',
+            // backgroundColor:'lightsalmon'
+          }}
+            >
+            <MenuItem style={{width:'100%'}}>
+              <ProjectIcon src={dashicon} />
               <Header>Dashboard</Header>
-              {/* </MenuItem> */}
-            </MenuItem>
+              </MenuItem>
           </NavLink>
 
-          <NavLink to={checklistPageLink} style={{ textDecoration: "none" }}>
-            <MenuItem>
+          <NavLink 
+          to={checklistPageLink} 
+          style={{
+            display:'flex',
+            flexDirection:'row',
+            alignItems:'center', 
+            textDecoration: "none", 
+            paddingLeft:'1vw',
+            marginBottom:'1vh',
+            height:'6vh',
+            // backgroundColor:'lightsalmon'
+          }}
+            >
+            <MenuItem style={{width:'100%'}}>
               <ProjectIcon src={checklist_icon} />
-
               <Header>Checklists</Header>
             </MenuItem>
           </NavLink>
 
-          <NavLink to={projectPageLink} style={{ textDecoration: "none" }}>
-            <MenuItem>
+          <NavLink 
+          to={projectPageLink} 
+          style={{
+            display:'flex',
+            flexDirection:'row',
+            alignItems:'center', 
+            textDecoration: "none", 
+            paddingLeft:'1vw',
+            marginBottom:'1vh',
+            height:'6vh',
+            // backgroundColor:'lightsalmon'
+          }}
+            >
+            <MenuItem style={{width:'100%'}}>
               <ProjectIcon src={projects_icon} />
 
               <Header>Projects</Header>
@@ -226,8 +261,21 @@ const Sidebar = (props) => {
           </NavLink>
 
           {role === "admin" ? (
-            <NavLink to="/AdminTasksPage" style={{ textDecoration: "none" }}>
-              <MenuItem>
+            <NavLink 
+            to="/AdminTasksPage" 
+            style={{
+              display:'flex',
+              flexDirection:'row',
+              alignItems:'center', 
+              textDecoration: "none", 
+              paddingLeft:'1vw',
+              marginBottom:'1vh',
+              height:'6vh',
+              // backgroundColor:'lightsalmon'
+            }}
+              >
+
+<MenuItem style={{width:'100%'}}>
                 <ProjectIcon src={tasks_icon} />
 
                 <Header>Tasks</Header>
@@ -237,8 +285,21 @@ const Sidebar = (props) => {
             <></>
           )}
           {role === "admin" ? (
-            <NavLink to="/AdminUsersPage" style={{ textDecoration: "none" }}>
-              <MenuItem>
+            <NavLink 
+            to="/AdminUsersPage" 
+            style={{
+              display:'flex',
+              flexDirection:'row',
+              alignItems:'center', 
+              textDecoration: "none", 
+              paddingLeft:'1vw',
+              marginBottom:'1vh',
+              height:'6vh',
+              // backgroundColor:'lightsalmon'
+            }}
+            
+            >
+            <MenuItem style={{width:'100%'}}>
                 <ProjectIcon src={users_icon} />
 
                 <Header>Users</Header>
@@ -248,43 +309,123 @@ const Sidebar = (props) => {
             <></>
           )}
 
-          <NavLink to={trainingPageLink} style={{ textDecoration: "none" }}>
-            <MenuItem>
+          <NavLink 
+          to={trainingPageLink} 
+          style={{
+            display:'flex',
+            flexDirection:'row',
+            alignItems:'center', 
+            textDecoration: "none", 
+            paddingLeft:'1vw',
+            marginBottom:'1vh',
+            height:'6vh',
+            // backgroundColor:'lightsalmon'
+          }}
+          
+          >
+            <MenuItem style={{width:'100%'}}>
               <ProjectIcon src={training_icon} />
 
               <Header>Training</Header>
             </MenuItem>
           </NavLink>
 
-          <NavLink to={paymentsPageLink} style={{ textDecoration: "none" }}>
-            <MenuItem>
+          <NavLink 
+          to={paymentsPageLink} 
+          style={{
+            display:'flex',
+            flexDirection:'row',
+            alignItems:'center', 
+            textDecoration: "none", 
+            paddingLeft:'1vw',
+            marginBottom:'1vh',
+            height:'6vh',
+            // backgroundColor:'lightsalmon'
+          }}
+          >
+            <MenuItem style={{width:'100%'}}>
               <ProjectIcon src={payments_icon} />
 
               <Header>Payments</Header>
             </MenuItem>
           </NavLink>
 
-          <NavLink to={accountPageLink} style={{ textDecoration: "none" }}>
-            <MenuItem>
+          <NavLink 
+          to={accountPageLink} 
+          style={{
+            display:'flex',
+            flexDirection:'row',
+            alignItems:'center', 
+            textDecoration: "none", 
+            paddingLeft:'1vw',
+            marginBottom:'1vh',
+            height:'6vh',
+            // backgroundColor:'lightsalmon'
+          }}
+          >
+            <MenuItem style={{width:'100%'}}>
               <ProjectIcon src={account_icon} />
               <Header>Account</Header>
             </MenuItem>
           </NavLink>
 
-          <NavLink to={faqPageLink} style={{ textDecoration: "none" }}>
-            <MenuItem>
+          <NavLink 
+          to={faqPageLink} 
+          style={{
+            display:'flex',
+            flexDirection:'row',
+            alignItems:'center', 
+            textDecoration: "none", 
+            paddingLeft:'1vw',
+            marginBottom:'1vh',
+
+            height:'6vh',
+
+            // backgroundColor:'lightsalmon'
+          }}
+          
+          >
+            <MenuItem style={{width:'100%'}}>
               <ProjectIcon src={faq_icon} />
 
               <Header>FAQ</Header>
             </MenuItem>
           </NavLink>
 
-          <MenuItem onClick={logout}>
+
+
+          <MenuItem 
+                    style={{
+                      display:'flex',
+                      flexDirection:'row',
+                      alignItems:'center', 
+                      textDecoration: "none", 
+                      paddingLeft:'1vw',
+                      marginBottom:'1vh',
+                      height:'6vh',
+                      // backgroundColor:'lightsalmon'
+                    }}
+          
+          onClick={logout}>
             <ProjectIcon onClick={logout} src={logouticon} />
             <Header onClick={logout}>Log Out</Header>
           </MenuItem>
 
-          <MenuItem href={map_url} target="_blank">
+          <MenuItem 
+          href={map_url} 
+          target="_blank"
+          style={{
+            display:'flex',
+            flexDirection:'row',
+            alignItems:'center', 
+            textDecoration: "none", 
+            paddingLeft:'1vw',
+            marginBottom:'1vh',
+            height:'6vh',
+            width:'100%'
+            // backgroundColor:'lightsalmon'
+          }}
+          >
             <ProjectIcon href={map_url} target="_blank" src={leftArrow} />
 
             <Header href={map_url} target="_blank">
@@ -301,11 +442,7 @@ const Sidebar = (props) => {
         <SidebarClosedContainer>
           <MenuItemTop>
             <MikroLogoClosed onClick={props.toggleSidebar} />
-            {/* <OpenMenuIconContainer>
-                <OpenMenuIconButton>
-                  <OpenMenuIcon onClick={props.toggleSidebar} />
-                </OpenMenuIconButton>
-              </OpenMenuIconContainer> */}
+
           </MenuItemTop>
         </SidebarClosedContainer>
       )}

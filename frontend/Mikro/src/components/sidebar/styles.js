@@ -5,6 +5,8 @@ import menu_icon from "../../images/menu-icon.png";
 
 export const SidebarOpenedContainer = styled.div`
   border-width: 0px;
+  display:flex;
+  flex-direction:column;
   z-index: 9999;
   position: relative;
   box-shadow: 3px 0px 5px #253e45;
@@ -13,7 +15,7 @@ export const SidebarOpenedContainer = styled.div`
   width: 220px;
   transition: left 0.3s ease-in-out;
   background-color: white;
-  marginright: 0.5vw;
+
 `;
 
 export const SidebarClosedContainer = styled.div`
