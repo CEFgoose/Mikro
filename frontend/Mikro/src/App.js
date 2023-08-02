@@ -83,8 +83,7 @@ function App() {
                 path="/validatordash"
                 element={<Private Component={ValidatorDashboard} />}
               />
-    
-    
+  
               <Route
                 path="/admindash"
                 element={<Private Component={AdminDash} />}
