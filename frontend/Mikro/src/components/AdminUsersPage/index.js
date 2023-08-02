@@ -125,12 +125,10 @@ export const AdminUsersPage = () => {
       reader.onload = async (event) => {
         const fileContents = event.target.result;
         const json = await csvtojson().fromString(fileContents);
-        console.log(json);
 
         // Send the JSON data to the backend for user creation
         try {
           let response = poster(json, "user/import_users");
-          console.log("RESPONSE!", response);
         } catch (error) {
           console.error("Error importing users:", error);
           // Optionally, show an error message or handle the error
@@ -178,32 +176,45 @@ export const AdminUsersPage = () => {
             style={{
               display: "flex",
               position: "relative",
-              marginLeft: ".5vw",
               flexDirection: "column",
               height: "100vh",
+              // backgroundColor:'lightgreen'
             }}
           >
             <div
               style={{
                 display: "flex",
-                marginLeft: "5vh",
                 flexDirection: "row",
+                width: "100%",
+                // backgroundColor:'grey'
               }}
             >
-              <h1
-                style={{
-                  marginLeft: ".5vw",
-                  marginTop: "1vw",
-                  paddingBottom: "2vh",
-                }}
-              >
-                <strong>Users:</strong>
-              </h1>
               <div
                 style={{
+                  display: "flex",
+                  flexDirection: "row",
+                  width: "40rem",
+                  // backgroundColor:'lightyellow'
+                }}
+              >
+                <h1
+                  style={{
+                    marginLeft: "3vw",
+                    marginTop: "1vw",
+                    paddingBottom: "2vh",
+                    width: "auto",
+                  }}
+                >
+                  <strong>Users:</strong>
+                </h1>
+              </div>
+
+              <div
+                style={{
+                  width: "100%",
                   marginTop: "2vw",
                   position: "relative",
-                  left: "44vw",
+                  // backgroundColor:'blue'
                 }}
               >
                 <ButtonDivComponent
@@ -234,77 +245,75 @@ export const AdminUsersPage = () => {
               style={{
                 display: "flex",
                 flexDirection: "row",
-                marginLeft: "3vw",
-                marginTop: "1vw",
-                height: "85%",
-                width: "79vw",
+                marginLeft: "3.5vw",
+                height: "79vh",
+                width: "77.5vw",
               }}
             >
-              <TableCard style={{ boxShadow: "1px 1px 6px 2px gray" }}>
+              <TableCard
+                style={{
+                  boxShadow: "1px 1px 6px 2px gray",
+                  width: "98%",
+                  overflowY: "scroll",
+                }}
+              >
                 <CardMediaStyle />
-                <Table style={{}}>
-                  <div
-                    style={{
-                      height: "40vh",
-                      width: "77.5vw",
-                      overflowY: "scroll",
-                    }}
-                  >
-                    <ListHead
-                      headLabel={USERS_TABLE_HEADERS}
-                      tableData={orgUsers}
-                      updateData={setOrgUsers}
-                    />
-                    <TableBody>
-                      {orgUsers &&
-                        orgUsers.slice().map((row) => {
-                          const {
-                            id,
-                            name,
-                            role,
-                            assigned_projects,
-                            total_tasks_mapped,
-                            total_tasks_validated,
-                            total_tasks_invalidated,
-                            awaiting_payment,
-                            total_payout,
-                          } = row;
-                          return (
-                            <ProjectRow
-                              sx={{
-                                "&:hover": {
-                                  backgroundColor: "rgba(145, 165, 172, 0.5)",
-                                  cursor: "pointer",
-                                },
-                              }}
-                              align="center"
-                              key={row}
-                              tabIndex={-1}
-                              onClick={() => handleSetUserSelected(id)}
-                              selected={userSelected === id}
-                            >
-                              <ProjectCell entry={<strong>{name}</strong>} />
-                              <ProjectCell entry={role} />
-                              <ProjectCell entry={assigned_projects} />
-                              <ProjectCell entry={total_tasks_mapped} />
-                              <ProjectCell entry={total_tasks_validated} />
-                              <ProjectCell entry={total_tasks_invalidated} />
-                              <ProjectCell
-                                entry={`$${
-                                  awaiting_payment &&
-                                  awaiting_payment.toFixed(2)
-                                }`}
-                              />
-                              <ProjectCell
-                                entry={`$${
-                                  total_payout && total_payout.toFixed(2)
-                                }`}
-                              />
-                            </ProjectRow>
-                          );
-                        })}
-                    </TableBody>
-                  </div>
+                <Table>
+                  <ListHead
+                    headLabel={USERS_TABLE_HEADERS}
+                    tableData={orgUsers}
+                    updateData={setOrgUsers}
+                  />
+
+                  <TableBody>
+                    {orgUsers &&
+                      orgUsers.slice().map((row) => {
+                        const {
+                          id,
+                          name,
+                          role,
+                          assigned_projects,
+                          total_tasks_mapped,
+                          total_tasks_validated,
+                          total_tasks_invalidated,
+                          awaiting_payment,
+                          total_payout,
+                        } = row;
+                        return (
+                          <ProjectRow
+                            sx={{
+                              "&:hover": {
+                                backgroundColor: "rgba(145, 165, 172, 0.5)",
+                                cursor: "pointer",
+                              },
+                            }}
+                            align="center"
+                            key={row}
+                            tabIndex={-1}
+                            onClick={() => handleSetUserSelected(id)}
+                            selected={userSelected === id}
+                          >
+                            <ProjectCell entry={<strong>{name}</strong>} />
+                            <ProjectCell entry={role} />
+                            <ProjectCell entry={assigned_projects} />
+                            <ProjectCell entry={total_tasks_mapped} />
+                            <ProjectCell entry={total_tasks_validated} />
+                            <ProjectCell entry={total_tasks_invalidated} />
+                            <ProjectCell
+                              entry={`$${
+                                awaiting_payment && awaiting_payment.toFixed(2)
+                              }`}
+                            />
+                            <ProjectCell
+                              entry={`$${
+                                total_payout && total_payout.toFixed(2)
+                              }`}
+                            />
+                          </ProjectRow>
+                        );
+                      })}
+                  </TableBody>
+                  {/* </div> */}
                 </Table>
               </TableCard>
             </div>

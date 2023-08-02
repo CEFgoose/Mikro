@@ -72,7 +72,9 @@ flake8 . --exclude venv
 prettier  --write .
 
 
-// ---------------------RENEW CERTIFICATE-------------------------------
+
+// ---------------------RENEW CERTIFICATE------------------//
+
 
 ssh viewer.kaart.com
 cd kubernetes

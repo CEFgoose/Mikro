@@ -40,8 +40,13 @@ export const ChecklistCardGrid = (props) => {
       style={{
         overflowY: "scroll",
         overflowX: "auto",
-        width: "85vw",
-        height: "83vh",
+        marginTop: "1vh",
+        display: "flex",
+        flexDirection: "column",
+        width: "auto",
+        height: "100%",
+        // backgroundColor:'lightcyan',
+        paddingBottom: "5vh",
       }}
     >
       <Grid

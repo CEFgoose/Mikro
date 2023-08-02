@@ -75,7 +75,8 @@ export const DataProvider = ({ children }) => {
   const [confirmOpen, toggleConfirmOpen] = useToggle(false);
   const [confirmQuestion, setConfirmQuestion] = useState("");
   const [confirmText, setConfirmText] = useState("");
-
+  const [trainingQuestions, setTrainingQuestions] = useState([]);
+  const [questionCounter, setQuestionCounter] = useState(0);
   const handleSetSidebarState = () => {
     toggleSidebarOpen();
   };
@@ -952,49 +953,21 @@ export const DataProvider = ({ children }) => {
     training_url,
     training_type,
     point_value,
-    difficulty,
-    question1,
-    answer1,
-    incorrect1_1,
-    incorrect1_2,
-    incorrect1_3,
-    question2,
-    answer2,
-    incorrect2_1,
-    incorrect2_2,
-    incorrect2_3,
-    question3,
-    answer3,
-    incorrect3_1,
-    incorrect3_2,
-    incorrect3_3
+    difficulty
   ) => {
     let createTrainingURL = "training/create_training";
     let outpack = {
       title: title,
-      question1: question1,
-      question2: question2,
-      question3: question3,
-      answer1: answer1,
-      answer2: answer2,
-      answer3: answer3,
-      incorrect1_1: incorrect1_1,
-      incorrect1_2: incorrect1_2,
-      incorrect1_3: incorrect1_3,
-      incorrect2_1: incorrect2_1,
-      incorrect2_2: incorrect2_2,
-      incorrect2_3: incorrect2_3,
-      incorrect3_1: incorrect3_1,
-      incorrect3_2: incorrect3_2,
-      incorrect3_3: incorrect3_3,
       point_value: point_value,
       difficulty: difficulty,
       training_url: training_url,
       training_type: training_type,
+      questions: trainingQuestions,
     };
     poster(outpack, createTrainingURL).then((response) => {
       if (response.status === 200) {
         fetchOrgTrainings();
+        setTrainingQuestions([]);
         return;
       } else if (response.status === 304) {
         history("/login");
@@ -1010,54 +983,28 @@ export const DataProvider = ({ children }) => {
     training_url,
     training_type,
     point_value,
-    difficulty,
-    question1,
-    answer1,
-    incorrect1_1,
-    incorrect1_2,
-    incorrect1_3,
-    question2,
-    answer2,
-    incorrect2_1,
-    incorrect2_2,
-    incorrect2_3,
-    question3,
-    answer3,
-    incorrect3_1,
-    incorrect3_2,
-    incorrect3_3
+    difficulty
   ) => {
     let modifyTrainingURL = "training/modify_training";
     let outpack = {
-      training_id: training_id,
+      training_id:training_id,
       title: title,
-      question1: question1,
-      question2: question2,
-      question3: question3,
-      answer1: answer1,
-      answer2: answer2,
-      answer3: answer3,
-      incorrect1_1: incorrect1_1,
-      incorrect1_2: incorrect1_2,
-      incorrect1_3: incorrect1_3,
-      incorrect2_1: incorrect2_1,
-      incorrect2_2: incorrect2_2,
-      incorrect2_3: incorrect2_3,
-      incorrect3_1: incorrect3_1,
-      incorrect3_2: incorrect3_2,
-      incorrect3_3: incorrect3_3,
       point_value: point_value,
       difficulty: difficulty,
       training_url: training_url,
       training_type: training_type,
+      questions: trainingQuestions,
     };
     poster(outpack, modifyTrainingURL).then((response) => {
+
       if (response.status === 200) {
         fetchOrgTrainings();
+        setTrainingQuestions([]);
         return;
       } else if (response.status === 304) {
         history("/login");
       } else {
+        console.log(response)
         alert(response.message);
       }
     });
@@ -1067,6 +1014,7 @@ export const DataProvider = ({ children }) => {
     let fetchTrainingsURL = "training/fetch_org_trainings";
     fetcher(fetchTrainingsURL).then((response) => {
       if (response.status === 200) {
+
         setOrgMappingTrainings(response.org_mapping_trainings);
         setOrgValidationTrainings(response.org_validation_trainings);
         setOrgProjectTrainings(response.org_project_trainings);
@@ -1083,6 +1031,7 @@ export const DataProvider = ({ children }) => {
     let fetchTrainingsURL = "training/fetch_user_trainings";
     fetcher(fetchTrainingsURL).then((response) => {
       if (response.status === 200) {
+        console.log('here',response.org_mapping_trainings)
         setOrgMappingTrainings(response.org_mapping_trainings);
         setOrgValidationTrainings(response.org_validation_trainings);
         setOrgProjectTrainings(response.org_project_trainings);
@@ -1627,6 +1576,10 @@ export const DataProvider = ({ children }) => {
     findIndexById,
     setExternalValidations,
     setOrgUsers,
+    trainingQuestions,
+    setTrainingQuestions,
+    questionCounter,
+    setQuestionCounter,
   };
 
   return value ? (

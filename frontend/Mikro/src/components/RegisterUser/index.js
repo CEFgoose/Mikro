@@ -38,8 +38,6 @@ export const RegisterUser = () => {
 
     await poster(outpack, url).then((response) => {
       let code = response.code;
-      // console.log(response);
-      // alert(response.message);
       setResponseMessage(response.message);
       setResponseCode(code);
     });

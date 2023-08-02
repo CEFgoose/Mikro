@@ -1,5 +1,5 @@
 from ..utils import requires_admin
-from ..database import Training, TrainingCompleted
+from ..database import Training, TrainingCompleted,TrainingQuestion,TrainingQuestionAnswer
 from flask.views import MethodView
 from flask import g, request
 from flask_jwt_extended import (
@@ -30,21 +30,7 @@ class TrainingAPI(MethodView):
     def create_training(self):
         required_args = [
             "title",
-            "question1",
-            "question2",
-            "question3",
-            "answer1",
-            "answer2",
-            "answer3",
-            "incorrect1_1",
-            "incorrect1_2",
-            "incorrect1_3",
-            "incorrect2_1",
-            "incorrect2_2",
-            "incorrect2_3",
-            "incorrect3_1",
-            "incorrect3_2",
-            "incorrect3_3",
+            "questions",
             "point_value",
             "difficulty",
             "training_url",
@@ -59,30 +45,34 @@ class TrainingAPI(MethodView):
                 "status": 400,
             }
             return response, 400
+        questions=request.json["questions"]
         try:
-            Training.create(
+            new_training=Training.create(
                 title=request.json["title"],
                 org_id=g.user.org_id,
-                question_1=request.json["question1"],
-                question_2=request.json["question2"],
-                question_3=request.json["question3"],
-                answer_1=request.json["answer1"],
-                answer_2=request.json["answer2"],
-                answer_3=request.json["answer3"],
-                incorrect1_1=request.json["incorrect1_1"],
-                incorrect1_2=request.json["incorrect1_2"],
-                incorrect1_3=request.json["incorrect1_3"],
-                incorrect2_1=request.json["incorrect2_1"],
-                incorrect2_2=request.json["incorrect2_2"],
-                incorrect2_3=request.json["incorrect2_3"],
-                incorrect3_1=request.json["incorrect3_1"],
-                incorrect3_2=request.json["incorrect3_2"],
-                incorrect3_3=request.json["incorrect3_3"],
                 point_value=request.json["point_value"],
                 difficulty=request.json["difficulty"],
                 training_url=request.json["training_url"],
                 training_type=request.json["training_type"],
             )
+            for question in questions:
+                new_training_question=TrainingQuestion.create(
+                    training_id=new_training.id,
+                    question=question['question']
+                )
+                new_training_correct=TrainingQuestionAnswer.create(
+                    training_id=new_training.id,
+                    training_question_id=new_training_question.id,
+                    value=True,
+                    answer=question['correct']
+                )
+                for incorrect in question['incorrect']:
+                    new_training_incorrect=TrainingQuestionAnswer.create(
+                        training_id=new_training.id,
+                        training_question_id=new_training_question.id,
+                        value=False,
+                        answer=incorrect['answer']
+                    )
             response = {"message": "New Training Created", "status": 200}
             return response, 200
         except Exception as e:
@@ -92,98 +82,7 @@ class TrainingAPI(MethodView):
             }
             return response, 500
 
-    @requires_admin
-    def modify_training(self):
-        # Check if user is authenticated
-        if not g:
-            return {"message": "User not found", "status": 304}
-        # Check if required data is provided
-        required_args = [
-            "training_id",
-            "title",
-            "question1",
-            "question2",
-            "question3",
-            "answer1",
-            "answer2",
-            "answer3",
-            "incorrect1_1",
-            "incorrect1_2",
-            "incorrect1_3",
-            "incorrect2_1",
-            "incorrect2_2",
-            "incorrect2_3",
-            "incorrect3_1",
-            "incorrect3_2",
-            "incorrect3_3",
-            "point_value",
-            "difficulty",
-            "training_url",
-            "training_type",
-        ]
-        for arg in required_args:
-            if not request.json.get(arg):
-                return {"message": f"{arg} required", "status": 400}
-        # Update training data
-        training_id = request.json.get("training_id")
-        target_training = Training.query.filter_by(id=training_id).first()
-        if not target_training:
-            return {
-                "message": f"Training {training_id} not found",
-                "status": 400,
-            }
-        target_training.update(
-            title=request.json.get("title"),
-            question_1=request.json.get("question1"),
-            question_2=request.json.get("question2"),
-            question_3=request.json.get("question3"),
-            answer_1=request.json.get("answer1"),
-            answer_2=request.json.get("answer2"),
-            answer_3=request.json.get("answer3"),
-            incorrect1_1=request.json.get("incorrect1_1"),
-            incorrect1_2=request.json.get("incorrect1_2"),
-            incorrect1_3=request.json.get("incorrect1_3"),
-            incorrect2_1=request.json.get("incorrect2_1"),
-            incorrect2_2=request.json.get("incorrect2_2"),
-            incorrect2_3=request.json.get("incorrect2_3"),
-            incorrect3_1=request.json.get("incorrect3_1"),
-            incorrect3_2=request.json.get("incorrect3_2"),
-            incorrect3_3=request.json.get("incorrect3_3"),
-            point_value=request.json.get("point_value"),
-            difficulty=request.json.get("difficulty"),
-            training_url=request.json.get("training_url"),
-            training_type=request.json.get("training_type"),
-        )
-        # Return response
-        return {
-            "message": f"Training {training_id} has been updated",
-            "status": 200,
-        }
 
-    @requires_admin
-    def delete_training(self):
-        response = {}
-        # Check if user is authenticated
-        if not g:
-            response["message"] = "User not found"
-            response["status"] = 304
-            return response
-        # Check if required data is provided
-        training_id = request.json.get("training_id")
-        if not training_id:
-            return {"message": "training_id required", "status": 400}
-        target_training = Training.query.filter_by(
-            org_id=g.user.org_id, id=training_id
-        ).first()
-        if not target_training:
-            response["message"] = "Training %s not found" % (training_id)
-            response["status"] = 400
-            return response
-        else:
-            target_training.delete(soft=False)
-            response["message"] = "Training %s deleted" % (training_id)
-            response["status"] = 200
-            return response
 
     @requires_admin
     def fetch_org_trainings(self):
@@ -218,27 +117,144 @@ class TrainingAPI(MethodView):
             "status": 200,
         }
 
-    def complete_training(self):
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    @requires_admin
+    def modify_training(self):
         # Check if user is authenticated
         if not g:
+            return {"message": "User not found", "status": 304}
+        required_args = [
+            "title",
+            "questions",
+            "point_value",
+            "difficulty",
+            "training_url",
+            "training_type",
+        ]
+        missing_args = [
+            arg for arg in required_args if arg not in request.json
+        ]
+        if missing_args:
+            print("MISSING ARG")
+            response = {
+                "message": f"Missing required argument(s): {', '.join(missing_args)}",  # noqa: E501
+                "status": 400,
+            }
+            print(response)
+            return response
+        questions=request.json["questions"]
+        print(questions)
+        # Update training data
+        training_id = request.json.get("training_id")
+        target_training = Training.query.filter_by(id=training_id).first()
+        if not target_training:
+            return {
+                "message": f"Training {training_id} not found",
+                "status": 400,
+            }
+        target_training.update(
+            title=request.json.get("title"),
+            point_value=request.json.get("point_value"),
+            difficulty=request.json.get("difficulty"),
+            training_url=request.json.get("training_url"),
+            training_type=request.json.get("training_type"),
+        )
+        target_training_questions=TrainingQuestion.query.filter_by(training_id=target_training.id).all()
+        for question in target_training_questions:
+            # print(question.question)
+            target_question_answers=TrainingQuestionAnswer.query.filter_by(training_question_id=question.id,training_id=target_training.id).all()
+            for answer in target_question_answers:
+
+                answer.delete(soft=False)
+            question.delete(soft=False)
+        
+                
+        for question in questions:
+            print(question)
+            new_training_question=TrainingQuestion.create(
+                training_id=target_training.id,
+                question=question['question']
+            )
+            new_training_correct=TrainingQuestionAnswer.create(
+                training_id=target_training.id,
+                training_question_id=new_training_question.id,
+                value=True,
+                answer=question['correct']
+            )
+            for incorrect in question['incorrect']:
+                print(incorrect)
+                new_training_incorrect=TrainingQuestionAnswer.create(
+                    training_id=target_training.id,
+                    training_question_id=new_training_question.id,
+                    value=False,
+                    answer=incorrect
+                )
+
+        # Return response
+        return {
+            "message": f"Training {training_id} has been updated",
+            "status": 200,
+        }
+
+    @requires_admin
+    def delete_training(self):
+        response = {}
+        # Check if user is authenticated
+        if not g:
+            response["message"] = "User not found"
+            response["status"] = 304
+            return response
+        # Check if required data is provided
+        training_id = request.json.get("training_id")
+        if not training_id:
+            return {"message": "training_id required", "status": 400}
+        target_training = Training.query.filter_by(
+            org_id=g.user.org_id, id=training_id
+        ).first()
+        if not target_training:
+            response["message"] = "Training %s not found" % (training_id)
+            response["status"] = 400
+            return response
+        else:
+            target_training_questions = TrainingQuestion.query.filter_by(training_id=target_training.id).all()
+            target_training_answers=TrainingQuestionAnswer.query.filter_by(training_id=target_training.id).all()
+            for question, answer in zip(target_training_questions,target_training_answers):
+                question.delete(soft=False)
+            target_training.delete(soft=False)
+            response["message"] = "Training %s deleted" % (training_id)
+            response["status"] = 200
+            return response
+
+
+    def complete_training(self):
+        if not g:
             return {"message": "User Not Found", "status": 304}
-        # Get training ID from request data
         training_id = request.json.get("training_id")
         if not training_id:
             return {"message": "Training ID required", "status": 400}
-        # Get target training and check if it exists
         target_training = Training.query.filter_by(id=training_id).first()
         if not target_training:
             return {"message": "Training not found", "status": 400}
-        # Check if completion already exists for this user and training
         completion_exists = TrainingCompleted.query.filter_by(
             training_id=training_id, user_id=g.user.id
         ).first()
         if completion_exists:
             return {"message": "Training already completed", "status": 200}
-        # Create completion record for user and training
         TrainingCompleted.create(training_id=training_id, user_id=g.user.id)
-        # Update user's points based on training type
         if target_training.training_type == "Mapping":
             g.user.update(
                 mapper_points=g.user.mapper_points
@@ -257,13 +273,20 @@ class TrainingAPI(MethodView):
                 + target_training.point_value
             )
             earned_points = g.user.special_project_points
-        # Return response with training type, earned points, and completion status  # noqa: E501
         return {
             "training_type": target_training.training_type,
             "earned_points": earned_points,
             "message": "Training completed",
             "status": 200,
         }
+    
+
+
+
+
+
+
+
 
     def fetch_user_trainings(self):
         # Check if user is authenticated
@@ -325,26 +348,28 @@ class TrainingAPI(MethodView):
         }
 
     def format_training(self, training):
+        questions=[]
+        training_questions= TrainingQuestion.query.filter_by(training_id=training.id).all()
+        for question in training_questions:
+            correct_training_question_answer=TrainingQuestionAnswer.query.filter_by(training_question_id=question.id,training_id=training.id, value=True).first()
+            incorrect_training_question_answers=TrainingQuestionAnswer.query.filter_by(training_question_id=question.id,training_id=training.id,value=False).all()
+            incorrect_answers=[incorrect.answer for incorrect in incorrect_training_question_answers]
+            question_obj={
+                'question':question.question,
+                'correct':correct_training_question_answer.answer,
+                'incorrect':incorrect_answers
+            }
+            print(question_obj)
+            questions.append(question_obj)
+
+            
         return {
             "id": training.id,
             "title": training.title,
-            "question1": training.question_1,
-            "question2": training.question_2,
-            "question3": training.question_3,
-            "answer1": training.answer_1,
-            "answer2": training.answer_2,
-            "answer3": training.answer_3,
-            "incorrect1_1": training.incorrect1_1,
-            "incorrect1_2": training.incorrect1_2,
-            "incorrect1_3": training.incorrect1_3,
-            "incorrect2_1": training.incorrect2_1,
-            "incorrect2_2": training.incorrect2_2,
-            "incorrect2_3": training.incorrect2_3,
-            "incorrect3_1": training.incorrect3_1,
-            "incorrect3_2": training.incorrect3_2,
-            "incorrect3_3": training.incorrect3_3,
             "point_value": training.point_value,
             "difficulty": training.difficulty,
             "training_url": training.training_url,
             "training_type": training.training_type,
+
+            "questions":questions
         }

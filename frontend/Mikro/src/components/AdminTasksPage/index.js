@@ -341,65 +341,78 @@ export const AdminTasksPage = () => {
                     width: "77.5vw",
                   }}
                 >
-                  <TableCard style={{ boxShadow: "1px 1px 6px 2px gray" }}>
+                  <TableCard
+                    style={{
+                      boxShadow: "1px 1px 6px 2px gray",
+                      width: "90%",
+                      height: "100%",
+                      overflowY: "scroll",
+                    }}
+                  >
                     <CardMediaStyle />
-                    <Table>
-                      <div
+                    <Table style={{ width: "100%", height: "100vh" }}>
+                      {/* <div
                         style={{
-                          height: "40vh",
-                          width: "77.5vw",
+                          height: "100vh",
+                          width: "auto",
+                          // backgroundColor:'lightgray',
+                          overflowY: "scroll",
+                        }}
+                      > */}
+                      <ListHead
+                        headLabel={EXTERNAL_VALIDATIONS_HEADERS}
+                        tableData={externalValidations}
+                        updateData={setExternalValidations}
+                      />
+
+                      <TableBody
+                        style={{
+                          width: "100%",
+                          height: "100vh",
                           overflowY: "scroll",
                         }}
                       >
-                        <ListHead
-                          headLabel={EXTERNAL_VALIDATIONS_HEADERS}
-                          tableData={externalValidations}
-                          updateData={setExternalValidations}
-                        />
-                        <TableBody>
-                          {externalValidations &&
-                            externalValidations
-                              .slice(
-                                page * rowsPerPage,
-                                page * rowsPerPage + rowsPerPage
-                              )
-                              .map((row) => {
-                                const {
-                                  id,
-                                  project_id,
-                                  project_name,
-                                  project_url,
-                                  mapped_by,
-                                  validated_by,
-                                } = row;
-                                return (
-                                  <ProjectRow
-                                    sx={{
-                                      "&:hover": {
-                                        backgroundColor:
-                                          "rgba(145, 165, 172, 0.5)",
-                                        cursor: "pointer",
-                                      },
-                                    }}
-                                    align="center"
-                                    key={id}
-                                    tabIndex={-1}
-                                    onClick={() => handleSetProjectSelected(id)}
-                                    selected={projectSelected === id}
-                                    onDoubleClick={() =>
-                                      goToSource(project_url)
-                                    }
-                                  >
-                                    <ProjectCell entry={id} />
-                                    <ProjectCell entry={project_name} />
-                                    <ProjectCell entry={project_id} />
-                                    <ProjectCell entry={mapped_by} />
-                                    <ProjectCell entry={validated_by} />
-                                  </ProjectRow>
-                                );
-                              })}
-                        </TableBody>
-                      </div>
+                        {externalValidations &&
+                          externalValidations
+                            .slice(
+                              page * rowsPerPage,
+                              page * rowsPerPage + rowsPerPage
+                            )
+                            .map((row) => {
+                              const {
+                                id,
+                                project_id,
+                                project_name,
+                                project_url,
+                                mapped_by,
+                                validated_by,
+                              } = row;
+                              return (
+                                <ProjectRow
+                                  sx={{
+                                    "&:hover": {
+                                      backgroundColor:
+                                        "rgba(145, 165, 172, 0.5)",
+                                      cursor: "pointer",
+                                    },
+                                  }}
+                                  align="center"
+                                  key={id}
+                                  tabIndex={-1}
+                                  onClick={() => handleSetProjectSelected(id)}
+                                  selected={projectSelected === id}
+                                  onDoubleClick={() => goToSource(project_url)}
+                                >
+                                  <ProjectCell entry={id} />
+                                  <ProjectCell entry={project_name} />
+                                  <ProjectCell entry={project_id} />
+                                  <ProjectCell entry={mapped_by} />
+                                  <ProjectCell entry={validated_by} />
+                                </ProjectRow>
+                              );
+                            })}
+                      </TableBody>
+                      {/* </div> */}
                     </Table>
                   </TableCard>
                 </div>

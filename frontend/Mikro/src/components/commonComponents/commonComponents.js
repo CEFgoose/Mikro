@@ -537,13 +537,22 @@ export const ListHead = ({ headLabel, tableData, updateData }) => {
       <TableRow>
         {headLabel.map((headCell) => (
           <TableCell key={headCell.id}>
-            <TableSortLabel
-              active={sort.column === headCell.id}
-              direction={sort.column === headCell.id ? sort.order : "asc"}
-              onClick={() => handleSort(headCell.id)}
+            <div
+              style={{
+                display: "flex",
+                flexDirection: "row",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
             >
-              {headCell.label}
-            </TableSortLabel>
+              <TableSortLabel
+                active={sort.column === headCell.id}
+                direction={sort.column === headCell.id ? sort.order : "asc"}
+                onClick={() => handleSort(headCell.id)}
+              >
+                {<strong>{headCell.label}</strong>}
+              </TableSortLabel>
+            </div>
           </TableCell>
         ))}
       </TableRow>
@@ -572,6 +581,83 @@ export const ModalButtons = (props) => {
     </div>
   );
 };
+
+
+
+export const CompleteQuizModal = (props) => {
+  const modal_body = (
+    <ModalWrapper>
+      <Card>
+        <Typography
+          variant="h5"
+          align="center"
+          style={{ marginLeft: "1vw", marginRight: "1vw" }}
+        >
+          {`Training Quiz ${props.quizStatus}`}
+        </Typography>
+        <Typography
+          variant="h5"
+          align="center"
+          style={{ marginLeft: "1vw", marginRight: "1vw" }}
+        >
+          {props.quizStatusText}
+        </Typography>
+        <Divider style={{ marginTop: "1vh" }} />
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "row",
+            justifyContent: "center",
+            alignItems: "center",
+            marginTop:'1vh'
+          }}
+        >
+          {props.button1===true?
+          <>
+          <Button
+          style={{ marginLeft: "1vw", marginRight: "1vw" ,marginBottom:'1vh'}}
+          onClick={() => props.button_1_action()}
+          >
+            {props.button_1_text}
+          </Button>
+          </>
+          :
+          <>
+          </>
+          }
+
+          {props.button2===true?
+          <>
+          <Button
+          style={{ marginLeft: "1vw", marginRight: "1vw" ,marginBottom:'1vh'}}
+          onClick={() => props.button_2_action()}
+          >
+            {props.button_2_text}
+          </Button>
+          </>
+          :
+          <>
+          </>
+          }
+        </div>
+      </Card>
+    </ModalWrapper>
+  );
+
+  //COMPONENT RENDER
+  return (
+    <Modal
+      open={props.modal_open}
+      onClose={props.handleOpenCloseModal}
+      aria-labelledby="simple-modal-title"
+      aria-describedby="simple-modal-description"
+    >
+      {modal_body}
+    </Modal>
+  );
+};
+
+
 
 export const ConfirmModalCommon = (props) => {
   const modal_body = (
@@ -638,66 +724,60 @@ export const AdminPayRequestsTable = (props) => {
         width: "77.5vw",
       }}
     >
-      <TableCard style={{ boxShadow: "1px 1px 6px 2px gray" }}>
+      <TableCard
+        style={{ boxShadow: "1px 1px 6px 2px gray", overflowY: "scroll" }}
+      >
         <CardMediaStyle />
         <Table>
-          <div
-            style={{
-              height: "40vh",
-              width: "77.5vw",
-              overflowY: "scroll",
-            }}
-          >
-            <ListHead
-              headLabel={REQUEST_TABLE_HEADERS}
-              tableData={props.orgRequests}
-              updateData={props.setOrgRequests}
-            />
-            <TableBody>
-              {props.orgRequests &&
-                props.orgRequests.slice().map((row) => {
-                  const {
-                    id,
-                    payment_email,
-                    user,
-                    user_id,
-                    amount_requested,
-                    task_ids,
-                    date_requested,
-                  } = row;
-                  return (
-                    <ProjectRow
-                      sx={{
-                        "&:hover": {
-                          backgroundColor: "rgba(145, 165, 172, 0.5)",
-                          cursor: "pointer",
-                        },
-                      }}
-                      align="center"
-                      key={row}
-                      tabIndex={-1}
-                      onClick={() =>
-                        props.handleSetRequestSelected(
-                          id,
-                          user,
-                          user_id,
-                          amount_requested,
-                          date_requested,
-                          payment_email,
-                          task_ids
-                        )
-                      }
-                      selected={props.requestSelected === id}
-                    >
-                      <ProjectCell entry={<strong>{user}</strong>} />
-                      <ProjectCell entry={id} />
-                      <ProjectCell entry={amount_requested} />
-                      <ProjectCell entry={date_requested} />
-                    </ProjectRow>
-                  );
-                })}
-            </TableBody>
-          </div>
+          <ListHead
+            headLabel={REQUEST_TABLE_HEADERS}
+            tableData={props.orgRequests}
+            updateData={props.setOrgRequests}
+          />
+          <TableBody>
+            {props.orgRequests &&
+              props.orgRequests.slice().map((row) => {
+                const {
+                  id,
+                  payment_email,
+                  user,
+                  user_id,
+                  amount_requested,
+                  task_ids,
+                  date_requested,
+                } = row;
+                return (
+                  <ProjectRow
+                    sx={{
+                      "&:hover": {
+                        backgroundColor: "rgba(145, 165, 172, 0.5)",
+                        cursor: "pointer",
+                      },
+                    }}
+                    align="center"
+                    key={row}
+                    tabIndex={-1}
+                    onClick={() =>
+                      props.handleSetRequestSelected(
+                        id,
+                        user,
+                        user_id,
+                        amount_requested,
+                        date_requested,
+                        payment_email,
+                        task_ids
+                      )
+                    }
+                    selected={props.requestSelected === id}
+                  >
+                    <ProjectCell entry={<strong>{user}</strong>} />
+                    <ProjectCell entry={id} />
+                    <ProjectCell entry={amount_requested} />
+                    <ProjectCell entry={date_requested} />
+                  </ProjectRow>
+                );
+              })}
+          </TableBody>
         </Table>
       </TableCard>
     </div>
@@ -719,70 +799,64 @@ export const AdminPaymentsTable = (props) => {
         width: "77.5vw",
       }}
     >
-      <TableCard style={{ boxShadow: "1px 1px 6px 2px gray" }}>
+      <TableCard
+        style={{ boxShadow: "1px 1px 6px 2px gray", overflowY: "scroll" }}
+      >
         <CardMediaStyle />
         <Table>
-          <div
-            style={{
-              height: "40vh",
-              width: "77.5vw",
-              overflowY: "scroll",
-            }}
-          >
-            <ListHead
-              headLabel={REQUEST_TABLE_HEADERS}
-              tableData={props.orgPayments}
-              updateData={props.setOrgPayments}
-            />
-            <TableBody>
-              {props.orgPayments &&
-                props.orgPayments.slice().map((row) => {
-                  const {
-                    id,
-                    payment_email,
-                    user,
-                    osm_username,
-                    user_id,
-                    amount_paid,
-                    task_ids,
-                    date_paid,
-                    payoneer_id,
-                  } = row;
-                  return (
-                    <ProjectRow
-                      sx={{
-                        "&:hover": {
-                          backgroundColor: "rgba(145, 165, 172, 0.5)",
-                          cursor: "pointer",
-                        },
-                      }}
-                      align="center"
-                      key={row}
-                      tabIndex={-1}
-                      onClick={() =>
-                        props.handleSetPaymentSelected(
-                          id,
-                          user,
-                          osm_username,
-                          user_id,
-                          amount_paid,
-                          date_paid,
-                          payment_email,
-                          task_ids,
-                          payoneer_id
-                        )
-                      }
-                      selected={props.paymentSelected === id}
-                    >
-                      <ProjectCell entry={<strong>{user}</strong>} />
-                      <ProjectCell entry={id} />
-                      <ProjectCell entry={`$${amount_paid}`} />
-                      <ProjectCell entry={date_paid} />
-                    </ProjectRow>
-                  );
-                })}
-            </TableBody>
-          </div>
+          <ListHead
+            headLabel={REQUEST_TABLE_HEADERS}
+            tableData={props.orgPayments}
+            updateData={props.setOrgPayments}
+          />
+          <TableBody>
+            {props.orgPayments &&
+              props.orgPayments.slice().map((row) => {
+                const {
+                  id,
+                  payment_email,
+                  user,
+                  osm_username,
+                  user_id,
+                  amount_paid,
+                  task_ids,
+                  date_paid,
+                  payoneer_id,
+                } = row;
+                return (
+                  <ProjectRow
+                    sx={{
+                      "&:hover": {
+                        backgroundColor: "rgba(145, 165, 172, 0.5)",
+                        cursor: "pointer",
+                      },
+                    }}
+                    align="center"
+                    key={row}
+                    tabIndex={-1}
+                    onClick={() =>
+                      props.handleSetPaymentSelected(
+                        id,
+                        user,
+                        osm_username,
+                        user_id,
+                        amount_paid,
+                        date_paid,
+                        payment_email,
+                        task_ids,
+                        payoneer_id
+                      )
+                    }
+                    selected={props.paymentSelected === id}
+                  >
+                    <ProjectCell entry={<strong>{user}</strong>} />
+                    <ProjectCell entry={id} />
+                    <ProjectCell entry={`$${amount_paid}`} />
+                    <ProjectCell entry={date_paid} />
+                  </ProjectRow>
+                );
+              })}
+          </TableBody>
         </Table>
       </TableCard>
     </div>

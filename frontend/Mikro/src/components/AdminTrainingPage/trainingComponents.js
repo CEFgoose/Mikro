@@ -1,4 +1,6 @@
-import React from "react";
+import React, { useContext, useState, useEffect } from "react";
+import useToggle from "hooks/useToggle";
+import { DataContext } from "common/DataContext";
 import {
   Modal,
   Divider,
@@ -17,8 +19,10 @@ import {
   SectionSubtitle,
   ModalWrapper,
   ModalButtons,
+  ConfirmButton,
+  CancelButton,
 } from "../commonComponents/commonComponents";
-
+import plus_icon from "../../images/plus_icon.png";
 export const ADMIN_TRAINING_HEADERS = [
   { id: "name", label: "Title", alignRight: false },
   { id: "Difficulty", label: "Difficulty", alignRight: false },
@@ -27,12 +31,110 @@ export const ADMIN_TRAINING_HEADERS = [
 ];
 
 export const AddTrainingModal = (props) => {
+  const {
+    trainingQuestions,
+    setTrainingQuestions,
+    questionCounter,
+    setQuestionCounter,
+    createTraining,
+  } = useContext(DataContext);
+
+  const [tempQuestion, setTempQuestion] = useState(null);
+  const [tempCorrect, setTempCorrect] = useState(null);
+  const [tempIncorrect, setTempIncorrect] = useState(null);
+  const [tempIncorrectAnswers, setTempIncorrectAnswers] = useState([]);
+
+  const [point_value, setPointValue] = useState(5);
+  const [difficulty, setDifficulty] = useState("easy");
+  const [title, setTitle] = useState(null);
+  const [training_url, setURL] = useState(null);
+  const [page, setPage] = useState(1);
+  const handleSetTitle = (e) => {
+    setTitle(e.target.value);
+  };
+
+  const handleSetURL = (e) => {
+    setURL(e.target.value);
+  };
+
+  const handleSetPointValue = (e) => {
+    setPointValue(e.target.value);
+  };
+
+  const handleSetDifficulty = (e) => {
+    setDifficulty(e.target.value);
+  };
+
+  const handleSetTempQuestion = (e) => {
+    setTempQuestion(e.target.value);
+  };
+
+  const handleSetTempCorrect = (e) => {
+    setTempCorrect(e.target.value);
+  };
+
+  const handleSetTempIncorrect = (e) => {
+    setTempIncorrect(e.target.value);
+  };
+
+  const handleAddIncorrectAnswer = () => {
+    let incorrectObj = {
+      index: tempIncorrectAnswers.length + 1,
+      answer: tempIncorrect,
+    };
+    setTempIncorrectAnswers([...tempIncorrectAnswers, incorrectObj]);
+    setTempIncorrect("");
+  };
+
+  const handleSetQuestionObject = () => {
+    let questionObj = {
+      question: tempQuestion,
+      correct: tempCorrect,
+      incorrect: tempIncorrectAnswers,
+    };
+    setTrainingQuestions([...trainingQuestions, questionObj]);
+  };
+
+  const handleResetForm = () => {
+    setTempQuestion("");
+    setTempCorrect("");
+    setTempIncorrect("");
+    setTempIncorrectAnswers([]);
+  };
+
+  const handleSetPage = () => {
+    if (page === 1) {
+      if (training_url && difficulty && point_value) {
+        setPage(2);
+        return;
+      }
+    }
+    if (page === 2) {
+      handleSetQuestionObject();
+      handleResetForm();
+    }
+  };
+
+  const handleCreateTraining = () => {
+    if (trainingQuestions.length > 0) {
+      createTraining(
+        title,
+        training_url,
+        props.trainingType,
+        point_value,
+        difficulty
+      );
+      handleResetForm();
+      props.handleAddOpen();
+    }
+  };
+
   return (
     <Modal open={props.addOpen} key="add">
       <ModalWrapper>
         <CloseButton close_action={props.handleAddOpen} />
-        <SectionTitle title_text={"Add New Training Lesson"} />
-        {props.modalPage === 1 ? (
+        <SectionTitle title_text={<strong>Add New Training Lesson</strong>} />
+        {page === 1 ? (
           <>
             <SectionSubtitle
               subtitle_text={
@@ -53,8 +155,8 @@ export const AddTrainingModal = (props) => {
                 <SectionTitle title_text={"Title:"} />
                 <input
                   type="text"
-                  value={props.title}
-                  onChange={(e) => props.handleSetTitle(e)}
+                  value={title}
+                  onChange={(e) => handleSetTitle(e)}
                   style={{ height: "5vh", marginRight: "3vw", width: "95%" }}
                 />
               </div>
@@ -74,8 +176,8 @@ export const AddTrainingModal = (props) => {
                 <SectionTitle title_text={"URL:"} />
                 <input
                   type="text"
-                  value={props.URL}
-                  onChange={(e) => props.handleSetURL(e)}
+                  value={training_url}
+                  onChange={(e) => handleSetURL(e)}
                   style={{ height: "5vh", marginRight: "3vw", width: "95%" }}
                 />
               </div>
@@ -103,44 +205,38 @@ export const AddTrainingModal = (props) => {
                   type="number"
                   min="1"
                   step="1"
-                  value={props.pointValue}
-                  onChange={(e) => props.handleSetPointValue(e)}
+                  value={point_value}
+                  onChange={(e) => handleSetPointValue(e)}
                   style={{ height: "5vh", marginRight: "3vw", width: "10vw" }}
                 />
 
                 <SectionTitle title_text={"Difficulty:"} />
                 <select
-                  // value={props.difficulty}
+                  value={difficulty}
                   style={{ marginRight: "1vw" }}
-                  onChange={props.handleSetDifficulty}
+                  onChange={handleSetDifficulty}
                 >
-                  <option
-                    value="Easy"
-                    onChange={(e) => props.handleSetDifficulty(e)}
-                  >
+                  <option value="Easy" onChange={(e) => handleSetDifficulty(e)}>
                     Easy
                   </option>
                   <option
                     value="Intermediate"
-                    onChange={(e) => props.handleSetDifficulty(e)}
+                    onChange={(e) => handleSetDifficulty(e)}
                   >
                     Intermediate
                   </option>
-                  <option
-                    value="Hard"
-                    onChange={(e) => props.handleSetDifficulty(e)}
-                  >
+                  <option value="Hard" onChange={(e) => handleSetDifficulty(e)}>
                     Hard
                   </option>
                 </select>
               </div>
             </div>
           </>
-        ) : props.modalPage === 2 ? (
+        ) : page === 2 ? (
           <>
             <SectionSubtitle
               subtitle_text={
-                "Enter question 1, the correct answer, and three incorrect answers."
+                "Enter a question, a correct answer, and and any number of incorrect answers."
               }
             />
             <Divider />
@@ -152,168 +248,107 @@ export const AddTrainingModal = (props) => {
                 alignItems: "center",
               }}
             >
-              <SectionTitle title_text={"Question 1:"} />
+              <SectionTitle title_text={"Question:"} />
               <input
                 type="text"
-                value={props.question1}
-                onChange={(e) => props.handleSetQuestion(1, e)}
+                value={tempQuestion}
+                onChange={(e) => handleSetTempQuestion(e)}
                 style={{ height: "5vh", width: "95%" }}
               />
+
               <SectionTitle title_text={"Correct Answer:"} />
               <input
                 type="text"
-                value={props.answer1}
-                onChange={(e) => props.handleSetAnswer(1, e)}
+                value={tempCorrect}
+                onChange={(e) => handleSetTempCorrect(e)}
                 style={{ height: "5vh", width: "95%" }}
               />
+              <SectionTitle title_text={"Incorrect Answers:"} />
+              <div
+                style={{
+                  display: "flex",
+                  flexDirection: "row",
+                  width: "95%",
+                  height: "auto",
+                  alignItems: "center",
+                  justifyContent: "left",
+                  backgroundColor: "lightgoldenrodyellow",
+                }}
+              >
+                <input
+                  type="text"
+                  value={tempIncorrect}
+                  onChange={(e) => handleSetTempIncorrect(e)}
+                  style={{ height: "5vh", width: "90%", marginRight: "3vw" }}
+                />
+                <img
+                  onClick={() => handleAddIncorrectAnswer()}
+                  alt={"plus icon"}
+                  src={plus_icon}
+                  style={{
+                    width: "2rem",
+                    height: "2rem",
+                  }}
+                />
+              </div>
 
-              <SectionTitle title_text={"Incorrect 1:"} />
-              <input
-                type="text"
-                value={props.incorrect1_1}
-                onChange={(e) => props.handleSetIncorrect(1, 1, e)}
-                style={{ height: "5vh", width: "95%" }}
-              />
-
-              <SectionTitle title_text={"Incorrect 2:"} />
-              <input
-                type="text"
-                value={props.incorrect1_2}
-                onChange={(e) => props.handleSetIncorrect(1, 2, e)}
-                style={{ height: "5vh", width: "95%" }}
-              />
-
-              <SectionTitle title_text={"Incorrect 3:"} />
-              <input
-                type="text"
-                value={props.incorrect1_3}
-                onChange={(e) => props.handleSetIncorrect(1, 3, e)}
-                style={{ height: "5vh", width: "95%" }}
-              />
+              <div
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  width: "95%",
+                  height: "30vh",
+                  backgroundColor: "lightgrey",
+                  overflowY: "scroll",
+                }}
+              >
+                {tempIncorrectAnswers &&
+                  tempIncorrectAnswers.slice().map((row) => {
+                    const { index, answer } = row;
+                    return (
+                      <>
+                        <div>
+                          <SectionSubtitle
+                            subtitle_text={`Incorrect Answer ${index}: ${answer}`}
+                          />
+                        </div>
+                      </>
+                    );
+                  })}
+              </div>
             </div>
           </>
-        ) : props.modalPage === 3 ? (
+        ) : page === 3 ? (
           <>
-            <SectionSubtitle
-              subtitle_text={
-                "Enter question 2, the correct answer, and three incorrect answers."
-              }
-            />
-            <Divider />
-            <div
-              style={{
-                display: "flex",
-                flexDirection: "column",
-                marginBottom: "1vh",
-                alignItems: "center",
-              }}
-            >
-              <SectionTitle title_text={"Question 2:"} />
-              <input
-                type="text"
-                value={props.question2 ? props.question2 : ""}
-                onChange={(e) => props.handleSetQuestion(2, e)}
-                style={{ height: "5vh", width: "95%" }}
-              />
-              <SectionTitle title_text={"Correct Answer:"} />
-              <input
-                type="text"
-                value={props.answer2 ? props.answer2 : ""}
-                onChange={(e) => props.handleSetAnswer(2, e)}
-                style={{ height: "5vh", width: "95%" }}
-              />
 
-              <SectionTitle title_text={"Incorrect 1:"} />
-              <input
-                type="text"
-                value={props.incorrect2_1 ? props.incorrect2_1 : ""}
-                onChange={(e) => props.handleSetIncorrect(2, 1, e)}
-                style={{ height: "5vh", width: "95%" }}
-              />
 
-              <SectionTitle title_text={"Incorrect 2:"} />
-              <input
-                type="text"
-                value={props.incorrect2_2 ? props.incorrect2_2 : ""}
-                onChange={(e) => props.handleSetIncorrect(2, 2, e)}
-                style={{ height: "5vh", width: "95%" }}
-              />
-
-              <SectionTitle title_text={"Incorrect 3:"} />
-              <input
-                type="text"
-                value={props.incorrect2_3 ? props.incorrect2_3 : ""}
-                onChange={(e) => props.handleSetIncorrect(2, 3, e)}
-                style={{ height: "5vh", width: "95%" }}
-              />
-            </div>
           </>
-        ) : props.modalPage === 4 ? (
+        ) : page === 4 ? (
           <>
-            <SectionSubtitle
-              subtitle_text={
-                "Enter question 3, the correct answer, and three incorrect answers."
-              }
-            />
-            <Divider />
-            <div
-              style={{
-                display: "flex",
-                flexDirection: "column",
-                marginBottom: "1vh",
-                alignItems: "center",
-              }}
-            >
-              <SectionTitle title_text={"Question 3:"} />
-              <input
-                type="text"
-                value={props.question3 ? props.question3 : ""}
-                onChange={(e) => props.handleSetQuestion(3, e)}
-                style={{ height: "5vh", width: "95%" }}
-              />
-              <SectionTitle title_text={"Correct Answer:"} />
-              <input
-                type="text"
-                value={props.answer3 ? props.answer3 : ""}
-                onChange={(e) => props.handleSetAnswer(3, e)}
-                style={{ height: "5vh", width: "95%" }}
-              />
-
-              <SectionTitle title_text={"Incorrect 1:"} />
-              <input
-                type="text"
-                value={props.incorrect3_1 ? props.incorrect3_1 : ""}
-                onChange={(e) => props.handleSetIncorrect(3, 1, e)}
-                style={{ height: "5vh", width: "95%" }}
-              />
-
-              <SectionTitle title_text={"Incorrect 2:"} />
-              <input
-                type="text"
-                value={props.incorrect3_2 ? props.incorrect3_2 : ""}
-                onChange={(e) => props.handleSetIncorrect(3, 2, e)}
-                style={{ height: "5vh", width: "95%" }}
-              />
-
-              <SectionTitle title_text={"Incorrect 3:"} />
-              <input
-                type="text"
-                value={props.incorrect3_3 ? props.incorrect3_3 : ""}
-                onChange={(e) => props.handleSetIncorrect(3, 3, e)}
-                style={{ height: "5vh", width: "95%" }}
-              />
-            </div>
           </>
         ) : (
           <></>
         )}
 
-        <div style={{ marginBottom: "1vh" }}>
-          <ModalButtons
-            confirm_text={props.modalPage !== 4 ? "Next" : "Submit"}
-            confirm_action={() => props.handleSetModalPage()}
+        <div
+          style={{
+            marginBottom: "1vh",
+            display: "flex",
+            flexDirection: "row",
+            justifyContent: "center",
+          }}
+        >
+          <CancelButton
+            cancel_action={() => props.handleAddOpen()}
             cancel_text={"Cancel"}
-            cancel_action={props.handleAddOpen}
+          />
+          <ConfirmButton
+            confirm_action={() => handleSetPage()}
+            confirm_text={"Next"}
+          />
+          <ConfirmButton
+            confirm_action={() => handleCreateTraining()}
+            confirm_text={"Submit"}
           />
         </div>
       </ModalWrapper>
@@ -322,12 +357,181 @@ export const AddTrainingModal = (props) => {
 };
 
 export const ModifyTrainingModal = (props) => {
+
+  const {
+    trainingQuestions,
+    setTrainingQuestions,
+    questionCounter,
+    setQuestionCounter,
+    modifyTraining,
+  } = useContext(DataContext);
+
+  const [page, setPage] = useState(1);
+  const [questionIndex, setQuestionIndex] = useState(0);
+  const [tempQuestions,setTempQuestions]=useState(null)
+  const [tempQuestion, setTempQuestion] = useState(null);
+  const [tempCorrect, setTempCorrect] = useState(null);
+  const [tempIncorrect, setTempIncorrect] = useState(null);
+  const [tempIncorrectAnswers, setTempIncorrectAnswers] = useState([]);
+  const [lastPage, toggleLastPage] = useToggle(false);
+  const [addQuestion,toggleAddQuestion]=useToggle(false)
+  useEffect(() => {
+    if (props.questions !== null){
+      setTempQuestions(props.questions)
+    }
+    // eslint-disable-next-line
+  }, [props.questions]);
+
+
+  useEffect(() => {
+    console.log(addQuestion)
+    // eslint-disable-next-line
+  }, [addQuestion]);
+
+  useEffect(() => {
+
+    if (tempQuestions!==null){
+      console.log(questionIndex,tempQuestions.length)
+      if (questionIndex + 2 > tempQuestions.length) {
+        toggleLastPage();
+      }
+      if(questionIndex === tempQuestions.length && !addQuestion){
+        handleModifyTraining()
+        return
+      }
+      if(questionIndex<tempQuestions.length){
+        setTempQuestion(tempQuestions[questionIndex].question);
+        setTempCorrect(tempQuestions[questionIndex].correct);
+        setTempIncorrectAnswers(tempQuestions[questionIndex].incorrect);
+        setTrainingQuestions(tempQuestions);
+      }
+
+
+    }
+    // console.log(tempQuestions,props.questions)
+
+    // eslint-disable-next-line
+  }, [questionIndex,props.questions,tempQuestions]);
+
+
+
+  const handleSetPage = (operator) => {
+    if (page === 1) {
+      setPage(2);
+      setQuestionIndex(0)
+    }
+    if (page === 2) {
+      handleSetQuestionObject()
+
+      if (questionIndex + 1 <= tempQuestions.length) {
+        if(operator === 'back'){
+          if (addQuestion===true){
+            toggleAddQuestion(false)
+          }
+          if(lastPage===true){
+            toggleLastPage()
+          }
+          if((questionIndex-1) <0){
+            setPage(1)
+          }
+          else{
+            setQuestionIndex(prevCount => prevCount - 1);
+          }
+        }
+        else{
+          setQuestionIndex(prevCount => prevCount + 1);
+        }
+      }
+
+    }
+  };
+
+
+  
+  const handleSetTempQuestion = (e) => {
+    setTempQuestion(e.target.value);
+  };
+
+  const handleSetTempCorrect = (e) => {
+    setTempCorrect(e.target.value);
+  };
+
+  const handleSetTempIncorrect = (index, e) => {
+    let temparray = [...tempIncorrectAnswers];
+    temparray[index] = e.target.value;
+    setTempIncorrectAnswers(temparray);
+  };
+
+  const handleAddIncorrectAnswer = () => {
+    let incorrectObj = {
+      index: tempIncorrectAnswers.length + 1,
+      answer: tempIncorrect,
+    };
+    setTempIncorrectAnswers([...tempIncorrectAnswers, incorrectObj]);
+    setTempIncorrect("");
+  };
+
+  // const handleSetQuestionObject=()=>{
+  //   let questionObj={
+  //     'question':tempQuestion,
+  //     'correct':tempCorrect,
+  //     'incorrect':tempIncorrectAnswers
+  //   }
+  //   setTrainingQuestions([...trainingQuestions, questionObj]);
+  // }
+
+  const handleResetForm = () => {
+    setTempQuestion("");
+    setTempCorrect("");
+    setTempIncorrect("");
+    setTempIncorrectAnswers([]);
+  };
+
+
+  const handleSetQuestionObject = () => {
+    let questionObj = {
+      question: tempQuestion,
+      correct: tempCorrect,
+      incorrect: tempIncorrectAnswers,
+    }
+    setTempQuestions(prevArray => 
+      prevArray.map((item, i) => (i === questionIndex ? questionObj : item))
+    );
+  };
+
+
+
+  const handleModifyTraining = () => {
+
+        modifyTraining(
+          props.trainingSelected,
+          props.title,
+          props.training_url,
+          props.trainingType,
+          props.pointValue,
+          props.difficulty
+        );
+        handleResetForm();
+        setPage(1)
+        toggleLastPage(false)
+        props.handleModifyOpen();
+  };
+
+  const handleAddQuestion=()=>{
+    handleSetQuestionObject()
+    setQuestionIndex(prevCount => prevCount + 1)
+    toggleAddQuestion()
+    setTempQuestion('')
+    setTempCorrect('')
+    setTempIncorrectAnswers([])
+  }
+
   return (
     <Modal open={props.modifyOpen} key="add">
       <ModalWrapper>
         <CloseButton close_action={props.handleModifyOpen} />
         <SectionTitle title_text={"Edit Training Lesson"} />
-        {props.modalPage === 1 ? (
+        {page === 1 ? (
           <>
             <SectionSubtitle
               subtitle_text={
@@ -369,7 +573,7 @@ export const ModifyTrainingModal = (props) => {
                 <SectionTitle title_text={"URL:"} />
                 <input
                   type="text"
-                  value={props.URL}
+                  value={props.training_url}
                   onChange={(e) => props.handleSetURL(e)}
                   style={{ height: "5vh", marginRight: "3vw", width: "95%" }}
                 />
@@ -405,7 +609,7 @@ export const ModifyTrainingModal = (props) => {
 
                 <SectionTitle title_text={"Difficulty:"} />
                 <select
-                  // value={props.difficulty}
+                  value={props.difficulty}
                   style={{ marginRight: "1vw" }}
                   onChange={props.handleSetDifficulty}
                 >
@@ -431,185 +635,153 @@ export const ModifyTrainingModal = (props) => {
               </div>
             </div>
           </>
-        ) : props.modalPage === 2 ? (
+        ) : page === 2 ? (
           <>
-            <SectionSubtitle
-              subtitle_text={
-                "Edit question 1, the correct answer, and three incorrect answers."
-              }
-            />
-            <Divider />
             <div
               style={{
                 display: "flex",
                 flexDirection: "column",
-                marginBottom: "1vh",
-                alignItems: "center",
+                width: "95%",
+                height: "60vh",
+                margin: "auto",
               }}
             >
-              <SectionTitle title_text={"Question 1:"} />
-              <input
-                type="text"
-                value={props.question1}
-                onChange={(e) => props.handleSetQuestion(1, e)}
-                style={{ height: "5vh", width: "95%" }}
-              />
-              <SectionTitle title_text={"Correct Answer:"} />
-              <input
-                type="text"
-                value={props.answer1}
-                onChange={(e) => props.handleSetAnswer(1, e)}
-                style={{ height: "5vh", width: "95%" }}
-              />
 
-              <SectionTitle title_text={"Incorrect 1:"} />
-              <input
-                type="text"
-                value={props.incorrect1_1}
-                onChange={(e) => props.handleSetIncorrect(1, 1, e)}
-                style={{ height: "5vh", width: "95%" }}
-              />
 
-              <SectionTitle title_text={"Incorrect 2:"} />
-              <input
-                type="text"
-                value={props.incorrect1_2}
-                onChange={(e) => props.handleSetIncorrect(1, 2, e)}
-                style={{ height: "5vh", width: "95%" }}
-              />
 
-              <SectionTitle title_text={"Incorrect 3:"} />
-              <input
-                type="text"
-                value={props.incorrect1_3}
-                onChange={(e) => props.handleSetIncorrect(1, 3, e)}
-                style={{ height: "5vh", width: "95%" }}
+
+
+              {addQuestion&&addQuestion ===true?
+              <>
+
+
+              </>
+              :
+              <>
+
+<SectionSubtitle
+                subtitle_text={"Edit Training Questions and Answers."}
               />
-            </div>
-          </>
-        ) : props.modalPage === 3 ? (
-          <>
-            <SectionSubtitle
-              subtitle_text={
-                "Edit question 2, the correct answer, and three incorrect answers."
+              <div
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  width: "95%",
+                  height: "60rem",
+                  backgroundColor: "lightgrey",
+                  overflowY: "scroll",
+                  margin: "auto",
+                  marginBottom: "1vh",
+                }}
+              >
+                <SectionTitle title_text={`Question:${questionIndex + 1}`} />
+                <input
+                  type="text"
+                  value={tempQuestion}
+                  onChange={(e) => handleSetTempQuestion(e)}
+                  style={{ height: "2rem", width: "95%", margin: "auto" }}
+                />
+
+                <SectionTitle title_text={"Correct Answer:"} />
+                <input
+                  type="text"
+                  value={tempCorrect}
+                  onChange={(e) => handleSetTempCorrect(e)}
+                  style={{ height: "3rem", width: "95%", margin: "auto" }}
+                />
+                <SectionTitle title_text={"Incorrect Answers:"} />
+
+                <div
+                  style={{
+                    display: "flex",
+                    flexDirection: "column",
+                    width: "100%",
+                    height: "50vh",
+                    justifyContent: "left",
+                    marginBottom: "2vh",
+                  }}
+                >
+                  {tempIncorrectAnswers &&
+                    tempIncorrectAnswers.slice().map((row, index) => {
+                      const { answer } = row;
+                      return (
+                        <>
+                          <div>
+                            <input
+                              type="text"
+                              value={row}
+                              onChange={(e) => handleSetTempIncorrect(index, e)}
+                              style={{
+                                height: "2rem",
+                                width: "95%",
+                                marginLeft: "1vw",
+                                marginBottom: "1vh",
+                              }}
+                            />
+                          </div>
+                        </>
+                      );
+                    })}
+                </div>
+              </div>
+
+
+
+              </>
+              
               }
-            />
-            <Divider />
-            <div
-              style={{
-                display: "flex",
-                flexDirection: "column",
-                marginBottom: "1vh",
-                alignItems: "center",
-              }}
-            >
-              <SectionTitle title_text={"Question 2:"} />
-              <input
-                type="text"
-                value={props.question2 ? props.question2 : ""}
-                onChange={(e) => props.handleSetQuestion(2, e)}
-                style={{ height: "5vh", width: "95%" }}
-              />
-              <SectionTitle title_text={"Correct Answer:"} />
-              <input
-                type="text"
-                value={props.answer2 ? props.answer2 : ""}
-                onChange={(e) => props.handleSetAnswer(2, e)}
-                style={{ height: "5vh", width: "95%" }}
-              />
 
-              <SectionTitle title_text={"Incorrect 1:"} />
-              <input
-                type="text"
-                value={props.incorrect2_1 ? props.incorrect2_1 : ""}
-                onChange={(e) => props.handleSetIncorrect(2, 1, e)}
-                style={{ height: "5vh", width: "95%" }}
-              />
 
-              <SectionTitle title_text={"Incorrect 2:"} />
-              <input
-                type="text"
-                value={props.incorrect2_2 ? props.incorrect2_2 : ""}
-                onChange={(e) => props.handleSetIncorrect(2, 2, e)}
-                style={{ height: "5vh", width: "95%" }}
-              />
 
-              <SectionTitle title_text={"Incorrect 3:"} />
-              <input
-                type="text"
-                value={props.incorrect2_3 ? props.incorrect2_3 : ""}
-                onChange={(e) => props.handleSetIncorrect(2, 3, e)}
-                style={{ height: "5vh", width: "95%" }}
-              />
-            </div>
-          </>
-        ) : props.modalPage === 4 ? (
-          <>
-            <SectionSubtitle
-              subtitle_text={
-                "Edit question 3, the correct answer, and three incorrect answers."
-              }
-            />
-            <Divider />
-            <div
-              style={{
-                display: "flex",
-                flexDirection: "column",
-                marginBottom: "1vh",
-                alignItems: "center",
-              }}
-            >
-              <SectionTitle title_text={"Question 3:"} />
-              <input
-                type="text"
-                value={props.question3 ? props.question3 : ""}
-                onChange={(e) => props.handleSetQuestion(3, e)}
-                style={{ height: "5vh", width: "95%" }}
-              />
-              <SectionTitle title_text={"Correct Answer:"} />
-              <input
-                type="text"
-                value={props.answer3 ? props.answer3 : ""}
-                onChange={(e) => props.handleSetAnswer(3, e)}
-                style={{ height: "5vh", width: "95%" }}
-              />
 
-              <SectionTitle title_text={"Incorrect 1:"} />
-              <input
-                type="text"
-                value={props.incorrect3_1 ? props.incorrect3_1 : ""}
-                onChange={(e) => props.handleSetIncorrect(3, 1, e)}
-                style={{ height: "5vh", width: "95%" }}
-              />
 
-              <SectionTitle title_text={"Incorrect 2:"} />
-              <input
-                type="text"
-                value={props.incorrect3_2 ? props.incorrect3_2 : ""}
-                onChange={(e) => props.handleSetIncorrect(3, 2, e)}
-                style={{ height: "5vh", width: "95%" }}
-              />
 
-              <SectionTitle title_text={"Incorrect 3:"} />
-              <input
-                type="text"
-                value={props.incorrect3_3 ? props.incorrect3_3 : ""}
-                onChange={(e) => props.handleSetIncorrect(3, 3, e)}
-                style={{ height: "5vh", width: "95%" }}
-              />
+
+
+
+
+
             </div>
           </>
         ) : (
           <></>
         )}
 
-        <div style={{ marginBottom: "1vh" }}>
-          <ModalButtons
-            confirm_text={props.modalPage !== 4 ? "Next" : "Submit"}
-            confirm_action={() => props.handleSetModalPage()}
+        <div
+          style={{
+            marginBottom: "1vh",
+            display: "flex",
+            flexDirection: "row",
+            justifyContent: "center",
+          }}
+        >
+          <CancelButton
+            cancel_action={() => props.handleAddOpen()}
             cancel_text={"Cancel"}
-            cancel_action={props.handleAddOpen}
           />
+          <ConfirmButton
+            confirm_action={() => handleSetPage("back")}
+            confirm_text={"Back"}
+          />
+          {lastPage === true ? (
+            <>
+              {/* <ConfirmButton
+                confirm_action={() => handleAddQuestion()}
+                confirm_text={"Add"}
+              /> */}
+              <ConfirmButton
+                confirm_action={() => handleSetPage()}
+                confirm_text={"Submit"}
+              />
+            </>
+          ) : (
+            <>
+              <ConfirmButton
+                confirm_action={() => handleSetPage()}
+                confirm_text={"Next"}
+              />
+            </>
+          )}
         </div>
       </ModalWrapper>
     </Modal>
@@ -617,7 +789,6 @@ export const ModifyTrainingModal = (props) => {
 };
 
 export const AdminTrainingTable = (props) => {
-  //console.log(props);
   const updateData = (sortedData) => {
     props.setOrgTrainings(sortedData);
   };
@@ -632,67 +803,53 @@ export const AdminTrainingTable = (props) => {
         width: "77.5vw",
       }}
     >
-      <TableCard style={{ boxShadow: "1px 1px 6px 2px gray" }}>
+      <TableCard
+        style={{ boxShadow: "1px 1px 6px 2px gray", overflowY: "scroll" }}
+      >
         <CardMediaStyle />
         <Table style={{}}>
-          <div style={{ height: "40vh", width: "77.5vw", overflowY: "scroll" }}>
-            <ListHead
-              headLabel={ADMIN_TRAINING_HEADERS}
-              tableData={props.orgTrainings}
-              updateData={updateData}
-            />
-            <TableBody>
-              {props.orgTrainings &&
-                props.orgTrainings.slice().map((row) => {
-                  const {
-                    id,
-                    title,
-                    training_url,
-                    training_type,
-                    point_value,
-                    difficulty,
-                    question1,
-                    answer1,
-                    incorrect1_1,
-                    incorrect1_2,
-                    incorrect1_3,
-                    question2,
-                    answer2,
-                    incorrect2_1,
-                    incorrect2_2,
-                    incorrect2_3,
-                    question3,
-                    answer3,
-                    incorrect3_1,
-                    incorrect3_2,
-                    incorrect3_3,
-                  } = row;
-                  return (
-                    <ProjectRow
-                      sx={{
-                        "&:hover": {
-                          backgroundColor: "rgba(145, 165, 172, 0.5)",
-                          cursor: "pointer",
-                        },
-                      }}
-                      align="center"
-                      key={row}
-                      tabIndex={-1}
-                      onClick={() => props.handleSetTrainingSelected(row)}
-                      onDoubleClick={() => {
-                        window.open(training_url);
-                      }}
-                      selected={props.trainingSelected === id}
-                    >
-                      <ProjectCell entry={<strong>{title}</strong>} />
-                      <ProjectCell entry={difficulty} />
-                      <ProjectCell entry={point_value} />
-                      <ProjectCell entry={training_url} />
-                    </ProjectRow>
-                  );
-                })}
-            </TableBody>
-          </div>
+          <ListHead
+            headLabel={ADMIN_TRAINING_HEADERS}
+            tableData={props.orgTrainings}
+            updateData={updateData}
+          />
+          <TableBody>
+            {props.orgTrainings &&
+              props.orgTrainings.slice().map((row) => {
+                const {
+                  id,
+                  title,
+                  training_url,
+                  training_type,
+                  point_value,
+                  difficulty,
+                  questions,
+                } = row;
+                return (
+                  <ProjectRow
+                    sx={{
+                      "&:hover": {
+                        backgroundColor: "rgba(145, 165, 172, 0.5)",
+                        cursor: "pointer",
+                      },
+                    }}
+                    align="center"
+                    key={row}
+                    tabIndex={-1}
+                    onClick={() => props.handleSetTrainingSelected(row)}
+                    onDoubleClick={() => {
+                      window.open(training_url);
+                    }}
+                    selected={props.trainingSelected === id}
+                  >
+                    <ProjectCell entry={<strong>{title}</strong>} />
+                    <ProjectCell entry={difficulty} />
+                    <ProjectCell entry={point_value} />
+                    <ProjectCell entry={training_url} />
+                  </ProjectRow>
+                );
+              })}
+          </TableBody>
         </Table>
       </TableCard>
     </div>

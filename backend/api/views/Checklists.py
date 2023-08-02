@@ -506,6 +506,7 @@ class ChecklistAPI(MethodView):
                     confirmed_and_completed.append(checklist_obj)
                 if checklist_obj["stale"] is True:
                     stale_started_checklists.append(checklist_obj)
+        print(inactive_checklists)
         return {
             "active_checklists": active_checklists,
             "inactive_checklists": inactive_checklists,

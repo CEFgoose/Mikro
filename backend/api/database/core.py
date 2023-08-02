@@ -193,27 +193,37 @@ class Training(ModelWithSoftDeleteAndCRUD, SurrogatePK, db.Model):
     point_value = db.Column(db.Integer, nullable=True)
     training_url = db.Column(db.String, nullable=True)
     difficulty = db.Column(db.String, nullable=True)
-    question_1 = db.Column(db.String, nullable=True)
-    answer_1 = db.Column(db.String, nullable=True)
-    incorrect1_1 = db.Column(db.String, nullable=True)
-    incorrect1_2 = db.Column(db.String, nullable=True)
-    incorrect1_3 = db.Column(db.String, nullable=True)
-    question_2 = db.Column(db.String, nullable=True)
-    answer_2 = db.Column(db.String, nullable=True)
-    incorrect2_1 = db.Column(db.String, nullable=True)
-    incorrect2_2 = db.Column(db.String, nullable=True)
-    incorrect2_3 = db.Column(db.String, nullable=True)
-    question_3 = db.Column(db.String, nullable=True)
-    answer_3 = db.Column(db.String, nullable=True)
-    incorrect3_1 = db.Column(db.String, nullable=True)
-    incorrect3_2 = db.Column(db.String, nullable=True)
-    incorrect3_3 = db.Column(db.String, nullable=True)
-    question_4 = db.Column(db.String, nullable=True)
-    answer_4 = db.Column(db.String, nullable=True)
-    incorrect4_1 = db.Column(db.String, nullable=True)
-    incorrect4_2 = db.Column(db.String, nullable=True)
-    incorrect4_3 = db.Column(db.String, nullable=True)
-    incorrect4_3 = db.Column(db.String, nullable=True)
+    # retries = db.Column(db.Integer, nullable=False)
+
+class TrainingQuestion(ModelWithSoftDeleteAndCRUD, SurrogatePK, db.Model):
+    __tablename__ = "training_question"
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    training_id = db.Column(
+        db.BigInteger,
+        db.ForeignKey("training.id", ondelete="CASCADE"),
+        nullable=True,
+    )
+    question = db.Column(db.String, nullable=True)
+
+class TrainingQuestionAnswer(ModelWithSoftDeleteAndCRUD, SurrogatePK, db.Model):
+    __tablename__ = "training_question_answer"
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    training_id = db.Column(
+        db.BigInteger,
+        db.ForeignKey("training.id", ondelete="CASCADE"),
+        nullable=True,
+    )
+    training_question_id = db.Column(
+        db.BigInteger,
+        db.ForeignKey("training_question.id", ondelete="CASCADE"),
+        nullable=True,
+    )
+    value = db.Column(db.Boolean)
+    answer = db.Column(db.String, nullable=True)
+
+
+
+
 
 
 class TrainingCompleted(CRUDMixin, SurrogatePK, db.Model):

@@ -277,7 +277,7 @@ class TaskAPI(MethodView):
         for task_id in user_task_ids:
             target_user = User.query.filter_by(id=user.id).first()
             target_task = Task.query.filter_by(task_id=task_id).first()
-            if not target_task.invalidated:
+            if target_task and not target_task.invalidated:
                 invalid_tasks_url = (
                     "https://tasks.kaart.com/api/v2/projects/%s/tasks/%s/"
                     % (project_id, task_id)

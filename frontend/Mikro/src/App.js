@@ -66,6 +66,7 @@ function App() {
       "google_translate_element"
     );
   };
+
   useEffect(() => {
     var addScript = document.createElement("script");
     addScript.setAttribute(

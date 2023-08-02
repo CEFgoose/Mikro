@@ -33,7 +33,7 @@ export const MenuItem = styled.a`
   align-items: center;
   height: 6vh;
   padding-left: 1vw;
-  margin-top: 3vh;
+  margin-top: 1.5vh;
   color: #253e45 !important;
   // display: block;
   box-sizing: border-box;
@@ -163,15 +163,12 @@ export const Header = styled.a`
 `;
 
 export const RoleBarWrapper = styled.div`
-  /* padding-top: 0.5vw; */
   text-align: center;
-  margin: auto;
+  // margin: auto;
   margin-top: 1rem;
   margin-bottom: 1rem;
   height: 1.5rem;
-  width: 16rem;
-  // background: rgba(145, 165, 172, 0.2);
-  border-radius: 6px;
+  width: 16vw;
 `;
 
 export const RoleHeader = styled.h6`

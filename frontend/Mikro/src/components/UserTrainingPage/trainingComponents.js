@@ -1,5 +1,6 @@
-import React from "react";
+import React ,{useEffect,useState,useContext}from "react";
 import { Modal, Table, TableBody, TablePagination } from "@mui/material";
+import { DataContext } from "common/DataContext";
 import {
   ProjectRow,
   CardMediaStyle,
@@ -22,13 +23,50 @@ export const USER_TRAINING_HEADERS = [
 ];
 
 export const TrainingQuizModal = (props) => {
+
+  const {
+    shuffleArray,
+  } = useContext(DataContext);
+
+  const[answers,setAnswers]=useState([])
+
+  const[tempAnswer,setTempAnswer]=useState(null)
+
+  useEffect(() => {
+    let tempArray=[]
+    if(props.questions.length>0){
+      console.log(props.questions[0].questions[props.questionIndex].question)
+      for (let i = 0; i < props.questions[0].questions[props.questionIndex].incorrect.length; i++) {
+        tempArray.push(props.questions[0].questions[props.questionIndex].incorrect[i])
+      }
+      tempArray.push(props.questions[0].questions[props.questionIndex].correct)
+      setAnswers(shuffleArray(tempArray))
+    }
+
+    // eslint-disable-next-line
+  }, [props.questionIndex,props.questions]);
+
+
+  const handleSetAnswer=(value)=>{
+    let tempArray=props.results
+    setTempAnswer(value)
+    if(value=== props.questions[0].questions[props.questionIndex].correct){
+      tempArray.push(true)
+    }
+    else{
+      tempArray.push(false)
+    }
+    props.setResults(tempArray)
+
+  }
+
   return (
     <Modal open={props.quizOpen} key="add">
       <ModalWrapper>
         <CloseButton close_action={props.handleQuizOpen} />
         <SectionTitle title_text={`Test our for training: ${props.title}`} />
-        {props.modalPage === 1 ? (
-          <>
+
+
             <div
               style={{
                 width: "100%",
@@ -37,7 +75,9 @@ export const TrainingQuizModal = (props) => {
                 marginBottom: "2vh",
               }}
             />
-            <SectionSubtitle subtitle_text={`Question 1: ${props.question1}`} />
+            {props.questions&&props.questions.length>0?(
+            <>
+            <SectionSubtitle subtitle_text={`Question ${props.questionIndex +1}: ${props.questions[0].questions[props.questionIndex].question}?`} />
             <div
               style={{
                 display: "flex",
@@ -46,7 +86,7 @@ export const TrainingQuizModal = (props) => {
                 marginBottom: "3vh",
               }}
             >
-              {props.answers1.map((answer, index) => (
+              {answers.map((answer, index) => (
                 <div
                   key={index}
                   style={{ display: "flex", flexDirection: "row" }}
@@ -55,158 +95,37 @@ export const TrainingQuizModal = (props) => {
                     type="radio"
                     value={answer}
                     name="private"
-                    onChange={() => props.handleAnswerSelected(answer)}
-                    checked={props.selectedAnswer === answer}
+                    onChange={() => handleSetAnswer(answer)}
+                    checked={tempAnswer=== answer}
                     style={{ marginLeft: "6.5vw" }}
                   />
                   <SectionSubtitle subtitle_text={answer} />
                 </div>
               ))}
             </div>
-            <div
-              style={{
-                width: "100%",
-                backgroundColor: "black",
-                height: ".05vh",
-                marginBottom: "1vh",
-              }}
-            />
           </>
-        ) : props.modalPage === 2 ? (
-          <>
-            <div
-              style={{
-                width: "100%",
-                backgroundColor: "black",
-                height: ".05vh",
-                marginBottom: "2vh",
-              }}
-            />
-            <SectionSubtitle subtitle_text={`Question 2: ${props.question2}`} />
-            <div
-              style={{
-                display: "flex",
-                flexDirection: "column",
-                marginLeft: "6vw",
-                marginBottom: "3vh",
-              }}
-            >
-              {props.answers2.map((answer, index) => (
-                <div
-                  key={index}
-                  style={{ display: "flex", flexDirection: "row" }}
-                >
-                  <input
-                    type="radio"
-                    value={answer}
-                    name="private"
-                    onChange={() => props.handleAnswerSelected(answer)}
-                    checked={props.selectedAnswer === answer}
-                    style={{ marginLeft: "6.5vw" }}
-                  />
-                  <SectionSubtitle subtitle_text={answer} />
-                </div>
-              ))}
-            </div>
-            <div
-              style={{
-                width: "100%",
-                backgroundColor: "black",
-                height: ".05vh",
-                marginBottom: "1vh",
-              }}
-            />
-          </>
-        ) : props.modalPage === 3 ? (
-          <>
-            <div
-              style={{
-                width: "100%",
-                backgroundColor: "black",
-                height: ".05vh",
-                marginBottom: "2vh",
-              }}
-            />
-            <SectionSubtitle subtitle_text={`Question 3: ${props.question3}`} />
-            <div
-              style={{
-                display: "flex",
-                flexDirection: "column",
-                marginLeft: "6vw",
-                marginBottom: "3vh",
-              }}
-            >
-              {props.answers3.map((answer, index) => (
-                <div
-                  key={index}
-                  style={{ display: "flex", flexDirection: "row" }}
-                >
-                  <input
-                    type="radio"
-                    value={answer}
-                    name="private"
-                    onChange={() => props.handleAnswerSelected(answer)}
-                    checked={props.selectedAnswer === answer}
-                    style={{ marginLeft: "6.5vw" }}
-                  />
-                  <SectionSubtitle subtitle_text={answer} />
-                </div>
-              ))}
-            </div>
-            <div
-              style={{
-                width: "100%",
-                backgroundColor: "black",
-                height: ".05vh",
-                marginBottom: "1vh",
-              }}
-            />
-          </>
-        ) : props.modalPage === 4 ? (
-          <>
-            <SectionSubtitle subtitle_text={"Quiz Complete"} />
-          </>
-        ) : (
-          <>
-            <SectionSubtitle subtitle_text={props.quizResultsText} />
-          </>
-        )}
-        {props.modalPage !== 5 ? (
-          <>
+         ) 
+          :(<></>)
+          }
+
+
             <div style={{ marginBottom: "1vh" }}>
               <ModalButtons
                 confirm_text={props.confirmButtonText}
-                confirm_action={() => props.handleSetModalPage()}
+                confirm_action={()=>props.handleChangeQuestionIndex()}
                 cancel_text={"Cancel"}
                 cancel_action={props.handleQuizOpen}
               />
             </div>
-          </>
-        ) : (
-          <>
-            <div
-              style={{
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "center",
-                marginTop: "2vh",
-                marginBottom: "1vh",
-              }}
-            >
-              <CancelButton
-                cancel_action={() => props.handleQuizOpen()}
-                cancel_text={"Close"}
-              />
-            </div>
-          </>
-        )}
+
+
+
       </ModalWrapper>
     </Modal>
   );
 };
 
 export const UserTrainingTable = (props) => {
-  //console.log(props);
   const updateData = (sortedData) => {
     props.setOrgTrainings(sortedData);
   };
@@ -221,69 +140,54 @@ export const UserTrainingTable = (props) => {
         width: "77.5vw",
       }}
     >
-      <TableCard style={{ boxShadow: "1px 1px 6px 2px gray" }}>
+      <TableCard
+        style={{ boxShadow: "1px 1px 6px 2px gray", overflowY: "scroll" }}
+      >
         <CardMediaStyle />
         <Table style={{}}>
-          <div style={{ height: "40vh", width: "77.5vw", overflowY: "scroll" }}>
-            <ListHead
-              headLabel={USER_TRAINING_HEADERS}
-              tableData={props.orgTrainings}
-              updateData={updateData}
-            />
-            <TableBody>
-              {props.orgTrainings &&
-                props.orgTrainings
-                  .slice(
-                    props.page * props.rowsPerPage,
-                    props.page * props.rowsPerPage + props.rowsPerPage
-                  )
-                  .map((row) => {
-                    const {
-                      id,
-                      title,
-                      training_url,
-                      training_type,
-                      point_value,
-                      difficulty,
-                      question1,
-                      answer1,
-                      incorrect1_1,
-                      incorrect1_2,
-                      incorrect1_3,
-                      question2,
-                      answer2,
-                      incorrect2_1,
-                      incorrect2_2,
-                      incorrect2_3,
-                      question3,
-                      answer3,
-                      incorrect3_1,
-                      incorrect3_2,
-                      incorrect3_3,
-                    } = row;
-                    return (
-                      <ProjectRow
-                        sx={{
-                          "&:hover": {
-                            backgroundColor: "rgba(145, 165, 172, 0.5)",
-                            cursor: "pointer",
-                          },
-                        }}
-                        align="center"
-                        key={row}
-                        tabIndex={-1}
-                        onClick={() => props.handleSetTrainingSelected(row)}
-                        selected={props.trainingSelected === id}
-                      >
-                        <ProjectCell entry={<strong>{title}</strong>} />
-                        <ProjectCell entry={difficulty} />
-                        <ProjectCell entry={point_value} />
-                        <ProjectCell entry={training_url} />
-                      </ProjectRow>
-                    );
-                  })}
-            </TableBody>
-          </div>
+          <ListHead
+            headLabel={USER_TRAINING_HEADERS}
+            tableData={props.orgTrainings}
+            updateData={updateData}
+          />
+          <TableBody>
+            {props.orgTrainings &&
+              props.orgTrainings
+                .slice(
+                  props.page * props.rowsPerPage,
+                  props.page * props.rowsPerPage + props.rowsPerPage
+                )
+                .map((row) => {
+                  const {
+                    id,
+                    title,
+                    training_url,
+                    training_type,
+                    point_value,
+                    difficulty,
+                  } = row;
+                  return (
+                    <ProjectRow
+                      sx={{
+                        "&:hover": {
+                          backgroundColor: "rgba(145, 165, 172, 0.5)",
+                          cursor: "pointer",
+                        },
+                      }}
+                      align="center"
+                      key={row}
+                      tabIndex={-1}
+                      onClick={() => props.handleSetTrainingSelected(row)}
+                      selected={props.trainingSelected === id}
+                    >
+                      <ProjectCell entry={<strong>{title}</strong>} />
+                      <ProjectCell entry={difficulty} />
+                      <ProjectCell entry={point_value} />
+                      <ProjectCell entry={training_url} />
+                    </ProjectRow>
+                  );
+                })}
+          </TableBody>
         </Table>
       </TableCard>
     </div>

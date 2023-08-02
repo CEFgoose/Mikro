@@ -35,31 +35,21 @@ export const AdminTrainingPage = () => {
   const { refresh, user } = useContext(AuthContext);
   const [page, setPage] = useState(0);
   const [modalPage, setModalPage] = useState(1);
-  const [rowsPerPage, setRowsPerPage] = useState(10);
   const [addOpen, toggleAddOpen] = useToggle(false);
   const [deleteOpen, toggleDeleteOpen] = useToggle(false);
   const [modifyOpen, toggleModifyOpen] = useToggle(false);
-  const [trainingSelected, setTrainingSelected] = useState();
-  const [training_url, setURL] = useState(null);
+
+  const [trainingSelected, setTrainingSelected] = useState(null);
+  const [trainingSelectedTitle, setTrainingSelectedTitle] = useState(null);
+  const [trainingSelectedURL, setTrainingSelectedURL] = useState(null);
+  const [trainingSelectedValue, setTrainingSelectedValue] = useState(null);
+  const [trainingSelectedQuestions, setTrainingSelectedQuestions] =
+    useState(null);
+  const [trainingSelectedDifficulty, setTrainingSelectedDifficulty] =
+    useState(null);
+
   const [training_type, setTrainingType] = useState("Mapping");
-  const [point_value, setPointValue] = useState(null);
-  const [difficulty, setDifficulty] = useState(null);
-  const [title, setTitle] = useState(null);
-  const [question1, setQuestion1] = useState(null);
-  const [answer1, setAnswer1] = useState(null);
-  const [incorrect1_1, setIncorrect1_1] = useState(null);
-  const [incorrect1_2, setIncorrect1_2] = useState(null);
-  const [incorrect1_3, setIncorrect1_3] = useState(null);
-  const [question2, setQuestion2] = useState(null);
-  const [answer2, setAnswer2] = useState(null);
-  const [incorrect2_1, setIncorrect2_1] = useState(null);
-  const [incorrect2_2, setIncorrect2_2] = useState(null);
-  const [incorrect2_3, setIncorrect2_3] = useState(null);
-  const [question3, setQuestion3] = useState(null);
-  const [answer3, setAnswer3] = useState(null);
-  const [incorrect3_1, setIncorrect3_1] = useState(null);
-  const [incorrect3_2, setIncorrect3_2] = useState(null);
-  const [incorrect3_3, setIncorrect3_3] = useState(null);
+
   const [activeTab, setActiveTab] = useState(1);
 
   useEffect(() => {
@@ -76,156 +66,14 @@ export const AdminTrainingPage = () => {
     // eslint-disable-next-line
   }, [activeTab]);
 
-  const handleSetQuestion = (number, e) => {
-    if (number === 1) {
-      setQuestion1(e.target.value);
-    }
-    if (number === 2) {
-      setQuestion2(e.target.value);
-    }
-    if (number === 3) {
-      setQuestion3(e.target.value);
-    }
-  };
-
-  const handleSetAnswer = (number, e) => {
-    if (number === 1) {
-      setAnswer1(e.target.value);
-    }
-    if (number === 2) {
-      setAnswer2(e.target.value);
-    }
-    if (number === 3) {
-      setAnswer3(e.target.value);
-    }
-  };
-
-  const handleSetIncorrect = (number, count, e) => {
-    if (number === 1) {
-      if (count === 1) {
-        setIncorrect1_1(e.target.value);
-      }
-      if (count === 2) {
-        setIncorrect1_2(e.target.value);
-      }
-      if (count === 3) {
-        setIncorrect1_3(e.target.value);
-      }
-    }
-    if (number === 2) {
-      if (count === 1) {
-        setIncorrect2_1(e.target.value);
-      }
-      if (count === 2) {
-        setIncorrect2_2(e.target.value);
-      }
-      if (count === 3) {
-        setIncorrect2_3(e.target.value);
-      }
-    }
-    if (number === 3) {
-      if (count === 1) {
-        setIncorrect3_1(e.target.value);
-      }
-      if (count === 2) {
-        setIncorrect3_2(e.target.value);
-      }
-      if (count === 3) {
-        setIncorrect3_3(e.target.value);
-      }
-    }
-  };
-
-  const handleSetModalPage = () => {
-    if (modalPage === 1) {
-      if (URL && difficulty && point_value) {
-        setModalPage(2);
-        return;
-      }
-    }
-    if (modalPage === 2) {
-      if (
-        question1 &&
-        answer1 &&
-        incorrect1_1 &&
-        incorrect1_2 &&
-        incorrect1_3
-      ) {
-        setModalPage(3);
-        return;
-      }
-    }
-    if (modalPage === 3) {
-      if (
-        question2 &&
-        answer2 &&
-        incorrect2_1 &&
-        incorrect2_2 &&
-        incorrect2_3
-      ) {
-        setModalPage(4);
-        return;
-      }
-    } else {
-      if (
-        question3 &&
-        answer3 &&
-        incorrect3_1 &&
-        incorrect3_2 &&
-        incorrect3_3
-      ) {
-        if (addOpen) {
-          handleCreateTraining();
-          return;
-        } else if (modifyOpen) {
-          handleModifyTraining();
-          return;
-        }
-      }
-    }
-  };
-
   const handleSetTrainingSelected = (training) => {
+    console.log(training)
     setTrainingSelected(training.id);
-    setTitle(training.title);
-    setURL(training.training_url);
-    setPointValue(training.point_value);
-    setDifficulty(training.difficulty);
-    setQuestion1(training.question1);
-    setQuestion2(training.question2);
-    setQuestion3(training.question3);
-    setAnswer1(training.answer1);
-    setAnswer2(training.answer2);
-    setAnswer3(training.answer3);
-    setIncorrect1_1(training.incorrect1_1);
-    setIncorrect1_2(training.incorrect1_2);
-    setIncorrect1_3(training.incorrect1_3);
-    setIncorrect2_1(training.incorrect2_1);
-    setIncorrect2_2(training.incorrect2_2);
-    setIncorrect2_3(training.incorrect2_3);
-    setIncorrect3_1(training.incorrect3_1);
-    setIncorrect3_2(training.incorrect3_2);
-    setIncorrect3_3(training.incorrect3_3);
-  };
-
-  const handleSetTitle = (e) => {
-    setTitle(e.target.value);
-  };
-
-  const handleSetURL = (e) => {
-    setURL(e.target.value);
-  };
-
-  const handleSetPointValue = (e) => {
-    setPointValue(e.target.value);
-  };
-
-  const handleSetDifficulty = (e) => {
-    setDifficulty(e.target.value);
-  };
-
-  const handleChangeRowsPerPage = (e) => {
-    setRowsPerPage(e.target.value);
+    setTrainingSelectedTitle(training.title);
+    setTrainingSelectedURL(training.training_url);
+    setTrainingSelectedValue(training.point_value);
+    setTrainingSelectedQuestions(training.questions);
+    setTrainingSelectedDifficulty(training.difficulty);
   };
 
   const handleViewSidebar = () => {
@@ -242,25 +90,7 @@ export const AdminTrainingPage = () => {
   const handleAddOpen = () => {
     setModalPage(1);
     setTrainingSelected(null);
-    setTitle(null);
-    setURL(null);
-    setPointValue(null);
-    setDifficulty(null);
-    setQuestion1(null);
-    setQuestion2(null);
-    setQuestion3(null);
-    setAnswer1(null);
-    setAnswer2(null);
-    setAnswer3(null);
-    setIncorrect1_1(null);
-    setIncorrect1_2(null);
-    setIncorrect1_3(null);
-    setIncorrect2_1(null);
-    setIncorrect2_2(null);
-    setIncorrect2_3(null);
-    setIncorrect3_1(null);
-    setIncorrect3_2(null);
-    setIncorrect3_3(null);
+
     toggleAddOpen();
   };
 
@@ -269,8 +99,24 @@ export const AdminTrainingPage = () => {
   };
 
   const handleDeleteTraining = () => {
-    deleteTraining(trainingSelected, title);
+    deleteTraining(trainingSelected, trainingSelectedTitle);
     handleDeleteOpen();
+  };
+
+  const handleSetTitle = (e) => {
+    setTrainingSelectedTitle(e.target.value);
+  };
+
+  const handleSetURL = (e) => {
+    setTrainingSelectedURL(e.target.value);
+  };
+
+  const handleSetPointValue = (e) => {
+    setTrainingSelectedValue(e.target.value);
+  };
+
+  const handleSetDifficulty = (e) => {
+    setTrainingSelectedDifficulty(e.target.value);
   };
 
   const handleSetActiveTab = (e) => {
@@ -286,55 +132,8 @@ export const AdminTrainingPage = () => {
     setActiveTab(e.target.value);
   };
 
-  const handleCreateTraining = () => {
-    createTraining(
-      title,
-      training_url,
-      training_type,
-      point_value,
-      difficulty,
-      question1,
-      answer1,
-      incorrect1_1,
-      incorrect1_2,
-      incorrect1_3,
-      question2,
-      answer2,
-      incorrect2_1,
-      incorrect2_2,
-      incorrect2_3,
-      question3,
-      answer3,
-      incorrect3_1,
-      incorrect3_2,
-      incorrect3_3
-    );
-    handleAddOpen();
-  };
   const handleModifyTraining = () => {
-    modifyTraining(
-      trainingSelected,
-      title,
-      training_url,
-      training_type,
-      point_value,
-      difficulty,
-      question1,
-      answer1,
-      incorrect1_1,
-      incorrect1_2,
-      incorrect1_3,
-      question2,
-      answer2,
-      incorrect2_1,
-      incorrect2_2,
-      incorrect2_3,
-      question3,
-      answer3,
-      incorrect3_1,
-      incorrect3_2,
-      incorrect3_3
-    );
+    modifyTraining();
     handleModifyOpen();
   };
 
@@ -343,73 +142,31 @@ export const AdminTrainingPage = () => {
       <AddTrainingModal
         addOpen={addOpen}
         handleAddOpen={handleAddOpen}
-        URL={training_url}
-        handleSetURL={handleSetURL}
-        pointValue={point_value}
-        handleSetPointValue={handleSetPointValue}
-        difficulty={difficulty}
-        handleSetDifficulty={handleSetDifficulty}
-        title={title}
-        handleSetTitle={handleSetTitle}
+        trainingType={"Mapping"}
         modalPage={modalPage}
-        handleSetModalPage={handleSetModalPage}
-        question1={question1}
-        answer1={answer1}
-        incorrect1_1={incorrect1_1}
-        incorrect1_2={incorrect1_2}
-        incorrect1_3={incorrect1_3}
-        question2={question2}
-        answer2={answer2}
-        incorrect2_1={incorrect2_1}
-        incorrect2_2={incorrect2_2}
-        incorrect2_3={incorrect2_3}
-        question3={question3}
-        answer3={answer3}
-        incorrect3_1={incorrect3_1}
-        incorrect3_2={incorrect3_2}
-        incorrect3_3={incorrect3_3}
-        handleSetQuestion={handleSetQuestion}
-        handleSetAnswer={handleSetAnswer}
-        handleSetIncorrect={handleSetIncorrect}
-        handleCreateTraining={handleCreateTraining}
       />
       <ModifyTrainingModal
         modifyOpen={modifyOpen}
         handleModifyOpen={handleModifyOpen}
-        URL={training_url}
-        handleSetURL={handleSetURL}
-        pointValue={point_value}
-        handleSetPointValue={handleSetPointValue}
-        difficulty={difficulty}
-        handleSetDifficulty={handleSetDifficulty}
-        title={title}
-        handleSetTitle={handleSetTitle}
-        modalPage={modalPage}
-        handleSetModalPage={handleSetModalPage}
-        question1={question1}
-        answer1={answer1}
-        incorrect1_1={incorrect1_1}
-        incorrect1_2={incorrect1_2}
-        incorrect1_3={incorrect1_3}
-        question2={question2}
-        answer2={answer2}
-        incorrect2_1={incorrect2_1}
-        incorrect2_2={incorrect2_2}
-        incorrect2_3={incorrect2_3}
-        question3={question3}
-        answer3={answer3}
-        incorrect3_1={incorrect3_1}
-        incorrect3_2={incorrect3_2}
-        incorrect3_3={incorrect3_3}
-        handleSetQuestion={handleSetQuestion}
-        handleSetAnswer={handleSetAnswer}
-        handleSetIncorrect={handleSetIncorrect}
         handleModifyTraining={handleModifyTraining}
+        difficulty={trainingSelectedDifficulty}
+        title={trainingSelectedTitle}
+        training_url={trainingSelectedURL}
+        pointValue={trainingSelectedValue}
+        questions={trainingSelectedQuestions}
+        trainingSelectedQuestions={trainingSelectedQuestions}
+        trainingSelected={trainingSelected}
+        trainingType={"Mapping"}
+        handleSetTitle={handleSetTitle}
+        handleSetURL={handleSetURL}
+        handleSetPointValue={handleSetPointValue}
+        setTrainingSelectedQuestions={setTrainingSelectedQuestions}
+        handleSetDifficulty={handleSetDifficulty}
       />
       <DeleteTrainingModal
         deleteOpen={deleteOpen}
         handleDeleteOpen={handleDeleteOpen}
-        training_title={title}
+        training_title={trainingSelectedTitle}
         handleDeleteTraining={handleDeleteTraining}
       />
       <div
@@ -487,10 +244,7 @@ export const AdminTrainingPage = () => {
               </TabList>
               <TabPanel>
                 <AdminTrainingTable
-                  rowsPerPage={rowsPerPage}
-                  page={page}
-                  setPage={setPage}
-                  handleChangeRowsPerPage={handleChangeRowsPerPage}
+                  training_type={training_type}
                   orgTrainings={orgMappingTrainings}
                   setOrgTrainings={setOrgMappingTrainings}
                   trainingSelected={trainingSelected}
@@ -499,10 +253,6 @@ export const AdminTrainingPage = () => {
               </TabPanel>
               <TabPanel>
                 <AdminTrainingTable
-                  rowsPerPage={rowsPerPage}
-                  page={page}
-                  setPage={setPage}
-                  handleChangeRowsPerPage={handleChangeRowsPerPage}
                   trainingSelected={trainingSelected}
                   orgTrainings={orgValidationTrainings}
                   setOrgTrainings={setOrgValidationTrainings}
@@ -511,10 +261,6 @@ export const AdminTrainingPage = () => {
               </TabPanel>
               <TabPanel>
                 <AdminTrainingTable
-                  rowsPerPage={rowsPerPage}
-                  page={page}
-                  setPage={setPage}
-                  handleChangeRowsPerPage={handleChangeRowsPerPage}
                   trainingSelected={trainingSelected}
                   handleSetTrainingSelected={handleSetTrainingSelected}
                   orgTrainings={orgProjectTrainings}

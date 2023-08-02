@@ -13,10 +13,11 @@ import users_icon from "../../images/newIcons/round2/users_1.png";
 import training_icon from "../../images/newIcons/round2/training_1.png";
 import payments_icon from "../../images/newIcons/round2/payments.png";
 import account_icon from "../../images/newIcons/round2/account.png";
-import faq_icon from "../../images/question.png";
+import faq_icon from "../../images/faq alt 2.jpg";
 import logouticon from "../../images/newIcons/round2/log out.png";
 import leftArrow from "../../images/newIcons/round2/kaart back_1.png";
-import mikro_icon from "../../images/5.png";
+
+import mikroLogo from "../../images/5.png";
 
 import "./styles.css";
 import {
@@ -128,47 +129,72 @@ const Sidebar = (props) => {
     <div>
       {sidebarOpen ? (
         <SidebarOpenedContainer>
-          <MenuItemTop style={{ marginBottom: "20%" }}>
-            <RoleBarWrapper>
+          <MenuItemTop style={{ marginBottom: "1vh" }}>
+            {/* <RoleBarWrapper> */}
+            <div
+              style={{
+                display: "flex",
+                flexDirection: "row",
+                width: "100%",
+                height: "auto",
+                alignItems: "left",
+                justifyContent: "left",
+                // backgroundColor:'lightgreen'
+              }}
+            >
               <div
                 style={{
                   display: "flex",
-                  flexDirection: "row",
+                  flexDirection: "column",
+                  // backgroundColor:'lightgrey',
+                  marginLeft: "5%",
+                  marginTop: "5%",
+                  width: "auto",
+                  height: "auto",
+                  justifyContent: "center",
                   alignItems: "center",
                 }}
               >
-                <div
+                <img
+                  alt={"Mikro logo"}
+                  src={mikroLogo}
                   style={{
-                    display: "flex",
-                    flexDirection: "row",
-                    alignItems: "center",
+                    width: "4rem",
+                    height: "auto",
                   }}
-                >
-                  <MikroLogoOpen />
-                </div>
-                <div
-                  style={{
-                    display: "flex",
-                    flexDirection: "column",
-                    alignItems: "center",
-                  }}
-                >
-                  <RoleHeader>{<strong>{name}</strong>}</RoleHeader>
-                  <RoleSubHeader>{<strong>{role}</strong>}</RoleSubHeader>
-                </div>
+                />
+                MIKRO
               </div>
+
               <div
                 style={{
-                  width: "100%",
-                  backgroundColor: "black",
-                  height: ".05vh",
-                  marginTop: "0%",
-                  marginBottom: "2vh",
+                  width: "5rem",
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  // backgroundColor:'lightgreen',
+                  marginTop: "5%",
+                  marginLeft: "2rem",
                 }}
-              />
-            </RoleBarWrapper>
-          </MenuItemTop>
+              >
+                <RoleHeader style={{ marginBottom: "1.2rem" }}>
+                  {<strong>{name}</strong>}
+                </RoleHeader>
 
+                <RoleSubHeader>{<strong>{role}</strong>}</RoleSubHeader>
+              </div>
+            </div>
+          </MenuItemTop>
+          <div
+            style={{
+              width: "100%",
+              backgroundColor: "black",
+              height: ".05vh",
+              marginTop: "0%",
+              marginBottom: "2vh",
+            }}
+          />
           <NavLink to={dashboardLink} style={{ textDecoration: "none" }}>
             {/* <MenuItem style={{paddingLeft:'1vw',marginBottom:'1vh'}}> */}
             <MenuItem>
