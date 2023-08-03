@@ -125,7 +125,6 @@ const Sidebar = (props) => {
     }).then(() => {
       setLocalUser(null);
       history("/login");
-      history.go("/login");
     });
   };
 
@@ -150,7 +149,7 @@ const Sidebar = (props) => {
                 style={{
                   display: "flex",
                   flexDirection: "column",
-                  backgroundColor:'lightgrey',
+                  // backgroundColor:'lightgrey',
                   marginLeft: "5%",
                   marginTop: "5%",
                   width: "auto",
