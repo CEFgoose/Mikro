@@ -25,6 +25,7 @@ export const GridBox = styled.div`
   justify-content: center;
 `;
 
+
 export const Button = styled.button`
   font-family: sans-serif;
   font-size: 100%;
