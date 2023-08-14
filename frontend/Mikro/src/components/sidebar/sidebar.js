@@ -37,34 +37,34 @@ import {
 import { ConfirmButton } from "components/commonComponents/commonComponents";
 let map_url = "https://kaart.com/dev/mikro/";
 
-export const ListItems = styled.li`
-  margin-right: 6%;
-  color: #9095a4;
+// export const ListItems = styled.li`
+//   margin-right: 6%;
+//   color: #9095a4;
 
-  ${(props) =>
-    props.activeTab &&
-    css`
-      color: #0095ff;
-      ::after {
-        content: "";
-        position: relative;
-        height: 5px;
-        margin-top: 0.5rem;
-        border-radius: 5px 5px 0 0;
-        background-color: #0095ff;
-        display: block;
-      }
-    `}
-`;
+//   ${(props) =>
+//     props.activeTab &&
+//     css`
+//       color: #0095ff;
+//       ::after {
+//         content: "";
+//         position: relative;
+//         height: 5px;
+//         margin-top: 0.5rem;
+//         border-radius: 5px 5px 0 0;
+//         background-color: #0095ff;
+//         display: block;
+//       }
+//     `}
+// `;
 
-export const List = styled.ul`
-  display: flex;
-  list-style-type: none;
-  float: right;
-  flex-direction: row;
-  border-bottom: 1px solid lightgray;
-  width: 100%;
-`;
+// export const List = styled.ul`
+//   display: flex;
+//   list-style-type: none;
+//   float: right;
+//   flex-direction: row;
+//   border-bottom: 1px solid lightgray;
+//   width: 100%;
+// `;
 
 const Sidebar = (props) => {
   // COMPONENT STATES & SETTERS //
@@ -211,7 +211,7 @@ const Sidebar = (props) => {
             paddingLeft:'1vw',
             marginBottom:'1vh',
             height:'6vh',
-            // backgroundColor:'lightsalmon'
+            backgroundColor:BarOptionSelected==='dashboard'?'#0095ff':null
           }}
             >
             <MenuItem style={{width:'100%'}}>
@@ -230,7 +230,7 @@ const Sidebar = (props) => {
             paddingLeft:'1vw',
             marginBottom:'1vh',
             height:'6vh',
-            // backgroundColor:'lightsalmon'
+            backgroundColor:BarOptionSelected==='checklist'?'#0095ff':null
           }}
             >
             <MenuItem style={{width:'100%'}}>
@@ -249,7 +249,7 @@ const Sidebar = (props) => {
             paddingLeft:'1vw',
             marginBottom:'1vh',
             height:'6vh',
-            // backgroundColor:'lightsalmon'
+            backgroundColor:BarOptionSelected==='project'?'#0095ff':null
           }}
             >
             <MenuItem style={{width:'100%'}}>
@@ -318,7 +318,7 @@ const Sidebar = (props) => {
             paddingLeft:'1vw',
             marginBottom:'1vh',
             height:'6vh',
-            // backgroundColor:'lightsalmon'
+            backgroundColor:BarOptionSelected==='training'?'#0095ff':null
           }}
           
           >
@@ -339,7 +339,7 @@ const Sidebar = (props) => {
             paddingLeft:'1vw',
             marginBottom:'1vh',
             height:'6vh',
-            // backgroundColor:'lightsalmon'
+            backgroundColor:BarOptionSelected==='payments'?'#0095ff':null
           }}
           >
             <MenuItem style={{width:'100%'}}>
@@ -359,7 +359,7 @@ const Sidebar = (props) => {
             paddingLeft:'1vw',
             marginBottom:'1vh',
             height:'6vh',
-            // backgroundColor:'lightsalmon'
+            backgroundColor:BarOptionSelected==='account'?'#0095ff':null
           }}
           >
             <MenuItem style={{width:'100%'}}>
@@ -380,7 +380,7 @@ const Sidebar = (props) => {
 
             height:'6vh',
 
-            // backgroundColor:'lightsalmon'
+            backgroundColor:BarOptionSelected==='faq'?'#0095ff':null
           }}
           
           >

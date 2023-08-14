@@ -266,19 +266,14 @@ export const UserDashboard = () => {
                 marginLeft: "3.5vw",
                 height: "42vh",
                 width: "77.5vw",
+
               }}
             >
-              <TableCard style={{ boxShadow: "1px 1px 6px 2px gray" }}>
+              <TableCard style={{ boxShadow: "1px 1px 6px 2px gray",overflowY:'scroll' }}>
                 <CardMediaStyle />
-                <Table style={{}}>
-                  <div
-                    style={{
-                      height: "40vh",
-                      width: "77.5vw",
-                      overflowY: "scroll",
-                    }}
-                  >
-                   <ListHead 
+            <Table style={{}}>
+
+            <ListHead 
               headLabel={USER_PROJECTS_TABLE_HEADERS}
               tableData={activeProjects} 
               updateData={setActiveProjects} 
@@ -336,7 +331,7 @@ export const UserDashboard = () => {
                       );
                     })}
               </TableBody>
-                  </div>
+
                 </Table>
               </TableCard>
             </div>

@@ -203,16 +203,10 @@ export const ValidatorDashboard = () => {
                 width: "77.5vw",
               }}
             >
-              <TableCard style={{ boxShadow: "1px 1px 6px 2px gray" }}>
+              <TableCard style={{ boxShadow: "1px 1px 6px 2px gray",overflowY:'scroll' }}>
                 <CardMediaStyle />
                 <Table>
-                  <div
-                    style={{
-                      height: "40vh",
-                      width: "77.5vw",
-                      overflowY: "scroll",
-                    }}
-                  >
+
                     <ListHead
                       headLabel={VALIDATOR_PROJECTS_TABLE_HEADERS}
                       tableData={activeProjects}
@@ -276,7 +270,7 @@ export const ValidatorDashboard = () => {
                           );
                         })}
                     </TableBody>
-                  </div>
+
                 </Table>
               </TableCard>
             </div>

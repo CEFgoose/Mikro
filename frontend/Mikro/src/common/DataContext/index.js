@@ -10,6 +10,7 @@ export const DataContext = createContext({});
 export const DataProvider = ({ children }) => {
   const {} = useContext(InteractionContext);
   const {} = useContext(AuthContext);
+
   const history = useNavigate();
   const [sidebarOpen, toggleSidebarOpen] = useToggle(true);
   const [orgUsers, setOrgUsers] = useState([]);
@@ -650,7 +651,7 @@ export const DataProvider = ({ children }) => {
       } else if (response.status === 304) {
         history("/login");
       } else {
-        alert(response.message);
+        alert(`change user role failed. status code: ${response.status}`);
       }
     });
   };

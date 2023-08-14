@@ -208,16 +208,10 @@ export const AdminDash = () => {
                 width: "77.5vw",
               }}
             >
-              <TableCard style={{ boxShadow: "1px 1px 6px 2px gray" }}>
+              <TableCard style={{ boxShadow: "1px 1px 6px 2px gray",overflowY: "scroll", }}>
                 <CardMediaStyle />
                 <Table style={{}}>
-                  <div
-                    style={{
-                      height: "40vh",
-                      width: "77.5vw",
-                      overflowY: "scroll",
-                    }}
-                  >
+
                     <ListHead
                       headLabel={ADMIN_PROJECTS_TABLE_HEADERS}
                       tableData={activeProjects}
@@ -287,7 +281,7 @@ export const AdminDash = () => {
                           );
                         })}
                     </TableBody>
-                  </div>
+
                 </Table>
               </TableCard>
             </div>
