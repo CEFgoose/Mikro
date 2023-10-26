@@ -1,5 +1,10 @@
 from ..utils import requires_admin
-from ..database import Training, TrainingCompleted,TrainingQuestion,TrainingQuestionAnswer
+from ..database import (
+    Training,
+    TrainingCompleted,
+    TrainingQuestion,
+    TrainingQuestionAnswer,
+)
 from flask.views import MethodView
 from flask import g, request
 from flask_jwt_extended import (
@@ -45,9 +50,9 @@ class TrainingAPI(MethodView):
                 "status": 400,
             }
             return response, 400
-        questions=request.json["questions"]
+        questions = request.json["questions"]
         try:
-            new_training=Training.create(
+            new_training = Training.create(
                 title=request.json["title"],
                 org_id=g.user.org_id,
                 point_value=request.json["point_value"],
@@ -56,22 +61,21 @@ class TrainingAPI(MethodView):
                 training_type=request.json["training_type"],
             )
             for question in questions:
-                new_training_question=TrainingQuestion.create(
-                    training_id=new_training.id,
-                    question=question['question']
+                new_training_question = TrainingQuestion.create(
+                    training_id=new_training.id, question=question["question"]
                 )
-                new_training_correct=TrainingQuestionAnswer.create(
+                new_training_correct = TrainingQuestionAnswer.create(
                     training_id=new_training.id,
                     training_question_id=new_training_question.id,
                     value=True,
-                    answer=question['correct']
+                    answer=question["correct"],
                 )
-                for incorrect in question['incorrect']:
-                    new_training_incorrect=TrainingQuestionAnswer.create(
+                for incorrect in question["incorrect"]:
+                    new_training_incorrect = TrainingQuestionAnswer.create(
                         training_id=new_training.id,
                         training_question_id=new_training_question.id,
                         value=False,
-                        answer=incorrect['answer']
+                        answer=incorrect["answer"],
                     )
             response = {"message": "New Training Created", "status": 200}
             return response, 200
@@ -81,8 +85,6 @@ class TrainingAPI(MethodView):
                 "status": 500,
             }
             return response, 500
-
-
 
     @requires_admin
     def fetch_org_trainings(self):
@@ -117,21 +119,6 @@ class TrainingAPI(MethodView):
             "status": 200,
         }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
     @requires_admin
     def modify_training(self):
         # Check if user is authenticated
@@ -156,7 +143,7 @@ class TrainingAPI(MethodView):
             }
             print(response)
             return response
-        questions=request.json["questions"]
+        questions = request.json["questions"]
         print(questions)
         # Update training data
         training_id = request.json.get("training_id")
@@ -173,35 +160,38 @@ class TrainingAPI(MethodView):
             training_url=request.json.get("training_url"),
             training_type=request.json.get("training_type"),
         )
-        target_training_questions=TrainingQuestion.query.filter_by(training_id=target_training.id).all()
+        target_training_questions = TrainingQuestion.query.filter_by(
+            training_id=target_training.id
+        ).all()
         for question in target_training_questions:
             # print(question.question)
-            target_question_answers=TrainingQuestionAnswer.query.filter_by(training_question_id=question.id,training_id=target_training.id).all()
+            target_question_answers = TrainingQuestionAnswer.query.filter_by(
+                training_question_id=question.id,
+                training_id=target_training.id,
+            ).all()
             for answer in target_question_answers:
 
                 answer.delete(soft=False)
             question.delete(soft=False)
-        
-                
+
         for question in questions:
             print(question)
-            new_training_question=TrainingQuestion.create(
-                training_id=target_training.id,
-                question=question['question']
+            new_training_question = TrainingQuestion.create(
+                training_id=target_training.id, question=question["question"]
             )
-            new_training_correct=TrainingQuestionAnswer.create(
+            new_training_correct = TrainingQuestionAnswer.create(
                 training_id=target_training.id,
                 training_question_id=new_training_question.id,
                 value=True,
-                answer=question['correct']
+                answer=question["correct"],
             )
-            for incorrect in question['incorrect']:
+            for incorrect in question["incorrect"]:
                 print(incorrect)
-                new_training_incorrect=TrainingQuestionAnswer.create(
+                new_training_incorrect = TrainingQuestionAnswer.create(
                     training_id=target_training.id,
                     training_question_id=new_training_question.id,
                     value=False,
-                    answer=incorrect
+                    answer=incorrect,
                 )
 
         # Return response
@@ -230,15 +220,20 @@ class TrainingAPI(MethodView):
             response["status"] = 400
             return response
         else:
-            target_training_questions = TrainingQuestion.query.filter_by(training_id=target_training.id).all()
-            target_training_answers=TrainingQuestionAnswer.query.filter_by(training_id=target_training.id).all()
-            for question, answer in zip(target_training_questions,target_training_answers):
+            target_training_questions = TrainingQuestion.query.filter_by(
+                training_id=target_training.id
+            ).all()
+            target_training_answers = TrainingQuestionAnswer.query.filter_by(
+                training_id=target_training.id
+            ).all()
+            for question, answer in zip(
+                target_training_questions, target_training_answers
+            ):
                 question.delete(soft=False)
             target_training.delete(soft=False)
             response["message"] = "Training %s deleted" % (training_id)
             response["status"] = 200
             return response
-
 
     def complete_training(self):
         if not g:
@@ -279,14 +274,6 @@ class TrainingAPI(MethodView):
             "message": "Training completed",
             "status": 200,
         }
-    
-
-
-
-
-
-
-
 
     def fetch_user_trainings(self):
         # Check if user is authenticated
@@ -348,21 +335,37 @@ class TrainingAPI(MethodView):
         }
 
     def format_training(self, training):
-        questions=[]
-        training_questions= TrainingQuestion.query.filter_by(training_id=training.id).all()
+        questions = []
+        training_questions = TrainingQuestion.query.filter_by(
+            training_id=training.id
+        ).all()
         for question in training_questions:
-            correct_training_question_answer=TrainingQuestionAnswer.query.filter_by(training_question_id=question.id,training_id=training.id, value=True).first()
-            incorrect_training_question_answers=TrainingQuestionAnswer.query.filter_by(training_question_id=question.id,training_id=training.id,value=False).all()
-            incorrect_answers=[incorrect.answer for incorrect in incorrect_training_question_answers]
-            question_obj={
-                'question':question.question,
-                'correct':correct_training_question_answer.answer,
-                'incorrect':incorrect_answers
+            correct_training_question_answer = (
+                TrainingQuestionAnswer.query.filter_by(
+                    training_question_id=question.id,
+                    training_id=training.id,
+                    value=True,
+                ).first()
+            )
+            incorrect_training_question_answers = (
+                TrainingQuestionAnswer.query.filter_by(
+                    training_question_id=question.id,
+                    training_id=training.id,
+                    value=False,
+                ).all()
+            )
+            incorrect_answers = [
+                incorrect.answer
+                for incorrect in incorrect_training_question_answers
+            ]
+            question_obj = {
+                "question": question.question,
+                "correct": correct_training_question_answer.answer,
+                "incorrect": incorrect_answers,
             }
             print(question_obj)
             questions.append(question_obj)
 
-            
         return {
             "id": training.id,
             "title": training.title,
@@ -370,6 +373,5 @@ class TrainingAPI(MethodView):
             "difficulty": training.difficulty,
             "training_url": training.training_url,
             "training_type": training.training_type,
-
-            "questions":questions
+            "questions": questions,
         }

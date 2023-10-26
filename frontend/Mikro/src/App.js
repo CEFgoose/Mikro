@@ -97,6 +97,7 @@ function App() {
       document.head.removeChild(configScript);
     };
   }, []);
+  
   // //BOTPRESS STUDIO CHATBOT 
   const injectLoaded = useScript("https://cdn.botpress.cloud/webchat/v0/inject.js");
   useScript("https://mediafiles.botpress.cloud/b5e5cfc0-5667-4616-a753-06d7b89006d5/webchat/config.js", [injectLoaded]);

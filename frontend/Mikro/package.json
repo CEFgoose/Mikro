@@ -40,7 +40,6 @@
   ],
   "devDependencies": {
     "prettier": "^2.8.6"
-    
   },
   "jest": {
     "coverageReporters": [

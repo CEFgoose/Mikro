@@ -195,6 +195,7 @@ class Training(ModelWithSoftDeleteAndCRUD, SurrogatePK, db.Model):
     difficulty = db.Column(db.String, nullable=True)
     # retries = db.Column(db.Integer, nullable=False)
 
+
 class TrainingQuestion(ModelWithSoftDeleteAndCRUD, SurrogatePK, db.Model):
     __tablename__ = "training_question"
     id = Column(Integer, primary_key=True, autoincrement=True)
@@ -205,7 +206,10 @@ class TrainingQuestion(ModelWithSoftDeleteAndCRUD, SurrogatePK, db.Model):
     )
     question = db.Column(db.String, nullable=True)
 
-class TrainingQuestionAnswer(ModelWithSoftDeleteAndCRUD, SurrogatePK, db.Model):
+
+class TrainingQuestionAnswer(
+    ModelWithSoftDeleteAndCRUD, SurrogatePK, db.Model
+):
     __tablename__ = "training_question_answer"
     id = Column(Integer, primary_key=True, autoincrement=True)
     training_id = db.Column(
@@ -220,10 +224,6 @@ class TrainingQuestionAnswer(ModelWithSoftDeleteAndCRUD, SurrogatePK, db.Model):
     )
     value = db.Column(db.Boolean)
     answer = db.Column(db.String, nullable=True)
-
-
-
-
 
 
 class TrainingCompleted(CRUDMixin, SurrogatePK, db.Model):
