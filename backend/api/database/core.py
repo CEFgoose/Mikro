@@ -226,6 +226,22 @@ class TrainingQuestionAnswer(
     answer = db.Column(db.String, nullable=True)
 
 
+class Project_Training(CRUDMixin, SurrogatePK, db.Model):
+    __tablename__ = "project_training"
+    training_id = db.Column(
+        db.Integer,
+        db.ForeignKey("training.id", ondelete="CASCADE"),
+        nullable=True,
+    )
+    project_id = db.Column(
+        db.BigInteger,
+        db.ForeignKey("projects.id", ondelete="CASCADE"),
+        nullable=True,
+    )
+
+
+
+
 class TrainingCompleted(CRUDMixin, SurrogatePK, db.Model):
     __tablename__ = "training_completed"
     user_id = db.Column(
