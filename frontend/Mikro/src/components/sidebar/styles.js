@@ -4,17 +4,14 @@ import mikroLogo from "../../images/5.png";
 import menu_icon from "../../images/menu-icon.png";
 
 export const SidebarOpenedContainer = styled.div`
-  border-width: 0px;
-  display:flex;
-  flex-direction:column;
-  z-index: 9999;
-  position: relative;
-  box-shadow: 3px 0px 5px #253e45;
-  left: 0;
-  height: 100%;
-  width: 220px;
-  transition: left 0.3s ease-in-out;
-  background-color: white;
+  display: "flex",
+  flexDirection: "column",
+  Width: "15vw",
+  height: "100%",å
+  backgroundColor: "ghostwhite",
+  boxShadow: "1px 1px 6px 2px gray",
+  alignItems: "left",
+  zIndex: 999,
 
 `;
 
@@ -31,10 +28,12 @@ export const SidebarClosedContainer = styled.div`
 
 export const MenuItem = styled.a`
   position: relative;
+  display: flex;
+  flex-direction: row;
   z-index: 9999;
   color: #253e45 !important;
-  // display: block;
   box-sizing: border-box;
+  padding: 20px;
   &:hover {
     cursor: pointer;
     background: rgba(145, 165, 172, 0.1);
@@ -43,6 +42,7 @@ export const MenuItem = styled.a`
 
 export const MenuItemTop = styled.div`
   display: flex;
+  flex-direction: row;
   align-items: center;
   &:hover {
     cursor: pointer;
@@ -82,16 +82,12 @@ export const MikroLogoClosed = styled.div`
   }
 `;
 export const ProjectIconContainer = styled.span`
-  // display:flex;
-  // // flex-direction:column;
-  // align-items:center;
-  // border-radius: 50%;
-  height: 19px;
-  width: 25px;
-  // text-align: center;
-  // box-sizing: border-box;
-  // font-size: var(--h3);
-  margintop: 1vh;
+  border-radius: 50%;
+  height: 16px;
+  width: 16px;
+  text-align: center;
+  box-sizing: border-box;
+  font-size: var(--h3);
 `;
 
 export const ProjectIcon = styled.img`
@@ -162,11 +158,7 @@ export const Header = styled.a`
 
 export const RoleBarWrapper = styled.div`
   text-align: center;
-  // margin: auto;
-  margin-top: 1rem;
-  margin-bottom: 1rem;
-  height: 1.5rem;
-  width: 16vw;
+  width: 100%;
 `;
 
 export const RoleHeader = styled.h6`
