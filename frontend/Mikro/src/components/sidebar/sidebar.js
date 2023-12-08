@@ -81,7 +81,7 @@ const Sidebar = (props) => {
           boxShadow: "1px 1px 6px 2px gray",
           alignItems: "left",
           zIndex: 999,
-          width: sidebarOpen ? "12vw" : "",
+          width: sidebarOpen ? "13vw" : "",
         }}
       >
         <div
@@ -148,34 +148,60 @@ const Sidebar = (props) => {
         ) : (
           <></>
         )}
-        <NavLink to={"/dashboard"} style={{ textDecoration: "none" }}>
-          <MenuItem>
-            <ProjectIcon src={dashicon} />
-            <Header>{sidebarOpen ? "Dashboard" : ""}</Header>
-          </MenuItem>
-        </NavLink>
-        <NavLink to={"/UserChecklistsPage"} style={{ textDecoration: "none" }}>
-          <MenuItem>
-            <ProjectIcon src={checklist_icon} />
-            <Header>{sidebarOpen ? "Checklists" : ""}</Header>
-          </MenuItem>
-        </NavLink>
-        <NavLink to={"/UserProjectsPage"} style={{ textDecoration: "none" }}>
-          <MenuItem style={{ width: "100%" }}>
-            <ProjectIcon src={projects_icon} />
 
-            <Header>{sidebarOpen ? "Projects" : ""}</Header>
-          </MenuItem>
-        </NavLink>
         {role === "admin" ? (
-          <NavLink to={"/AdminTaskPage"} style={{ textDecoration: "none" }}>
+          <NavLink to={"/admindash"} style={{ textDecoration: "none" }}>
+            <MenuItem>
+              <ProjectIcon src={dashicon} />
+              <Header>{sidebarOpen ? "Dashboard" : ""}</Header>
+            </MenuItem>
+          </NavLink>
+        ) : (
+          <NavLink to={"/dashboard"} style={{ textDecoration: "none" }}>
+            <MenuItem>
+              <ProjectIcon src={dashicon} />
+              <Header>{sidebarOpen ? "Dashboard" : ""}</Header>
+            </MenuItem>
+          </NavLink>
+        )}
+
+        {role === "admin" ? (
+          <NavLink
+            to={"/AdminChecklistsPage"}
+            style={{ textDecoration: "none" }}
+          >
+            <MenuItem>
+              <ProjectIcon src={checklist_icon} />
+              <Header>{sidebarOpen ? "Checklists" : ""}</Header>
+            </MenuItem>
+          </NavLink>
+        ) : (
+          <NavLink
+            to={"/UserChecklistsPage"}
+            style={{ textDecoration: "none" }}
+          >
+            <MenuItem>
+              <ProjectIcon src={checklist_icon} />
+              <Header>{sidebarOpen ? "Checklists" : ""}</Header>
+            </MenuItem>
+          </NavLink>
+        )}
+
+        {role === "admin" ? (
+          <NavLink to={"/AdminTasksPage"} style={{ textDecoration: "none" }}>
             <MenuItem style={{ width: "100%" }}>
               <ProjectIcon src={tasks_icon} />
               <Header>{sidebarOpen ? "Tasks" : ""}</Header>
             </MenuItem>
           </NavLink>
         ) : (
-          <></>
+          <NavLink to={"/UserProjectsPage"} style={{ textDecoration: "none" }}>
+            <MenuItem style={{ width: "100%" }}>
+              <ProjectIcon src={projects_icon} />
+
+              <Header>{sidebarOpen ? "Projects" : ""}</Header>
+            </MenuItem>
+          </NavLink>
         )}
         {role === "admin" ? (
           <NavLink to={"/AdminUsersPage"} style={{ textDecoration: "none" }}>
@@ -188,32 +214,64 @@ const Sidebar = (props) => {
         ) : (
           <></>
         )}
-        <NavLink to={"/UserTrainingPage"} style={{ textDecoration: "none" }}>
-          <MenuItem style={{ width: "100%" }}>
-            <ProjectIcon src={training_icon} />
 
-            <Header>{sidebarOpen ? "Training" : ""}</Header>
-          </MenuItem>
-        </NavLink>
-        <NavLink to={"/UserPaymentsPage"} style={{ textDecoration: "none" }}>
-          <MenuItem style={{ width: "100%" }}>
-            <ProjectIcon src={payments_icon} />
+        {role === "admin" ? (
+          <NavLink to={"/AdminTrainingPage"} style={{ textDecoration: "none" }}>
+            <MenuItem style={{ width: "100%" }}>
+              <ProjectIcon src={training_icon} />
 
-            <Header>{sidebarOpen ? "Payments" : ""}</Header>
-          </MenuItem>
-        </NavLink>
-        <NavLink to={"/UserAccountPage"} style={{ textDecoration: "none" }}>
-          <MenuItem style={{ width: "100%" }}>
-            <ProjectIcon src={account_icon} />
-            <Header>{sidebarOpen ? "Account" : ""}</Header>
-          </MenuItem>
-        </NavLink>
-        <NavLink to={"/FAQPage"} style={{ textDecoration: "none" }}>
+              <Header>{sidebarOpen ? "Training" : ""}</Header>
+            </MenuItem>
+          </NavLink>
+        ) : (
+          <NavLink to={"/UserTrainingPage"} style={{ textDecoration: "none" }}>
+            <MenuItem style={{ width: "100%" }}>
+              <ProjectIcon src={training_icon} />
+
+              <Header>{sidebarOpen ? "Training" : ""}</Header>
+            </MenuItem>
+          </NavLink>
+        )}
+
+        {role === "admin" ? (
+          <NavLink to={"/AdminPaymentsPage"} style={{ textDecoration: "none" }}>
+            <MenuItem style={{ width: "100%" }}>
+              <ProjectIcon src={payments_icon} />
+
+              <Header>{sidebarOpen ? "Payments" : ""}</Header>
+            </MenuItem>
+          </NavLink>
+        ) : (
+          <NavLink to={"/UserPaymentsPage"} style={{ textDecoration: "none" }}>
+            <MenuItem style={{ width: "100%" }}>
+              <ProjectIcon src={payments_icon} />
+
+              <Header>{sidebarOpen ? "Payments" : ""}</Header>
+            </MenuItem>
+          </NavLink>
+        )}
+        {role === "admin" ? (
+          <NavLink to={"/AdminAccountPage"} style={{ textDecoration: "none" }}>
+            <MenuItem style={{ width: "100%" }}>
+              <ProjectIcon src={account_icon} />
+              <Header>{sidebarOpen ? "Account" : ""}</Header>
+            </MenuItem>
+          </NavLink>
+        ) : (
+          <NavLink to={"/UserAccountPage"} style={{ textDecoration: "none" }}>
+            <MenuItem style={{ width: "100%" }}>
+              <ProjectIcon src={account_icon} />
+              <Header>{sidebarOpen ? "Account" : ""}</Header>
+            </MenuItem>
+          </NavLink>
+        )}
+
+        {/* <NavLink to={"/FAQPage"} style={{ textDecoration: "none" }}>
           <MenuItem style={{ width: "100%" }}>
             <ProjectIcon src={faq_icon} />
             <Header>{sidebarOpen ? "FAQ" : ""}</Header>
           </MenuItem>
-        </NavLink>
+        </NavLink> */}
         <NavLink to={"/login"} style={{ textDecoration: "none" }}>
           <MenuItem onClick={logout}>
             <ProjectIcon onClick={logout} src={logouticon} />

@@ -81,8 +81,7 @@ export const DataProvider = ({ children }) => {
 
   const [tutorialStepTitle, setTutorialStepTitle] = useState("");
   const [tutorialStepContent, setTutorialStepContent] = useState("");
-  const [BarOptionSelected,setBarOptionSelected]=useState(null)
-
+  const [BarOptionSelected, setBarOptionSelected] = useState(null);
   const handleSetSidebarState = () => {
     toggleSidebarOpen();
   };
@@ -993,7 +992,7 @@ export const DataProvider = ({ children }) => {
   ) => {
     let modifyTrainingURL = "training/modify_training";
     let outpack = {
-      training_id:training_id,
+      training_id: training_id,
       title: title,
       point_value: point_value,
       difficulty: difficulty,
@@ -1002,7 +1001,6 @@ export const DataProvider = ({ children }) => {
       questions: trainingQuestions,
     };
     poster(outpack, modifyTrainingURL).then((response) => {
-
       if (response.status === 200) {
         fetchOrgTrainings();
         setTrainingQuestions([]);
@@ -1010,7 +1008,7 @@ export const DataProvider = ({ children }) => {
       } else if (response.status === 304) {
         history("/login");
       } else {
-        console.log(response)
+        console.log(response);
         alert(response.message);
       }
     });
@@ -1020,7 +1018,6 @@ export const DataProvider = ({ children }) => {
     let fetchTrainingsURL = "training/fetch_org_trainings";
     fetcher(fetchTrainingsURL).then((response) => {
       if (response.status === 200) {
-
         setOrgMappingTrainings(response.org_mapping_trainings);
         setOrgValidationTrainings(response.org_validation_trainings);
         setOrgProjectTrainings(response.org_project_trainings);
@@ -1037,7 +1034,7 @@ export const DataProvider = ({ children }) => {
     let fetchTrainingsURL = "training/fetch_user_trainings";
     fetcher(fetchTrainingsURL).then((response) => {
       if (response.status === 200) {
-        console.log('here',response.org_mapping_trainings)
+        console.log("here", response.org_mapping_trainings);
         setOrgMappingTrainings(response.org_mapping_trainings);
         setOrgValidationTrainings(response.org_validation_trainings);
         setOrgProjectTrainings(response.org_project_trainings);
@@ -1592,8 +1589,7 @@ export const DataProvider = ({ children }) => {
     tutorialStepTitle,
     setTutorialStepTitle,
     tutorialStepContent,
-    setTutorialStepContent
-
+    setTutorialStepContent,
   };
 
   return value ? (

@@ -33,7 +33,7 @@ export const MenuItem = styled.a`
   z-index: 9999;
   color: #253e45 !important;
   box-sizing: border-box;
-  padding: 20px;
+  padding: 2vh;
   &:hover {
     cursor: pointer;
     background: rgba(145, 165, 172, 0.1);

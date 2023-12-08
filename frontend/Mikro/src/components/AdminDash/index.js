@@ -1,7 +1,6 @@
 import React, { useContext, useEffect, useState } from "react";
 import { DataContext } from "../../common/DataContext";
 import { AuthContext } from "../../common/AuthContext";
-import Sidebar from "../sidebar/sidebar";
 import { Table, TableBody } from "@mui/material";
 import { ConfirmationModal } from "components/AdminChecklistsPage/checklistComponents";
 import {
@@ -15,13 +14,11 @@ import {
 } from "components/commonComponents/commonComponents";
 
 import "./styles.css";
+import Sidebar from "components/sidebar/sidebar";
 
 export const AdminDash = () => {
   // DATA CONTEXT STATES AND FUNCTIONS //
-
   const {
-    sidebarOpen,
-    handleSetSidebarState,
     orgProjects,
     fetchOrgProjects,
     goToSource,
@@ -51,28 +48,20 @@ export const AdminDash = () => {
   const { refresh, user } = useContext(AuthContext);
   const [projectSelected, setProjectSelected] = useState(null);
   // SETS STATE OF CONTROL SIDEBAR OPEN / COLLAPSED //
-  const handleViewSidebar = () => {
-    handleSetSidebarState();
-  };
+
   useEffect(() => {
     if (user) {
       refresh();
-    }
-    if (user === null) {
-      history("/login");
-      return;
-    }
-    if (user !== null && user.role !== "admin") {
-      history("/login");
-      return;
     }
     if (user !== null && user.role === "admin") {
       admin_update_all_user_tasks();
       fetchOrgProjects();
       fetchAdminDashStats();
       fetchExternalValidations();
+    } else {
+      history("/login");
+      return;
     }
-    // eslint-disable-next-line
   }, []);
 
   useEffect(() => {
@@ -82,7 +71,6 @@ export const AdminDash = () => {
       );
       toggleConfirmOpen();
     }
-    // eslint-disable-next-line
   }, [externalValidations]);
 
   const handleConfirmOpen = () => {
@@ -114,7 +102,7 @@ export const AdminDash = () => {
           float: "left",
         }}
       >
-        <Sidebar isOpen={sidebarOpen} toggleSidebar={handleViewSidebar} />
+        <Sidebar></Sidebar>
         <div style={{ width: "100%", height: "100%" }}>
           <div
             style={{
@@ -208,80 +196,83 @@ export const AdminDash = () => {
                 width: "77.5vw",
               }}
             >
-              <TableCard style={{ boxShadow: "1px 1px 6px 2px gray",overflowY: "scroll", }}>
+              <TableCard
+                style={{
+                  boxShadow: "1px 1px 6px 2px gray",
+                  overflowY: "scroll",
+                }}
+              >
                 <CardMediaStyle />
                 <Table style={{}}>
-
-                    <ListHead
-                      headLabel={ADMIN_PROJECTS_TABLE_HEADERS}
-                      tableData={activeProjects}
-                      updateData={setActiveProjects}
-                    />
-                    <TableBody>
-                      {activeProjects &&
-                        activeProjects.slice().map((row) => {
-                          const {
-                            id,
-                            name,
-                            mapping_rate_per_task,
-                            validation_rate_per_task,
-                            total_tasks,
-                            total_mapped,
-                            total_validated,
-                            total_invalidated,
-                            url,
-                            max_payment,
-                            payment_due,
-                          } = row;
-                          return (
-                            <ProjectRow
-                              sx={{
-                                "&:hover": {
-                                  backgroundColor: "rgba(145, 165, 172, 0.5)",
-                                  cursor: "pointer",
-                                },
-                              }}
-                              align="center"
-                              key={id}
-                              tabIndex={-1}
-                              onClick={() => handleSetProjectSelected(id)}
-                              selected={projectSelected === id}
-                              onDoubleClick={() => goToSource(url)}
-                            >
-                              <ProjectCell entry={<strong>{name}</strong>} />
-                              <ProjectCell
-                                entry={`$${
-                                  mapping_rate_per_task &&
-                                  mapping_rate_per_task.toFixed(2)
-                                }`}
-                              />
-                              <ProjectCell
-                                entry={`$${
-                                  validation_rate_per_task &&
-                                  validation_rate_per_task.toFixed(2)
-                                }`}
-                              />
-                              <ProjectCell entry={total_tasks} />
-                              {/* <ProjectCell entry={difficulty} /> */}
-                              <ProjectCell
-                                entry={`$${
-                                  max_payment && max_payment.toFixed(2)
-                                }`}
-                              />
-                              <ProjectCell
-                                entry={`$${
-                                  payment_due && payment_due.toFixed(2)
-                                }`}
-                              />
-                              <ProjectCell
-                                entry={`${total_validated}/${total_mapped}`}
-                              />
-                              <ProjectCell entry={total_invalidated} />
-                            </ProjectRow>
-                          );
-                        })}
-                    </TableBody>
-
+                  <ListHead
+                    headLabel={ADMIN_PROJECTS_TABLE_HEADERS}
+                    tableData={activeProjects}
+                    updateData={setActiveProjects}
+                  />
+                  <TableBody>
+                    {activeProjects &&
+                      activeProjects.slice().map((row) => {
+                        const {
+                          id,
+                          name,
+                          mapping_rate_per_task,
+                          validation_rate_per_task,
+                          total_tasks,
+                          total_mapped,
+                          total_validated,
+                          total_invalidated,
+                          url,
+                          max_payment,
+                          payment_due,
+                        } = row;
+                        return (
+                          <ProjectRow
+                            sx={{
+                              "&:hover": {
+                                backgroundColor: "rgba(145, 165, 172, 0.5)",
+                                cursor: "pointer",
+                              },
+                            }}
+                            align="center"
+                            key={id}
+                            tabIndex={-1}
+                            onClick={() => handleSetProjectSelected(id)}
+                            selected={projectSelected === id}
+                            onDoubleClick={() => goToSource(url)}
+                          >
+                            <ProjectCell entry={<strong>{name}</strong>} />
+                            <ProjectCell
+                              entry={`$${
+                                mapping_rate_per_task &&
+                                mapping_rate_per_task.toFixed(2)
+                              }`}
+                            />
+                            <ProjectCell
+                              entry={`$${
+                                validation_rate_per_task &&
+                                validation_rate_per_task.toFixed(2)
+                              }`}
+                            />
+                            <ProjectCell entry={total_tasks} />
+                            {/* <ProjectCell entry={difficulty} /> */}
+                            <ProjectCell
+                              entry={`$${
+                                max_payment && max_payment.toFixed(2)
+                              }`}
+                            />
+                            <ProjectCell
+                              entry={`$${
+                                payment_due && payment_due.toFixed(2)
+                              }`}
+                            />
+                            <ProjectCell
+                              entry={`${total_validated}/${total_mapped}`}
+                            />
+                            <ProjectCell entry={total_invalidated} />
+                          </ProjectRow>
+                        );
+                      })}
+                  </TableBody>
                 </Table>
               </TableCard>
             </div>
