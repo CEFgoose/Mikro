@@ -77,11 +77,11 @@ const Sidebar = (props) => {
           display: "flex",
           flexDirection: "column",
           height: "100%",
-          backgroundColor: "ghostwhite",
+          backgroundColor: "white",
           boxShadow: "1px 1px 6px 2px gray",
           alignItems: "left",
           zIndex: 999,
-          width: sidebarOpen ? "13vw" : "",
+          width: sidebarOpen ? "15vw" : "",
         }}
       >
         <div
@@ -91,12 +91,7 @@ const Sidebar = (props) => {
             justifyContent: sidebarOpen ? "flex-end" : "flex-start",
           }}
         >
-          <div
-            style={{
-              background: "ghostwhite",
-            }}
-            onClick={() => handleSetSidebarState()}
-          >
+          <div onClick={() => handleSetSidebarState()}>
             <img
               style={{
                 height: "4vh",
@@ -188,9 +183,9 @@ const Sidebar = (props) => {
         )}
 
         {role === "admin" ? (
-          <NavLink to={"/AdminTasksPage"} style={{ textDecoration: "none" }}>
+          <NavLink to={"/AdminProjectsPage"} style={{ textDecoration: "none" }}>
             <MenuItem style={{ width: "100%" }}>
-              <ProjectIcon src={tasks_icon} />
+              <ProjectIcon src={projects_icon} />
               <Header>{sidebarOpen ? "Tasks" : ""}</Header>
             </MenuItem>
           </NavLink>
@@ -250,7 +245,7 @@ const Sidebar = (props) => {
             </MenuItem>
           </NavLink>
         )}
-        {role === "admin" ? (
+        {/* {role === "admin" ? (
           <NavLink to={"/AdminAccountPage"} style={{ textDecoration: "none" }}>
             <MenuItem style={{ width: "100%" }}>
               <ProjectIcon src={account_icon} />
@@ -264,7 +259,7 @@ const Sidebar = (props) => {
               <Header>{sidebarOpen ? "Account" : ""}</Header>
             </MenuItem>
           </NavLink>
-        )}
+        )} */}
 
         {/* <NavLink to={"/FAQPage"} style={{ textDecoration: "none" }}>
           <MenuItem style={{ width: "100%" }}>
@@ -278,13 +273,13 @@ const Sidebar = (props) => {
             <Header onClick={logout}>{sidebarOpen ? "Logout" : ""}</Header>
           </MenuItem>
         </NavLink>
-        <MenuItem href={map_url} target="_blank">
+        {/* <MenuItem href={map_url} target="_blank">
           <ProjectIcon href={map_url} target="_blank" src={leftArrow} />
 
           <Header href={map_url} target="_blank">
             {sidebarOpen ? "Kaart.com" : ""}
           </Header>
-        </MenuItem>
+        </MenuItem> */}
       </div>
     </div>
   );

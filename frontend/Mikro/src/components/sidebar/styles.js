@@ -34,6 +34,7 @@ export const MenuItem = styled.a`
   color: #253e45 !important;
   box-sizing: border-box;
   padding: 2vh;
+  padding-left: 30px;
   &:hover {
     cursor: pointer;
     background: rgba(145, 165, 172, 0.1);
@@ -147,7 +148,7 @@ export const CollapseMenuIcon = styled.div`
 
 export const Header = styled.a`
   text-align: left;
-  margin-left: 1.2vw;
+  margin-left: 1.5vw;
   color: #253e45 !important;
   text-decoration: none;
   font-size: 15px;

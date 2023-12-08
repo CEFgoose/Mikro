@@ -1,34 +1,26 @@
 # NEW MIKRO
 
-
-
 ## Overview:
 
 This is a complete rebuild of the Mikro OSM micropayments platform by Kaart using the Tabula rasa app as a jumping off point
 
-
-
 ## Design:
 
-The Mikro backend is built in python3 using a variety of Python packages and the Flask web framework. 
+The Mikro backend is built in python3 using a variety of Python packages and the Flask web framework.
 
-A PostgreSQL database with the PostGIS extension is used in this application. 
+A PostgreSQL database with the PostGIS extension is used in this application.
 
-The front end utilizes Javascript with the React library for building the user interface. 
+The front end utilizes Javascript with the React library for building the user interface.
 
 Styled-component modules are also used in order to write CSS within JS in a reusable way.
-
-
 
 ## Development:
 
 Development should not occur on the Tabula Rasa platform directly.
 
-The idea here is to have a "Blank Slate" app that a Kaart engineer can easily and quickly clone, set up & have running in a dev environment within an hour, including sign on functionality through the Kaart Single Sign On Service (SSO) 
+The idea here is to have a "Blank Slate" app that a Kaart engineer can easily and quickly clone, set up & have running in a dev environment within an hour, including sign on functionality through the Kaart Single Sign On Service (SSO)
 
 Once Tabula Rasa is up and running, the engineer in question should immediately change every instance of the name "Tabula Rasa" within the codebase to whatever they wish to name the new project, create a new git repo & commit the codebase before making any changes. This will hopefully prevent any unintentional changes to the Tabula Rasa Codebase itself.
-
-
 
 ### Virtual Environment Setup:
 
@@ -38,18 +30,14 @@ cd into the base directory and run `virtaulenv venv` (this assumes you want to n
 
 Run `source venv/bin/activate` to activate the virtual environment. substitute `venv` for the name of your virtual environment if you named it something other than `venv`
 
-
-
 ### Node Packages Installation:
 
-cd into the `frontend/mikro` folder 
+cd into the `frontend/mikro` folder
 
 Double check the `package.json` file to make sure that the versions of all of the node packages listed are the most current available
 (hovering over the version number will pop up a tooltip showing the most recent release version)
 
 run command `npm install` or `yarn install` depending on your preference.
-
-
 
 ### Python Packages Installation:
 
@@ -63,8 +51,6 @@ Make sure virtual environment activated.
 run the following command to install all of the python library requirements:
 `pip3 install -r requirements.txt`
 
-
-
 ### Dev SSO Startup:
 
 Tabula Rasa requires use of the Kaart Single Sign On service (SSO) for the login process, and can be set up to work with either a dev clone of the SSO running locally, or with the live SSO itself at `my.kaart.com`
@@ -77,19 +63,17 @@ See the section `Setting up a local SSO instance` for detailed instructions on h
 
 To start a local SSO instance:
 
-
 CD into the `server` folder
 
 Activate the virtual environment:
-`source venv/bin/activate`  
-
+`source venv/bin/activate`
 
 Run command:
 `flask run -p 5001 --reload`
+
 - By convention we run the SSO in a dev environment on port 5001 so as not to conflict with other apps running locally, i.e Viewer(5002),Tabula Rasa(5003), Mikro(5004) and Gem(5000)
 
 - The reload flag will restart flask if any changes are made to the API code base, recommended if work on the SSO is needed
-
 
 ### Dev Backend Startup:
 
@@ -104,10 +88,6 @@ run command `flask run -p 5004 --reload`
 - The reload flag will cause flask to reload if any changes are saved to the API codebase, highly recommend for dev work.
 
 - See the `Changing Project Variables` section on how to change all of the project environment & port settings when you are ready to start modifying Tabula Rasa for you new project.
-
-
-
-
 
 ### DevFrontend Startup:
 
@@ -124,12 +104,43 @@ run command:
 
 -The `DANGEROUSLY_DISABLE_HOST_CHECK` portion of the command allows us to use the `dev.` url flag mentioned previously
 
--This  will compile & start the front end client in the chrome browser on port 3000, if that port is taken node will suggest another.
-(The frontend port changing doesn't require any changes to the codebase so we don't have a convention for what apps client run where, just let node suggest an open port) 
+-This will compile & start the front end client in the chrome browser on port 3000, if that port is taken node will suggest another.
+(The frontend port changing doesn't require any changes to the codebase so we don't have a convention for what apps client run where, just let node suggest an open port)
 
 --IMPORTANT
 -In the URL bar, add the `dev.` header to the beginning of the url, i.e. `dev.localhost:3000`
 -As mentioned before, this is to prevent cross-origin issues related to the dev environment
 
+### Commiting Changes to Production
 
+This documentation assumes that you have successfully pushed your changes to Mikro to GitLab, the build has failed on the Kubernetes portion, and you have an SSH key to the mikro.kaart.com server.
 
+Get the hash for the version you are trying to push into production from the Docker step of the build process. It will be in the format master-###### you’ll need this later.
+
+SSH into the server: ssh mikro.kaart.com
+
+cd dev->geocache->deployment->kubernetes->client
+
+Tip:
+To see the dev folder, you’ll need to be in the home directory of the server, which sometimes requires doing cd.. a couple of times
+
+vim deployment.yaml
+
+Paste in the new hash where it has the same format as before (master-######)
+
+Repeat this step for kubernetes->server
+
+Tip:
+Shift-A for end of current line
+Paste in new hash
+
+esc -> :wq to write and quit
+
+Go back to the kubernetes folder
+
+microk8s.kubectl apply -f client -f server -n production
+
+microk8s.kubectl get pods -o wide -A -w
+
+Tip:
+This will show you the services terminating and being running again, but doesn’t necessarily mean you did everything right. The best way to know is to wait and see if your changes appear on the live version and if GitLab points to your version as the master.

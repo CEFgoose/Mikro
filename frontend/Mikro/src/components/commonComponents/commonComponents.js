@@ -1,9 +1,18 @@
 import { CSVLink } from "react-csv";
 import { styled } from "@mui/material/styles";
-import React, { useState, useCallback, useContext, useEffect } from "react";
+import React, {
+  useState,
+  useCallback,
+  useContext,
+  useEffect,
+  Component,
+} from "react";
 import close_icon from "../../images/close_icon.png";
 import { Button, ButtonLabel, Container } from "./styles";
+import Chart from "react-apexcharts";
 import { DataContext } from "../../common/DataContext";
+import positive_trend_icon from "../../images/Up-trend-icon.png";
+import negative_trend_icon from "../../images/Down-Trend-Icon.png";
 
 import {
   Card,
@@ -21,7 +30,7 @@ import {
   DialogTitle,
   DialogContent,
   DialogContentText,
-  DialogActions
+  DialogActions,
 } from "@mui/material";
 
 export const TopDiv = styled("div")(({ theme }) => ({
@@ -262,6 +271,308 @@ export const DashboardCard = (props) => {
         ></div>
       </Card>
     </>
+  );
+};
+
+export const TasksMappedCard = (props) => {
+  return (
+    <Card
+      style={{
+        boxShadow: "0 0 6px gray",
+        position: "relative",
+        top: "2vh",
+        marginLeft: props.marginLeft,
+        marginRight: props.marginRight,
+        width: props.width,
+        height: "22vh",
+        display: "flex",
+        flexDirection: "column",
+      }}
+    >
+      {" "}
+      <div
+        style={{
+          display: "flex",
+          flexDirection: "row",
+          // marginLeft: "2vh",
+        }}
+      >
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            marginTop: ".5vh",
+          }}
+        >
+          <SectionTitle title_text={props.title} />
+          <h1
+            style={{
+              alignSelf: "center",
+              marginTop: "2vh",
+            }}
+          >
+            {props.tasksMapped}
+          </h1>
+        </div>
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            marginLeft: "2vh",
+          }}
+        >
+          <LineChart lineData={props.lineData}></LineChart>
+        </div>
+      </div>
+      <div
+        style={{
+          display: "flex",
+          flexDirection: "row",
+          marginLeft: "2vh",
+          marginBottom: ".5vh",
+          alignItems: "center",
+          gap: "1vw",
+        }}
+      >
+        <img
+          style={{ height: "2vw", width: "2vw" }}
+          src={positive_trend_icon}
+          alt="Positive Trend Icon"
+        />
+        <p>
+          <b>+2</b> more than last week!
+        </p>
+      </div>
+    </Card>
+  );
+};
+
+export const ValidationCard = (props) => {
+  return (
+    <Card
+      style={{
+        boxShadow: "0 0 6px gray",
+        position: "relative",
+        top: "2vh",
+        marginLeft: props.marginLeft,
+        marginRight: props.marginRight,
+        marginBottom: "1vh",
+        width: props.width,
+        height: "22vh",
+        display: "flex",
+        flexDirection: "row",
+      }}
+    >
+      <div
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          width: "100%",
+          margin: "1vh",
+        }}
+      >
+        <SectionTitle title_text={props.title} />
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "row",
+            justifyContent: "space-between",
+            marginTop: "1vh",
+          }}
+        >
+          <p>Total Approved</p>
+          <p>{props.validatedCurrent}</p>
+        </div>
+        <ProgressBar current={props.validatedCurrent} total={props.total} />
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "row",
+            justifyContent: "space-between",
+            marginTop: "2.5vh",
+          }}
+        >
+          <p>Total Invalidated</p>
+          <p>{props.invalidCurrent}</p>
+        </div>
+        <ProgressBar
+          current={props.invalidCurrent}
+          total={props.total}
+          color={"#349beb"}
+        />
+      </div>
+    </Card>
+  );
+};
+
+export const PaymentCard = (props) => {
+  return (
+    <Card
+      style={{
+        boxShadow: "0 0 6px gray",
+        position: "relative",
+        top: "2vh",
+        marginLeft: props.marginLeft,
+        marginRight: props.marginRight,
+        marginBottom: "1vh",
+        width: props.width,
+        height: "22vh",
+        display: "flex",
+        flexDirection: "row",
+      }}
+    >
+      <div
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          width: "100%",
+          margin: "1vh",
+          marginLeft: "2vw",
+          marginRight: "2vw",
+        }}
+      >
+        <SectionTitle title_text={props.title} />
+        <h1
+          style={{
+            alignSelf: "center",
+            paddingLeft: "1vw",
+            paddingRight: "1vw",
+            marginBottom: "1vh",
+            marginTop: "1vh",
+          }}
+        >
+          {props.currentBalance}
+        </h1>
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "row",
+            justifyContent: "space-around",
+            marginTop: "1vh",
+          }}
+        >
+          <p>Overall Account Payment</p>
+          <p>{props.overallAccountPayment}</p>
+        </div>
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "row",
+            justifyContent: "space-between",
+            marginTop: "1vh",
+          }}
+        >
+          <button
+            style={{
+              borderRadius: "6px",
+              backgroundColor: "#fd7e14",
+              width: "100%",
+              border: "none",
+              height: "30px",
+              cursor: "pointer",
+            }}
+            onClick={() => {
+              window.location.href =
+                props.role === "admin"
+                  ? "/AdminPaymentsPage"
+                  : "/UserPaymentsPage";
+            }}
+          >
+            See Payment Details
+          </button>
+        </div>
+      </div>
+    </Card>
+  );
+};
+
+const ProgressBar = (props) => {
+  // Set default values if props are not provided
+  const current = props.current || 0;
+  const total = props.total || 100;
+  const color = props.color || "#4caf50";
+
+  // Calculate the percentage of completion
+  const percentage = (current / total) * 100;
+
+  // Lighten the color by adjusting opacity
+  const lighterBackgroundColor = `${color}30`; // 80 represents 50% opacity
+
+  return (
+    <div
+      style={{
+        width: "100%",
+        height: "5px",
+        backgroundColor: lighterBackgroundColor,
+        borderRadius: "4px",
+        overflow: "hidden",
+      }}
+    >
+      <div
+        style={{
+          width: `${percentage}%`,
+          height: "100%",
+          backgroundColor: color,
+          transition: "width 0.3s ease-in-out", // Add a smooth transition effect
+        }}
+      ></div>
+    </div>
+  );
+};
+
+export const LineChart = (props) => {
+  // Convert tasksMapped to an integer, or use 0 if it's null
+  const lineData =
+    props.lineData !== undefined ? props.lineData : [1, 1, 1, 1, 1, 1, 1, 1];
+
+  return (
+    <Chart
+      options={{
+        tooltip: {
+          enabled: false, // Disable tooltips
+        },
+        dataLabels: {
+          enabled: false, // Disable data labels
+        },
+        grid: {
+          show: false,
+        },
+        yaxis: {
+          show: false,
+        },
+        xaxis: {
+          labels: {
+            show: false,
+          },
+          axisBorder: {
+            show: false,
+          },
+          axisTicks: {
+            show: false,
+          },
+        },
+        stroke: {
+          show: true,
+          curve: "smooth",
+          lineCap: "butt",
+          colors: "#4caf50",
+          width: 2,
+          dashArray: 0,
+        },
+        chart: {
+          toolbar: false,
+          height: 200,
+        },
+      }}
+      series={[
+        {
+          name: "series-1",
+          data: lineData,
+        },
+      ]}
+      type="line"
+      width="225"
+    />
   );
 };
 
@@ -595,16 +906,14 @@ export const TutorialDialog = (props) => {
       aria-labelledby="alert-dialog-title"
       aria-describedby="alert-dialog-description"
     >
-      <DialogTitle id="alert-dialog-title">
-        {props.title}
-      </DialogTitle>
+      <DialogTitle id="alert-dialog-title">{props.title}</DialogTitle>
       <DialogContent>
         <DialogContentText id="alert-dialog-description">
           {props.content}
         </DialogContentText>
       </DialogContent>
       <DialogActions>
-      <div
+        <div
           style={{
             display: "flex",
             flexDirection: "row",
@@ -680,8 +989,6 @@ export const ConfirmModalCommon = (props) => {
   );
 };
 
-
-
 export const CompleteQuizModal = (props) => {
   const modal_body = (
     <ModalWrapper>
@@ -707,36 +1014,42 @@ export const CompleteQuizModal = (props) => {
             flexDirection: "row",
             justifyContent: "center",
             alignItems: "center",
-            marginTop:'1vh'
+            marginTop: "1vh",
           }}
         >
-          {props.button1===true?
-          <>
-          <Button
-          style={{ marginLeft: "1vw", marginRight: "1vw" ,marginBottom:'1vh'}}
-          onClick={() => props.button_1_action()}
-          >
-            {props.button_1_text}
-          </Button>
-          </>
-          :
-          <>
-          </>
-          }
+          {props.button1 === true ? (
+            <>
+              <Button
+                style={{
+                  marginLeft: "1vw",
+                  marginRight: "1vw",
+                  marginBottom: "1vh",
+                }}
+                onClick={() => props.button_1_action()}
+              >
+                {props.button_1_text}
+              </Button>
+            </>
+          ) : (
+            <></>
+          )}
 
-          {props.button2===true?
-          <>
-          <Button
-          style={{ marginLeft: "1vw", marginRight: "1vw" ,marginBottom:'1vh'}}
-          onClick={() => props.button_2_action()}
-          >
-            {props.button_2_text}
-          </Button>
-          </>
-          :
-          <>
-          </>
-          }
+          {props.button2 === true ? (
+            <>
+              <Button
+                style={{
+                  marginLeft: "1vw",
+                  marginRight: "1vw",
+                  marginBottom: "1vh",
+                }}
+                onClick={() => props.button_2_action()}
+              >
+                {props.button_2_text}
+              </Button>
+            </>
+          ) : (
+            <></>
+          )}
         </div>
       </Card>
     </ModalWrapper>
@@ -754,10 +1067,6 @@ export const CompleteQuizModal = (props) => {
     </Modal>
   );
 };
-
-
-
-
 
 export const AdminPayRequestsTable = (props) => {
   const updateData = (sortedData) => {
@@ -1070,8 +1379,9 @@ export const ProjectCard = (props) => {
             margin_bottom={"0vh"}
           />
           <SectionSubtitle
-            subtitle_text={`${props.visibility === true ? `Public` : `Private`
-              }`}
+            subtitle_text={`${
+              props.visibility === true ? `Public` : `Private`
+            }`}
             margin_bottom={"0vh"}
           />
         </div>
@@ -1314,8 +1624,9 @@ export const ProjectCard = (props) => {
                 margin_bottom={"0vh"}
               />
               <SectionSubtitle
-                subtitle_text={`$${props.total_payout && (props.total_payout / 100).toFixed(2)
-                  }`}
+                subtitle_text={`$${
+                  props.total_payout && (props.total_payout / 100).toFixed(2)
+                }`}
               />
             </div>
             <div
@@ -1331,8 +1642,9 @@ export const ProjectCard = (props) => {
                 margin_bottom={"0vh"}
               />
               <SectionSubtitle
-                subtitle_text={`$${props.max_payment && props.max_payment.toFixed(2)
-                  }`}
+                subtitle_text={`$${
+                  props.max_payment && props.max_payment.toFixed(2)
+                }`}
               />
             </div>
           </div>
