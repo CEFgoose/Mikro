@@ -143,7 +143,6 @@ const Sidebar = (props) => {
         ) : (
           <></>
         )}
-
         {role === "admin" ? (
           <NavLink to={"/admindash"} style={{ textDecoration: "none" }}>
             <MenuItem>
@@ -159,7 +158,17 @@ const Sidebar = (props) => {
             </MenuItem>
           </NavLink>
         )}
+        {role === "admin" ? (
+          <NavLink to={"/AdminTasksPage"} style={{ textDecoration: "none" }}>
+            <MenuItem style={{ width: "100%" }}>
+              <ProjectIcon src={tasks_icon} />
 
+              <Header>{sidebarOpen ? "Tasks" : ""}</Header>
+            </MenuItem>
+          </NavLink>
+        ) : (
+          <></>
+        )}
         {role === "admin" ? (
           <NavLink
             to={"/AdminChecklistsPage"}
@@ -181,12 +190,11 @@ const Sidebar = (props) => {
             </MenuItem>
           </NavLink>
         )}
-
         {role === "admin" ? (
           <NavLink to={"/AdminProjectsPage"} style={{ textDecoration: "none" }}>
             <MenuItem style={{ width: "100%" }}>
               <ProjectIcon src={projects_icon} />
-              <Header>{sidebarOpen ? "Tasks" : ""}</Header>
+              <Header>{sidebarOpen ? "Projects" : ""}</Header>
             </MenuItem>
           </NavLink>
         ) : (
@@ -209,7 +217,6 @@ const Sidebar = (props) => {
         ) : (
           <></>
         )}
-
         {role === "admin" ? (
           <NavLink to={"/AdminTrainingPage"} style={{ textDecoration: "none" }}>
             <MenuItem style={{ width: "100%" }}>
@@ -227,7 +234,6 @@ const Sidebar = (props) => {
             </MenuItem>
           </NavLink>
         )}
-
         {role === "admin" ? (
           <NavLink to={"/AdminPaymentsPage"} style={{ textDecoration: "none" }}>
             <MenuItem style={{ width: "100%" }}>
@@ -260,7 +266,6 @@ const Sidebar = (props) => {
             </MenuItem>
           </NavLink>
         )} */}
-
         {/* <NavLink to={"/FAQPage"} style={{ textDecoration: "none" }}>
           <MenuItem style={{ width: "100%" }}>
             <ProjectIcon src={faq_icon} />

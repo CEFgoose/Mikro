@@ -314,19 +314,10 @@ export const AdminProjectsPage = () => {
                 flexDirection: "row",
               }}
             >
-              <h1
-                style={{
-                  marginTop: "1vw",
-                  paddingBottom: "2vh",
-                }}
-              >
-                <strong>Projects:</strong>
-              </h1>
               <div
                 style={{
-                  marginTop: "2vw",
-                  position: "relative",
-                  left: "40vw",
+                  position: "absolute",
+                  right: "10vw",
                 }}
               >
                 <ButtonDivComponent

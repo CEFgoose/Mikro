@@ -454,33 +454,24 @@ export const PaymentCard = (props) => {
           <p>Overall Account Payment</p>
           <p>{props.overallAccountPayment}</p>
         </div>
-        <div
+        <button
           style={{
-            display: "flex",
-            flexDirection: "row",
-            justifyContent: "space-between",
-            marginTop: "1vh",
+            borderRadius: "6px",
+            backgroundColor: "#fd7e14",
+            width: "100%",
+            border: "none",
+            height: "30px",
+            cursor: "pointer",
+          }}
+          onClick={() => {
+            window.location.href =
+              props.role === "admin"
+                ? "/AdminPaymentsPage"
+                : "/UserPaymentsPage";
           }}
         >
-          <button
-            style={{
-              borderRadius: "6px",
-              backgroundColor: "#fd7e14",
-              width: "100%",
-              border: "none",
-              height: "30px",
-              cursor: "pointer",
-            }}
-            onClick={() => {
-              window.location.href =
-                props.role === "admin"
-                  ? "/AdminPaymentsPage"
-                  : "/UserPaymentsPage";
-            }}
-          >
-            See Payment Details
-          </button>
-        </div>
+          See Payment Details
+        </button>
       </div>
     </Card>
   );
@@ -501,8 +492,7 @@ const ProgressBar = (props) => {
   return (
     <div
       style={{
-        width: "100%",
-        height: "5px",
+        height: "8px",
         backgroundColor: lighterBackgroundColor,
         borderRadius: "4px",
         overflow: "hidden",
@@ -1305,8 +1295,7 @@ export const ProjectCard = (props) => {
       key={props.id}
       style={{
         boxShadow: "1px 1px 6px 2px gray",
-        width: "25vw",
-        height: "56vh",
+        width: "18vw",
         marginLeft: "2vw",
         marginTop: "2vh",
       }}
@@ -1320,9 +1309,9 @@ export const ProjectCard = (props) => {
           checked={props.id === props.projectSelected}
           onChange={(e) => {
             if (props.id === props.projectSelected) {
-              props.handleSetProjectSelected(null, props.name); //Uncheck the checkbox
+              props.handleSetProjectSelected(null, props.name);
             } else {
-              props.handleSetProjectSelected(props.id, props.name); //Check the checkbox
+              props.handleSetProjectSelected(props.id, props.name);
             }
           }}
           style={{
@@ -1334,324 +1323,72 @@ export const ProjectCard = (props) => {
       <div
         style={{
           display: "flex",
-          flexDirection: "row",
+          flexDirection: "column",
           justifyContent: "center",
-          height: "10vh",
-        }}
-      >
-        <SectionTitle title_text={props.name} bold={true} />
-      </div>
-      <Divider />
-      <div
-        style={{
-          display: "flex",
-          flexDirection: "row",
-          justifyContent: "center",
-        }}
-      >
-        <div
-          style={{
-            display: "flex",
-            flexDirection: "column",
-            justifyContent: "center",
-          }}
-        >
-          <SectionSubtitle
-            subtitle_text={`Difficulty:`}
-            bold={true}
-            margin_bottom={"0vh"}
-          />
-          <SectionSubtitle
-            subtitle_text={`${props.difficulty}`}
-            margin_bottom={"0vh"}
-          />
-        </div>
-        <div
-          style={{
-            display: "flex",
-            flexDirection: "column",
-            justifyContent: "center",
-          }}
-        >
-          <SectionSubtitle
-            subtitle_text={`Visibility:`}
-            bold={true}
-            margin_bottom={"0vh"}
-          />
-          <SectionSubtitle
-            subtitle_text={`${
-              props.visibility === true ? `Public` : `Private`
-            }`}
-            margin_bottom={"0vh"}
-          />
-        </div>
-        <div
-          style={{
-            display: "flex",
-            flexDirection: "column",
-            justifyContent: "center",
-          }}
-        >
-          <SectionSubtitle
-            subtitle_text={`Source:`}
-            bold={true}
-            margin_bottom={"0vh"}
-          />
-          <SectionSubtitle
-            subtitle_text={`${props.source === "tasks" ? `TM4` : `TM3`}`}
-            margin_bottom={"0vh"}
-          />
-        </div>
-      </div>
-
-      <Divider />
-      <div
-        style={{
-          display: "flex",
-          flexDirection: "row",
-          justifyContent: "center",
+          padding: "1vw",
+          gap: "1vw",
         }}
       >
         <div
           style={{
             display: "flex",
             flexDirection: "row",
-            justifyContent: "center",
+            justifyContent: "space-between",
           }}
         >
-          <SectionSubtitle subtitle_text={"Editors:"} bold={true} />
-          <SectionSubtitle
-            subtitle_text={`${props.total_editors}/${props.max_editors}`}
-          />
+          <p>
+            Editors: {props.total_editors}/{props.max_editors}{" "}
+          </p>
+          <p>
+            Validators: {props.total_editors}/{props.max_editors}{" "}
+          </p>
+          <p>{`${props.difficulty}`}</p>
         </div>
-        <div
-          style={{
-            display: "flex",
-            flexDirection: "row",
-            justifyContent: "center",
-          }}
-        >
-          <SectionSubtitle subtitle_text={"Validators:"} bold={true} />
-          <SectionSubtitle subtitle_text={`${0}/${0}`} />
-        </div>
-      </div>
-      <Divider />
-      <div
-        style={{
-          display: "flex",
-          flexDirection: "row",
-          justifyContent: "center",
-        }}
-      >
-        <div
-          style={{
-            display: "flex",
-            flexDirection: "column",
-            justifyContent: "center",
-          }}
-        >
-          <SectionSubtitle
-            subtitle_text={"Total Tasks:"}
-            margin_bottom={"0vh"}
-            bold={true}
-          />
-          <SectionSubtitle
-            subtitle_text={props.total_tasks}
-            margin_bottom={"0vh"}
-          />
-        </div>
-        <div
-          style={{
-            display: "flex",
-            flexDirection: "column",
-            justifyContent: "center",
-          }}
-        >
-          <SectionSubtitle
-            subtitle_text={"Mapping Rate:"}
-            margin_bottom={"0vh"}
-            bold={true}
-          />
-          <SectionSubtitle
-            subtitle_text={`$${props.mapping_rate_per_task.toFixed(2)}`}
-            margin_bottom={"0vh"}
-          />
-        </div>
-        <div
-          style={{
-            display: "flex",
-            flexDirection: "column",
-            justifyContent: "center",
-          }}
-        >
-          <SectionSubtitle
-            subtitle_text={"Validation Rate:"}
-            margin_bottom={"0vh"}
-            bold={true}
-          />
-          <SectionSubtitle
-            subtitle_text={`$${props.validation_rate_per_task.toFixed(2)}`}
-            margin_bottom={"0vh"}
-          />
-        </div>
-      </div>
-      <Divider />
-      <div
-        style={{
-          display: "flex",
-          flexDirection: "row",
-          justifyContent: "center",
-        }}
-      >
-        <div
-          style={{
-            display: "flex",
-            flexDirection: "column",
-            justifyContent: "center",
-          }}
-        >
-          <SectionSubtitle
-            subtitle_text={"Mapped:"}
-            margin_bottom={"0vh"}
-            bold={true}
-          />
-          <div
-            style={{
-              display: "flex",
-              flexDirection: "column",
-              justifyContent: "center",
-            }}
-          >
-            <SectionSubtitle
-              margin_bottom={"0vh"}
-              subtitle_text={`${props.tasks_mapped}-tasks`}
-            />
-            <SectionSubtitle
-              margin_bottom={"0vh"}
-              subtitle_text={`${(
-                (100 / props.total_tasks) *
-                props.tasks_mapped
-              ).toFixed(2)}%`}
-            />
-          </div>
-        </div>
-        <div
-          style={{
-            display: "flex",
-            flexDirection: "column",
-            justifyContent: "center",
-          }}
-        >
-          <SectionSubtitle
-            subtitle_text={"Validated:"}
-            margin_bottom={"0vh"}
-            bold={true}
-          />
-          <div
-            style={{
-              display: "flex",
-              flexDirection: "column",
-              justifyContent: "center",
-            }}
-          >
-            <SectionSubtitle
-              margin_bottom={"0vh"}
-              subtitle_text={`${props.tasks_validated}-tasks`}
-            />
-            <SectionSubtitle
-              margin_bottom={"0vh"}
-              subtitle_text={`${(
-                (100 / props.total_tasks) *
-                props.tasks_validated
-              ).toFixed(2)}%`}
-            />
-          </div>
-        </div>
-        <div
-          style={{
-            display: "flex",
-            flexDirection: "column",
-            justifyContent: "center",
-          }}
-        >
-          <SectionSubtitle
-            subtitle_text={"Invalidated:"}
-            margin_bottom={"0vh"}
-            bold={true}
-          />
-          <div
-            style={{
-              display: "flex",
-              flexDirection: "column",
-              justifyContent: "center",
-            }}
-          >
-            <SectionSubtitle
-              margin_bottom={"0vh"}
-              subtitle_text={`${props.tasks_invalidated}-tasks`}
-            />
-            <SectionSubtitle
-              margin_bottom={"0vh"}
-              subtitle_text={`${(
-                (100 / props.total_tasks) *
-                props.tasks_invalidated
-              ).toFixed(4)} %`}
-            />
-          </div>
-        </div>
-      </div>
-      <Divider />
+        <h3>{props.name}</h3>
 
-      {props.role && props.role === "admin" ? (
-        <>
-          <div
-            style={{
-              display: "flex",
-              flexDirection: "row",
-              justifyContent: "center",
-            }}
-          >
-            <div
-              style={{
-                display: "flex",
-                flexDirection: "column",
-                justifyContent: "center",
-              }}
-            >
-              <SectionSubtitle
-                subtitle_text={"Current Payout:"}
-                bold={true}
-                margin_bottom={"0vh"}
-              />
-              <SectionSubtitle
-                subtitle_text={`$${
-                  props.total_payout && (props.total_payout / 100).toFixed(2)
-                }`}
-              />
-            </div>
-            <div
-              style={{
-                display: "flex",
-                flexDirection: "column",
-                justifyContent: "center",
-              }}
-            >
-              <SectionSubtitle
-                subtitle_text={"Total Budget:"}
-                bold={true}
-                margin_bottom={"0vh"}
-              />
-              <SectionSubtitle
-                subtitle_text={`$${
-                  props.max_payment && props.max_payment.toFixed(2)
-                }`}
-              />
-            </div>
-          </div>
-        </>
-      ) : (
-        <></>
-      )}
+        <p>Mapping Rate: {`$${props.mapping_rate_per_task.toFixed(2)}`}</p>
+
+        <p>
+          Validation Rate: {`$${props.validation_rate_per_task.toFixed(2)}`}
+        </p>
+
+        {props.role && props.role === "admin" ? (
+          <>
+            <p>
+              Current Payout: $
+              {props.total_payout && (props.total_payout / 100).toFixed(2)}
+            </p>
+            <p>
+              Total Budget: ${props.max_payment && props.max_payment.toFixed(2)}
+            </p>
+          </>
+        ) : (
+          <></>
+        )}
+
+        <ProgressBar
+          // current={props.tasks_mapped + props.tasks_validated}
+          // total={props.total_tasks * 2}
+          current={63}
+          total={100}
+        />
+
+        <button
+          style={{
+            borderRadius: "6px",
+            backgroundColor: "#fd7e14",
+            width: "100%",
+            border: "none",
+            height: "30px",
+            cursor: "pointer",
+          }}
+          onClick={() => {
+            window.open(props.url, "_blank");
+          }}
+        >
+          Start Mapping
+        </button>
+      </div>
     </Card>
   );
 };
