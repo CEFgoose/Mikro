@@ -30,19 +30,24 @@ export const TrainingQuizModal = (props) => {
   const [tempAnswer, setTempAnswer] = useState(null);
 
   useEffect(() => {
-    let tempArray = [];
-    if (props.questions.length > 0) {
-      console.log(props.questions[0].questions[props.questionIndex].question);
-      for (
-        let i = 0;
-        i < props.questions[0].questions[props.questionIndex].incorrect.length;
-        i++
-      ) {
-        tempArray.push(
-          props.questions[0].questions[props.questionIndex].incorrect[i]
-        );
+    if (
+      props.questions.length > 0 &&
+      props.questions[0].questions[props.questionIndex]
+    ) {
+      let tempArray = [];
+
+      const currentQuestion = props.questions[0].questions[props.questionIndex];
+
+      if (currentQuestion.incorrect) {
+        for (let i = 0; i < currentQuestion.incorrect.length; i++) {
+          tempArray.push(currentQuestion.incorrect[i]);
+        }
       }
-      tempArray.push(props.questions[0].questions[props.questionIndex].correct);
+
+      if (currentQuestion.correct) {
+        tempArray.push(currentQuestion.correct);
+      }
+
       setAnswers(shuffleArray(tempArray));
     }
 
@@ -78,7 +83,8 @@ export const TrainingQuizModal = (props) => {
           <>
             <SectionSubtitle
               subtitle_text={`Question ${props.questionIndex + 1}: ${
-                props.questions[0].questions[props.questionIndex].question
+                props.questions[0].questions[props.questionIndex]?.question ||
+                "Undefined Question"
               }?`}
             />
             <div
