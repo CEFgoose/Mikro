@@ -289,90 +289,53 @@ export const AdminProjectsPage = () => {
       />
       <div
         style={{
-          display: "flex",
-          flexDirection: "row",
-          width: "100%",
-          height: "100%",
-          float: "left",
+          position: "absolute",
+          right: "10vw",
         }}
       >
-        <Sidebar isOpen={sidebarOpen} />
-        <div style={{ width: "100%", height: "100%" }}>
-          <div
-            style={{
-              display: "flex",
-              position: "relative",
-              marginLeft: ".5vw",
-              flexDirection: "column",
-              height: "100vh",
-            }}
-          >
-            <div
-              style={{
-                display: "flex",
-                marginLeft: "6vh",
-                flexDirection: "row",
-              }}
-            >
-              <div
-                style={{
-                  position: "absolute",
-                  right: "10vw",
-                }}
-              >
-                <ButtonDivComponent
-                  role={"admin"}
-                  button1={true}
-                  button2={true}
-                  button3={true}
-                  button1_text={"Add"}
-                  button2_text={"Edit"}
-                  button3_text={"Delete"}
-                  button1_action={handleAddOpen}
-                  button2_action={handleModifyOpen}
-                  button3_action={handleDeleteOpen}
-                />
-              </div>
-            </div>
-            <Tabs>
-              <TabList
-                style={{
-                  marginLeft: "3vw",
-                  marginTop: "0vh",
-                  paddingTop: "0vh",
-                }}
-              >
-                <Tab value={1} onClick={(e) => handleSetActiveTab(e)}>
-                  Active
-                </Tab>
-                <Tab value={2} onClick={(e) => handleSetActiveTab(e)}>
-                  Inactive
-                </Tab>
-              </TabList>
-              <TabPanel>
-                <ProjectCardGrid
-                  key={1}
-                  role={user.role}
-                  goToSource={goToSource}
-                  projects={activeProjects}
-                  handleSetProjectSelected={handleSetProjectSelected}
-                  projectSelected={projectSelected}
-                />
-              </TabPanel>
-              <TabPanel>
-                <ProjectCardGrid
-                  role={user.role}
-                  key={1}
-                  goToSource={goToSource}
-                  projects={inactiveProjects}
-                  handleSetProjectSelected={handleSetProjectSelected}
-                  projectSelected={projectSelected}
-                />
-              </TabPanel>
-            </Tabs>
-          </div>
-        </div>
+        <ButtonDivComponent
+          role={"admin"}
+          button1={true}
+          button2={true}
+          button3={true}
+          button1_text={"Add"}
+          button2_text={"Edit"}
+          button3_text={"Delete"}
+          button1_action={handleAddOpen}
+          button2_action={handleModifyOpen}
+          button3_action={handleDeleteOpen}
+        />
       </div>
+      <Tabs>
+        <TabList>
+          <Tab value={1} onClick={(e) => handleSetActiveTab(e)}>
+            Active
+          </Tab>
+          <Tab value={2} onClick={(e) => handleSetActiveTab(e)}>
+            Inactive
+          </Tab>
+        </TabList>
+        <TabPanel>
+          <ProjectCardGrid
+            key={1}
+            role={user.role}
+            goToSource={goToSource}
+            projects={activeProjects}
+            handleSetProjectSelected={handleSetProjectSelected}
+            projectSelected={projectSelected}
+          />
+        </TabPanel>
+        <TabPanel>
+          <ProjectCardGrid
+            role={user.role}
+            key={1}
+            goToSource={goToSource}
+            projects={inactiveProjects}
+            handleSetProjectSelected={handleSetProjectSelected}
+            projectSelected={projectSelected}
+          />
+        </TabPanel>
+      </Tabs>
     </>
   );
 };

@@ -36,6 +36,7 @@ import {
   Navigate,
 } from "react-router-dom";
 import { RegisterUser } from "components/RegisterUser";
+import { Root } from "root";
 
 // APP DECLARATION
 function App() {
@@ -104,113 +105,93 @@ function App() {
   // COMPONENT RENDER - APP PAGE ROUTER
   return (
     <>
-      <div
-        id="google_translate_element"
-        style={{
-          position: "fixed",
-          right: "10vw",
-          zIndex: "1",
-        }}
-      ></div>
-
       <Router>
         <InteractionProvider>
           <DataProvider>
             <Routes>
               <Route path="/" exact={true} element={<LandingPage />} />
-
               <Route path="/login" element={<Login />} />
-
               <Route path="/welcome" element={<WelcomeUserPage />} />
-
               <Route path="/FAQPage" element={<FAQPage />} />
-
               {/* DASHBOARDS */}
-
-              <Route path="/dashboard" element={<UserDashboard />} />
-
+              <Route path="/dashboard" element={<Root />}>
+                <Route index element={<UserDashboard />} />
+              </Route>
               <Route
                 path="/validatordash"
                 element={<Private Component={ValidatorDashboard} />}
               />
-
-              <Route
-                path="/admindash"
-                element={<Private Component={AdminDash} />}
-              />
-
+              <Route path="/admindash" element={<Root />}>
+                <Route index element={<Private Component={AdminDash} />} />
+              </Route>
               {/* CHECKLISTS PAGES */}
 
-              <Route
-                path="/AdminChecklistsPage"
-                element={<Private Component={AdminChecklistsPage} />}
-              />
-
-              <Route
-                path="/UserChecklistsPage"
-                element={<UserChecklistsPage />}
-              />
-
+              <Route path="/AdminChecklistsPage" element={<Root />}>
+                <Route
+                  index
+                  element={<Private Component={AdminChecklistsPage} />}
+                />
+              </Route>
+              <Route path="/UserChecklistsPage" element={<Root />}>
+                <Route index element={<UserChecklistsPage />} />
+              </Route>
               <Route
                 path="/validatorChecklistsPage"
                 element={<Private Component={ValidatorChecklistsPage} />}
               />
-
-              <Route path="/UserProjectsPage" element={<UserProjectsPage />} />
-
+              <Route path="/UserProjectsPage" element={<Root />}>
+                <Route index element={<UserProjectsPage />} />
+              </Route>
               {/* PROJECTS PAGES */}
-              <Route
-                path="/AdminProjectsPage"
-                element={<Private Component={AdminProjectsPage} />}
-              />
-
+              <Route path="/AdminProjectsPage" element={<Root />}>
+                <Route
+                  index
+                  element={<Private Component={AdminProjectsPage} />}
+                />
+              </Route>
               <Route
                 path="/validatorProjectsPage"
                 element={<Private Component={ValidatorProjectsPage} />}
               />
 
-              <Route path="/UserProjectsPage" element={<UserProjectsPage />} />
-
-              <Route
-                path="/AdminTasksPage"
-                element={<Private Component={AdminTasksPage} />}
-              />
-
-              <Route
-                path="/AdminUsersPage"
-                element={<Private Component={AdminUsersPage} />}
-              />
-
-              <Route
-                path="/AdminPaymentsPage"
-                element={<Private Component={AdminPaymentsPage} />}
-              />
-
+              <Route path="/AdminTasksPage" element={<Root />}>
+                <Route index element={<Private Component={AdminTasksPage} />} />
+              </Route>
+              <Route path="/AdminUsersPage" element={<Root />}>
+                <Route index element={<Private Component={AdminUsersPage} />} />
+              </Route>
+              <Route path="/AdminPaymentsPage" element={<Root />}>
+                <Route
+                  index
+                  element={<Private Component={AdminPaymentsPage} />}
+                />
+              </Route>
               <Route
                 path="/ValidatorPaymentsPage"
                 element={<Private Component={ValidatorPaymentsPage} />}
               />
-
-              <Route
-                path="/AdminTrainingPage"
-                element={<Private Component={AdminTrainingPage} />}
-              />
-
+              <Route path="/AdminTrainingPage" element={<Root />}>
+                <Route
+                  index
+                  element={<Private Component={AdminTrainingPage} />}
+                />
+              </Route>
               <Route
                 path="/AdminAccountPage"
                 element={<Private Component={AdminAccountPage} />}
               />
 
-              <Route path="/UserPaymentsPage" element={<UserPaymentsPage />} />
+              <Route path="/UserPaymentsPage" element={<Root />}>
+                <Route index element={<UserPaymentsPage />} />
+              </Route>
 
-              <Route path="/UserTrainingPage" element={<UserTrainingPage />} />
+              <Route path="/UserTrainingPage" element={<Root />}>
+                <Route index element={<UserTrainingPage />} />
+              </Route>
 
               <Route path="/UserAccountPage" element={<UserAccountPage />} />
-
               <Route path="/registerUser" element={<RegisterUser />} />
-
               <Route path="/hotkeys" element={HotkeysTable} />
-
               <Route element={PageNotFound} />
             </Routes>
           </DataProvider>

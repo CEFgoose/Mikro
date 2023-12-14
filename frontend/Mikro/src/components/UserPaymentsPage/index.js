@@ -167,145 +167,85 @@ export const UserPaymentsPage = () => {
         task_ids={taskIDs}
         notes={notes}
       />
+
       <div
         style={{
           display: "flex",
           flexDirection: "row",
-          width: "100%",
-          height: "100%",
-          float: "left",
+          gap: "1vw",
         }}
       >
-        <Sidebar isOpen={sidebarOpen} />
-        <div style={{ width: "100%", height: "100%" }}>
-          <div
-            style={{
-              display: "flex",
-              position: "relative",
-              marginLeft: ".5vw",
-              flexDirection: "column",
-              height: "100vh",
-            }}
-          >
-            <div
-              style={{
-                display: "flex",
-                marginLeft: "6vh",
-                flexDirection: "row",
-                height: "7vh",
-              }}
-            >
-              <h1
-                style={{
-                  marginTop: "1vw",
-                  paddingBottom: "0vh",
-                }}
-              >
-                <strong>Payments:</strong>
-              </h1>
-              <div
-                style={
-                  activeTab === 1
-                    ? { marginTop: "2vw", position: "relative", left: "58vw" }
-                    : { marginTop: "2vw", position: "relative", left: "48vw" }
-                }
-              >
-                <ButtonDivComponent
-                  data={CSVdata}
-                  csv={activeTab === 1 ? false : true}
-                  button2={true}
-                  button1_text={"CSV Report"}
-                  button2_text={
-                    activeTab === 1 ? "Request Pay" : "View Details"
-                  }
-                  button_2_width={"25%"}
-                  button2_action={
-                    activeTab === 1 ? handleRequestOpen : handleDetailsOpen
-                  }
-                />
-              </div>
-            </div>
+        <h2>
+          <strong>Your Earnings-</strong>
+        </h2>
 
-            <div
-              style={{
-                display: "flex",
-                flexDirection: "row",
-                height: "7vh",
-                marginTop: "0vh",
-                marginBottom: "0vh",
-                marginLeft: "5vw",
-              }}
-            >
-              <h2 style={{ marginTop: "1vw", paddingBottom: "2vh" }}>
-                <strong>Your Earnings-</strong>
-              </h2>
-              <span style={{ width: "4vw" }} />
+        <h2>
+          <strong>Mapping:</strong>
+        </h2>
+        <h2>{`$${mappingEarnings && mappingEarnings.toFixed(2)}`}</h2>
 
-              <h2 style={{ marginTop: "1vw", paddingBottom: "2vh" }}>
-                <strong>Mapping:</strong>
-              </h2>
-              <h2 style={{ marginTop: "1vw", paddingBottom: "2vh" }}>
-                {`$${mappingEarnings && mappingEarnings.toFixed(2)}`}
-              </h2>
-              <span style={{ width: "4vw" }} />
-              <h2 style={{ marginTop: "1vw", paddingBottom: "2vh" }}>
-                <strong>Checklists:</strong>
-              </h2>
-              <h2 style={{ marginTop: "1vw", paddingBottom: "2vh" }}>
-                {`$${checklistsEarnings && checklistsEarnings.toFixed(2)}`}
-              </h2>
-
-              <span style={{ width: "4vw" }} />
-              <h2 style={{ marginTop: "1vw", paddingBottom: "2vh" }}>
-                <strong>Total:</strong>
-              </h2>
-              <h2 style={{ marginTop: "1vw", paddingBottom: "2vh" }}>
-                {`$${mappingEarnings && mappingEarnings.toFixed(2)}`}
-              </h2>
-            </div>
-            <Tabs>
-              <TabList
-                style={{
-                  marginLeft: "3vw",
-                  marginTop: "0vh",
-                  paddingTop: "0vh",
-                }}
-              >
-                <Tab value={1} onClick={(e) => handleSetActiveTab(e)}>
-                  Pay Requests
-                </Tab>
-                <Tab value={2} onClick={(e) => handleSetActiveTab(e)}>
-                  Completed Payouts
-                </Tab>
-              </TabList>
-              <TabPanel>
-                <AdminPayRequestsTable
-                  rowsPerPage={rowsPerPage}
-                  page={page}
-                  setPage={setPage}
-                  handleChangeRowsPerPage={handleChangeRowsPerPage}
-                  orgRequests={orgRequests}
-                  setOrgRequests={setOrgRequests}
-                  requestSelected={requestSelected}
-                  handleSetRequestSelected={handleSetRequestSelected}
-                />
-              </TabPanel>
-              <TabPanel>
-                <AdminPaymentsTable
-                  rowsPerPage={rowsPerPage}
-                  page={page}
-                  setPage={setPage}
-                  handleChangeRowsPerPage={handleChangeRowsPerPage}
-                  orgPayments={orgPayments}
-                  setOrgPayments={setOrgPayments}
-                  paymentSelected={paymentSelected}
-                  handleSetPaymentSelected={handleSetPaymentSelected}
-                />
-              </TabPanel>
-            </Tabs>
-          </div>
-        </div>
+        <h2>
+          <strong>Checklists:</strong>
+        </h2>
+        <h2>{`$${checklistsEarnings && checklistsEarnings.toFixed(2)}`}</h2>
+        <h2>
+          <strong>Total:</strong>
+        </h2>
+        <h2>{`$${mappingEarnings && mappingEarnings.toFixed(2)}`}</h2>
       </div>
+      <Tabs>
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "row",
+            justifyContent: "space-between",
+          }}
+        >
+          <TabList>
+            <Tab value={1} onClick={(e) => handleSetActiveTab(e)}>
+              Pay Requests
+            </Tab>
+            <Tab value={2} onClick={(e) => handleSetActiveTab(e)}>
+              Completed Payouts
+            </Tab>
+          </TabList>
+          <ButtonDivComponent
+            data={CSVdata}
+            csv={activeTab === 1 ? false : true}
+            button2={true}
+            button1_text={"CSV Report"}
+            button2_text={activeTab === 1 ? "Request Pay" : "View Details"}
+            button_2_width={"25%"}
+            button2_action={
+              activeTab === 1 ? handleRequestOpen : handleDetailsOpen
+            }
+          />
+        </div>
+        <TabPanel>
+          <AdminPayRequestsTable
+            rowsPerPage={rowsPerPage}
+            page={page}
+            setPage={setPage}
+            handleChangeRowsPerPage={handleChangeRowsPerPage}
+            orgRequests={orgRequests}
+            setOrgRequests={setOrgRequests}
+            requestSelected={requestSelected}
+            handleSetRequestSelected={handleSetRequestSelected}
+          />
+        </TabPanel>
+        <TabPanel>
+          <AdminPaymentsTable
+            rowsPerPage={rowsPerPage}
+            page={page}
+            setPage={setPage}
+            handleChangeRowsPerPage={handleChangeRowsPerPage}
+            orgPayments={orgPayments}
+            setOrgPayments={setOrgPayments}
+            paymentSelected={paymentSelected}
+            handleSetPaymentSelected={handleSetPaymentSelected}
+          />
+        </TabPanel>
+      </Tabs>
     </>
   );
 };

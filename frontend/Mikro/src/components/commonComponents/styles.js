@@ -4,8 +4,6 @@ import close_icon from "../../images/close_icon.png";
 export const Container = styled.div`
   display: flex;
   justify-content: space-evenly;
-  gap: 1rem;
-  margin: 1rem;
 `;
 
 export const Button = styled.div`

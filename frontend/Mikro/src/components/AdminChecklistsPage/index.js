@@ -20,8 +20,6 @@ export const AdminChecklistsPage = () => {
   const { refresh, user } = useContext(AuthContext);
   const {
     createChecklist,
-    sidebarOpen,
-    handleSetSidebarState,
     fetchAdminChecklists,
     orgActiveChecklists,
     orgInActiveChecklists,
@@ -177,10 +175,6 @@ export const AdminChecklistsPage = () => {
     } else {
       toggleChecklistStatus();
     }
-  };
-
-  const handleViewSidebar = () => {
-    handleSetSidebarState();
   };
 
   const handleSetChecklistName = (e) => {
@@ -535,200 +529,121 @@ export const AdminChecklistsPage = () => {
         style={{
           display: "flex",
           flexDirection: "row",
-          width: "100%",
-          height: "100%",
-          float: "left",
-          // backgroundColor:'lightgrey'
         }}
       >
-        <Sidebar isOpen={sidebarOpen} />
-        <div
-          style={{
-            width: "100%",
-            height: "100%",
-            display: "flex",
-            flexDirection: "column",
-            // backgroundColor:'lightsalmon'
-          }}
-        >
-          <div
-            style={{
-              display: "flex",
-              flexDirection: "column",
-              height: "100%",
-              // backgroundColor:'lightseagreen'
-            }}
-          >
-            <div
-              style={{
-                display: "flex",
-                flexDirection: "row",
-                height: "6rem",
-                width: "100%",
-                // backgroundColor:'lightgoldenrodyellow'
-              }}
-            >
-              <div
-                style={{
-                  display: "flex",
-                  flexDirection: "row",
-                  height: "6rem",
-                  width: "56rem",
-                  // backgroundColor:'burlywood'
-                }}
-              >
-                <h1
-                  style={{
-                    marginLeft: "2rem",
-                    marginTop: "1vw",
-                    paddingBottom: "2vh",
-                  }}
-                >
-                  <strong>Checklists:</strong>
-                </h1>
-              </div>
-
-              <div
-                style={{
-                  display: "flex",
-                  flexDirection: "row",
-                  alignItems: "center",
-                  width: "100%",
-                  justifyContent: "right",
-                  marginTop: "2vw",
-                  position: "relative",
-                  // left: "38vw",
-                  // backgroundColor:'lightgrey'
-                }}
-              >
-                <ButtonDivComponent
-                  role={"admin"}
-                  button1={activeTab === 3 || activeTab === 4 ? false : true}
-                  button2={activeTab === 3 || activeTab === 4 ? false : true}
-                  button3={activeTab === 3 || activeTab === 4 ? false : true}
-                  button1_text={"Add"}
-                  button2_text={"Edit"}
-                  button3_text={"Delete"}
-                  button1_action={handleAddOpen}
-                  button2_action={handleModifyOpen}
-                  button3_action={handleDeleteOpen}
-                />
-              </div>
-            </div>
-
-            <div
-              style={{
-                width: "100%",
-                height: "100%",
-                // backgroundColor:'lawngreen'
-              }}
-            >
-              <Tabs style={{ height: "100%" }}>
-                <TabList
-                  style={{
-                    marginLeft: "3vw",
-                    marginTop: "0vh",
-                    paddingTop: "0vh",
-                  }}
-                >
-                  <Tab value={1} onClick={(e) => handleSetActiveTab(e)}>
-                    Active
-                  </Tab>
-
-                  <Tab value={2} onClick={(e) => handleSetActiveTab(e)}>
-                    Inactive
-                  </Tab>
-
-                  <Tab value={3} onClick={(e) => handleSetActiveTab(e)}>
-                    Ready for Confirmation
-                  </Tab>
-
-                  <Tab value={4} onClick={(e) => handleSetActiveTab(e)}>
-                    Completed & Confirmed
-                  </Tab>
-
-                  <Tab value={5} onClick={(e) => handleSetActiveTab(e)}>
-                    Stale
-                  </Tab>
-                </TabList>
-
-                <TabPanel>
-                  <ChecklistCardGrid
-                    type="Admin"
-                    key={1}
-                    role={user.role}
-                    goToSource={goToSource}
-                    checklists={orgActiveChecklists}
-                    handleSetChecklistSelected={handleSetChecklistSelected}
-                    handleAddItemOpen={handleAddItemOpen}
-                    handleCommentOpen={handleCommentOpen}
-                    checklistSelected={checklistSelected}
-                  />
-                </TabPanel>
-
-                <TabPanel>
-                  <ChecklistCardGrid
-                    type="Admin"
-                    role={user.role}
-                    key={2}
-                    goToSource={goToSource}
-                    checklists={orgInActiveChecklists}
-                    handleCommentOpen={handleCommentOpen}
-                    handleSetChecklistSelected={handleSetChecklistSelected}
-                    handleAddItemOpen={handleAddItemOpen}
-                    checklistSelected={checklistSelected}
-                  />
-                </TabPanel>
-
-                <TabPanel>
-                  <ChecklistCardGrid
-                    type={"Validator"}
-                    role={user.role}
-                    key={3}
-                    checklists={orgUserCompletedChecklists}
-                    handleSetComment={handleSetComment}
-                    handleAddComment={handleAddComment}
-                    handleCommentOpen={handleCommentOpen}
-                    commentOpen={commentOpen}
-                    handleDeleteComment={handleDeleteComment}
-                    handleConfirmItem={handleConfirmItem}
-                    commentSelected={commentSelected}
-                    handleSetCommentSelected={handleSetCommentSelected}
-                  />
-                </TabPanel>
-
-                <TabPanel>
-                  <ChecklistCardGrid
-                    type={"Validator"}
-                    role={user.role}
-                    key={4}
-                    checklists={orgUserConfirmedChecklists}
-                    handleCommentOpen={handleCommentOpen}
-                    handleSetChecklistSelected={handleSetChecklistSelected}
-                    handleDeleteComment={handleDeleteComment}
-                    commentSelected={commentSelected}
-                    handleSetCommentSelected={handleSetCommentSelected}
-                  />
-                </TabPanel>
-
-                <TabPanel>
-                  <ChecklistCardGrid
-                    type={"Validator"}
-                    role={user.role}
-                    key={5}
-                    checklists={orgStaleChecklists}
-                    handleCommentOpen={handleCommentOpen}
-                    handleSetChecklistSelected={handleSetChecklistSelected}
-                    handleDeleteComment={handleDeleteComment}
-                    commentSelected={commentSelected}
-                    handleSetCommentSelected={handleSetCommentSelected}
-                  />
-                </TabPanel>
-              </Tabs>
-            </div>
-          </div>
-        </div>
+        <h1>
+          <strong>Checklists:</strong>
+        </h1>
+        <ButtonDivComponent
+          role={"admin"}
+          button1={activeTab === 3 || activeTab === 4 ? false : true}
+          button2={activeTab === 3 || activeTab === 4 ? false : true}
+          button3={activeTab === 3 || activeTab === 4 ? false : true}
+          button1_text={"Add"}
+          button2_text={"Edit"}
+          button3_text={"Delete"}
+          button1_action={handleAddOpen}
+          button2_action={handleModifyOpen}
+          button3_action={handleDeleteOpen}
+        />
       </div>
+
+      <Tabs>
+        <TabList>
+          <Tab value={1} onClick={(e) => handleSetActiveTab(e)}>
+            Active
+          </Tab>
+
+          <Tab value={2} onClick={(e) => handleSetActiveTab(e)}>
+            Inactive
+          </Tab>
+
+          <Tab value={3} onClick={(e) => handleSetActiveTab(e)}>
+            Ready for Confirmation
+          </Tab>
+
+          <Tab value={4} onClick={(e) => handleSetActiveTab(e)}>
+            Completed & Confirmed
+          </Tab>
+
+          <Tab value={5} onClick={(e) => handleSetActiveTab(e)}>
+            Stale
+          </Tab>
+        </TabList>
+
+        <TabPanel>
+          <ChecklistCardGrid
+            type="Admin"
+            key={1}
+            role={user.role}
+            goToSource={goToSource}
+            checklists={orgActiveChecklists}
+            handleSetChecklistSelected={handleSetChecklistSelected}
+            handleAddItemOpen={handleAddItemOpen}
+            handleCommentOpen={handleCommentOpen}
+            checklistSelected={checklistSelected}
+          />
+        </TabPanel>
+
+        <TabPanel>
+          <ChecklistCardGrid
+            type="Admin"
+            role={user.role}
+            key={2}
+            goToSource={goToSource}
+            checklists={orgInActiveChecklists}
+            handleCommentOpen={handleCommentOpen}
+            handleSetChecklistSelected={handleSetChecklistSelected}
+            handleAddItemOpen={handleAddItemOpen}
+            checklistSelected={checklistSelected}
+          />
+        </TabPanel>
+
+        <TabPanel>
+          <ChecklistCardGrid
+            type={"Validator"}
+            role={user.role}
+            key={3}
+            checklists={orgUserCompletedChecklists}
+            handleSetComment={handleSetComment}
+            handleAddComment={handleAddComment}
+            handleCommentOpen={handleCommentOpen}
+            commentOpen={commentOpen}
+            handleDeleteComment={handleDeleteComment}
+            handleConfirmItem={handleConfirmItem}
+            commentSelected={commentSelected}
+            handleSetCommentSelected={handleSetCommentSelected}
+          />
+        </TabPanel>
+
+        <TabPanel>
+          <ChecklistCardGrid
+            type={"Validator"}
+            role={user.role}
+            key={4}
+            checklists={orgUserConfirmedChecklists}
+            handleCommentOpen={handleCommentOpen}
+            handleSetChecklistSelected={handleSetChecklistSelected}
+            handleDeleteComment={handleDeleteComment}
+            commentSelected={commentSelected}
+            handleSetCommentSelected={handleSetCommentSelected}
+          />
+        </TabPanel>
+
+        <TabPanel>
+          <ChecklistCardGrid
+            type={"Validator"}
+            role={user.role}
+            key={5}
+            checklists={orgStaleChecklists}
+            handleCommentOpen={handleCommentOpen}
+            handleSetChecklistSelected={handleSetChecklistSelected}
+            handleDeleteComment={handleDeleteComment}
+            commentSelected={commentSelected}
+            handleSetCommentSelected={handleSetCommentSelected}
+          />
+        </TabPanel>
+      </Tabs>
     </>
   );
 };

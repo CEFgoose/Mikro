@@ -3,7 +3,6 @@ import csvtojson from "csvtojson";
 import { poster } from "calls";
 import { DataContext } from "common/DataContext";
 import { AuthContext } from "common/AuthContext";
-import Sidebar from "../sidebar/sidebar";
 import useToggle from "../../hooks/useToggle.js";
 import "./styles.css";
 import { Table, TableBody, TablePagination } from "@mui/material";
@@ -24,8 +23,6 @@ import {
 
 export const AdminUsersPage = () => {
   const {
-    sidebarOpen,
-    handleSetSidebarState,
     orgUsers,
     setOrgUsers,
     fetchOrgUsers,
@@ -77,10 +74,6 @@ export const AdminUsersPage = () => {
 
   const handleSetUserSelected = (id) => {
     setUserSelected(id);
-  };
-
-  const handleViewSidebar = () => {
-    handleSetSidebarState();
   };
 
   const handleRoleSelected = (e) => {
@@ -161,165 +154,98 @@ export const AdminUsersPage = () => {
         handleRoleSelected={handleRoleSelected}
         do_modify_user={do_modify_user}
       />
+
       <div
         style={{
           display: "flex",
           flexDirection: "row",
-          width: "100%",
-          height: "100%",
-          float: "left",
+          justifyContent: "space-between",
         }}
       >
-        <Sidebar isOpen={sidebarOpen} />
-        <div style={{ width: "100%", height: "100%" }}>
-          <div
-            style={{
-              display: "flex",
-              position: "relative",
-              flexDirection: "column",
-              height: "100vh",
-              // backgroundColor:'lightgreen'
-            }}
-          >
-            <div
-              style={{
-                display: "flex",
-                flexDirection: "row",
-                width: "100%",
-                // backgroundColor:'grey'
-              }}
-            >
-              <div
-                style={{
-                  display: "flex",
-                  flexDirection: "row",
-                  width: "40rem",
-                  // backgroundColor:'lightyellow'
-                }}
-              >
-                <h1
-                  style={{
-                    marginLeft: "3vw",
-                    marginTop: "1vw",
-                    paddingBottom: "2vh",
-                    width: "auto",
-                  }}
-                >
-                  <strong>Users:</strong>
-                </h1>
-              </div>
+        <h1>
+          <strong>Users:</strong>
+        </h1>
 
-              <div
-                style={{
-                  width: "100%",
-                  marginTop: "2vw",
-                  position: "relative",
-                  // backgroundColor:'blue'
-                }}
-              >
-                <ButtonDivComponent
-                  handleFileSelect={handleFileSelect}
-                  role={"admin"}
-                  button1={true}
-                  button2={true}
-                  button3={true}
-                  button4={true}
-                  button1_text={"Add"}
-                  button2_text={"Edit"}
-                  button3_text={"Delete"}
-                  button4_text={"Import"}
-                  button1_action={handleAddOpen}
-                  button2_action={handleModifyOpen}
-                  button3_action={handleDeleteOpen}
-                  button4_action={() => {
-                    const input = document.createElement("input");
-                    input.type = "file";
-                    input.accept = ".csv";
-                    input.onchange = handleFileSelect;
-                    input.click();
-                  }}
-                />
-              </div>
-            </div>
-            <div
-              style={{
-                display: "flex",
-                flexDirection: "row",
-                marginLeft: "3.5vw",
-                height: "79vh",
-                width: "77.5vw",
-              }}
-            >
-              <TableCard
-                style={{
-                  boxShadow: "1px 1px 6px 2px gray",
-                  width: "98%",
-                  overflowY: "scroll",
-                }}
-              >
-                <CardMediaStyle />
-                <Table>
-                  <ListHead
-                    headLabel={USERS_TABLE_HEADERS}
-                    tableData={orgUsers}
-                    updateData={setOrgUsers}
-                  />
-
-                  <TableBody>
-                    {orgUsers &&
-                      orgUsers.slice().map((row) => {
-                        const {
-                          id,
-                          name,
-                          role,
-                          assigned_projects,
-                          total_tasks_mapped,
-                          total_tasks_validated,
-                          total_tasks_invalidated,
-                          awaiting_payment,
-                          total_payout,
-                        } = row;
-                        return (
-                          <ProjectRow
-                            sx={{
-                              "&:hover": {
-                                backgroundColor: "rgba(145, 165, 172, 0.5)",
-                                cursor: "pointer",
-                              },
-                            }}
-                            align="center"
-                            key={row}
-                            tabIndex={-1}
-                            onClick={() => handleSetUserSelected(id)}
-                            selected={userSelected === id}
-                          >
-                            <ProjectCell entry={<strong>{name}</strong>} />
-                            <ProjectCell entry={role} />
-                            <ProjectCell entry={assigned_projects} />
-                            <ProjectCell entry={total_tasks_mapped} />
-                            <ProjectCell entry={total_tasks_validated} />
-                            <ProjectCell entry={total_tasks_invalidated} />
-                            <ProjectCell
-                              entry={`$${
-                                awaiting_payment && awaiting_payment.toFixed(2)
-                              }`}
-                            />
-                            <ProjectCell
-                              entry={`$${
-                                total_payout && total_payout.toFixed(2)
-                              }`}
-                            />
-                          </ProjectRow>
-                        );
-                      })}
-                  </TableBody>
-                  {/* </div> */}
-                </Table>
-              </TableCard>
-            </div>
-          </div>
-        </div>
+        <ButtonDivComponent
+          handleFileSelect={handleFileSelect}
+          role={"admin"}
+          button1={true}
+          button2={true}
+          button3={true}
+          button4={true}
+          button1_text={"Add"}
+          button2_text={"Edit"}
+          button3_text={"Delete"}
+          button4_text={"Import"}
+          button1_action={handleAddOpen}
+          button2_action={handleModifyOpen}
+          button3_action={handleDeleteOpen}
+          button4_action={() => {
+            const input = document.createElement("input");
+            input.type = "file";
+            input.accept = ".csv";
+            input.onchange = handleFileSelect;
+            input.click();
+          }}
+        />
       </div>
+      <TableCard>
+        <CardMediaStyle />
+        <Table>
+          <ListHead
+            headLabel={USERS_TABLE_HEADERS}
+            tableData={orgUsers}
+            updateData={setOrgUsers}
+          />
+
+          <TableBody>
+            {orgUsers &&
+              orgUsers.slice().map((row) => {
+                const {
+                  id,
+                  name,
+                  role,
+                  assigned_projects,
+                  total_tasks_mapped,
+                  total_tasks_validated,
+                  total_tasks_invalidated,
+                  awaiting_payment,
+                  total_payout,
+                } = row;
+                return (
+                  <ProjectRow
+                    sx={{
+                      "&:hover": {
+                        backgroundColor: "rgba(145, 165, 172, 0.5)",
+                        cursor: "pointer",
+                      },
+                    }}
+                    align="center"
+                    key={row}
+                    tabIndex={-1}
+                    onClick={() => handleSetUserSelected(id)}
+                    selected={userSelected === id}
+                  >
+                    <ProjectCell entry={<strong>{name}</strong>} />
+                    <ProjectCell entry={role} />
+                    <ProjectCell entry={assigned_projects} />
+                    <ProjectCell entry={total_tasks_mapped} />
+                    <ProjectCell entry={total_tasks_validated} />
+                    <ProjectCell entry={total_tasks_invalidated} />
+                    <ProjectCell
+                      entry={`$${
+                        awaiting_payment && awaiting_payment.toFixed(2)
+                      }`}
+                    />
+                    <ProjectCell
+                      entry={`$${total_payout && total_payout.toFixed(2)}`}
+                    />
+                  </ProjectRow>
+                );
+              })}
+          </TableBody>
+        </Table>
+      </TableCard>
     </>
   );
 };

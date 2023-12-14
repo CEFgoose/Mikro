@@ -1,7 +1,6 @@
 import React, { useContext, useEffect, useState } from "react";
 import { DataContext } from "../../common/DataContext";
 import { AuthContext } from "../../common/AuthContext";
-import Sidebar from "../sidebar/sidebar";
 import { Table, TableBody, TablePagination } from "@mui/material";
 import useToggle from "../../hooks/useToggle.js";
 import "./styles.css";
@@ -18,8 +17,6 @@ import {
   ValidationCard,
   PaymentCard,
 } from "components/commonComponents/commonComponents";
-
-import ApexCharts from "apexcharts";
 
 export const UserDashboard = () => {
   const {
@@ -170,203 +167,126 @@ export const UserDashboard = () => {
 
   return (
     <>
+      {showTutorial && (
+        <TutorialDialog
+          open={true}
+          onClose={handleDialogClose}
+          title={tutorialStepTitle}
+          content={tutorialStepContent}
+          button_1_text={tutorialStep >= 1 ? "Previous" : "Skip"}
+          button_1_action={
+            tutorialStep === 0 ? handleDialogClose : previousTutorialStep
+          }
+          button_2_text={tutorialStep === 8 ? "Go to Training" : "Next"}
+          button_2_action={
+            tutorialStep === 8 ? navigateToFirstTraining : nextTutorialStep
+          }
+        />
+      )}
+
       <div
         style={{
           display: "flex",
           flexDirection: "row",
-          width: "100%",
-          height: "100%",
-          float: "left",
+          position: "relative",
+          height: "27vh",
+          gap: "4.5vw",
         }}
       >
-        <Sidebar></Sidebar>
-        {showTutorial && (
-          <TutorialDialog
-            open={true}
-            onClose={handleDialogClose}
-            title={tutorialStepTitle}
-            content={tutorialStepContent}
-            button_1_text={tutorialStep >= 1 ? "Previous" : "Skip"}
-            button_1_action={
-              tutorialStep === 0 ? handleDialogClose : previousTutorialStep
-            }
-            button_2_text={tutorialStep === 8 ? "Go to Training" : "Next"}
-            button_2_action={
-              tutorialStep === 8 ? navigateToFirstTraining : nextTutorialStep
-            }
-          />
-        )}
-        <div style={{ width: "100%", height: "100%" }}>
-          <div
-            style={{
-              display: "flex",
-              position: "relative",
-              marginLeft: ".25vw",
-              flexDirection: "column",
-              height: "100vh",
-            }}
-          >
-            <div
-              style={{
-                display: "flex",
-                flexDirection: "row",
-                position: "relative",
-                height: "27vh",
-              }}
-            >
-              <TasksMappedCard
-                marginLeft={"4.5vw"}
-                // marginRight={"5vw"}
-                title={"Tasks Mapped"}
-                tasksMapped={tasksMapped}
-                lineData={[1, 1, 15, 17, 20, 3, 7, 1]}
-                width={"22vw"}
-              ></TasksMappedCard>
+        <TasksMappedCard
+          title={"Tasks Mapped"}
+          tasksMapped={tasksMapped}
+          lineData={[1, 1, 15, 17, 20, 3, 7, 1]}
+          width={"22vw"}
+        ></TasksMappedCard>
 
-              <ValidationCard
-                marginLeft={"4.5vw"}
-                // marginRight={"3.5vw"}
-                title={"Validation Overview"}
-                total={tasksMapped}
-                validatedCurrent={tasksValidated}
-                invalidCurrent={tasksInvalidated}
-                width={"22vw"}
-              ></ValidationCard>
-              <PaymentCard
-                marginLeft={"4.5vw"}
-                // marginRight={"3.5vw"}
-                title={"Your Current Balance"}
-                width={"22vw"}
-                currentBalance={
-                  payableTotal !== null ? payableTotal.toFixed(2) : "-"
-                }
-                overallAccountPayment={`$${
-                  paidTotal !== null ? paidTotal.toFixed(2) : "-"
-                }`}
-              ></PaymentCard>
-              {/* <DashboardCard
-                marginLeft={"3.5vw"}
-                marginRight={"5vw"}
-                width={"20vw"}
-                title={"Projects Overview"}
-                subtitle_text_1={"Joined:"}
-                subtitle_text_2={"Available:"}
-                subtitle_text_3={"Completed:"}
-                value_1={activeProjectsCount ? activeProjectsCount : "-"}
-                value_2={
-                  inactiveProjectsCount !== null ? inactiveProjectsCount : "-"
-                }
-                value_3={completedProjects !== null ? completedProjects : "-"}
-              /> */}
-              {/* <DashboardCard
-                marginLeft={"3.5vw"}
-                marginRight={"5.5vw"}
-                width={"20vw"}
-                title={"Tasks Overview"}
-                subtitle_text_1={"Awaiting Approval:"}
-                subtitle_text_2={"Approved:"}
-                subtitle_text_3={"Invalidated:"}
-                value_1={tasksMapped !== null ? tasksMapped : "-"}
-                value_2={tasksValidated !== null ? tasksValidated : "-"}
-                value_3={tasksInvalidated !== null ? invalidated_tasks : "-"}
-              /> */}
-              {/* 
-              <DashboardCard
-                marginLeft={"3.5vw"}
-                width={"20vw"}
-                title={"Payment Overview"}
-                subtitle_text_1={"Payable Total:"}
-                subtitle_text_2={"Payout Requests:"}
-                subtitle_text_3={"Payouts to Date:"}
-                value_1={`$${
-                  payableTotal !== null ? payableTotal.toFixed(2) : "-"
-                }`}
-                value_2={`$${
-                  requestsTotal !== null ? requestsTotal.toFixed(2) : "-"
-                }`}
-                value_3={`$${paidTotal !== null ? paidTotal.toFixed(2) : "-"}`}
-              /> */}
-            </div>
-            <div
-              style={{
-                display: "flex",
-                flexDirection: "row",
-                marginLeft: "4.5vw",
-                marginRight: "5vw",
-                height: "66vh",
-                // width: "6w",
-              }}
-            >
-              <TableCard
-                style={{
-                  boxShadow: "1px 1px 6px 2px gray",
-                  overflowY: "scroll",
-                }}
-              >
-                <CardMediaStyle />
-                <Table style={{}}>
-                  <ListHead
-                    headLabel={USER_PROJECTS_TABLE_HEADERS}
-                    tableData={activeProjects}
-                    updateData={setActiveProjects}
-                  />
-                  <TableBody>
-                    {activeProjects &&
-                      activeProjects.slice().map((row) => {
-                        const {
-                          id,
-                          name,
-                          difficulty,
-                          mapping_rate_per_task,
-                          total_tasks,
-                          tasks_mapped,
-                          tasks_approved,
-                          tasks_unapproved,
-                          url,
-                          user_earnings,
-                        } = row;
-                        return (
-                          <ProjectRow
-                            sx={{
-                              "&:hover": {
-                                backgroundColor: "rgba(145, 165, 172, 0.5)",
-                                cursor: "pointer",
-                              },
-                            }}
-                            align="center"
-                            key={id}
-                            tabIndex={-1}
-                            onClick={() => handleSetProjectSelected(id)}
-                            selected={projectSelected === id}
-                            onDoubleClick={() => goToSource(url)}
-                          >
-                            <ProjectCell entry={<strong>{name}</strong>} />
-                            <ProjectCell entry={difficulty} />
-                            <ProjectCell
-                              entry={`$${
-                                mapping_rate_per_task &&
-                                mapping_rate_per_task.toFixed(2)
-                              }`}
-                            />
-                            <ProjectCell entry={total_tasks} />
+        <ValidationCard
+          title={"Validation Overview"}
+          total={tasksMapped}
+          validatedCurrent={tasksValidated}
+          invalidCurrent={tasksInvalidated}
+          width={"22vw"}
+        ></ValidationCard>
+        <PaymentCard
+          title={"Your Current Balance"}
+          width={"22vw"}
+          currentBalance={payableTotal !== null ? payableTotal.toFixed(2) : "-"}
+          overallAccountPayment={`$${
+            paidTotal !== null ? paidTotal.toFixed(2) : "-"
+          }`}
+        ></PaymentCard>
+      </div>
+      <div
+        style={{
+          display: "flex",
+          flexDirection: "row",
+          height: "66vh",
+        }}
+      >
+        <TableCard
+          style={{
+            overflow: "auto",
+          }}
+        >
+          <CardMediaStyle />
+          <Table>
+            <ListHead
+              headLabel={USER_PROJECTS_TABLE_HEADERS}
+              tableData={activeProjects}
+              updateData={setActiveProjects}
+            />
+            <TableBody>
+              {activeProjects &&
+                activeProjects.slice().map((row) => {
+                  const {
+                    id,
+                    name,
+                    difficulty,
+                    mapping_rate_per_task,
+                    total_tasks,
+                    tasks_mapped,
+                    tasks_approved,
+                    tasks_unapproved,
+                    url,
+                    user_earnings,
+                  } = row;
+                  return (
+                    <ProjectRow
+                      sx={{
+                        "&:hover": {
+                          backgroundColor: "rgba(145, 165, 172, 0.5)",
+                          cursor: "pointer",
+                        },
+                      }}
+                      align="center"
+                      key={id}
+                      tabIndex={-1}
+                      onClick={() => handleSetProjectSelected(id)}
+                      selected={projectSelected === id}
+                      onDoubleClick={() => goToSource(url)}
+                    >
+                      <ProjectCell entry={<strong>{name}</strong>} />
+                      <ProjectCell entry={difficulty} />
+                      <ProjectCell
+                        entry={`$${
+                          mapping_rate_per_task &&
+                          mapping_rate_per_task.toFixed(2)
+                        }`}
+                      />
+                      <ProjectCell entry={total_tasks} />
 
-                            <ProjectCell entry={tasks_mapped} />
-                            <ProjectCell entry={tasks_approved} />
-                            <ProjectCell entry={tasks_unapproved} />
-                            <ProjectCell
-                              entry={`$${
-                                user_earnings && user_earnings.toFixed(2)
-                              }`}
-                            />
-                          </ProjectRow>
-                        );
-                      })}
-                  </TableBody>
-                </Table>
-              </TableCard>
-            </div>
-          </div>
-        </div>
+                      <ProjectCell entry={tasks_mapped} />
+                      <ProjectCell entry={tasks_approved} />
+                      <ProjectCell entry={tasks_unapproved} />
+                      <ProjectCell
+                        entry={`$${user_earnings && user_earnings.toFixed(2)}`}
+                      />
+                    </ProjectRow>
+                  );
+                })}
+            </TableBody>
+          </Table>
+        </TableCard>
       </div>
     </>
   );

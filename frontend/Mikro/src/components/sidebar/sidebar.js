@@ -23,17 +23,12 @@ import mikroLogo from "../../images/5.png";
 import "./styles.css";
 import {
   Header,
-  MikroLogoClosed,
-  MikroLogoOpen,
   MenuItem,
   MenuItemTop,
   ProjectIcon,
-  ProjectIconContainer,
   RoleBarWrapper,
   RoleHeader,
   RoleSubHeader,
-  SidebarClosedContainer,
-  SidebarOpenedContainer,
 } from "./styles.js";
 import { ConfirmButton } from "components/commonComponents/commonComponents";
 import { KaartLogoOpen } from "components/landingPage/styles";
@@ -47,7 +42,6 @@ const Sidebar = (props) => {
   const { history, sidebarOpen, handleSetSidebarState } =
     useContext(DataContext);
   const { user, refresh, setLocalUser } = useContext(AuthContext);
-  let kaart_url = "https://kaart.com/";
 
   useEffect(() => {
     if (user && user.name && user.role) {
@@ -74,11 +68,13 @@ const Sidebar = (props) => {
     <div>
       <div
         style={{
+          position: "sticky",
+          top: 0,
           display: "flex",
           flexDirection: "column",
-          height: "100%",
           backgroundColor: "white",
-          boxShadow: "1px 1px 6px 2px gray",
+          height: "100vh",
+          boxShadow: "0 0 4px gray",
           alignItems: "left",
           zIndex: 999,
           width: sidebarOpen ? "15vw" : "",

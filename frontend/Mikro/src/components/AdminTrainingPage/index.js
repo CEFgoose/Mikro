@@ -15,8 +15,6 @@ import {
 
 export const AdminTrainingPage = () => {
   const {
-    sidebarOpen,
-    handleSetSidebarState,
     createTraining,
     orgMappingTrainings,
     setOrgMappingTrainings,
@@ -67,17 +65,12 @@ export const AdminTrainingPage = () => {
   }, [activeTab]);
 
   const handleSetTrainingSelected = (training) => {
-    console.log(training)
     setTrainingSelected(training.id);
     setTrainingSelectedTitle(training.title);
     setTrainingSelectedURL(training.training_url);
     setTrainingSelectedValue(training.point_value);
     setTrainingSelectedQuestions(training.questions);
     setTrainingSelectedDifficulty(training.difficulty);
-  };
-
-  const handleViewSidebar = () => {
-    handleSetSidebarState();
   };
 
   const handleModifyOpen = () => {
@@ -173,104 +166,63 @@ export const AdminTrainingPage = () => {
         style={{
           display: "flex",
           flexDirection: "row",
-          width: "100%",
-          height: "100%",
-          float: "left",
+          justifyContent: "space-between",
         }}
       >
-        <Sidebar isOpen={sidebarOpen} toggleSidebar={handleViewSidebar} />
-        <div style={{ width: "100%", height: "100%" }}>
-          <div
-            style={{
-              display: "flex",
-              position: "relative",
-              marginLeft: ".5vw",
-              flexDirection: "column",
-              height: "100vh",
-            }}
-          >
-            <div
-              style={{
-                display: "flex",
-                marginLeft: "6vh",
-                flexDirection: "row",
-              }}
-            >
-              <h1
-                style={{
-                  marginTop: "1vw",
-                  paddingBottom: "2vh",
-                }}
-              >
-                <strong>Training:</strong>
-              </h1>
-              <div
-                style={{
-                  marginTop: "2vw",
-                  position: "relative",
-                  left: "40vw",
-                }}
-              >
-                <ButtonDivComponent
-                  button1={true}
-                  button1_text={"Add"}
-                  button1_action={handleAddOpen}
-                  button2={true}
-                  button2_text={"Edit"}
-                  button2_action={handleModifyOpen}
-                  button3={true}
-                  button3_text={"Delete"}
-                  button3_action={handleDeleteOpen}
-                />
-              </div>
-            </div>
-            <Tabs>
-              <TabList
-                style={{
-                  marginLeft: "3vw",
-                  marginTop: "0vh",
-                  paddingTop: "0vh",
-                }}
-              >
-                <Tab value={1} onClick={(e) => handleSetActiveTab(e)}>
-                  Mapping
-                </Tab>
-                <Tab value={2} onClick={(e) => handleSetActiveTab(e)}>
-                  Validation
-                </Tab>
-                <Tab value={3} onClick={(e) => handleSetActiveTab(e)}>
-                  Project Specific
-                </Tab>
-              </TabList>
-              <TabPanel>
-                <AdminTrainingTable
-                  training_type={training_type}
-                  orgTrainings={orgMappingTrainings}
-                  setOrgTrainings={setOrgMappingTrainings}
-                  trainingSelected={trainingSelected}
-                  handleSetTrainingSelected={handleSetTrainingSelected}
-                />
-              </TabPanel>
-              <TabPanel>
-                <AdminTrainingTable
-                  trainingSelected={trainingSelected}
-                  orgTrainings={orgValidationTrainings}
-                  setOrgTrainings={setOrgValidationTrainings}
-                  handleSetTrainingSelected={handleSetTrainingSelected}
-                />
-              </TabPanel>
-              <TabPanel>
-                <AdminTrainingTable
-                  trainingSelected={trainingSelected}
-                  handleSetTrainingSelected={handleSetTrainingSelected}
-                  orgTrainings={orgProjectTrainings}
-                  setOrgTrainings={setOrgProjectTrainings}
-                />
-              </TabPanel>
-            </Tabs>
-          </div>
-        </div>
+        <h1>
+          <strong>Training:</strong>
+        </h1>
+
+        <ButtonDivComponent
+          button1={true}
+          button1_text={"Add"}
+          button1_action={handleAddOpen}
+          button2={true}
+          button2_text={"Edit"}
+          button2_action={handleModifyOpen}
+          button3={true}
+          button3_text={"Delete"}
+          button3_action={handleDeleteOpen}
+        />
       </div>
+      <Tabs>
+        <TabList>
+          <Tab value={1} onClick={(e) => handleSetActiveTab(e)}>
+            Mapping
+          </Tab>
+          <Tab value={2} onClick={(e) => handleSetActiveTab(e)}>
+            Validation
+          </Tab>
+          <Tab value={3} onClick={(e) => handleSetActiveTab(e)}>
+            Project Specific
+          </Tab>
+        </TabList>
+        <TabPanel>
+          <AdminTrainingTable
+            training_type={training_type}
+            orgTrainings={orgMappingTrainings}
+            setOrgTrainings={setOrgMappingTrainings}
+            trainingSelected={trainingSelected}
+            handleSetTrainingSelected={handleSetTrainingSelected}
+          />
+        </TabPanel>
+        <TabPanel>
+          <AdminTrainingTable
+            trainingSelected={trainingSelected}
+            orgTrainings={orgValidationTrainings}
+            setOrgTrainings={setOrgValidationTrainings}
+            handleSetTrainingSelected={handleSetTrainingSelected}
+          />
+        </TabPanel>
+        <TabPanel>
+          <AdminTrainingTable
+            trainingSelected={trainingSelected}
+            handleSetTrainingSelected={handleSetTrainingSelected}
+            orgTrainings={orgProjectTrainings}
+            setOrgTrainings={setOrgProjectTrainings}
+          />
+        </TabPanel>
+      </Tabs>
     </>
   );
 };

@@ -319,13 +319,9 @@ export const AddTrainingModal = (props) => {
             </div>
           </>
         ) : page === 3 ? (
-          <>
-
-
-          </>
+          <></>
         ) : page === 4 ? (
-          <>
-          </>
+          <></>
         ) : (
           <></>
         )}
@@ -357,7 +353,6 @@ export const AddTrainingModal = (props) => {
 };
 
 export const ModifyTrainingModal = (props) => {
-
   const {
     trainingQuestions,
     setTrainingQuestions,
@@ -368,86 +363,75 @@ export const ModifyTrainingModal = (props) => {
 
   const [page, setPage] = useState(1);
   const [questionIndex, setQuestionIndex] = useState(0);
-  const [tempQuestions,setTempQuestions]=useState(null)
+  const [tempQuestions, setTempQuestions] = useState(null);
   const [tempQuestion, setTempQuestion] = useState(null);
   const [tempCorrect, setTempCorrect] = useState(null);
   const [tempIncorrect, setTempIncorrect] = useState(null);
   const [tempIncorrectAnswers, setTempIncorrectAnswers] = useState([]);
   const [lastPage, toggleLastPage] = useToggle(false);
-  const [addQuestion,toggleAddQuestion]=useToggle(false)
+  const [addQuestion, toggleAddQuestion] = useToggle(false);
   useEffect(() => {
-    if (props.questions !== null){
-      setTempQuestions(props.questions)
+    if (props.questions !== null) {
+      setTempQuestions(props.questions);
     }
     // eslint-disable-next-line
   }, [props.questions]);
 
-
   useEffect(() => {
-    console.log(addQuestion)
+    console.log(addQuestion);
     // eslint-disable-next-line
   }, [addQuestion]);
 
   useEffect(() => {
-
-    if (tempQuestions!==null){
-      console.log(questionIndex,tempQuestions.length)
+    if (tempQuestions !== null) {
+      console.log(questionIndex, tempQuestions.length);
       if (questionIndex + 2 > tempQuestions.length) {
         toggleLastPage();
       }
-      if(questionIndex === tempQuestions.length && !addQuestion){
-        handleModifyTraining()
-        return
+      if (questionIndex === tempQuestions.length && !addQuestion) {
+        handleModifyTraining();
+        return;
       }
-      if(questionIndex<tempQuestions.length){
+      if (questionIndex < tempQuestions.length) {
         setTempQuestion(tempQuestions[questionIndex].question);
         setTempCorrect(tempQuestions[questionIndex].correct);
         setTempIncorrectAnswers(tempQuestions[questionIndex].incorrect);
         setTrainingQuestions(tempQuestions);
       }
-
-
     }
     // console.log(tempQuestions,props.questions)
 
     // eslint-disable-next-line
-  }, [questionIndex,props.questions,tempQuestions]);
-
-
+  }, [questionIndex, props.questions, tempQuestions]);
 
   const handleSetPage = (operator) => {
     if (page === 1) {
       setPage(2);
-      setQuestionIndex(0)
+      setQuestionIndex(0);
     }
     if (page === 2) {
-      handleSetQuestionObject()
+      handleSetQuestionObject();
 
       if (questionIndex + 1 <= tempQuestions.length) {
-        if(operator === 'back'){
-          if (addQuestion===true){
-            toggleAddQuestion(false)
+        if (operator === "back") {
+          if (addQuestion === true) {
+            toggleAddQuestion(false);
           }
-          if(lastPage===true){
-            toggleLastPage()
+          if (lastPage === true) {
+            toggleLastPage();
           }
-          if((questionIndex-1) <0){
-            setPage(1)
+          if (questionIndex - 1 < 0) {
+            setPage(1);
+          } else {
+            setQuestionIndex((prevCount) => prevCount - 1);
           }
-          else{
-            setQuestionIndex(prevCount => prevCount - 1);
-          }
-        }
-        else{
-          setQuestionIndex(prevCount => prevCount + 1);
+        } else {
+          setQuestionIndex((prevCount) => prevCount + 1);
         }
       }
-
     }
   };
 
-
-  
   const handleSetTempQuestion = (e) => {
     setTempQuestion(e.target.value);
   };
@@ -487,44 +471,40 @@ export const ModifyTrainingModal = (props) => {
     setTempIncorrectAnswers([]);
   };
 
-
   const handleSetQuestionObject = () => {
     let questionObj = {
       question: tempQuestion,
       correct: tempCorrect,
       incorrect: tempIncorrectAnswers,
-    }
-    setTempQuestions(prevArray => 
+    };
+    setTempQuestions((prevArray) =>
       prevArray.map((item, i) => (i === questionIndex ? questionObj : item))
     );
   };
 
-
-
   const handleModifyTraining = () => {
-
-        modifyTraining(
-          props.trainingSelected,
-          props.title,
-          props.training_url,
-          props.trainingType,
-          props.pointValue,
-          props.difficulty
-        );
-        handleResetForm();
-        setPage(1)
-        toggleLastPage(false)
-        props.handleModifyOpen();
+    modifyTraining(
+      props.trainingSelected,
+      props.title,
+      props.training_url,
+      props.trainingType,
+      props.pointValue,
+      props.difficulty
+    );
+    handleResetForm();
+    setPage(1);
+    toggleLastPage(false);
+    props.handleModifyOpen();
   };
 
-  const handleAddQuestion=()=>{
-    handleSetQuestionObject()
-    setQuestionIndex(prevCount => prevCount + 1)
-    toggleAddQuestion()
-    setTempQuestion('')
-    setTempCorrect('')
-    setTempIncorrectAnswers([])
-  }
+  const handleAddQuestion = () => {
+    handleSetQuestionObject();
+    setQuestionIndex((prevCount) => prevCount + 1);
+    toggleAddQuestion();
+    setTempQuestion("");
+    setTempCorrect("");
+    setTempIncorrectAnswers([]);
+  };
 
   return (
     <Modal open={props.modifyOpen} key="add">
@@ -646,101 +626,81 @@ export const ModifyTrainingModal = (props) => {
                 margin: "auto",
               }}
             >
+              {addQuestion && addQuestion === true ? (
+                <></>
+              ) : (
+                <>
+                  <SectionSubtitle
+                    subtitle_text={"Edit Training Questions and Answers."}
+                  />
+                  <div
+                    style={{
+                      display: "flex",
+                      flexDirection: "column",
+                      width: "95%",
+                      height: "60rem",
+                      backgroundColor: "lightgrey",
+                      overflowY: "scroll",
+                      margin: "auto",
+                      marginBottom: "1vh",
+                    }}
+                  >
+                    <SectionTitle
+                      title_text={`Question:${questionIndex + 1}`}
+                    />
+                    <input
+                      type="text"
+                      value={tempQuestion}
+                      onChange={(e) => handleSetTempQuestion(e)}
+                      style={{ height: "2rem", width: "95%", margin: "auto" }}
+                    />
 
+                    <SectionTitle title_text={"Correct Answer:"} />
+                    <input
+                      type="text"
+                      value={tempCorrect}
+                      onChange={(e) => handleSetTempCorrect(e)}
+                      style={{ height: "3rem", width: "95%", margin: "auto" }}
+                    />
+                    <SectionTitle title_text={"Incorrect Answers:"} />
 
-
-
-
-              {addQuestion&&addQuestion ===true?
-              <>
-
-
-              </>
-              :
-              <>
-
-<SectionSubtitle
-                subtitle_text={"Edit Training Questions and Answers."}
-              />
-              <div
-                style={{
-                  display: "flex",
-                  flexDirection: "column",
-                  width: "95%",
-                  height: "60rem",
-                  backgroundColor: "lightgrey",
-                  overflowY: "scroll",
-                  margin: "auto",
-                  marginBottom: "1vh",
-                }}
-              >
-                <SectionTitle title_text={`Question:${questionIndex + 1}`} />
-                <input
-                  type="text"
-                  value={tempQuestion}
-                  onChange={(e) => handleSetTempQuestion(e)}
-                  style={{ height: "2rem", width: "95%", margin: "auto" }}
-                />
-
-                <SectionTitle title_text={"Correct Answer:"} />
-                <input
-                  type="text"
-                  value={tempCorrect}
-                  onChange={(e) => handleSetTempCorrect(e)}
-                  style={{ height: "3rem", width: "95%", margin: "auto" }}
-                />
-                <SectionTitle title_text={"Incorrect Answers:"} />
-
-                <div
-                  style={{
-                    display: "flex",
-                    flexDirection: "column",
-                    width: "100%",
-                    height: "50vh",
-                    justifyContent: "left",
-                    marginBottom: "2vh",
-                  }}
-                >
-                  {tempIncorrectAnswers &&
-                    tempIncorrectAnswers.slice().map((row, index) => {
-                      const { answer } = row;
-                      return (
-                        <>
-                          <div>
-                            <input
-                              type="text"
-                              value={row}
-                              onChange={(e) => handleSetTempIncorrect(index, e)}
-                              style={{
-                                height: "2rem",
-                                width: "95%",
-                                marginLeft: "1vw",
-                                marginBottom: "1vh",
-                              }}
-                            />
-                          </div>
-                        </>
-                      );
-                    })}
-                </div>
-              </div>
-
-
-
-              </>
-              
-              }
-
-
-
-
-
-
-
-
-
-
-
+                    <div
+                      style={{
+                        display: "flex",
+                        flexDirection: "column",
+                        width: "100%",
+                        height: "50vh",
+                        justifyContent: "left",
+                        marginBottom: "2vh",
+                      }}
+                    >
+                      {tempIncorrectAnswers &&
+                        tempIncorrectAnswers.slice().map((row, index) => {
+                          const { answer } = row;
+                          return (
+                            <>
+                              <div>
+                                <input
+                                  type="text"
+                                  value={row}
+                                  onChange={(e) =>
+                                    handleSetTempIncorrect(index, e)
+                                  }
+                                  style={{
+                                    height: "2rem",
+                                    width: "95%",
+                                    marginLeft: "1vw",
+                                    marginBottom: "1vh",
+                                  }}
+                                />
+                              </div>
+                            </>
+                          );
+                        })}
+                    </div>
+                  </div>
+                </>
+              )}
             </div>
           </>
         ) : (
@@ -798,7 +758,6 @@ export const AdminTrainingTable = (props) => {
       style={{
         display: "flex",
         flexDirection: "row",
-        marginLeft: "3.5vw",
         height: "78vh",
         width: "77.5vw",
       }}

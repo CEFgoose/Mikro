@@ -246,110 +246,67 @@ export const AdminPaymentsPage = () => {
         task_ids={taskIDs}
         notes={notes}
       />
-
       <div
         style={{
           display: "flex",
           flexDirection: "row",
-          width: "100%",
-          height: "100%",
-          float: "left",
+          justifyContent: "space-between",
         }}
       >
-        <Sidebar isOpen={sidebarOpen} toggleSidebar={handleViewSidebar} />
-        <div style={{ width: "100%", height: "100%" }}>
-          <div
-            style={{
-              display: "flex",
-              position: "relative",
-              marginLeft: ".5vw",
-              flexDirection: "column",
-              height: "100vh",
-            }}
-          >
-            <div
-              style={{
-                display: "flex",
-                marginLeft: "6vh",
-                flexDirection: "row",
-              }}
-            >
-              <h1
-                style={{
-                  marginTop: "1vw",
-                  paddingBottom: "2vh",
-                }}
-              >
-                <strong>Payments:</strong>
-              </h1>
+        <h1>
+          <strong>Payments:</strong>
+        </h1>
 
-              <div
-                style={{
-                  marginTop: "2vw",
-                  position: "relative",
-                  left: "38vw",
-                }}
-              >
-                <ButtonDivComponent
-                  data={CSVdata}
-                  button1={activeTab === 1 ? true : false}
-                  csv={activeTab === 1 ? false : true}
-                  button2={true}
-                  button3={true}
-                  button1_text={activeTab === 1 ? "Add" : "CSV Report"}
-                  button2_text={activeTab === 1 ? "Process" : "View Details"}
-                  button3_text={"Delete"}
-                  button1_action={activeTab === 1 ? handleAddOpen : null}
-                  button2_action={
-                    activeTab === 1 ? handleProcessOpen : handleDetailsOpen
-                  }
-                  button3_action={handleDeleteOpen}
-                />
-              </div>
-            </div>
-            <Tabs>
-              <TabList
-                style={{
-                  marginLeft: "3vw",
-                  marginTop: "0vh",
-                  paddingTop: "0vh",
-                }}
-              >
-                <Tab value={1} onClick={(e) => handleSetActiveTab(e)}>
-                  Pay Requests
-                </Tab>
-                <Tab value={2} onClick={(e) => handleSetActiveTab(e)}>
-                  Completed Payouts
-                </Tab>
-              </TabList>
-              <TabPanel>
-                <AdminPayRequestsTable
-                  rowsPerPage={rowsPerPage}
-                  page={page}
-                  setPage={setPage}
-                  handleChangeRowsPerPage={handleChangeRowsPerPage}
-                  orgRequests={orgRequests}
-                  setOrgRequests={setOrgRequests}
-                  requestSelected={requestSelected}
-                  handleSetRequestSelected={handleSetRequestSelected}
-                />
-              </TabPanel>
-              <TabPanel>
-                <AdminPaymentsTable
-                  rowsPerPage={rowsPerPage}
-                  page={page}
-                  setPage={setPage}
-                  handleChangeRowsPerPage={handleChangeRowsPerPage}
-                  orgPayments={orgPayments}
-                  setOrgPayments={setOrgPayments}
-                  paymentSelected={paymentSelected}
-                  handleSetPaymentSelected={handleSetPaymentSelected}
-                />
-              </TabPanel>
-            </Tabs>
-          </div>
-        </div>
+        <ButtonDivComponent
+          data={CSVdata}
+          button1={activeTab === 1 ? true : false}
+          csv={activeTab === 1 ? false : true}
+          button2={true}
+          button3={true}
+          button1_text={activeTab === 1 ? "Add" : "CSV Report"}
+          button2_text={activeTab === 1 ? "Process" : "View Details"}
+          button3_text={"Delete"}
+          button1_action={activeTab === 1 ? handleAddOpen : null}
+          button2_action={
+            activeTab === 1 ? handleProcessOpen : handleDetailsOpen
+          }
+          button3_action={handleDeleteOpen}
+        />
       </div>
+      <Tabs>
+        <TabList>
+          <Tab value={1} onClick={(e) => handleSetActiveTab(e)}>
+            Pay Requests
+          </Tab>
+          <Tab value={2} onClick={(e) => handleSetActiveTab(e)}>
+            Completed Payouts
+          </Tab>
+        </TabList>
+        <TabPanel>
+          <AdminPayRequestsTable
+            rowsPerPage={rowsPerPage}
+            page={page}
+            setPage={setPage}
+            handleChangeRowsPerPage={handleChangeRowsPerPage}
+            orgRequests={orgRequests}
+            setOrgRequests={setOrgRequests}
+            requestSelected={requestSelected}
+            handleSetRequestSelected={handleSetRequestSelected}
+          />
+        </TabPanel>
+        <TabPanel>
+          <AdminPaymentsTable
+            rowsPerPage={rowsPerPage}
+            page={page}
+            setPage={setPage}
+            handleChangeRowsPerPage={handleChangeRowsPerPage}
+            orgPayments={orgPayments}
+            setOrgPayments={setOrgPayments}
+            paymentSelected={paymentSelected}
+            handleSetPaymentSelected={handleSetPaymentSelected}
+          />
+        </TabPanel>
+      </Tabs>
     </>
   );
 };

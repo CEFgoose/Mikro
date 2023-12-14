@@ -2,7 +2,6 @@ import React, { useContext, useState, useEffect } from "react";
 import { DataContext } from "common/DataContext";
 import { AuthContext } from "../../common/AuthContext";
 import useToggle from "../../hooks/useToggle.js";
-import Sidebar from "../sidebar/sidebar";
 import { ButtonDivComponent } from "components/commonComponents/commonComponents";
 import "./styles.css";
 import { Tab, TabList, TabPanel, Tabs } from "react-tabs";
@@ -54,10 +53,6 @@ export const UserProjectsPage = () => {
     }
   };
 
-  const handleViewSidebar = () => {
-    handleSetSidebarState();
-  };
-
   const handleSetProjectSelected = (projectID, projectName) => {
     setProjectSelected(parseInt(projectID));
     setProjectName(projectName);
@@ -86,96 +81,51 @@ export const UserProjectsPage = () => {
           activeTab === 1 ? handleUserLeaveProject : handleUserJoinProject
         }
       />
+
       <div
         style={{
-          display: "flex",
-          flexDirection: "row",
-          width: "100%",
-          height: "100%",
-          float: "left",
+          position: "absolute",
+          right: "10vw",
         }}
       >
-        <Sidebar isOpen={sidebarOpen} />
-        <div style={{ width: "100%", height: "100%" }}>
-          <div
-            style={{
-              display: "flex",
-              position: "relative",
-              marginLeft: ".5vw",
-              flexDirection: "column",
-              height: "100vh",
-            }}
-          >
-            <div
-              style={{
-                display: "flex",
-                marginLeft: "6vh",
-                flexDirection: "row",
-              }}
-            >
-              <h1
-                style={{
-                  marginTop: "1vw",
-                  paddingBottom: "2vh",
-                }}
-              >
-                <strong>Projects:</strong>
-              </h1>
-              <div
-                style={{
-                  marginTop: "2vw",
-                  position: "relative",
-                  left: "58vw",
-                }}
-              >
-                <ButtonDivComponent
-                  button1={true}
-                  button2={false}
-                  button3={false}
-                  button1_text={activeTab === 1 ? "Leave" : "Join"}
-                  button2_text={"Edit"}
-                  button3_text={"Delete"}
-                  button1_action={handleSetModalOpen}
-                />
-              </div>
-            </div>
-            <Tabs>
-              <TabList
-                style={{
-                  marginLeft: "3vw",
-                  marginTop: "0vh",
-                  paddingTop: "0vh",
-                }}
-              >
-                <Tab value={1} onClick={(e) => handleSetActiveTab(e)}>
-                  Joined
-                </Tab>
-                <Tab value={2} onClick={(e) => handleSetActiveTab(e)}>
-                  Available
-                </Tab>
-              </TabList>
-              <TabPanel>
-                <ProjectCardGrid
-                  key={1}
-                  goToSource={goToSource}
-                  projects={activeProjects}
-                  handleSetProjectSelected={handleSetProjectSelected}
-                  projectSelected={projectSelected}
-                />
-              </TabPanel>
-              <TabPanel>
-                <ProjectCardGrid
-                  key={2}
-                  goToSource={goToSource}
-                  projects={inactiveProjects}
-                  handleSetProjectSelected={handleSetProjectSelected}
-                  projectSelected={projectSelected}
-                />
-              </TabPanel>
-            </Tabs>
-          </div>
-        </div>
+        <ButtonDivComponent
+          button1={true}
+          button2={false}
+          button3={false}
+          button1_text={activeTab === 1 ? "Leave" : "Join"}
+          button2_text={"Edit"}
+          button3_text={"Delete"}
+          button1_action={handleSetModalOpen}
+        />
       </div>
+      <Tabs>
+        <TabList>
+          <Tab value={1} onClick={(e) => handleSetActiveTab(e)}>
+            Joined
+          </Tab>
+          <Tab value={2} onClick={(e) => handleSetActiveTab(e)}>
+            Available
+          </Tab>
+        </TabList>
+        <TabPanel>
+          <ProjectCardGrid
+            key={1}
+            goToSource={goToSource}
+            projects={activeProjects}
+            handleSetProjectSelected={handleSetProjectSelected}
+            projectSelected={projectSelected}
+          />
+        </TabPanel>
+        <TabPanel>
+          <ProjectCardGrid
+            key={2}
+            goToSource={goToSource}
+            projects={inactiveProjects}
+            handleSetProjectSelected={handleSetProjectSelected}
+            projectSelected={projectSelected}
+          />
+        </TabPanel>
+      </Tabs>
     </>
   );
 };

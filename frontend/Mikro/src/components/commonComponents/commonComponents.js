@@ -59,7 +59,7 @@ export const CardMediaStyle = styled("div")(({ theme }) => ({
 
 export const TableCard = styled(Card)(() => ({
   width: "100%",
-  marginLeft: "0vw",
+  boxShadow: "0 0 4px gray",
 }));
 
 export const MainDiv = styled("div")(({ theme }) => ({
@@ -88,10 +88,7 @@ export const ButtonDiv = styled("div")(({ theme }) => ({
   justifyContent: "center",
 }));
 
-export const ProjectRow = styled(TableRow)(() => ({
-  width: "77.75vw",
-  marginLeft: "2vw",
-}));
+export const ProjectRow = styled(TableRow)(() => ({}));
 
 export const AdminCardMediaStyle = styled("div")(({ theme }) => ({
   display: "flex",
@@ -278,9 +275,8 @@ export const TasksMappedCard = (props) => {
   return (
     <Card
       style={{
-        boxShadow: "0 0 6px gray",
+        boxShadow: "0 0 4px gray",
         position: "relative",
-        top: "2vh",
         marginLeft: props.marginLeft,
         marginRight: props.marginRight,
         width: props.width,
@@ -294,7 +290,6 @@ export const TasksMappedCard = (props) => {
         style={{
           display: "flex",
           flexDirection: "row",
-          // marginLeft: "2vh",
         }}
       >
         <div
@@ -351,9 +346,8 @@ export const ValidationCard = (props) => {
   return (
     <Card
       style={{
-        boxShadow: "0 0 6px gray",
+        boxShadow: "0 0 4px gray",
         position: "relative",
-        top: "2vh",
         marginLeft: props.marginLeft,
         marginRight: props.marginRight,
         marginBottom: "1vh",
@@ -409,9 +403,8 @@ export const PaymentCard = (props) => {
   return (
     <Card
       style={{
-        boxShadow: "0 0 6px gray",
+        boxShadow: "0 0 4px gray",
         position: "relative",
-        top: "2vh",
         marginLeft: props.marginLeft,
         marginRight: props.marginRight,
         marginBottom: "1vh",
@@ -1068,14 +1061,10 @@ export const AdminPayRequestsTable = (props) => {
       style={{
         display: "flex",
         flexDirection: "row",
-        marginLeft: "3.5vw",
         height: "76vh",
-        width: "77.5vw",
       }}
     >
-      <TableCard
-        style={{ boxShadow: "1px 1px 6px 2px gray", overflowY: "scroll" }}
-      >
+      <TableCard>
         <CardMediaStyle />
         <Table>
           <ListHead
@@ -1143,14 +1132,10 @@ export const AdminPaymentsTable = (props) => {
       style={{
         display: "flex",
         flexDirection: "row",
-        marginLeft: "3.5vw",
         height: "78vh",
-        width: "77.5vw",
       }}
     >
-      <TableCard
-        style={{ boxShadow: "1px 1px 6px 2px gray", overflowY: "scroll" }}
-      >
+      <TableCard>
         <CardMediaStyle />
         <Table>
           <ListHead
@@ -1228,13 +1213,12 @@ export const Divider = () => {
 
 export const ProjectCardGrid = (props) => {
   return (
-    <div style={{ overflowY: "scroll", width: "85vw", height: "83vh" }}>
+    <div style={{ overflowY: "scroll", width: "85vw", height: "99vh" }}>
       <Grid
         sx={{
           height: "auto",
           position: "relative",
           top: "3vh",
-          left: "3vw",
         }}
         container
         spacing={3}
@@ -1367,10 +1351,8 @@ export const ProjectCard = (props) => {
         )}
 
         <ProgressBar
-          // current={props.tasks_mapped + props.tasks_validated}
-          // total={props.total_tasks * 2}
-          current={63}
-          total={100}
+          current={props.tasks_mapped + props.tasks_validated}
+          total={props.total_tasks * 2}
         />
 
         <button

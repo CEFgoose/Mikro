@@ -1,4 +1,4 @@
-import React ,{useEffect,useState,useContext}from "react";
+import React, { useEffect, useState, useContext } from "react";
 import { Modal, Table, TableBody, TablePagination } from "@mui/material";
 import { DataContext } from "common/DataContext";
 import {
@@ -23,42 +23,42 @@ export const USER_TRAINING_HEADERS = [
 ];
 
 export const TrainingQuizModal = (props) => {
+  const { shuffleArray } = useContext(DataContext);
 
-  const {
-    shuffleArray,
-  } = useContext(DataContext);
+  const [answers, setAnswers] = useState([]);
 
-  const[answers,setAnswers]=useState([])
-
-  const[tempAnswer,setTempAnswer]=useState(null)
+  const [tempAnswer, setTempAnswer] = useState(null);
 
   useEffect(() => {
-    let tempArray=[]
-    if(props.questions.length>0){
-      console.log(props.questions[0].questions[props.questionIndex].question)
-      for (let i = 0; i < props.questions[0].questions[props.questionIndex].incorrect.length; i++) {
-        tempArray.push(props.questions[0].questions[props.questionIndex].incorrect[i])
+    let tempArray = [];
+    if (props.questions.length > 0) {
+      console.log(props.questions[0].questions[props.questionIndex].question);
+      for (
+        let i = 0;
+        i < props.questions[0].questions[props.questionIndex].incorrect.length;
+        i++
+      ) {
+        tempArray.push(
+          props.questions[0].questions[props.questionIndex].incorrect[i]
+        );
       }
-      tempArray.push(props.questions[0].questions[props.questionIndex].correct)
-      setAnswers(shuffleArray(tempArray))
+      tempArray.push(props.questions[0].questions[props.questionIndex].correct);
+      setAnswers(shuffleArray(tempArray));
     }
 
     // eslint-disable-next-line
-  }, [props.questionIndex,props.questions]);
+  }, [props.questionIndex, props.questions]);
 
-
-  const handleSetAnswer=(value)=>{
-    let tempArray=props.results
-    setTempAnswer(value)
-    if(value=== props.questions[0].questions[props.questionIndex].correct){
-      tempArray.push(true)
+  const handleSetAnswer = (value) => {
+    let tempArray = props.results;
+    setTempAnswer(value);
+    if (value === props.questions[0].questions[props.questionIndex].correct) {
+      tempArray.push(true);
+    } else {
+      tempArray.push(false);
     }
-    else{
-      tempArray.push(false)
-    }
-    props.setResults(tempArray)
-
-  }
+    props.setResults(tempArray);
+  };
 
   return (
     <Modal open={props.quizOpen} key="add">
@@ -66,18 +66,21 @@ export const TrainingQuizModal = (props) => {
         <CloseButton close_action={props.handleQuizOpen} />
         <SectionTitle title_text={`Test our for training: ${props.title}`} />
 
-
-            <div
-              style={{
-                width: "100%",
-                backgroundColor: "black",
-                height: ".05vh",
-                marginBottom: "2vh",
-              }}
+        <div
+          style={{
+            width: "100%",
+            backgroundColor: "black",
+            height: ".05vh",
+            marginBottom: "2vh",
+          }}
+        />
+        {props.questions && props.questions.length > 0 ? (
+          <>
+            <SectionSubtitle
+              subtitle_text={`Question ${props.questionIndex + 1}: ${
+                props.questions[0].questions[props.questionIndex].question
+              }?`}
             />
-            {props.questions&&props.questions.length>0?(
-            <>
-            <SectionSubtitle subtitle_text={`Question ${props.questionIndex +1}: ${props.questions[0].questions[props.questionIndex].question}?`} />
             <div
               style={{
                 display: "flex",
@@ -96,7 +99,7 @@ export const TrainingQuizModal = (props) => {
                     value={answer}
                     name="private"
                     onChange={() => handleSetAnswer(answer)}
-                    checked={tempAnswer=== answer}
+                    checked={tempAnswer === answer}
                     style={{ marginLeft: "6.5vw" }}
                   />
                   <SectionSubtitle subtitle_text={answer} />
@@ -104,22 +107,18 @@ export const TrainingQuizModal = (props) => {
               ))}
             </div>
           </>
-         ) 
-          :(<></>)
-          }
+        ) : (
+          <></>
+        )}
 
-
-            <div style={{ marginBottom: "1vh" }}>
-              <ModalButtons
-                confirm_text={props.confirmButtonText}
-                confirm_action={()=>props.handleChangeQuestionIndex()}
-                cancel_text={"Cancel"}
-                cancel_action={props.handleQuizOpen}
-              />
-            </div>
-
-
-
+        <div style={{ marginBottom: "1vh" }}>
+          <ModalButtons
+            confirm_text={props.confirmButtonText}
+            confirm_action={() => props.handleChangeQuestionIndex()}
+            cancel_text={"Cancel"}
+            cancel_action={props.handleQuizOpen}
+          />
+        </div>
       </ModalWrapper>
     </Modal>
   );
@@ -135,14 +134,10 @@ export const UserTrainingTable = (props) => {
       style={{
         display: "flex",
         flexDirection: "row",
-        marginLeft: "3.5vw",
-        height: "78vh",
-        width: "77.5vw",
+        height: "88vh",
       }}
     >
-      <TableCard
-        style={{ boxShadow: "1px 1px 6px 2px gray", overflowY: "scroll" }}
-      >
+      <TableCard>
         <CardMediaStyle />
         <Table style={{}}>
           <ListHead

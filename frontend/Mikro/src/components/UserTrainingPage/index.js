@@ -1,7 +1,6 @@
 import React, { useContext, useEffect, useState } from "react";
 import { DataContext } from "../../common/DataContext";
 import { AuthContext } from "../../common/AuthContext";
-import Sidebar from "../sidebar/sidebar";
 import { Tab, TabList, TabPanel, Tabs } from "react-tabs";
 import useToggle from "../../hooks/useToggle.js";
 import { ButtonDivComponent } from "components/commonComponents/commonComponents";
@@ -10,7 +9,6 @@ import { UserTrainingTable, TrainingQuizModal } from "./trainingComponents";
 import { CompleteQuizModal } from "components/commonComponents/commonComponents";
 export const UserTrainingPage = () => {
   const {
-    sidebarOpen,
     handleSetSidebarState,
     orgMappingTrainings,
     setOrgMappingTrainings,
@@ -40,18 +38,18 @@ export const UserTrainingPage = () => {
   const [difficulty, setDifficulty] = useState(null);
   const [title, setTitle] = useState(null);
   const [confirmButtonText, setconfirmButtonText] = useState("Next");
-  const [currentSelectedTrainings,setCurrentSelectedTrainings]=useState([])
-  const [quizStatus,setQuizStatus]=useState(null)
-  const [quizStatusText,setQuizStatusText]=useState(null)
+  const [currentSelectedTrainings, setCurrentSelectedTrainings] = useState([]);
+  const [quizStatus, setQuizStatus] = useState(null);
+  const [quizStatusText, setQuizStatusText] = useState(null);
   const [activeTab, setActiveTab] = useState(1);
-  const[results,setResults]=useState([])
-  const[modalButton1Text,setModalButton1Text]=useState(null)
-  const[modalButton2Text,setModalButton2Text]=useState(null)
-  const[modalButton1,toggleModalButton1]=useToggle(true)
-  const[modalButton2,toggleModalButton2]=useToggle(false)
-  const[button1action,setButton1action]=useState(null)
-  const[button2action,setButton2action]=useState(null)
-  const[successModalOpen,toggleSuccessModalOpen]=useToggle(false)
+  const [results, setResults] = useState([]);
+  const [modalButton1Text, setModalButton1Text] = useState(null);
+  const [modalButton2Text, setModalButton2Text] = useState(null);
+  const [modalButton1, toggleModalButton1] = useToggle(true);
+  const [modalButton2, toggleModalButton2] = useToggle(false);
+  const [button1action, setButton1action] = useState(null);
+  const [button2action, setButton2action] = useState(null);
+  const [successModalOpen, toggleSuccessModalOpen] = useToggle(false);
   useEffect(() => {
     if (user) {
       refresh();
@@ -68,34 +66,35 @@ export const UserTrainingPage = () => {
     // eslint-disable-next-line
   }, [activeTab]);
 
-
   useEffect(() => {
-    if (activeTab===1){
-      setCurrentSelectedTrainings(orgMappingTrainings)
+    if (activeTab === 1) {
+      setCurrentSelectedTrainings(orgMappingTrainings);
     }
-    if (activeTab===2){
-      setCurrentSelectedTrainings(orgValidationTrainings)
+    if (activeTab === 2) {
+      setCurrentSelectedTrainings(orgValidationTrainings);
     }
-    if (activeTab===3){
-      setCurrentSelectedTrainings(orgProjectTrainings)
+    if (activeTab === 3) {
+      setCurrentSelectedTrainings(orgProjectTrainings);
     }
     // eslint-disable-next-line
-    console.log("CURRENT",currentSelectedTrainings)
-  }, [activeTab,orgProjectTrainings,orgValidationTrainings,orgMappingTrainings]);
+  }, [
+    activeTab,
+    orgProjectTrainings,
+    orgValidationTrainings,
+    orgMappingTrainings,
+  ]);
 
+  const handleOpenResultsModal = () => {
+    toggleSuccessModalOpen();
+  };
 
-  const handleOpenResultsModal=()=>{
-    toggleSuccessModalOpen()
-  }
-
-  const handleChangeQuestionIndex=()=>{
-    if (questionIndex <= currentSelectedTrainings.length ){
-      setQuestionIndex(prevCount => prevCount + 1);
+  const handleChangeQuestionIndex = () => {
+    if (questionIndex <= currentSelectedTrainings.length) {
+      setQuestionIndex((prevCount) => prevCount + 1);
+    } else {
+      handleCompleteQuiz();
     }
-    else{
-      handleCompleteQuiz()
-    }
-  }
+  };
 
   const handleAnswerSelected = (e) => {
     setSelectedAnswer(e);
@@ -113,10 +112,6 @@ export const UserTrainingPage = () => {
     setRowsPerPage(e.target.value);
   };
 
-  const handleViewSidebar = () => {
-    handleSetSidebarState();
-  };
-
   const handleQuizOpen = () => {
     if (trainingSelected) {
       setconfirmButtonText("Next");
@@ -127,15 +122,15 @@ export const UserTrainingPage = () => {
   const handleSetActiveTab = (e) => {
     if (e.target.value === 1) {
       setTrainingType("Mapping");
-      setCurrentSelectedTrainings(orgMappingTrainings)
+      setCurrentSelectedTrainings(orgMappingTrainings);
     }
     if (e.target.value === 2) {
       setTrainingType("Validation");
-      setCurrentSelectedTrainings(orgValidationTrainings)
+      setCurrentSelectedTrainings(orgValidationTrainings);
     }
     if (e.target.value === 3) {
       setTrainingType("Project");
-      setCurrentSelectedTrainings(orgProjectTrainings)
+      setCurrentSelectedTrainings(orgProjectTrainings);
     }
     // if (e.target.value === 4) {
     //   setTrainingType("Completed");
@@ -148,35 +143,32 @@ export const UserTrainingPage = () => {
   };
 
   const handleCompleteTraining = () => {
-
-      completeTraining(trainingSelected);
-      handleOpenResultsModal()
+    completeTraining(trainingSelected);
+    handleOpenResultsModal();
   };
 
-  const handleCompleteQuiz=()=>{
-    handleQuizOpen()
-    if (results.includes(false)){
-      console.log('failed')
-      setQuizStatus('Failed')
-      setQuizStatusText(`Would you like to try again?`)
-      setModalButton1Text("Quit")
-      setModalButton2Text("Retry")
-      toggleModalButton1(true)
-      toggleModalButton2(true)
-    }else{
-      console.log('passed')
-      setQuizStatus('Passed')
-      setQuizStatusText(`You have been awarded ${point_value} ${training_type} points!`)
-      setModalButton1Text("Continue")
-      toggleModalButton1(true)
-      toggleModalButton2(false)
+  const handleCompleteQuiz = () => {
+    handleQuizOpen();
+    if (results.includes(false)) {
+      setQuizStatus("Failed");
+      setQuizStatusText(`Would you like to try again?`);
+      setModalButton1Text("Quit");
+      setModalButton2Text("Retry");
+      toggleModalButton1(true);
+      toggleModalButton2(true);
+    } else {
+      setQuizStatus("Passed");
+      setQuizStatusText(
+        `You have been awarded ${point_value} ${training_type} points!`
+      );
+      setModalButton1Text("Continue");
+      toggleModalButton1(true);
+      toggleModalButton2(false);
     }
-    handleOpenResultsModal()
-    setResults([])
-    setQuestionIndex(0)
-
-
-  }
+    handleOpenResultsModal();
+    setResults([]);
+    setQuestionIndex(0);
+  };
 
   return (
     <>
@@ -198,143 +190,103 @@ export const UserTrainingPage = () => {
         results={results}
         setResults={setResults}
       />
-      <CompleteQuizModal 
+      <CompleteQuizModal
         modal_open={successModalOpen}
         quizStatus={quizStatus}
         quizStatusText={quizStatusText}
         button1={modalButton1}
         button_1_text={modalButton1Text}
-        button_1_action={quizStatus==='Failed'?handleOpenResultsModal:handleCompleteTraining }
+        button_1_action={
+          quizStatus === "Failed"
+            ? handleOpenResultsModal
+            : handleCompleteTraining
+        }
         button2={modalButton2}
         button_2_text={modalButton2Text}
-      
       />
-      <div
-        style={{
-          display: "flex",
-          flexDirection: "row",
-          width: "100%",
-          height: "100%",
-          float: "left",
-        }}
-      >
-        <Sidebar isOpen={sidebarOpen} toggleSidebar={handleViewSidebar} />
-        <div style={{ width: "100%", height: "100%" }}>
-          <div
-            style={{
-              display: "flex",
-              position: "relative",
-              marginLeft: ".5vw",
-              flexDirection: "column",
-              height: "100vh",
-            }}
-          >
-            <div
-              style={{
-                display: "flex",
-                marginLeft: "6vh",
-                flexDirection: "row",
-              }}
-            >
-              <h1
-                style={{
-                  marginTop: "1vw",
-                  paddingBottom: "2vh",
-                }}
-              >
-                <strong>Training:</strong>
-              </h1>
-              <div
-                style={{
-                  marginTop: "2vw",
-                  position: "relative",
-                  left: "50vw",
-                }}
-              >
-                <ButtonDivComponent
-                  button1={true}
-                  button1_text={"View"}
-                  button1_action={handleViewTraining}
-                  button2={activeTab!==4?true:false}
-                  button2_text={"Test Out"}
-                  button2_action={handleQuizOpen}
-                  button3={false}
-                />
-              </div>
-            </div>
-            <Tabs>
-              <TabList
-                style={{
-                  marginLeft: "3vw",
-                  marginTop: "0vh",
-                  paddingTop: "0vh",
-                }}
-              >
-                <Tab value={1} onClick={(e) => handleSetActiveTab(e)}>
-                  Mapping
-                </Tab>
-                <Tab value={2} onClick={(e) => handleSetActiveTab(e)}>
-                  Validation
-                </Tab>
-                <Tab value={3} onClick={(e) => handleSetActiveTab(e)}>
-                  Project Specific
-                </Tab>
-                <Tab value={4} onClick={(e) => handleSetActiveTab(e)}>
-                  Completed
-                </Tab>
-              </TabList>
-              <TabPanel>
-                <UserTrainingTable
-                  rowsPerPage={rowsPerPage}
-                  page={page}
-                  setPage={setPage}
-                  handleChangeRowsPerPage={handleChangeRowsPerPage}
-                  orgTrainings={orgMappingTrainings}
-                  setOrgTrainings={setOrgMappingTrainings}
-                  trainingSelected={trainingSelected}
-                  handleSetTrainingSelected={handleSetTrainingSelected}
-                />
-              </TabPanel>
-              <TabPanel>
-                <UserTrainingTable
-                  rowsPerPage={rowsPerPage}
-                  page={page}
-                  setPage={setPage}
-                  handleChangeRowsPerPage={handleChangeRowsPerPage}
-                  trainingSelected={trainingSelected}
-                  orgTrainings={orgValidationTrainings}
-                  setOrgTrainings={setOrgValidationTrainings}
-                  handleSetTrainingSelected={handleSetTrainingSelected}
-                />
-              </TabPanel>
-              <TabPanel>
-                <UserTrainingTable
-                  rowsPerPage={rowsPerPage}
-                  page={page}
-                  setPage={setPage}
-                  handleChangeRowsPerPage={handleChangeRowsPerPage}
-                  trainingSelected={trainingSelected}
-                  handleSetTrainingSelected={handleSetTrainingSelected}
-                  orgTrainings={orgProjectTrainings}
-                  setOrgTrainings={setOrgProjectTrainings}
-                />
-              </TabPanel>
-              <TabPanel>
-              <UserTrainingTable
-                  rowsPerPage={rowsPerPage}
-                  page={page}
-                  setPage={setPage}
-                  handleChangeRowsPerPage={handleChangeRowsPerPage}
-                  trainingSelected={trainingSelected}
-                  handleSetTrainingSelected={handleSetTrainingSelected}
-                  orgTrainings={userCompletedTrainings}
-                  setOrgTrainings={setUserCompletedTrainings}
-                />
-              </TabPanel>
-            </Tabs>
-          </div>
+      <Tabs>
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "row",
+            justifyContent: "space-between",
+          }}
+        >
+          <TabList>
+            <Tab value={1} onClick={(e) => handleSetActiveTab(e)}>
+              Mapping
+            </Tab>
+            <Tab value={2} onClick={(e) => handleSetActiveTab(e)}>
+              Validation
+            </Tab>
+            <Tab value={3} onClick={(e) => handleSetActiveTab(e)}>
+              Project Specific
+            </Tab>
+            <Tab value={4} onClick={(e) => handleSetActiveTab(e)}>
+              Completed
+            </Tab>
+          </TabList>
+
+          <ButtonDivComponent
+            button1={true}
+            button1_text={"View"}
+            button1_action={handleViewTraining}
+            button2={activeTab !== 4 ? true : false}
+            button2_text={"Test Out"}
+            button2_action={handleQuizOpen}
+            button3={false}
+          />
         </div>
-      </div>
+
+        <TabPanel>
+          <UserTrainingTable
+            rowsPerPage={rowsPerPage}
+            page={page}
+            setPage={setPage}
+            handleChangeRowsPerPage={handleChangeRowsPerPage}
+            orgTrainings={orgMappingTrainings}
+            setOrgTrainings={setOrgMappingTrainings}
+            trainingSelected={trainingSelected}
+            handleSetTrainingSelected={handleSetTrainingSelected}
+          />
+        </TabPanel>
+        <TabPanel>
+          <UserTrainingTable
+            rowsPerPage={rowsPerPage}
+            page={page}
+            setPage={setPage}
+            handleChangeRowsPerPage={handleChangeRowsPerPage}
+            trainingSelected={trainingSelected}
+            orgTrainings={orgValidationTrainings}
+            setOrgTrainings={setOrgValidationTrainings}
+            handleSetTrainingSelected={handleSetTrainingSelected}
+          />
+        </TabPanel>
+        <TabPanel>
+          <UserTrainingTable
+            rowsPerPage={rowsPerPage}
+            page={page}
+            setPage={setPage}
+            handleChangeRowsPerPage={handleChangeRowsPerPage}
+            trainingSelected={trainingSelected}
+            handleSetTrainingSelected={handleSetTrainingSelected}
+            orgTrainings={orgProjectTrainings}
+            setOrgTrainings={setOrgProjectTrainings}
+          />
+        </TabPanel>
+        <TabPanel>
+          <UserTrainingTable
+            rowsPerPage={rowsPerPage}
+            page={page}
+            setPage={setPage}
+            handleChangeRowsPerPage={handleChangeRowsPerPage}
+            trainingSelected={trainingSelected}
+            handleSetTrainingSelected={handleSetTrainingSelected}
+            orgTrainings={userCompletedTrainings}
+            setOrgTrainings={setUserCompletedTrainings}
+          />
+        </TabPanel>
+      </Tabs>
     </>
   );
 };
