@@ -1,10 +1,8 @@
 import { DataContext } from "common/DataContext";
 import { AuthContext } from "common/AuthContext";
-import { useLocalStorageState } from "common/useLocalStorageState";
 import { SSO_URL } from "components/constants";
 import React, { useContext, useEffect, useState } from "react";
 import { NavLink } from "react-router-dom";
-import styled, { css } from "styled-components";
 import dashicon from "../../images/newIcons/round2/dashboard_1.png";
 import checklist_icon from "../../images/newIcons/round2/checklists.png";
 import projects_icon from "../../images/newIcons/round2/projects_1.png";
@@ -12,10 +10,7 @@ import tasks_icon from "../../images/newIcons/round2/tasks.png";
 import users_icon from "../../images/newIcons/round2/users_1.png";
 import training_icon from "../../images/newIcons/round2/training_1.png";
 import payments_icon from "../../images/newIcons/round2/payments.png";
-import account_icon from "../../images/newIcons/round2/account.png";
-import faq_icon from "../../images/faq alt 2.png";
 import logouticon from "../../images/newIcons/round2/log out.png";
-import leftArrow from "../../images/newIcons/round2/kaart back_1.png";
 import expand_icon from "../../images/Open Menu.svg";
 import minimize_icon from "../../images/Close Menu.svg";
 import mikroLogo from "../../images/5.png";
@@ -30,10 +25,7 @@ import {
   RoleHeader,
   RoleSubHeader,
 } from "./styles.js";
-import { ConfirmButton } from "components/commonComponents/commonComponents";
 import { KaartLogoOpen } from "components/landingPage/styles";
-let map_url = "https://kaart.com/dev/mikro/";
-
 const Sidebar = (props) => {
   // COMPONENT STATES & SETTERS //
   const [role, setRole] = useState("");
@@ -139,21 +131,23 @@ const Sidebar = (props) => {
         ) : (
           <></>
         )}
-        {role === "admin" ? (
-          <NavLink to={"/admindash"} style={{ textDecoration: "none" }}>
-            <MenuItem>
-              <ProjectIcon src={dashicon} />
-              <Header>{sidebarOpen ? "Dashboard" : ""}</Header>
-            </MenuItem>
-          </NavLink>
-        ) : (
-          <NavLink to={"/dashboard"} style={{ textDecoration: "none" }}>
-            <MenuItem>
-              <ProjectIcon src={dashicon} />
-              <Header>{sidebarOpen ? "Dashboard" : ""}</Header>
-            </MenuItem>
-          </NavLink>
-        )}
+
+        <NavLink
+          to={
+            role === "admin"
+              ? "/admindash"
+              : role === "validator"
+              ? "/validatordash"
+              : "/dashboard"
+          }
+          style={{ textDecoration: "none" }}
+        >
+          <MenuItem>
+            <ProjectIcon src={dashicon} />
+            <Header>{sidebarOpen ? "Dashboard" : ""}</Header>
+          </MenuItem>
+        </NavLink>
+
         {role === "admin" ? (
           <NavLink to={"/AdminTasksPage"} style={{ textDecoration: "none" }}>
             <MenuItem style={{ width: "100%" }}>
@@ -165,43 +159,32 @@ const Sidebar = (props) => {
         ) : (
           <></>
         )}
-        {role === "admin" ? (
-          <NavLink
-            to={"/AdminChecklistsPage"}
-            style={{ textDecoration: "none" }}
-          >
-            <MenuItem>
-              <ProjectIcon src={checklist_icon} />
-              <Header>{sidebarOpen ? "Checklists" : ""}</Header>
-            </MenuItem>
-          </NavLink>
-        ) : (
-          <NavLink
-            to={"/UserChecklistsPage"}
-            style={{ textDecoration: "none" }}
-          >
-            <MenuItem>
-              <ProjectIcon src={checklist_icon} />
-              <Header>{sidebarOpen ? "Checklists" : ""}</Header>
-            </MenuItem>
-          </NavLink>
-        )}
-        {role === "admin" ? (
-          <NavLink to={"/AdminProjectsPage"} style={{ textDecoration: "none" }}>
-            <MenuItem style={{ width: "100%" }}>
-              <ProjectIcon src={projects_icon} />
-              <Header>{sidebarOpen ? "Projects" : ""}</Header>
-            </MenuItem>
-          </NavLink>
-        ) : (
-          <NavLink to={"/UserProjectsPage"} style={{ textDecoration: "none" }}>
-            <MenuItem style={{ width: "100%" }}>
-              <ProjectIcon src={projects_icon} />
+        <NavLink
+          to={
+            role === "admin"
+              ? "/AdminChecklistsPage"
+              : role === "validator"
+              ? "/ValidatorChecklistsPage"
+              : "/UserChecklistsPage"
+          }
+          style={{ textDecoration: "none" }}
+        >
+          <MenuItem>
+            <ProjectIcon src={checklist_icon} />
+            <Header>{sidebarOpen ? "Checklists" : ""}</Header>
+          </MenuItem>
+        </NavLink>
 
-              <Header>{sidebarOpen ? "Projects" : ""}</Header>
-            </MenuItem>
-          </NavLink>
-        )}
+        <NavLink
+          to={role === "admin" ? "/AdminProjectsPage" : "/UserProjectsPage"}
+          style={{ textDecoration: "none" }}
+        >
+          <MenuItem style={{ width: "100%" }}>
+            <ProjectIcon src={projects_icon} />
+            <Header>{sidebarOpen ? "Projects" : ""}</Header>
+          </MenuItem>
+        </NavLink>
+
         {role === "admin" ? (
           <NavLink to={"/AdminUsersPage"} style={{ textDecoration: "none" }}>
             <MenuItem style={{ width: "100%" }}>
@@ -213,40 +196,35 @@ const Sidebar = (props) => {
         ) : (
           <></>
         )}
-        {role === "admin" ? (
-          <NavLink to={"/AdminTrainingPage"} style={{ textDecoration: "none" }}>
-            <MenuItem style={{ width: "100%" }}>
-              <ProjectIcon src={training_icon} />
 
-              <Header>{sidebarOpen ? "Training" : ""}</Header>
-            </MenuItem>
-          </NavLink>
-        ) : (
-          <NavLink to={"/UserTrainingPage"} style={{ textDecoration: "none" }}>
-            <MenuItem style={{ width: "100%" }}>
-              <ProjectIcon src={training_icon} />
+        <NavLink
+          to={role === "admin" ? "/AdminTrainingPage" : "/UserTrainingPage"}
+          style={{ textDecoration: "none" }}
+        >
+          <MenuItem style={{ width: "100%" }}>
+            <ProjectIcon src={training_icon} />
 
-              <Header>{sidebarOpen ? "Training" : ""}</Header>
-            </MenuItem>
-          </NavLink>
-        )}
-        {role === "admin" ? (
-          <NavLink to={"/AdminPaymentsPage"} style={{ textDecoration: "none" }}>
-            <MenuItem style={{ width: "100%" }}>
-              <ProjectIcon src={payments_icon} />
+            <Header>{sidebarOpen ? "Training" : ""}</Header>
+          </MenuItem>
+        </NavLink>
 
-              <Header>{sidebarOpen ? "Payments" : ""}</Header>
-            </MenuItem>
-          </NavLink>
-        ) : (
-          <NavLink to={"/UserPaymentsPage"} style={{ textDecoration: "none" }}>
-            <MenuItem style={{ width: "100%" }}>
-              <ProjectIcon src={payments_icon} />
+        <NavLink
+          to={role === "admin" ? "/AdminPaymentsPage" : "/UserPaymentsPage"}
+          style={{ textDecoration: "none" }}
+        >
+          <MenuItem style={{ width: "100%" }}>
+            <ProjectIcon src={payments_icon} />
 
-              <Header>{sidebarOpen ? "Payments" : ""}</Header>
-            </MenuItem>
-          </NavLink>
-        )}
+            <Header>{sidebarOpen ? "Payments" : ""}</Header>
+          </MenuItem>
+        </NavLink>
+
+        <NavLink to={"/login"} style={{ textDecoration: "none" }}>
+          <MenuItem onClick={logout}>
+            <ProjectIcon onClick={logout} src={logouticon} />
+            <Header onClick={logout}>{sidebarOpen ? "Logout" : ""}</Header>
+          </MenuItem>
+        </NavLink>
         {/* {role === "admin" ? (
           <NavLink to={"/AdminAccountPage"} style={{ textDecoration: "none" }}>
             <MenuItem style={{ width: "100%" }}>
@@ -268,12 +246,6 @@ const Sidebar = (props) => {
             <Header>{sidebarOpen ? "FAQ" : ""}</Header>
           </MenuItem>
         </NavLink> */}
-        <NavLink to={"/login"} style={{ textDecoration: "none" }}>
-          <MenuItem onClick={logout}>
-            <ProjectIcon onClick={logout} src={logouticon} />
-            <Header onClick={logout}>{sidebarOpen ? "Logout" : ""}</Header>
-          </MenuItem>
-        </NavLink>
         {/* <MenuItem href={map_url} target="_blank">
           <ProjectIcon href={map_url} target="_blank" src={leftArrow} />
 

@@ -110,10 +110,6 @@ export const ValidatorChecklistsPage = () => {
     handleCommentOpen();
   };
 
-  const handleViewSidebar = () => {
-    handleSetSidebarState();
-  };
-
   return (
     <>
       <CommentModal
@@ -131,170 +127,104 @@ export const ValidatorChecklistsPage = () => {
         extraText={confirmText}
       />
 
-      <div
-        style={{
-          display: "flex",
-          flexDirection: "row",
-          width: "100%",
-          height: "100%",
-          float: "left",
-        }}
-      >
-        <Sidebar isOpen={sideBarOpen} />
-        <div style={{ width: "100%", height: "100%" }}>
-          <div
-            style={{
-              display: "flex",
-              position: "relative",
-              marginLeft: ".5vw",
-              flexDirection: "column",
-              height: "100vh",
-            }}
-          >
-            <div
-              style={{
-                display: "flex",
-                arginLeft: "6vh",
-                flexDirection: "row",
-              }}
-            >
-              <h1
-                style={{
-                  marginLeft: "3vw",
-                  marginTop: "1vw",
-                  paddingBottom: "2vh",
-                }}
-              >
-                <strong>Checklists:</strong>
-              </h1>
-              <div
-                style={{
-                  marginTop: "2vw",
-                  position: "relative",
-                  left: activeTab !== 4 ? "40.5vw" : "56vw",
-                }}
-              >
-                <ButtonDivComponent
-                  role={"admin"}
-                  button1={activeTab !== 5 ? false : false}
-                  button2={activeTab !== 5 ? false : false}
-                  button3={activeTab !== 4 ? false : true}
-                  button1_text={"Add"}
-                  button2_text={"Edit"}
-                  button3_text={activeTab !== 4 ? "Delete" : "Start"}
-                  button3_action={
-                    activeTab !== 4 ? <></> : handleStartChecklist
-                  }
-                />
-              </div>
-            </div>
-            <Tabs>
-              <TabList
-                style={{
-                  marginLeft: "0vw",
-                  marginTop: "0vh",
-                  paddingTop: "0vh",
-                }}
-              >
-                <Tab value={1} onClick={(e) => handleSetActiveTab(e)}>
-                  Started
-                </Tab>
-                <Tab value={2} onClick={(e) => handleSetActiveTab(e)}>
-                  Completed
-                </Tab>
-                <Tab value={3} onClick={(e) => handleSetActiveTab(e)}>
-                  Confirmed
-                </Tab>
-                <Tab value={4} onClick={(e) => handleSetActiveTab(e)}>
-                  New
-                </Tab>
-                <Tab value={5} onClick={(e) => handleSetActiveTab(e)}>
-                  Ready for Confirmation
-                </Tab>
+      <Tabs>
+        <TabList>
+          <Tab value={1} onClick={(e) => handleSetActiveTab(e)}>
+            Started
+          </Tab>
+          <Tab value={2} onClick={(e) => handleSetActiveTab(e)}>
+            Completed
+          </Tab>
+          <Tab value={3} onClick={(e) => handleSetActiveTab(e)}>
+            Confirmed
+          </Tab>
+          <Tab value={4} onClick={(e) => handleSetActiveTab(e)}>
+            New
+          </Tab>
+          <Tab value={5} onClick={(e) => handleSetActiveTab(e)}>
+            Ready for Confirmation
+          </Tab>
 
-                <Tab value={6} onClick={(e) => handleSetActiveTab(e)}>
-                  Confirmed by you
-                </Tab>
-              </TabList>
-              <TabPanel>
-                <ChecklistCardGrid
-                  type="User"
-                  key={1}
-                  role={user.role}
-                  goToSource={goToSource}
-                  checklists={userStartedChecklists}
-                  handleCompleteListItem={handleCompleteListItem}
-                  handleSetChecklistSelected={handleSetChecklistSelected}
-                  checklistSelected={checklistSelected}
-                  handleCommentOpen={handleCommentOpen}
-                  handleAddComment={handleAddComment}
-                />
-              </TabPanel>
-              <TabPanel>
-                <ChecklistCardGrid
-                  type="User"
-                  role={user.role}
-                  key={1}
-                  completed={true}
-                  goToSource={goToSource}
-                  checklists={userCompletedChecklists}
-                  handleSetChecklistSelected={handleSetChecklistSelected}
-                  checklistSelected={checklistSelected}
-                  handleCommentOpen={handleCommentOpen}
-                  handleAddComment={handleAddComment}
-                />
-              </TabPanel>
-              <TabPanel>
-                <ChecklistCardGrid
-                  type={"User"}
-                  role={user.role}
-                  key={1}
-                  checklists={userConfirmedChecklists}
-                  handleSetChecklistSelected={handleSetChecklistSelected}
-                  checklistSelected={checklistSelected}
-                  handleCommentOpen={handleCommentOpen}
-                  handleAddComment={handleAddComment}
-                />
-              </TabPanel>
-              <TabPanel>
-                <ChecklistCardGrid
-                  type={"New"}
-                  role={user.role}
-                  key={1}
-                  checklists={userAvailableChecklists}
-                  handleSetChecklistSelected={handleSetChecklistSelected}
-                  handleConfirmItem={handleConfirmItem}
-                  checklistSelected={checklistSelected}
-                />
-              </TabPanel>
-              <TabPanel>
-                <ChecklistCardGrid
-                  type={"Validator"}
-                  role={user.role}
-                  key={1}
-                  checklists={orgUserCompletedChecklists}
-                  handleSetChecklistSelected={handleSetChecklistSelected}
-                  handleConfirmItem={handleConfirmItem}
-                  handleAddComment={handleAddComment}
-                  handleCommentOpen={handleCommentOpen}
-                />
-              </TabPanel>
-              <TabPanel>
-                <ChecklistCardGrid
-                  type={"Validator"}
-                  role={user.role}
-                  key={1}
-                  checklists={orgUserConfirmedChecklists}
-                  handleSetChecklistSelected={handleSetChecklistSelected}
-                  handleConfirmItem={handleConfirmItem}
-                  handleAddComment={handleAddComment}
-                  handleCommentOpen={handleCommentOpen}
-                />
-              </TabPanel>
-            </Tabs>
-          </div>
-        </div>
-      </div>
+          <Tab value={6} onClick={(e) => handleSetActiveTab(e)}>
+            Confirmed by you
+          </Tab>
+        </TabList>
+        <TabPanel>
+          <ChecklistCardGrid
+            type="User"
+            key={1}
+            role={user.role}
+            goToSource={goToSource}
+            checklists={userStartedChecklists}
+            handleCompleteListItem={handleCompleteListItem}
+            handleSetChecklistSelected={handleSetChecklistSelected}
+            checklistSelected={checklistSelected}
+            handleCommentOpen={handleCommentOpen}
+            handleAddComment={handleAddComment}
+          />
+        </TabPanel>
+        <TabPanel>
+          <ChecklistCardGrid
+            type="User"
+            role={user.role}
+            key={1}
+            completed={true}
+            goToSource={goToSource}
+            checklists={userCompletedChecklists}
+            handleSetChecklistSelected={handleSetChecklistSelected}
+            checklistSelected={checklistSelected}
+            handleCommentOpen={handleCommentOpen}
+            handleAddComment={handleAddComment}
+          />
+        </TabPanel>
+        <TabPanel>
+          <ChecklistCardGrid
+            type={"User"}
+            role={user.role}
+            key={1}
+            checklists={userConfirmedChecklists}
+            handleSetChecklistSelected={handleSetChecklistSelected}
+            checklistSelected={checklistSelected}
+            handleCommentOpen={handleCommentOpen}
+            handleAddComment={handleAddComment}
+          />
+        </TabPanel>
+        <TabPanel>
+          <ChecklistCardGrid
+            type={"New"}
+            role={user.role}
+            key={1}
+            checklists={userAvailableChecklists}
+            handleSetChecklistSelected={handleSetChecklistSelected}
+            handleConfirmItem={handleConfirmItem}
+            checklistSelected={checklistSelected}
+          />
+        </TabPanel>
+        <TabPanel>
+          <ChecklistCardGrid
+            type={"Validator"}
+            role={user.role}
+            key={1}
+            checklists={orgUserCompletedChecklists}
+            handleSetChecklistSelected={handleSetChecklistSelected}
+            handleConfirmItem={handleConfirmItem}
+            handleAddComment={handleAddComment}
+            handleCommentOpen={handleCommentOpen}
+          />
+        </TabPanel>
+        <TabPanel>
+          <ChecklistCardGrid
+            type={"Validator"}
+            role={user.role}
+            key={1}
+            checklists={orgUserConfirmedChecklists}
+            handleSetChecklistSelected={handleSetChecklistSelected}
+            handleConfirmItem={handleConfirmItem}
+            handleAddComment={handleAddComment}
+            handleCommentOpen={handleCommentOpen}
+          />
+        </TabPanel>
+      </Tabs>
     </>
   );
 };

@@ -54,8 +54,10 @@ export const UserPaymentsPage = () => {
     if (user === null) {
       history("/login");
     }
-    if (user !== null && user.role !== "user") {
-      history("/login");
+    if (user !== null) {
+      if (user.role !== "user" && user.role !== "validator") {
+        history("/login");
+      }
     }
     fetchUserPayable(handleSetRequestAmount);
     fetchUserTransactions();
