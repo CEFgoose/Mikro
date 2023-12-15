@@ -13,6 +13,7 @@ import Chart from "react-apexcharts";
 import { DataContext } from "../../common/DataContext";
 import positive_trend_icon from "../../images/Up-trend-icon.png";
 import negative_trend_icon from "../../images/Down-Trend-Icon.png";
+import { DashCard } from "./styles.js";
 
 import {
   Card,
@@ -32,6 +33,7 @@ import {
   DialogContentText,
   DialogActions,
 } from "@mui/material";
+import { propTypes } from "react-bootstrap/esm/Image";
 
 export const TopDiv = styled("div")(({ theme }) => ({
   display: "flex",
@@ -60,12 +62,6 @@ export const CardMediaStyle = styled("div")(({ theme }) => ({
 export const TableCard = styled(Card)(() => ({
   width: "100%",
   boxShadow: "0 0 4px gray",
-}));
-
-export const MainDiv = styled("div")(({ theme }) => ({
-  display: "flex",
-  flexDirection: "column",
-  justifyContent: "center",
 }));
 
 export const ModalWrapper = styled("div")(() => ({
@@ -273,19 +269,7 @@ export const DashboardCard = (props) => {
 
 export const TasksMappedCard = (props) => {
   return (
-    <Card
-      style={{
-        boxShadow: "0 0 4px gray",
-        position: "relative",
-        marginLeft: props.marginLeft,
-        marginRight: props.marginRight,
-        width: props.width,
-        height: "22vh",
-        display: "flex",
-        flexDirection: "column",
-      }}
-    >
-      {" "}
+    <DashCard>
       <div
         style={{
           display: "flex",
@@ -338,135 +322,88 @@ export const TasksMappedCard = (props) => {
           <b>+2</b> more than last week!
         </p>
       </div>
-    </Card>
+    </DashCard>
   );
 };
 
 export const ValidationCard = (props) => {
+  if (props.progressBar == null || props.progressBar.length === 0) {
+    return (
+      <DashCard key={props.title}>
+        <p>{props.title}</p>
+        <p>No Progress Bars to display</p>
+      </DashCard>
+    );
+  }
+
   return (
-    <Card
-      style={{
-        boxShadow: "0 0 4px gray",
-        position: "relative",
-        marginLeft: props.marginLeft,
-        marginRight: props.marginRight,
-        marginBottom: "1vh",
-        width: props.width,
-        height: "22vh",
-        display: "flex",
-        flexDirection: "row",
-      }}
-    >
-      <div
-        style={{
-          display: "flex",
-          flexDirection: "column",
-          width: "100%",
-          margin: "1vh",
-        }}
-      >
-        <SectionTitle title_text={props.title} />
+    <DashCard key={props.title}>
+      <SectionTitle title_text={props.title} />
+      {props.progressBar.map((bar, index) => (
         <div
+          key={`${props.title}-${index}`}
           style={{
             display: "flex",
-            flexDirection: "row",
+            flexDirection: "column",
             justifyContent: "space-between",
             marginTop: "1vh",
           }}
         >
-          <p>Total Approved</p>
-          <p>{props.validatedCurrent}</p>
+          <p>{bar.title}</p>
+          <ProgressBar
+            current={bar.current}
+            total={bar.total}
+            color={bar.color}
+          />
         </div>
-        <ProgressBar current={props.validatedCurrent} total={props.total} />
-        <div
-          style={{
-            display: "flex",
-            flexDirection: "row",
-            justifyContent: "space-between",
-            marginTop: "2.5vh",
-          }}
-        >
-          <p>Total Invalidated</p>
-          <p>{props.invalidCurrent}</p>
-        </div>
-        <ProgressBar
-          current={props.invalidCurrent}
-          total={props.total}
-          color={"#349beb"}
-        />
-      </div>
-    </Card>
+      ))}
+    </DashCard>
   );
 };
 
 export const PaymentCard = (props) => {
   return (
-    <Card
-      style={{
-        boxShadow: "0 0 4px gray",
-        position: "relative",
-        marginLeft: props.marginLeft,
-        marginRight: props.marginRight,
-        marginBottom: "1vh",
-        width: props.width,
-        height: "22vh",
-        display: "flex",
-        flexDirection: "row",
-      }}
-    >
+    <DashCard>
+      <SectionTitle title_text={props.title} />
+      <h1
+        style={{
+          alignSelf: "center",
+          paddingLeft: "1vw",
+          paddingRight: "1vw",
+          marginBottom: "1vh",
+          marginTop: "1vh",
+        }}
+      >
+        {props.currentBalance}
+      </h1>
       <div
         style={{
           display: "flex",
-          flexDirection: "column",
-          width: "100%",
-          margin: "1vh",
-          marginLeft: "2vw",
-          marginRight: "2vw",
+          flexDirection: "row",
+          justifyContent: "space-around",
+          marginTop: "1vh",
         }}
       >
-        <SectionTitle title_text={props.title} />
-        <h1
-          style={{
-            alignSelf: "center",
-            paddingLeft: "1vw",
-            paddingRight: "1vw",
-            marginBottom: "1vh",
-            marginTop: "1vh",
-          }}
-        >
-          {props.currentBalance}
-        </h1>
-        <div
-          style={{
-            display: "flex",
-            flexDirection: "row",
-            justifyContent: "space-around",
-            marginTop: "1vh",
-          }}
-        >
-          <p>Overall Account Payment</p>
-          <p>{props.overallAccountPayment}</p>
-        </div>
-        <button
-          style={{
-            borderRadius: "6px",
-            backgroundColor: "#fd7e14",
-            width: "100%",
-            border: "none",
-            height: "30px",
-            cursor: "pointer",
-          }}
-          onClick={() => {
-            window.location.href =
-              props.role === "admin"
-                ? "/AdminPaymentsPage"
-                : "/UserPaymentsPage";
-          }}
-        >
-          See Payment Details
-        </button>
+        <p>{props.subtitle}</p>
+        <p>{props.overallAccountPayment}</p>
       </div>
-    </Card>
+      <button
+        style={{
+          borderRadius: "6px",
+          backgroundColor: "#fd7e14",
+          width: "100%",
+          border: "none",
+          height: "30px",
+          cursor: "pointer",
+        }}
+        onClick={() => {
+          window.location.href =
+            props.role === "admin" ? "/AdminPaymentsPage" : "/UserPaymentsPage";
+        }}
+      >
+        See Payment Details
+      </button>
+    </DashCard>
   );
 };
 
@@ -475,13 +412,10 @@ const ProgressBar = (props) => {
   const current = props.current || 0;
   const total = props.total || 100;
   const color = props.color || "#4caf50";
-
   // Calculate the percentage of completion
   const percentage = (current / total) * 100;
-
   // Lighten the color by adjusting opacity
   const lighterBackgroundColor = `${color}30`; // 80 represents 50% opacity
-
   return (
     <div
       style={{
@@ -1061,7 +995,7 @@ export const AdminPayRequestsTable = (props) => {
       style={{
         display: "flex",
         flexDirection: "row",
-        height: "76vh",
+        height: "87vh",
       }}
     >
       <TableCard>
@@ -1132,7 +1066,7 @@ export const AdminPaymentsTable = (props) => {
       style={{
         display: "flex",
         flexDirection: "row",
-        height: "78vh",
+        height: "87vh",
       }}
     >
       <TableCard>

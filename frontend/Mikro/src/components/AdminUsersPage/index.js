@@ -160,12 +160,9 @@ export const AdminUsersPage = () => {
           display: "flex",
           flexDirection: "row",
           justifyContent: "space-between",
+          marginBottom: "1vh",
         }}
       >
-        <h1>
-          <strong>Users:</strong>
-        </h1>
-
         <ButtonDivComponent
           handleFileSelect={handleFileSelect}
           role={"admin"}
@@ -189,63 +186,75 @@ export const AdminUsersPage = () => {
           }}
         />
       </div>
-      <TableCard>
-        <CardMediaStyle />
-        <Table>
-          <ListHead
-            headLabel={USERS_TABLE_HEADERS}
-            tableData={orgUsers}
-            updateData={setOrgUsers}
-          />
+      <div
+        style={{
+          display: "flex",
+          flexDirection: "row",
+          height: "87vh",
+        }}
+      >
+        <TableCard
+          style={{
+            overflowY: "scroll",
+          }}
+        >
+          <CardMediaStyle />
+          <Table>
+            <ListHead
+              headLabel={USERS_TABLE_HEADERS}
+              tableData={orgUsers}
+              updateData={setOrgUsers}
+            />
 
-          <TableBody>
-            {orgUsers &&
-              orgUsers.slice().map((row) => {
-                const {
-                  id,
-                  name,
-                  role,
-                  assigned_projects,
-                  total_tasks_mapped,
-                  total_tasks_validated,
-                  total_tasks_invalidated,
-                  awaiting_payment,
-                  total_payout,
-                } = row;
-                return (
-                  <ProjectRow
-                    sx={{
-                      "&:hover": {
-                        backgroundColor: "rgba(145, 165, 172, 0.5)",
-                        cursor: "pointer",
-                      },
-                    }}
-                    align="center"
-                    key={row}
-                    tabIndex={-1}
-                    onClick={() => handleSetUserSelected(id)}
-                    selected={userSelected === id}
-                  >
-                    <ProjectCell entry={<strong>{name}</strong>} />
-                    <ProjectCell entry={role} />
-                    <ProjectCell entry={assigned_projects} />
-                    <ProjectCell entry={total_tasks_mapped} />
-                    <ProjectCell entry={total_tasks_validated} />
-                    <ProjectCell entry={total_tasks_invalidated} />
-                    <ProjectCell
-                      entry={`$${
-                        awaiting_payment && awaiting_payment.toFixed(2)
-                      }`}
-                    />
-                    <ProjectCell
-                      entry={`$${total_payout && total_payout.toFixed(2)}`}
-                    />
-                  </ProjectRow>
-                );
-              })}
-          </TableBody>
-        </Table>
-      </TableCard>
+            <TableBody>
+              {orgUsers &&
+                orgUsers.slice().map((row) => {
+                  const {
+                    id,
+                    name,
+                    role,
+                    assigned_projects,
+                    total_tasks_mapped,
+                    total_tasks_validated,
+                    total_tasks_invalidated,
+                    awaiting_payment,
+                    total_payout,
+                  } = row;
+                  return (
+                    <ProjectRow
+                      sx={{
+                        "&:hover": {
+                          backgroundColor: "rgba(145, 165, 172, 0.5)",
+                          cursor: "pointer",
+                        },
+                      }}
+                      align="center"
+                      key={row}
+                      tabIndex={-1}
+                      onClick={() => handleSetUserSelected(id)}
+                      selected={userSelected === id}
+                    >
+                      <ProjectCell entry={<strong>{name}</strong>} />
+                      <ProjectCell entry={role} />
+                      <ProjectCell entry={assigned_projects} />
+                      <ProjectCell entry={total_tasks_mapped} />
+                      <ProjectCell entry={total_tasks_validated} />
+                      <ProjectCell entry={total_tasks_invalidated} />
+                      <ProjectCell
+                        entry={`$${
+                          awaiting_payment && awaiting_payment.toFixed(2)
+                        }`}
+                      />
+                      <ProjectCell
+                        entry={`$${total_payout && total_payout.toFixed(2)}`}
+                      />
+                    </ProjectRow>
+                  );
+                })}
+            </TableBody>
+          </Table>
+        </TableCard>
+      </div>
     </>
   );
 };

@@ -265,29 +265,19 @@ export const AdminTasksPage = () => {
         projectStatus={projectStatus}
         handleSetProjectStatus={handleSetProjectStatus}
       />
-
-      <div
-        style={{
-          display: "flex",
-          marginLeft: "6vh",
-          flexDirection: "row",
-        }}
-      >
-        <h1
-          style={{
-            marginTop: "1vw",
-            paddingBottom: "2vh",
-          }}
-        >
-          <strong>Tasks:</strong>
-        </h1>
+      <Tabs>
         <div
           style={{
-            marginTop: "2vw",
-            position: "relative",
-            left: "52vw",
+            display: "flex",
+            flexDirection: "row",
+            justifyContent: "space-between",
           }}
         >
+          <TabList>
+            <Tab value={1} onClick={(e) => handleSetActiveTab(e)}>
+              External Validations:
+            </Tab>
+          </TabList>
           <ButtonDivComponent
             role={"admin"}
             button1={true}
@@ -298,21 +288,13 @@ export const AdminTasksPage = () => {
             button2_action={handleInvalidateTask}
           />
         </div>
-      </div>
-      <Tabs>
-        <TabList>
-          <Tab value={1} onClick={(e) => handleSetActiveTab(e)}>
-            External Validations:
-          </Tab>
-        </TabList>
 
         <TabPanel>
           <div
             style={{
               display: "flex",
               flexDirection: "row",
-              height: "79vh",
-              width: "77.5vw",
+              height: "87vh",
             }}
           >
             <TableCard>

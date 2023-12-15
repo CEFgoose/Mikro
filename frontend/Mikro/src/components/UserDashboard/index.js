@@ -202,11 +202,21 @@ export const UserDashboard = () => {
 
         <ValidationCard
           title={"Validation Overview"}
-          total={tasksMapped}
-          validatedCurrent={tasksValidated}
-          invalidCurrent={tasksInvalidated}
-          width={"22vw"}
-        ></ValidationCard>
+          progressBar={[
+            {
+              title: "Approved Tasks",
+              total: tasksMapped,
+              current: tasksValidated,
+              color: "#4caf50",
+            },
+            {
+              title: "Approved Tasks",
+              total: tasksMapped,
+              current: tasksInvalidated,
+              color: "#34abeb",
+            },
+          ]}
+        />
         <PaymentCard
           title={"Your Current Balance"}
           width={"22vw"}

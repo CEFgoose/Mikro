@@ -1,5 +1,6 @@
 import styled from "styled-components";
 import close_icon from "../../images/close_icon.png";
+import { Card } from "@mui/material";
 
 export const Container = styled.div`
   display: flex;
@@ -25,6 +26,17 @@ export const Button = styled.div`
     background-color: #91a5ac;
   }
 `;
+
+export const DashCard = styled(Card)(() => ({
+  display: "flex",
+  position: "relative",
+  flexDirection: "column",
+  height: "23vh",
+  width: "25vw",
+  boxShadow: "0 0 4px gray",
+  marginBottom: "1vh",
+  padding: "1vh",
+}));
 
 export const ButtonLabel = styled.div`
   margin: 2px;

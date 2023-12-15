@@ -525,51 +525,47 @@ export const AdminChecklistsPage = () => {
         handleAddComment={handleAddComment}
       />
 
-      <div
-        style={{
-          display: "flex",
-          flexDirection: "row",
-        }}
-      >
-        <h1>
-          <strong>Checklists:</strong>
-        </h1>
-        <ButtonDivComponent
-          role={"admin"}
-          button1={activeTab === 3 || activeTab === 4 ? false : true}
-          button2={activeTab === 3 || activeTab === 4 ? false : true}
-          button3={activeTab === 3 || activeTab === 4 ? false : true}
-          button1_text={"Add"}
-          button2_text={"Edit"}
-          button3_text={"Delete"}
-          button1_action={handleAddOpen}
-          button2_action={handleModifyOpen}
-          button3_action={handleDeleteOpen}
-        />
-      </div>
-
       <Tabs>
-        <TabList>
-          <Tab value={1} onClick={(e) => handleSetActiveTab(e)}>
-            Active
-          </Tab>
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "row",
+          }}
+        >
+          <TabList>
+            <Tab value={1} onClick={(e) => handleSetActiveTab(e)}>
+              Active
+            </Tab>
 
-          <Tab value={2} onClick={(e) => handleSetActiveTab(e)}>
-            Inactive
-          </Tab>
+            <Tab value={2} onClick={(e) => handleSetActiveTab(e)}>
+              Inactive
+            </Tab>
 
-          <Tab value={3} onClick={(e) => handleSetActiveTab(e)}>
-            Ready for Confirmation
-          </Tab>
+            <Tab value={3} onClick={(e) => handleSetActiveTab(e)}>
+              Ready for Confirmation
+            </Tab>
 
-          <Tab value={4} onClick={(e) => handleSetActiveTab(e)}>
-            Completed & Confirmed
-          </Tab>
+            <Tab value={4} onClick={(e) => handleSetActiveTab(e)}>
+              Completed & Confirmed
+            </Tab>
 
-          <Tab value={5} onClick={(e) => handleSetActiveTab(e)}>
-            Stale
-          </Tab>
-        </TabList>
+            <Tab value={5} onClick={(e) => handleSetActiveTab(e)}>
+              Stale
+            </Tab>
+          </TabList>
+          <ButtonDivComponent
+            role={"admin"}
+            button1={activeTab === 3 || activeTab === 4 ? false : true}
+            button2={activeTab === 3 || activeTab === 4 ? false : true}
+            button3={activeTab === 3 || activeTab === 4 ? false : true}
+            button1_text={"Add"}
+            button2_text={"Edit"}
+            button3_text={"Delete"}
+            button1_action={handleAddOpen}
+            button2_action={handleModifyOpen}
+            button3_action={handleDeleteOpen}
+          />
+        </div>
 
         <TabPanel>
           <ChecklistCardGrid

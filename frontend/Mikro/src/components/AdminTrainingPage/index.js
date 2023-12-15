@@ -162,41 +162,37 @@ export const AdminTrainingPage = () => {
         training_title={trainingSelectedTitle}
         handleDeleteTraining={handleDeleteTraining}
       />
-      <div
-        style={{
-          display: "flex",
-          flexDirection: "row",
-          justifyContent: "space-between",
-        }}
-      >
-        <h1>
-          <strong>Training:</strong>
-        </h1>
-
-        <ButtonDivComponent
-          button1={true}
-          button1_text={"Add"}
-          button1_action={handleAddOpen}
-          button2={true}
-          button2_text={"Edit"}
-          button2_action={handleModifyOpen}
-          button3={true}
-          button3_text={"Delete"}
-          button3_action={handleDeleteOpen}
-        />
-      </div>
       <Tabs>
-        <TabList>
-          <Tab value={1} onClick={(e) => handleSetActiveTab(e)}>
-            Mapping
-          </Tab>
-          <Tab value={2} onClick={(e) => handleSetActiveTab(e)}>
-            Validation
-          </Tab>
-          <Tab value={3} onClick={(e) => handleSetActiveTab(e)}>
-            Project Specific
-          </Tab>
-        </TabList>
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "row",
+            justifyContent: "space-between",
+          }}
+        >
+          <TabList>
+            <Tab value={1} onClick={(e) => handleSetActiveTab(e)}>
+              Mapping
+            </Tab>
+            <Tab value={2} onClick={(e) => handleSetActiveTab(e)}>
+              Validation
+            </Tab>
+            <Tab value={3} onClick={(e) => handleSetActiveTab(e)}>
+              Project Specific
+            </Tab>
+          </TabList>
+          <ButtonDivComponent
+            button1={true}
+            button1_text={"Add"}
+            button1_action={handleAddOpen}
+            button2={true}
+            button2_text={"Edit"}
+            button2_action={handleModifyOpen}
+            button3={true}
+            button3_text={"Delete"}
+            button3_action={handleDeleteOpen}
+          />
+        </div>
         <TabPanel>
           <AdminTrainingTable
             training_type={training_type}

@@ -758,8 +758,7 @@ export const AdminTrainingTable = (props) => {
       style={{
         display: "flex",
         flexDirection: "row",
-        height: "78vh",
-        width: "77.5vw",
+        height: "87vh",
       }}
     >
       <TableCard

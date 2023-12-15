@@ -11,10 +11,12 @@ import {
   ProjectRow,
   ProjectCell,
   TableCard,
+  TasksMappedCard,
+  ValidationCard,
+  PaymentCard,
 } from "components/commonComponents/commonComponents";
 
 import "./styles.css";
-import Sidebar from "components/sidebar/sidebar";
 
 export const AdminDash = () => {
   // DATA CONTEXT STATES AND FUNCTIONS //
@@ -81,10 +83,6 @@ export const AdminDash = () => {
     setProjectSelected(e);
   };
 
-  const updateData = (sortedData) => {
-    setActiveProjects(sortedData);
-  };
-
   return (
     <>
       <ConfirmationModal
@@ -93,59 +91,63 @@ export const AdminDash = () => {
         question={confirmQuestion}
         extraText={confirmText}
       />
-      <div>
-        <h1>
-          <strong>Dashboard:</strong>
-        </h1>
-      </div>
       <div
         style={{
           display: "flex",
           flexDirection: "row",
-          height: "44vh",
+          position: "relative",
+          justifyContent: "space-between",
+          marginBottom: "1vh",
         }}
       >
-        <DashboardCard
-          marginRight={"5vw"}
-          width={"20vw"}
-          title={"Projects Overview"}
-          subtitle_text_1={"Active:"}
-          subtitle_text_2={"Inactive:"}
-          subtitle_text_3={"Completed:"}
-          value_1={activeProjectsCount !== null ? activeProjectsCount : "-"}
-          value_2={inactiveProjectsCount !== null ? inactiveProjectsCount : "-"}
-          value_3={completedProjects !== null ? completedProjects : "-"}
+        <TasksMappedCard
+          title={"Total Active Projects"}
+          tasksMapped={activeProjectsCount}
+          lineData={[1, 1, 15, 17, 20, 3, 7, 1]}
+          width={"22vw"}
         />
-        <DashboardCard
-          marginRight={"5.5vw"}
-          width={"20vw"}
-          title={"Tasks Overview"}
-          subtitle_text_1={"Awaiting Approval:"}
-          subtitle_text_2={"Approved:"}
-          subtitle_text_3={"Invalidated:"}
-          value_1={tasksMapped !== null ? tasksMapped : "-"}
-          value_2={tasksValidated !== null ? tasksValidated : "-"}
-          value_3={tasksInvalidated !== null ? tasksInvalidated : "-"}
+
+        <ValidationCard
+          title={"Validation Overview"}
+          progressBar={[
+            {
+              title: "Tasks Needing Vaidation",
+              total: tasksMapped,
+              current: 5,
+              color: "#4caf50",
+            },
+            {
+              title: "Approved Tasks",
+              total: tasksMapped,
+              current: tasksValidated,
+              color: "#34abeb",
+            },
+            {
+              title: "Approved Tasks",
+              total: tasksMapped,
+              current: tasksInvalidated,
+              color: "#eb3434",
+            },
+          ]}
         />
-        <DashboardCard
-          width={"20vw"}
-          title={"Payment Overview"}
-          subtitle_text_1={"Payable Total:"}
-          subtitle_text_2={"Payout Requests:"}
-          subtitle_text_3={"Payouts to Date:"}
-          value_1={`$${payableTotal !== null ? payableTotal.toFixed(2) : "-"}`}
-          value_2={`$${
+
+        <PaymentCard
+          title={"Queued Payment Total"}
+          subtitle={"Overall Paid Amount"}
+          role={user.role}
+          currentBalance={
             requestsTotal !== null ? requestsTotal.toFixed(2) : "-"
+          }
+          overallAccountPayment={`$${
+            payableTotal !== null ? payableTotal.toFixed(2) : "-"
           }`}
-          value_3={`$${paidTotal !== null ? paidTotal.toFixed(2) : "-"}`}
         />
       </div>
       <div
         style={{
           display: "flex",
           flexDirection: "row",
-          height: "42vh",
-          width: "77.5vw",
+          height: "67vh",
         }}
       >
         <TableCard

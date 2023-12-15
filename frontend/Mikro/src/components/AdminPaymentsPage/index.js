@@ -246,42 +246,38 @@ export const AdminPaymentsPage = () => {
         task_ids={taskIDs}
         notes={notes}
       />
-      <div
-        style={{
-          display: "flex",
-          flexDirection: "row",
-          justifyContent: "space-between",
-        }}
-      >
-        <h1>
-          <strong>Payments:</strong>
-        </h1>
-
-        <ButtonDivComponent
-          data={CSVdata}
-          button1={activeTab === 1 ? true : false}
-          csv={activeTab === 1 ? false : true}
-          button2={true}
-          button3={true}
-          button1_text={activeTab === 1 ? "Add" : "CSV Report"}
-          button2_text={activeTab === 1 ? "Process" : "View Details"}
-          button3_text={"Delete"}
-          button1_action={activeTab === 1 ? handleAddOpen : null}
-          button2_action={
-            activeTab === 1 ? handleProcessOpen : handleDetailsOpen
-          }
-          button3_action={handleDeleteOpen}
-        />
-      </div>
       <Tabs>
-        <TabList>
-          <Tab value={1} onClick={(e) => handleSetActiveTab(e)}>
-            Pay Requests
-          </Tab>
-          <Tab value={2} onClick={(e) => handleSetActiveTab(e)}>
-            Completed Payouts
-          </Tab>
-        </TabList>
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "row",
+            justifyContent: "space-between",
+          }}
+        >
+          <TabList>
+            <Tab value={1} onClick={(e) => handleSetActiveTab(e)}>
+              Pay Requests
+            </Tab>
+            <Tab value={2} onClick={(e) => handleSetActiveTab(e)}>
+              Completed Payouts
+            </Tab>
+          </TabList>
+          <ButtonDivComponent
+            data={CSVdata}
+            button1={activeTab === 1 ? true : false}
+            csv={activeTab === 1 ? false : true}
+            button2={true}
+            button3={true}
+            button1_text={activeTab === 1 ? "Add" : "CSV Report"}
+            button2_text={activeTab === 1 ? "Process" : "View Details"}
+            button3_text={"Delete"}
+            button1_action={activeTab === 1 ? handleAddOpen : null}
+            button2_action={
+              activeTab === 1 ? handleProcessOpen : handleDetailsOpen
+            }
+            button3_action={handleDeleteOpen}
+          />
+        </div>
         <TabPanel>
           <AdminPayRequestsTable
             rowsPerPage={rowsPerPage}
