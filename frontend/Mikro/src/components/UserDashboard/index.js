@@ -190,15 +190,14 @@ export const UserDashboard = () => {
           flexDirection: "row",
           position: "relative",
           height: "27vh",
-          gap: "4.5vw",
+          justifyContent: "space-between",
         }}
       >
         <TasksMappedCard
           title={"Tasks Mapped"}
           tasksMapped={tasksMapped}
           lineData={[1, 1, 15, 17, 20, 3, 7, 1]}
-          width={"22vw"}
-        ></TasksMappedCard>
+        />
 
         <ValidationCard
           title={"Validation Overview"}
@@ -219,12 +218,11 @@ export const UserDashboard = () => {
         />
         <PaymentCard
           title={"Your Current Balance"}
-          width={"22vw"}
           currentBalance={payableTotal !== null ? payableTotal.toFixed(2) : "-"}
           overallAccountPayment={`$${
             paidTotal !== null ? paidTotal.toFixed(2) : "-"
           }`}
-        ></PaymentCard>
+        />
       </div>
       <div
         style={{
