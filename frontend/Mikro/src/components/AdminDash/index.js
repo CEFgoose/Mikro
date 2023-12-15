@@ -123,7 +123,7 @@ export const AdminDash = () => {
               color: "#34abeb",
             },
             {
-              title: "Approved Tasks",
+              title: "Invalidated Tasks",
               total: tasksMapped,
               current: tasksInvalidated,
               color: "#eb3434",

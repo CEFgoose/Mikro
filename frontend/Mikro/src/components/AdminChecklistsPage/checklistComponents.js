@@ -16,6 +16,7 @@ import {
   ProjectRow,
   ProjectCell,
   ListHead,
+  AdminCardMediaStyle,
   CardMediaStyle,
 } from "../commonComponents/commonComponents";
 import { TextArea } from "components/commonComponents/styles";
@@ -76,32 +77,6 @@ export const ChecklistCardGrid = (props) => {
                       max_payment={max_payment}
                       commentSelected={props.commentSelected}
                       handleAddItemOpen={props.handleAddItemOpen}
-                      checklistSelected={props.checklistSelected}
-                      handleSetChecklistSelected={
-                        props.handleSetChecklistSelected
-                      }
-                    />
-                  </>
-                ) : props.type === "New" ? (
-                  <>
-                    <NewChecklistCard
-                      id={id}
-                      name={name}
-                      description={description}
-                      comments={comments}
-                      role={props.role}
-                      goToSource={props.goToSource}
-                      handleCommentOpen={props.handleCommentOpen}
-                      handleAddComment={props.handleAddComment}
-                      difficulty={difficulty}
-                      visibility={visibility}
-                      due_date={due_date}
-                      list_items={list_items}
-                      completion_rate={completion_rate}
-                      validation_rate={validation_rate}
-                      total_payout={total_payout}
-                      author={author}
-                      max_payment={max_payment}
                       checklistSelected={props.checklistSelected}
                       handleSetChecklistSelected={
                         props.handleSetChecklistSelected
@@ -1035,16 +1010,14 @@ export const AdminChecklistCard = (props) => {
     <Card
       key={props.id}
       style={{
-        boxShadow: "1px 1px 6px 2px gray",
-        width: "25vw",
-        height: "75vh",
-        marginLeft: "2vw",
-        marginTop: "2vh",
-        whiteSpace: "normal",
+        display: "flex",
+        flexDirection: "column",
+        boxShadow: "0 0 4px gray",
+        width: "27vw",
+        wordWrap: "break-word",
       }}
-      // onDoubleClick={() => props.goToSource(props.url)}
     >
-      <CardMediaStyle>
+      <AdminCardMediaStyle>
         <input
           type={"checkbox"}
           id={props.id}
@@ -1063,79 +1036,42 @@ export const AdminChecklistCard = (props) => {
             whiteSpace: "normal",
           }}
         />
-      </CardMediaStyle>
+      </AdminCardMediaStyle>
       <div
         style={{
-          display: "flex",
-          flexDirection: "row",
-          justifyContent: "center",
-          height: "5vh",
-          whiteSpace: "normal",
+          margin: ".5vw",
         }}
       >
-        <SectionTitle title_text={props.name && `${props.name}`} bold={true} />
-      </div>
+        <h3>{props.name && `${props.name}`} </h3>
+        <p>{props.description}</p>
 
-      <div
-        style={{
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
-          // justifyContent:'center'
-        }}
-      >
-        <div
-          style={{
-            display: "flex",
-            flexDirection: "column",
-
-            height: "15vh",
-            width: "90%",
-            borderStyle: "solid",
-            borderWidth: "8px",
-            borderColor: "lightgrey",
-          }}
-        >
-          <SectionSubtitle subtitle_text={`Description`} bold={true} />
-          <SectionSubtitle
-            subtitle_text={props.description}
-            margin_bottom={"0vh"}
-          />
-        </div>
-      </div>
-      <div
-        style={{
-          display: "flex",
-          flexDirection: "column",
-        }}
-      >
         <div
           style={{
             display: "flex",
             flexDirection: "row",
-            justifyContent: "left",
-            verticalAlign: "textTop",
-            marginTop: "0vh",
-            height: "4vh",
+            justifyContent: "space-around",
+            marginRight: "10vw",
           }}
         >
-          <span style={{ paddingLeft: "1.2vw" }} />
-          <div
-            onClick={() =>
-              props.handleAddItemOpen(props.id, props.name, props.list_items)
-            }
-          >
-            <StyledButton button_text={`+Add/Edit Task`} bold={true} />
-          </div>
+          <p>Complete</p>
+          <p>Confirmed</p>
+        </div>
+
+        <div
+          onClick={() =>
+            props.handleAddItemOpen(props.id, props.name, props.list_items)
+          }
+        >
+          <StyledButton button_text={`+Add/Edit Task`} bold={true} />
         </div>
 
         <div
           style={{
+            flex: "1",
             display: "flex",
             flexDirection: "column",
-            height: "35vh",
-            overflowY: "scroll",
-            overflowX: "scroll",
+            overflow: "auto",
+            maxHeight: "30vh",
           }}
         >
           {props.list_items &&
@@ -1165,28 +1101,11 @@ export const AdminChecklistCard = (props) => {
               );
             })}
         </div>
-      </div>
-
-      <div
-        style={{
-          display: "flex",
-          flexDirection: "row",
-          justifyContent: "center",
-        }}
-      ></div>
-      <div
-        style={{
-          display: "flex",
-          flexDirection: "column",
-          // justifyContent: "center",
-          // alignContent:'center'
-        }}
-      >
         <div
           style={{
             display: "flex",
             flexDirection: "row",
-            justifyContent: "center",
+            justifyContent: "space-around",
             marginTop: "1vh",
           }}
         >
@@ -1194,9 +1113,6 @@ export const AdminChecklistCard = (props) => {
             style={{
               display: "flex",
               flexDirection: "column",
-              justifyContent: "center",
-              alignItems: "center",
-              margin: "auto",
             }}
           >
             <SectionSubtitle subtitle_text={"Rate:"} bold={true} />
@@ -1211,9 +1127,6 @@ export const AdminChecklistCard = (props) => {
             style={{
               display: "flex",
               flexDirection: "column",
-              justifyContent: "center",
-              alignItems: "center",
-              margin: "auto",
             }}
           >
             <SectionSubtitle subtitle_text={"Due Date:"} bold={true} />
@@ -1224,9 +1137,6 @@ export const AdminChecklistCard = (props) => {
             style={{
               display: "flex",
               flexDirection: "column",
-              justifyContent: "center",
-              alignItems: "center",
-              margin: "auto",
             }}
           >
             <SectionSubtitle subtitle_text={"Status:"} bold={true} />
@@ -1259,7 +1169,7 @@ export const NewChecklistCard = (props) => {
       }}
       // onDoubleClick={() => props.goToSource(props.url)}
     >
-      <CardMediaStyle>
+      <AdminCardMediaStyle>
         <input
           type={"checkbox"}
           id={props.id}
@@ -1270,7 +1180,7 @@ export const NewChecklistCard = (props) => {
           }
           style={{ marginLeft: "1vw", marginBottom: "1vh" }}
         />
-      </CardMediaStyle>
+      </AdminCardMediaStyle>
       <div
         style={{
           display: "flex",
@@ -1431,20 +1341,6 @@ export const NewChecklistCard = (props) => {
 };
 
 export const UserChecklistCard = (props) => {
-  const calculateMaxHeight = (content) => {
-    // Set a maximum height for each column, e.g., 50vh
-    const maxColumnHeight = 100;
-
-    // Calculate the actual height based on the number of items in the content
-    const actualHeight = content.length * 7.5; // Adjust the multiplier based on your content
-
-    // Return the minimum of actual height and max column height
-    return Math.min(actualHeight, maxColumnHeight);
-  };
-
-  const listMaxHeight = calculateMaxHeight(props.list_items || []);
-  const commentsMaxHeight = calculateMaxHeight(props.comments || []);
-
   return (
     <Card
       key={props.id}
@@ -1452,8 +1348,7 @@ export const UserChecklistCard = (props) => {
         display: "flex",
         flexDirection: "column",
         boxShadow: "0 0 4px gray",
-        width: "23vw",
-        height: "90vh",
+        width: "27vw",
         wordWrap: "break-word",
       }}
     >
@@ -1482,7 +1377,7 @@ export const UserChecklistCard = (props) => {
             display: "flex",
             flexDirection: "column",
             overflowY: "auto",
-            maxHeight: `${listMaxHeight}vh`,
+            maxHeight: "30vh",
           }}
         >
           {props.list_items &&
@@ -1533,7 +1428,7 @@ export const UserChecklistCard = (props) => {
               );
             })}
         </div>
-        {props.comments && props.comments.length > 0 && (
+        {/* {props.comments && props.comments.length > 0 && (
           <>
             <p>Comments:</p>
             <div
@@ -1573,7 +1468,7 @@ export const UserChecklistCard = (props) => {
                 })}
             </div>
           </>
-        )}
+        )} */}
 
         <div
           style={{
@@ -1583,10 +1478,10 @@ export const UserChecklistCard = (props) => {
             marginTop: "2vh",
           }}
         >
-          <StyledButton
+          {/* <StyledButton
             button_text={"Add Comment"}
             button_action={() => props.handleCommentOpen(props.id, props.name)}
-          />
+          /> */}
 
           <h4>
             Rate:{" "}
