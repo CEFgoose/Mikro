@@ -510,12 +510,13 @@ class ProjectAPI(MethodView):
         # Check if user is authenticated
         if not g:
             return {"message": "User not found", "status": 304}
+        user_id = g.user.id
         all_user_assignments_count = len(
-            ProjectUser.query.filter_by(user_id=g.user.id).all()
+            ProjectUser.query.filter_by(user_id=user_id).all()
         )
         all_user_assignment_ids = [
             relation.project_id
-            for relation in ProjectUser.query.filter_by(user_id=g.user.id).all()
+            for relation in ProjectUser.query.filter_by(user_id=user_id).all()
         ]
         # Retrieve all projects and tasks for the organization
         all_projects = Project.query.filter_by(org_id=g.user.org_id).all()
@@ -550,6 +551,53 @@ class ProjectAPI(MethodView):
                 and task.invalidated is True
             ]
         )
+
+        end_date = datetime.now()
+        start_date = end_date - timedelta(days=30)
+        weekly_contributions_this_month = (
+            UserTasks.query.with_entities(
+                func.extract("week", UserTasks.timestamp).label("week"),
+                func.count().label("total_contributions"),
+            )
+            .filter(
+                UserTasks.user_id == user_id,
+                UserTasks.timestamp >= start_date,
+                UserTasks.timestamp <= end_date,
+            )
+            .group_by(func.extract("week", UserTasks.timestamp))
+            .all()
+        )
+
+        weekly_contributions_last_month = (
+            UserTasks.query.with_entities(
+                func.extract("week", UserTasks.timestamp).label("week"),
+                func.count().label("total_contributions"),
+            )
+            .filter(
+                UserTasks.user_id == user_id,
+                UserTasks.timestamp >= start_date - timedelta(days=30),
+                UserTasks.timestamp <= end_date - timedelta(days=30),
+            )
+            .group_by(func.extract("week", UserTasks.timestamp))
+            .all()
+        )
+
+        # Print or use the results
+        weekly_contributions_array = []
+        total_contributions_this_month = 0
+        total_contributions_last_month = 0
+        for week, total_contributions in weekly_contributions_this_month:
+            weekly_contributions_array.append(total_contributions)
+            total_contributions_this_month += total_contributions
+
+        for week, total_contributions in weekly_contributions_last_month:
+            weekly_contributions_array.append(total_contributions)
+            total_contributions_last_month += total_contributions
+
+        month_contribution_change = (
+            total_contributions_last_month - total_contributions_this_month
+        )
+
         all_user_requests = PayRequests.query.filter_by(
             org_id=g.user.org_id, user_id=g.user.id
         ).all()
@@ -571,6 +619,9 @@ class ProjectAPI(MethodView):
         payable_total = g.user.mapping_payable_total
         # Construct response dictionary
         response = {
+            "month_contribution_change": month_contribution_change,
+            "total_contributions_for_month": total_contributions_this_month,
+            "weekly_contributions_array": weekly_contributions_array,
             "active_projects": all_user_assignments_count,
             "inactive_projects": active_projects_count - all_user_assignments_count,
             "completed_projects": completed_projects_count,
