@@ -106,7 +106,6 @@ export const AdminDash = () => {
           tasksMapped={contributionsForMonth}
           lineData={contributionsOvertime}
           change={monthlyContributionChange}
-          width={"22vw"}
         />
 
         <ValidationCard

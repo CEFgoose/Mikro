@@ -23,7 +23,7 @@ import { UserChecklistsPage } from "components/UserChecklistsPage";
 import { ValidatorChecklistsPage } from "components/ValdatorChecklistsPage";
 import { AdminTasksPage } from "components/AdminTasksPage";
 import { FAQPage } from "components/FAQ";
-import useScript from "hooks/useScript";
+
 import "bootstrap/dist/css/bootstrap.min.css";
 import "./App.css";
 import {

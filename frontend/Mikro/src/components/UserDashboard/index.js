@@ -46,6 +46,9 @@ export const UserDashboard = () => {
     setTutorialStepTitle,
     tutorialStepContent,
     setTutorialStepContent,
+    contributionsForMonth,
+    contributionsOvertime,
+    monthlyContributionChange,
   } = useContext(DataContext);
 
   const { refresh, user } = useContext(AuthContext);
@@ -186,9 +189,10 @@ export const UserDashboard = () => {
         }}
       >
         <TasksMappedCard
-          title={"Tasks Mapped"}
-          tasksMapped={tasksMapped}
-          lineData={[1, 1, 15, 17, 20, 3, 7, 1]}
+          title={"Tasks Mapped This Month"}
+          tasksMapped={contributionsForMonth}
+          lineData={contributionsOvertime}
+          change={monthlyContributionChange}
         />
 
         <ValidationCard
@@ -201,7 +205,7 @@ export const UserDashboard = () => {
               color: "#4caf50",
             },
             {
-              title: "Approved Tasks",
+              title: "Invalidated Tasks",
               total: tasksMapped,
               current: tasksInvalidated,
               color: "#34abeb",
