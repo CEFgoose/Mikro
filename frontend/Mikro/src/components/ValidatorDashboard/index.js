@@ -12,12 +12,13 @@ import {
   ProjectCell,
   TableCard,
   CardMediaStyle,
+  TasksMappedCard,
+  ValidationCard,
+  PaymentCard,
 } from "components/commonComponents/commonComponents";
 
 export const ValidatorDashboard = () => {
   const {
-    sidebarOpen,
-    handleSetSidebarState,
     orgProjects,
     goToSource,
     activeProjects,
@@ -43,35 +44,19 @@ export const ValidatorDashboard = () => {
   const [projectSelected, setProjectSelected] = useState(null);
 
   useEffect(() => {
-    if (user) {
-      refresh();
-    }
-    if (user === null) {
-      history("/login");
-      return;
-    }
     if (user !== null && user.role !== "validator") {
       history("/login");
       return;
-    }
-    if (user !== null && user.role === "validator") {
+    } else {
+      refresh();
       update_validator_tasks();
       fetchValidatorProjects();
       fetchValidatorDashStats();
     }
-    // eslint-disable-next-line
   }, []);
-
-  const handleViewSidebar = () => {
-    handleSetSidebarState();
-  };
 
   const handleSetProjectSelected = (e) => {
     setProjectSelected(e);
-  };
-
-  const updateData = (sortedData) => {
-    setActiveProjects(sortedData);
   };
 
   return (
@@ -80,78 +65,53 @@ export const ValidatorDashboard = () => {
         style={{
           display: "flex",
           flexDirection: "row",
-          height: "44vh",
+          position: "relative",
+          justifyContent: "space-between",
         }}
       >
-        <DashboardCard
-          marginLeft={"3.5vw"}
-          marginRight={"1.25vw"}
-          width={"18.35vw"}
-          title={"Projects Overview"}
-          subtitle_text_1={"Joined:"}
-          subtitle_text_2={"Available:"}
-          subtitle_text_3={"Completed:"}
-          value_1={activeProjectsCount !== null ? activeProjectsCount : "-"}
-          value_2={inactiveProjectsCount !== null ? inactiveProjectsCount : "-"}
-          value_3={completedProjects !== null ? completedProjects : "-"}
+        <TasksMappedCard
+          title={"Tasks Mapped"}
+          tasksMapped={tasksMapped}
+          lineData={[1, 1, 15, 17, 20, 3, 7, 1]}
         />
 
-        <DashboardCard
-          marginLeft={"0vw"}
-          marginRight={"1.25vw"}
-          width={"18.35vw"}
-          title={"Mapper Overview"}
-          subtitle_text_1={"Mapped:"}
-          subtitle_text_2={"Approved:"}
-          subtitle_text_3={"Unapproved:"}
-          value_1={tasksMapped !== null ? tasksMapped : "-"}
-          value_2={tasksValidated !== null ? tasksValidated : "-"}
-          value_3={tasksInvalidated !== null ? tasksInvalidated : "-"}
+        <ValidationCard
+          title={"Validation Overview"}
+          progressBar={[
+            {
+              title: "Approved Tasks",
+              total: tasksMapped,
+              current: validatorTasksValidated,
+              color: "#4caf50",
+            },
+            {
+              title: "Approved Tasks",
+              total: tasksMapped,
+              current: validatorTasksInvalidated,
+              color: "#34abeb",
+            },
+          ]}
         />
-
-        <DashboardCard
-          marginLeft={"0vw"}
-          marginRight={"1.25vw"}
-          width={"18.35vw"}
-          title={"Validator Overview"}
-          subtitle_text_1={"Validated:"}
-          subtitle_text_2={"Invalidated:"}
-          subtitle_text_3={"More Needed:"}
-          value_1={
-            validatorTasksValidated !== null ? validatorTasksValidated : "-"
-          }
-          value_2={
-            validatorTasksInvalidated !== null ? validatorTasksInvalidated : "-"
-          }
-          value_3={0}
-        />
-
-        <DashboardCard
-          marginLeft={"0vw"}
-          marginRight={"1vw"}
-          width={"18.35vw"}
-          title={"Payment Overview"}
-          subtitle_text_1={"Payable Total:"}
-          subtitle_text_2={"Payout Requests:"}
-          subtitle_text_3={"Payment received:"}
-          value_1={`$${payableTotal !== null ? payableTotal.toFixed(2) : "-"}`}
-          value_2={`$${
-            requestsTotal !== null ? requestsTotal.toFixed(2) : "-"
+        <PaymentCard
+          title={"Your Current Balance"}
+          currentBalance={payableTotal !== null ? payableTotal.toFixed(2) : "-"}
+          overallAccountPayment={`$${
+            paidTotal !== null ? paidTotal.toFixed(2) : "-"
           }`}
-          value_3={`$${paidTotal !== null ? paidTotal.toFixed(2) : "-"}`}
         />
       </div>
+
       <div
         style={{
           display: "flex",
           flexDirection: "row",
-          marginLeft: "3.5vw",
-          height: "42vh",
-          width: "77.5vw",
+          height: "66vh",
         }}
       >
         <TableCard
-          style={{ boxShadow: "1px 1px 6px 2px gray", overflowY: "scroll" }}
+          style={{
+            overflowY: "auto",
+          }}
         >
           <CardMediaStyle />
           <Table>

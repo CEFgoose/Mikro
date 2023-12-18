@@ -55,18 +55,11 @@ export const UserDashboard = () => {
   const [tutorialStep, setTutorialStep] = useState(0);
 
   useEffect(() => {
-    if (user) {
-      refresh();
-    }
-    if (user === null) {
-      history("/login");
-      return;
-    }
     if (user !== null && user.role !== "user") {
       history("/login");
       return;
-    }
-    if (user !== null && user.role === "user") {
+    } else {
+      refresh();
       update_user_tasks();
       fetchUserDashStats();
       fetchUserProjects();
@@ -189,7 +182,6 @@ export const UserDashboard = () => {
           display: "flex",
           flexDirection: "row",
           position: "relative",
-          height: "27vh",
           justifyContent: "space-between",
         }}
       >

@@ -56,32 +56,36 @@ export const ChecklistCardGrid = (props) => {
               <>
                 {props.type === "Admin" ? (
                   <>
-                    <ChecklistCard
-                      id={id}
-                      name={name}
-                      description={description}
-                      comments={comments}
-                      role={props.role}
-                      goToSource={props.goToSource}
-                      handleAddComment={props.handleAddComment}
-                      handleCommentOpen={props.handleCommentOpen}
-                      handleSetCommentSelected={props.handleSetCommentSelected}
-                      difficulty={difficulty}
-                      visibility={visibility}
-                      due_date={due_date}
-                      list_items={list_items}
-                      completion_rate={completion_rate}
-                      validation_rate={validation_rate}
-                      total_payout={total_payout}
-                      author={author}
-                      max_payment={max_payment}
-                      commentSelected={props.commentSelected}
-                      handleAddItemOpen={props.handleAddItemOpen}
-                      checklistSelected={props.checklistSelected}
-                      handleSetChecklistSelected={
-                        props.handleSetChecklistSelected
-                      }
-                    />
+                    <Grid item xs={4}>
+                      <ChecklistCard
+                        id={id}
+                        name={name}
+                        description={description}
+                        comments={comments}
+                        role={props.role}
+                        goToSource={props.goToSource}
+                        handleAddComment={props.handleAddComment}
+                        handleCommentOpen={props.handleCommentOpen}
+                        handleSetCommentSelected={
+                          props.handleSetCommentSelected
+                        }
+                        difficulty={difficulty}
+                        visibility={visibility}
+                        due_date={due_date}
+                        list_items={list_items}
+                        completion_rate={completion_rate}
+                        validation_rate={validation_rate}
+                        total_payout={total_payout}
+                        author={author}
+                        max_payment={max_payment}
+                        commentSelected={props.commentSelected}
+                        handleAddItemOpen={props.handleAddItemOpen}
+                        checklistSelected={props.checklistSelected}
+                        handleSetChecklistSelected={
+                          props.handleSetChecklistSelected
+                        }
+                      />
+                    </Grid>
                   </>
                 ) : props.type === "User" ? (
                   <>
