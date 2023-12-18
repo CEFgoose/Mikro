@@ -54,7 +54,7 @@ export const ChecklistCardGrid = (props) => {
             } = card;
             return (
               <>
-                {props.type === "Admin" ? (
+                {props.type === "Admin" || props.type === "Validator" ? (
                   <>
                     <Grid item xs={4}>
                       <ChecklistCard
@@ -117,45 +117,45 @@ export const ChecklistCardGrid = (props) => {
                       }
                     />
                   </>
-                ) : props.type === "Validator" ? (
-                  <>
-                    <ValidatorChecklistCard
-                      id={id}
-                      name={name}
-                      user_id={user_id}
-                      role={props.role}
-                      user_name={user_name}
-                      completed={completed}
-                      confirmed={confirmed}
-                      description={description}
-                      comments={comments}
-                      commentSelected={props.commentSelected}
-                      handleSetCommentSelected={props.handleSetCommentSelected}
-                      goToSource={props.goToSource}
-                      handleCommentOpen={props.handleCommentOpen}
-                      handleDeleteComment={props.handleDeleteComment}
-                      handleAddComment={props.handleAddComment}
-                      difficulty={difficulty}
-                      visibility={visibility}
-                      due_date={due_date}
-                      list_items={list_items}
-                      completion_rate={completion_rate}
-                      validation_rate={validation_rate}
-                      user_payment_due={completion_rate}
-                      validator_payment_due={validation_rate}
-                      total_payment_due={completion_rate + validation_rate}
-                      payment_due={payment_due}
-                      author={author}
-                      max_payment={max_payment}
-                      handleConfirmItem={props.handleConfirmItem}
-                      checklistSelected={props.checklistSelected}
-                      handleCompleteListItem={props.handleCompleteListItem}
-                      handleSetChecklistSelected={
-                        props.handleSetChecklistSelected
-                      }
-                    />
-                  </>
                 ) : (
+                  // ) : props.type === "Validator" ? (
+                  //   <>
+                  //     <ValidatorChecklistCard
+                  //       id={id}
+                  //       name={name}
+                  //       user_id={user_id}
+                  //       role={props.role}
+                  //       user_name={user_name}
+                  //       completed={completed}
+                  //       confirmed={confirmed}
+                  //       description={description}
+                  //       comments={comments}
+                  //       commentSelected={props.commentSelected}
+                  //       handleSetCommentSelected={props.handleSetCommentSelected}
+                  //       goToSource={props.goToSource}
+                  //       handleCommentOpen={props.handleCommentOpen}
+                  //       handleDeleteComment={props.handleDeleteComment}
+                  //       handleAddComment={props.handleAddComment}
+                  //       difficulty={difficulty}
+                  //       visibility={visibility}
+                  //       due_date={due_date}
+                  //       list_items={list_items}
+                  //       completion_rate={completion_rate}
+                  //       validation_rate={validation_rate}
+                  //       user_payment_due={completion_rate}
+                  //       validator_payment_due={validation_rate}
+                  //       total_payment_due={completion_rate + validation_rate}
+                  //       payment_due={payment_due}
+                  //       author={author}
+                  //       max_payment={max_payment}
+                  //       handleConfirmItem={props.handleConfirmItem}
+                  //       checklistSelected={props.checklistSelected}
+                  //       handleCompleteListItem={props.handleCompleteListItem}
+                  //       handleSetChecklistSelected={
+                  //         props.handleSetChecklistSelected
+                  //       }
+                  //     />
+                  //   </>
                   <></>
                 )}
               </>
@@ -1196,24 +1196,18 @@ export const ValidatorChecklistCard = (props) => {
     <Card
       key={props.id}
       style={{
-        boxShadow: "1px 1px 6px 2px gray",
+        display: "flex",
+        flexDirection: "column",
+        boxShadow: "0 0 4px gray",
         width: "25vw",
-        height: "75vh",
-        marginLeft: "2vw",
-        marginTop: "2vh",
+        wordWrap: "break-word",
       }}
     >
-      <CardMediaStyle>
-        <>
-          <div style={{ marginLeft: "1vw", marginBottom: "2vh" }} />
-        </>
-      </CardMediaStyle>
+      <CardMediaStyle />
+
       <div
         style={{
-          display: "flex",
-          flexDirection: "row",
-          justifyContent: "center",
-          height: "5vh",
+          margin: ".5vw",
         }}
       >
         <SectionTitle
