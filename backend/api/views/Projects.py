@@ -16,6 +16,9 @@ from flask_jwt_extended import (
     jwt_required,
 )
 
+from datetime import datetime, timedelta
+from sqlalchemy import func
+
 
 class ProjectAPI(MethodView):
     @jwt_required()
@@ -91,12 +94,8 @@ class ProjectAPI(MethodView):
         # Determine which version of the API to use
         TMregex = re.search(r"(?<=\//)(.*?)(?=\.)", url)
         APImatch = TMregex.group(1)
-        tm3StatsUrl = (
-            "https://tm3.kaart.com/api/v1/stats/project/%s" % project_id
-        )
-        tm4StatsUrl = (
-            "https://tasks.kaart.com/api/v2/projects/%s/" % project_id
-        )
+        tm3StatsUrl = "https://tm3.kaart.com/api/v1/stats/project/%s" % project_id
+        tm4StatsUrl = "https://tasks.kaart.com/api/v2/projects/%s/" % project_id
         statsAPI = tm3StatsUrl if APImatch == "tm3" else tm4StatsUrl
         # Check if project already exists
         project_exists = Project.query.filter_by(
@@ -274,13 +273,9 @@ class ProjectAPI(MethodView):
             if not project:
                 return {"message": "Project not found", "status": 400}
             if project.source == "tm3":
-                statsAPI = (
-                    f"https://tm3.kaart.com/api/v1/stats/project/{project_id}"
-                )
+                statsAPI = f"https://tm3.kaart.com/api/v1/stats/project/{project_id}"
             else:
-                statsAPI = (
-                    f"https://tasks.kaart.com/api/v2/projects/{project_id}/"
-                )
+                statsAPI = f"https://tasks.kaart.com/api/v2/projects/{project_id}/"
             matcher = project.source
         else:
             # Extract project ID and determine stats API URL
@@ -294,13 +289,9 @@ class ProjectAPI(MethodView):
             APImatch = re.search(r"(?<=\//)(.*?)(?=\.)", url)
 
             if APImatch.group(1) == "tm3":
-                statsAPI = (
-                    f"https://tm3.kaart.com/api/v1/stats/project/{project_id}"
-                )
+                statsAPI = f"https://tm3.kaart.com/api/v1/stats/project/{project_id}"
             else:
-                statsAPI = (
-                    f"https://tasks.kaart.com/api/v2/projects/{project_id}/"
-                )
+                statsAPI = f"https://tasks.kaart.com/api/v2/projects/{project_id}/"
             matcher = APImatch.group(1)
         # Fetch project data
         tm_fetch = requests.get(statsAPI)
@@ -323,12 +314,8 @@ class ProjectAPI(MethodView):
             validation_rate = float(validation_rate)
             validation_dollars = int(validation_rate)
             validation_cents = int(validation_rate % 1 * 100)
-            validation_dollarcents = (
-                validation_dollars * 100 + validation_cents
-            )
-            projected_validation_budget = (
-                validation_dollarcents * total_tasks / 100
-            )
+            validation_dollarcents = validation_dollars * 100 + validation_cents
+            projected_validation_budget = validation_dollarcents * total_tasks / 100
 
             total_projected_budget = (
                 projected_mapping_budget + projected_validation_budget
@@ -438,6 +425,48 @@ class ProjectAPI(MethodView):
         all_tasks = Task.query.filter_by(org_id=g.user.org_id).all()
         all_requests = PayRequests.query.filter_by(org_id=g.user.org_id).all()
         all_payments = Payments.query.filter_by(org_id=g.user.org_id).all()
+
+        end_date = datetime.now()
+        start_date = end_date - timedelta(days=30)
+        weekly_contributions_this_month = (
+            UserTasks.query.with_entities(
+                func.extract("week", UserTasks.timestamp).label("week"),
+                func.count().label("total_contributions"),
+            )
+            .filter(UserTasks.timestamp >= start_date, UserTasks.timestamp <= end_date)
+            .group_by(func.extract("week", UserTasks.timestamp))
+            .all()
+        )
+
+        weekly_contributions_last_month = (
+            UserTasks.query.with_entities(
+                func.extract("week", UserTasks.timestamp).label("week"),
+                func.count().label("total_contributions"),
+            )
+            .filter(
+                UserTasks.timestamp >= start_date - timedelta(days=30),
+                UserTasks.timestamp <= end_date - timedelta(days=30),
+            )
+            .group_by(func.extract("week", UserTasks.timestamp))
+            .all()
+        )
+
+        # Print or use the results
+        weekly_contributions_array = []
+        total_contributions_this_month = 0
+        total_contributions_last_month = 0
+        for week, total_contributions in weekly_contributions_this_month:
+            weekly_contributions_array.append(total_contributions)
+            total_contributions_this_month += total_contributions
+
+        for week, total_contributions in weekly_contributions_last_month:
+            weekly_contributions_array.append(total_contributions)
+            total_contributions_last_month += total_contributions
+
+        month_contribution_change = (
+            total_contributions_last_month - total_contributions_this_month
+        )
+
         total_payable = sum(
             [
                 user.payable_total
@@ -446,12 +475,8 @@ class ProjectAPI(MethodView):
         )
         # Compute various statistics
         active_projects_count = sum(project.status for project in all_projects)
-        inactive_projects_count = sum(
-            not project.status for project in all_projects
-        )
-        completed_projects_count = sum(
-            project.completed for project in all_projects
-        )
+        inactive_projects_count = sum(not project.status for project in all_projects)
+        completed_projects_count = sum(project.completed for project in all_projects)
         mapped_tasks_count = sum(
             task.mapped and not task.validated and not task.invalidated
             for task in all_tasks
@@ -460,12 +485,13 @@ class ProjectAPI(MethodView):
             task.mapped and task.validated for task in all_tasks
         )
         invalidated_tasks_count = sum(task.invalidated for task in all_tasks)
-        all_requests_total = sum(
-            request.amount_requested for request in all_requests
-        )
+        all_requests_total = sum(request.amount_requested for request in all_requests)
         payouts_total = sum(payment.amount_paid for payment in all_payments)
         # Construct response dictionary
         response = {
+            "month_contribution_change": month_contribution_change,
+            "total_contributions_for_month": total_contributions_this_month,
+            "weekly_contributions_array": weekly_contributions_array,
             "active_projects": active_projects_count,
             "inactive_projects": inactive_projects_count,
             "completed_projects": completed_projects_count,
@@ -489,9 +515,7 @@ class ProjectAPI(MethodView):
         )
         all_user_assignment_ids = [
             relation.project_id
-            for relation in ProjectUser.query.filter_by(
-                user_id=g.user.id
-            ).all()
+            for relation in ProjectUser.query.filter_by(user_id=g.user.id).all()
         ]
         # Retrieve all projects and tasks for the organization
         all_projects = Project.query.filter_by(org_id=g.user.org_id).all()
@@ -543,15 +567,12 @@ class ProjectAPI(MethodView):
         all_requests_total = sum(
             request.amount_requested for request in all_user_requests
         )
-        payouts_total = sum(
-            payment.amount_paid for payment in all_user_payments
-        )
+        payouts_total = sum(payment.amount_paid for payment in all_user_payments)
         payable_total = g.user.mapping_payable_total
         # Construct response dictionary
         response = {
             "active_projects": all_user_assignments_count,
-            "inactive_projects": active_projects_count
-            - all_user_assignments_count,
+            "inactive_projects": active_projects_count - all_user_assignments_count,
             "completed_projects": completed_projects_count,
             "mapped_tasks": user_mapped_tasks_count,
             "validated_tasks": user_validated_tasks_count,
@@ -577,9 +598,7 @@ class ProjectAPI(MethodView):
         )
         all_user_assignment_ids = [
             relation.project_id
-            for relation in ProjectUser.query.filter_by(
-                user_id=g.user.id
-            ).all()
+            for relation in ProjectUser.query.filter_by(user_id=g.user.id).all()
         ]
         # Retrieve all projects and tasks for the organization
         all_projects = Project.query.filter_by(org_id=g.user.org_id).all()
@@ -656,18 +675,14 @@ class ProjectAPI(MethodView):
         all_requests_total = sum(
             request.amount_requested for request in all_user_requests
         )
-        payouts_total = sum(
-            payment.amount_paid for payment in all_user_payments
-        )
+        payouts_total = sum(payment.amount_paid for payment in all_user_payments)
         payable_total = float(
-            float(g.user.mapping_payable_total)
-            + float(g.user.validation_payable_total)
+            float(g.user.mapping_payable_total) + float(g.user.validation_payable_total)
         )
         # Construct response dictionary
         response = {
             "active_projects": all_user_assignments_count,
-            "inactive_projects": active_projects_count
-            - all_user_assignments_count,
+            "inactive_projects": active_projects_count - all_user_assignments_count,
             "completed_projects": completed_projects_count,
             "mapped_tasks": user_mapped_tasks_count,
             "validated_tasks": user_validated_tasks_count,
@@ -693,9 +708,7 @@ class ProjectAPI(MethodView):
         org_inactive_projects = []
         all_user_project_ids = [
             relation.project_id
-            for relation in ProjectUser.query.filter_by(
-                user_id=g.user.id
-            ).all()
+            for relation in ProjectUser.query.filter_by(user_id=g.user.id).all()
         ]
         user_joined_projects = [
             project
@@ -716,22 +729,14 @@ class ProjectAPI(MethodView):
         for project in user_joined_projects:
             user_task_ids = [
                 relation.task_id
-                for relation in UserTasks.query.filter_by(
-                    user_id=g.user.id
-                ).all()
+                for relation in UserTasks.query.filter_by(user_id=g.user.id).all()
             ]
-            all_project_tasks = Task.query.filter_by(
-                project_id=project.id
-            ).all()
+            all_project_tasks = Task.query.filter_by(project_id=project.id).all()
             user_project_task_ids = [
-                task.id
-                for task in all_project_tasks
-                if task.id in user_task_ids
+                task.id for task in all_project_tasks if task.id in user_task_ids
             ]
             user_project_tasks = [
-                task
-                for task in all_project_tasks
-                if task.id in user_project_task_ids
+                task for task in all_project_tasks if task.id in user_project_task_ids
             ]
             user_project_mapped_tasks = len(
                 [
@@ -918,8 +923,7 @@ class ProjectAPI(MethodView):
         new_editor_count = target_project.total_editors + 1
         target_project.update(total_editors=new_editor_count)
         return {
-            "message": "User %s has joined project %s"
-            % (g.user.id, project_id),
+            "message": "User %s has joined project %s" % (g.user.id, project_id),
             "status": 200,
         }
 
@@ -958,9 +962,7 @@ class ProjectAPI(MethodView):
         org_inactive_projects = []
         all_user_project_ids = [
             relation.project_id
-            for relation in ProjectUser.query.filter_by(
-                user_id=g.user.id
-            ).all()
+            for relation in ProjectUser.query.filter_by(user_id=g.user.id).all()
         ]
         user_joined_projects = [
             project
@@ -982,22 +984,14 @@ class ProjectAPI(MethodView):
         for project in user_joined_projects:
             user_task_ids = [
                 relation.task_id
-                for relation in UserTasks.query.filter_by(
-                    user_id=g.user.id
-                ).all()
+                for relation in UserTasks.query.filter_by(user_id=g.user.id).all()
             ]
-            all_project_tasks = Task.query.filter_by(
-                project_id=project.id
-            ).all()
+            all_project_tasks = Task.query.filter_by(project_id=project.id).all()
             user_project_task_ids = [
-                task.id
-                for task in all_project_tasks
-                if task.id in user_task_ids
+                task.id for task in all_project_tasks if task.id in user_task_ids
             ]
             user_project_tasks = [
-                task
-                for task in all_project_tasks
-                if task.id in user_project_task_ids
+                task for task in all_project_tasks if task.id in user_project_task_ids
             ]
             user_project_mapped_tasks = len(
                 [
@@ -1053,8 +1047,7 @@ class ProjectAPI(MethodView):
                 project.validation_rate_per_task * user_project_validated_tasks
             )
             user_invalidator_earnings = (
-                project.validation_rate_per_task
-                * user_project_invalidated_tasks
+                project.validation_rate_per_task * user_project_invalidated_tasks
             )
             user_project_earnings = (
                 user_mapping_earnings

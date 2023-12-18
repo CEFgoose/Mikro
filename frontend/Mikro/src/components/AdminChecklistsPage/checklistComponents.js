@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { styled } from "@mui/material/styles";
-import { Modal, Card, Grid, Table, TableBody, Typography } from "@mui/material";
+import { Modal, Card, Grid, Table, TableBody } from "@mui/material";
 import { Tab, TabList, TabPanel, Tabs } from "react-tabs";
 import {
   ASSIGN_USERS_TABLE_HEADERS,
@@ -89,33 +88,35 @@ export const ChecklistCardGrid = (props) => {
                   </>
                 ) : props.type === "User" ? (
                   <>
-                    <ChecklistCard
-                      id={id}
-                      name={name}
-                      user_id={user_id}
-                      description={description}
-                      comments={comments}
-                      role={props.role}
-                      goToSource={props.goToSource}
-                      handleCommentOpen={props.handleCommentOpen}
-                      handleAddComment={props.handleAddComment}
-                      difficulty={difficulty}
-                      visibility={visibility}
-                      due_date={due_date}
-                      list_items={list_items}
-                      completion_rate={completion_rate}
-                      validation_rate={validation_rate}
-                      total_payout={total_payout}
-                      author={author}
-                      max_payment={max_payment}
-                      completed={completed}
-                      confirmed={confirmed}
-                      checklistSelected={props.checklistSelected}
-                      handleCompleteListItem={props.handleCompleteListItem}
-                      handleSetChecklistSelected={
-                        props.handleSetChecklistSelected
-                      }
-                    />
+                    <Grid item xs={4}>
+                      <ChecklistCard
+                        id={id}
+                        name={name}
+                        user_id={user_id}
+                        description={description}
+                        comments={comments}
+                        role={props.role}
+                        goToSource={props.goToSource}
+                        handleCommentOpen={props.handleCommentOpen}
+                        handleAddComment={props.handleAddComment}
+                        difficulty={difficulty}
+                        visibility={visibility}
+                        due_date={due_date}
+                        list_items={list_items}
+                        completion_rate={completion_rate}
+                        validation_rate={validation_rate}
+                        total_payout={total_payout}
+                        author={author}
+                        max_payment={max_payment}
+                        completed={completed}
+                        confirmed={confirmed}
+                        checklistSelected={props.checklistSelected}
+                        handleCompleteListItem={props.handleCompleteListItem}
+                        handleSetChecklistSelected={
+                          props.handleSetChecklistSelected
+                        }
+                      />
+                    </Grid>
                   </>
                 ) : (
                   // ) : props.type === "Validator" ? (

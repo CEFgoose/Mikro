@@ -315,11 +315,13 @@ export const TasksMappedCard = (props) => {
       >
         <img
           style={{ height: "2vw", width: "2vw" }}
-          src={positive_trend_icon}
+          src={props.change >= 0 ? positive_trend_icon : negative_trend_icon}
           alt="Positive Trend Icon"
         />
         <p>
-          <b>+2</b> more than last week!
+          {props.change >= 0
+            ? `${props.change} more than last month`
+            : `${props.change} compared to last month`}
         </p>
       </div>
     </DashCard>

@@ -1,7 +1,6 @@
 import React, { useContext, useEffect } from "react";
 import { DataContext } from "common/DataContext";
 import { AuthContext } from "common/AuthContext";
-import { Divider } from "@mui/material";
 import useToggle from "../../hooks/useToggle.js";
 import Sidebar from "../sidebar/sidebar";
 import {

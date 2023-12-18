@@ -34,8 +34,9 @@ export const AdminDash = () => {
     payableTotal,
     requestsTotal,
     paidTotal,
-    activeProjectsCount,
-    inactiveProjectsCount,
+    contributionsOvertime,
+    contributionsForMonth,
+    monthlyContributionChange,
     setConfirmQuestion,
     confirmQuestion,
     toggleConfirmOpen,
@@ -101,9 +102,10 @@ export const AdminDash = () => {
         }}
       >
         <TasksMappedCard
-          title={"Total Active Projects"}
-          tasksMapped={activeProjectsCount}
-          lineData={[1, 1, 15, 17, 20, 3, 7, 1]}
+          title={"Tasks Mapped This Month"}
+          tasksMapped={contributionsForMonth}
+          lineData={contributionsOvertime}
+          change={monthlyContributionChange}
           width={"22vw"}
         />
 

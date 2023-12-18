@@ -55,6 +55,9 @@ export const DataProvider = ({ children }) => {
   const [orgProjectTrainings, setOrgProjectTrainings] = useState([]);
   const [userCompletedTrainings, setUserCompletedTrainings] = useState([]);
   const [activeProjects, setActiveProjects] = useState([]);
+  const [contributionsOvertime, setContributionsOvertime] = useState([]);
+  const [contributionsForMonth, setContributionsForMonth] = useState(0);
+  const [monthlyContributionChange, setMonthlyContributionChange] = useState(0);
   const [inactiveProjects, setInactiveProjects] = useState(null);
   const [activeProjectsCount, setActiveProjectsCount] = useState(null);
   const [inactiveProjectsCount, setInactiveProjectsCount] = useState(null);
@@ -91,6 +94,9 @@ export const DataProvider = ({ children }) => {
   };
 
   const handleAdminDashStates = (e) => {
+    setMonthlyContributionChange(e.month_contribution_change);
+    setContributionsForMonth(e.total_contributions_for_month);
+    setContributionsOvertime(e.weekly_contributions_array);
     setActiveProjectsCount(e.active_projects);
     setInactiveProjectsCount(e.inactive_projects);
     setCompletedProjects(e.completed_projects);
@@ -1436,6 +1442,9 @@ export const DataProvider = ({ children }) => {
     totalEarnings,
     validatorTasksInvalidated,
     validatorTasksValidated,
+    contributionsOvertime,
+    contributionsForMonth,
+    monthlyContributionChange,
     //checklists
     orgActiveChecklists,
     orgInActiveChecklists,
