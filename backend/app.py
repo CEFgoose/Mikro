@@ -14,7 +14,10 @@ from flask import Flask, request
 import requests
 from dotenv import load_dotenv
 from flask import g
-from . import app
+
+# from . import app
+
+app = Flask(__name__)
 
 
 def optional_jwt():
@@ -73,6 +76,7 @@ except ImportError:
         TrainingAPI,
         ChecklistAPI,
     )
+app = Flask(__name__)
 cors = CORS(app)
 app.config["OPENAPI_VERSION"] = "3.0.2"
 jwt = JWTManager(app)
@@ -115,9 +119,9 @@ app.add_url_rule("/api/task/<path>", view_func=TaskAPI.as_view("task"))
 app.add_url_rule("/api/checklist/<path>", view_func=ChecklistAPI.as_view("checklist"))
 
 # DEV
-# SSO_BASE_URL = "http://127.0.0.1:5001/api/"
+SSO_BASE_URL = "http://127.0.0.1:5001/api/"
 # PROD
-SSO_BASE_URL = "https://my.kaart.com/api/"
+# SSO_BASE_URL = "https://my.kaart.com/api/"
 
 
 @app.before_request
