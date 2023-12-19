@@ -56,6 +56,7 @@ export const AdminChecklistsPage = () => {
     unassignUserChecklist,
     orgStaleChecklists,
     findIndexById,
+    completeListItem,
   } = useContext(DataContext);
 
   const [page, setPage] = useState(1);

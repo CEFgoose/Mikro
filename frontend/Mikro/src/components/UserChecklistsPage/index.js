@@ -56,12 +56,6 @@ export const UserChecklistsPage = () => {
     setActiveTab(e.target.value);
   };
 
-  const handleStartChecklist = () => {
-    startChecklist(checklistSelected);
-    setConfirmQuestion(`${checklistSelectedName} started!`);
-    handleConfirmOpen();
-  };
-
   const handleSetChecklistSelected = (id, name) => {
     setChecklistSelected(parseInt(id));
     setChecklistSelectedName(name);
@@ -127,9 +121,6 @@ export const UserChecklistsPage = () => {
           <Tab value={3} onClick={(e) => handleSetActiveTab(e)}>
             Confirmed
           </Tab>
-          {/* <Tab value={4} onClick={(e) => handleSetActiveTab(e)}>
-                New
-              </Tab> */}
         </TabList>
 
         <TabPanel value={activeTab}>
