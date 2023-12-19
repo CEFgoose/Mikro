@@ -41,15 +41,9 @@ class User(ModelWithSoftDeleteAndCRUD, SurrogatePK):
     checklist_payable_total = db.Column(
         db.Float, nullable=True, default=0, server_default="0"
     )
-    payable_total = db.Column(
-        db.Float, nullable=True, default=0, server_default="0"
-    )
-    requested_total = db.Column(
-        db.Float, nullable=True, default=0, server_default="0"
-    )
-    paid_total = db.Column(
-        db.Float, nullable=True, default=0, server_default="0"
-    )
+    payable_total = db.Column(db.Float, nullable=True, default=0, server_default="0")
+    requested_total = db.Column(db.Float, nullable=True, default=0, server_default="0")
+    paid_total = db.Column(db.Float, nullable=True, default=0, server_default="0")
     total_tasks_mapped = db.Column(
         db.BigInteger, nullable=True, default=0, server_default="0"
     )
@@ -117,9 +111,7 @@ class Checklist(ModelWithSoftDeleteAndCRUD, SurrogatePK, db.Model):
     completion_rate = db.Column(db.Float, nullable=True, default=100)
     difficulty = db.Column(db.String, nullable=True, default="Intermediate")
     visibility = db.Column(db.Boolean, nullable=True, server_default="False")
-    active_status = db.Column(
-        db.Boolean, nullable=True, server_default="False"
-    )
+    active_status = db.Column(db.Boolean, nullable=True, server_default="False")
     completed = db.Column(db.Boolean, nullable=True, server_default="False")
     confirmed = db.Column(db.Boolean, nullable=True, server_default="False")
 
@@ -159,9 +151,7 @@ class UserChecklist(ModelWithSoftDeleteAndCRUD, SurrogatePK, db.Model):
     completion_rate = db.Column(db.Float, nullable=True, default=100)
     difficulty = db.Column(db.String, nullable=True, default="Intermediate")
     visibility = db.Column(db.Boolean, nullable=True, server_default="False")
-    active_status = db.Column(
-        db.Boolean, nullable=True, server_default="False"
-    )
+    active_status = db.Column(db.Boolean, nullable=True, server_default="False")
     completed = db.Column(db.Boolean, nullable=True, server_default="False")
     confirmed = db.Column(db.Boolean, nullable=True, server_default="False")
     last_completion_date = Column(DateTime, nullable=True)
@@ -207,9 +197,7 @@ class TrainingQuestion(ModelWithSoftDeleteAndCRUD, SurrogatePK, db.Model):
     question = db.Column(db.String, nullable=True)
 
 
-class TrainingQuestionAnswer(
-    ModelWithSoftDeleteAndCRUD, SurrogatePK, db.Model
-):
+class TrainingQuestionAnswer(ModelWithSoftDeleteAndCRUD, SurrogatePK, db.Model):
     __tablename__ = "training_question_answer"
     id = Column(Integer, primary_key=True, autoincrement=True)
     training_id = db.Column(
@@ -238,8 +226,6 @@ class Project_Training(CRUDMixin, SurrogatePK, db.Model):
         db.ForeignKey("projects.id", ondelete="CASCADE"),
         nullable=True,
     )
-
-
 
 
 class TrainingCompleted(CRUDMixin, SurrogatePK, db.Model):
@@ -282,6 +268,7 @@ class UserTasks(CRUDMixin, SurrogatePK, db.Model):
         db.ForeignKey("tasks.id", ondelete="CASCADE"),
         nullable=False,
     )
+    timestamp = db.Column(db.TIMESTAMP, nullable=False)
 
 
 class Task(ModelWithSoftDeleteAndCRUD, SurrogatePK):
