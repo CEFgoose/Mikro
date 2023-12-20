@@ -68,7 +68,7 @@ const Sidebar = (props) => {
           height: "100vh",
           boxShadow: "0 0 4px gray",
           alignItems: "left",
-          zIndex: 999,
+          zIndex: 9999,
           width: sidebarOpen ? "15vw" : "",
         }}
       >

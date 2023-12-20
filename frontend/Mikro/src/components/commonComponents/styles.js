@@ -23,7 +23,10 @@ export const Button = styled.div`
   line-height: 2.5em;
   &:hover {
     cursor: pointer;
-    background-color: #91a5ac;
+    background-color: white;
+    color: #253e45;
+    border: solid;
+    border-width: 1px;
   }
 `;
 

@@ -1056,7 +1056,7 @@ export const ChecklistCard = (props) => {
                       key={number}
                       checked={completed === true}
                       onChange={(e) => {
-                        if (!props.completed) {
+                        if (props.handleCompleteListItem && !props.completed) {
                           props.handleCompleteListItem(
                             e,
                             number,
@@ -1064,6 +1064,8 @@ export const ChecklistCard = (props) => {
                             props.user_id,
                             props.name
                           );
+                        } else {
+                          alert("Admin cannot complete tasks");
                         }
                       }}
                     />
