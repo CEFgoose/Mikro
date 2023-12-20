@@ -60,14 +60,14 @@ export const UserDashboard = () => {
     }
 
     // Check if it's user's first login from local storage
-    // if (localStorage.getItem("firstLogin") === "true") {
-    // Set showTutorial to true to display tutorial
-    setShowTutorial(true);
-    setTutorialStepTitle("Welcome to Mikro!");
-    setTutorialStepContent("Let us give you a tour");
-    setTutorialStep(0);
-    localStorage.setItem("firstLogin", "false");
-    // }
+    if (localStorage.getItem("firstLogin") === "true") {
+      // Set showTutorial to true to display tutorial
+      setShowTutorial(true);
+      setTutorialStepTitle("Welcome to Mikro!");
+      setTutorialStepContent("Let us give you a tour");
+      setTutorialStep(0);
+      localStorage.setItem("firstLogin", "false");
+    }
   }, []);
 
   const handleSetProjectSelected = (e) => {
