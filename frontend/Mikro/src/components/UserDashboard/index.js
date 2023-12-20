@@ -205,6 +205,7 @@ export const UserDashboard = () => {
         />
         <PaymentCard
           title={"Your Current Balance"}
+          subtitle={"Overall Paid Amount"}
           currentBalance={payableTotal !== null ? payableTotal.toFixed(2) : "-"}
           overallAccountPayment={`$${
             paidTotal !== null ? paidTotal.toFixed(2) : "-"
