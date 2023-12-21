@@ -31,6 +31,7 @@ export const ChecklistCardGrid = (props) => {
       <Grid container spacing={3}>
         {props.checklists &&
           props.checklists.slice().map((card) => {
+            console.log(props.checklists);
             const {
               id,
               name,
@@ -53,7 +54,7 @@ export const ChecklistCardGrid = (props) => {
             } = card;
             return (
               <>
-                {props.type === "Admin" || props.type === "Validator" ? (
+                {props.type === "Admin" ? (
                   <>
                     <Grid item xs={4}>
                       <ChecklistCard
@@ -91,6 +92,7 @@ export const ChecklistCardGrid = (props) => {
                         handleSetChecklistSelected={
                           props.handleSetChecklistSelected
                         }
+                        handleAddItemOpen={props.handleAddItemOpen}
                       />
                     </Grid>
                   </>
@@ -120,6 +122,72 @@ export const ChecklistCardGrid = (props) => {
                         confirmed={confirmed}
                         checklistSelected={props.checklistSelected}
                         handleCompleteListItem={props.handleCompleteListItem}
+                        handleSetChecklistSelected={
+                          props.handleSetChecklistSelected
+                        }
+                      />
+                    </Grid>
+                  </>
+                ) : props.type === "Validator" ? (
+                  <Grid item xs={4}>
+                    <ChecklistCard
+                      name={name}
+                      id={id}
+                      user_id={user_id}
+                      role={props.role}
+                      user_name={user_name}
+                      completed={completed}
+                      confirmed={confirmed}
+                      description={description}
+                      comments={comments}
+                      commentSelected={props.commentSelected}
+                      handleSetCommentSelected={props.handleSetCommentSelected}
+                      goToSource={props.goToSource}
+                      handleCommentOpen={props.handleCommentOpen}
+                      handleDeleteComment={props.handleDeleteComment}
+                      handleAddComment={props.handleAddComment}
+                      difficulty={difficulty}
+                      visibility={visibility}
+                      due_date={due_date}
+                      list_items={list_items}
+                      completion_rate={completion_rate}
+                      validation_rate={validation_rate}
+                      user_payment_due={completion_rate}
+                      validator_payment_due={validation_rate}
+                      total_payment_due={completion_rate + validation_rate}
+                      payment_due={payment_due}
+                      author={author}
+                      max_payment={max_payment}
+                      handleConfirmItem={props.handleConfirmItem}
+                      checklistSelected={props.checklistSelected}
+                      handleSetChecklistSelected={
+                        props.handleSetChecklistSelected
+                      }
+                    />
+                  </Grid>
+                ) : props.type === "New" ? (
+                  <>
+                    <Grid item xs={4}>
+                      <ChecklistCard
+                        id={id}
+                        name={name}
+                        description={description}
+                        comments={comments}
+                        role={props.role}
+                        type={props.type}
+                        goToSource={props.goToSource}
+                        handleCommentOpen={props.handleCommentOpen}
+                        handleAddComment={props.handleAddComment}
+                        difficulty={difficulty}
+                        visibility={visibility}
+                        due_date={due_date}
+                        list_items={list_items}
+                        completion_rate={completion_rate}
+                        validation_rate={validation_rate}
+                        total_payout={total_payout}
+                        author={author}
+                        max_payment={max_payment}
+                        checklistSelected={props.checklistSelected}
                         handleSetChecklistSelected={
                           props.handleSetChecklistSelected
                         }
@@ -991,7 +1059,7 @@ export const ChecklistCard = (props) => {
         wordWrap: "break-word",
       }}
     >
-      {props.role && props.role == "admin" ? (
+      {(props.role && props.role == "admin") || props.type == "New" ? (
         <AdminCardMediaStyle>
           <input
             type={"checkbox"}
@@ -1069,7 +1137,31 @@ export const ChecklistCard = (props) => {
                         }
                       }}
                     />
-                    <SectionSubtitle key={action} subtitle_text={action} />
+                    <div
+                      style={{
+                        display: "flex",
+                        flexDirection: "column",
+                        alignContent: "left",
+                      }}
+                    >
+                      <SectionSubtitle
+                        align={"left"}
+                        key={action}
+                        subtitle_text={action}
+                      />
+                      <a
+                        href={link}
+                        target="_blank" // This opens the link in a new tab
+                        rel="noopener noreferrer" // Recommended for security
+                        style={{
+                          textDecoration: "none",
+                          color: "blue",
+                          paddingLeft: "1vw",
+                        }}
+                      >
+                        {link}
+                      </a>
+                    </div>
                   </div>
                 ) : (
                   ""
@@ -1120,7 +1212,7 @@ export const ChecklistCard = (props) => {
                       key={number}
                       checked={confirmed === true}
                       onChange={(e) => {
-                        if (!props.confirmed) {
+                        if (!props.confirmed && props.handleConfirmItem) {
                           props.handleConfirmItem(
                             e,
                             number,
@@ -1128,10 +1220,35 @@ export const ChecklistCard = (props) => {
                             props.user_id,
                             props.name
                           );
+                        } else {
+                          alert("You cannot confirm this task");
                         }
                       }}
                     />
-                    <SectionSubtitle key={action} subtitle_text={action} />
+                    <div
+                      style={{
+                        display: "flex",
+                        flexDirection: "column",
+                      }}
+                    >
+                      <SectionSubtitle
+                        align={"left"}
+                        key={action}
+                        subtitle_text={action}
+                      />
+                      <a
+                        href={link}
+                        target="_blank" // This opens the link in a new tab
+                        rel="noopener noreferrer" // Recommended for security
+                        style={{
+                          textDecoration: "none",
+                          color: "blue",
+                          paddingLeft: "1vw",
+                        }}
+                      >
+                        {link}
+                      </a>
+                    </div>
                   </div>
                 );
               }

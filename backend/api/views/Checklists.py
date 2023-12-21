@@ -104,6 +104,7 @@ class ChecklistAPI(MethodView):
                 checklist_id=new_checklist.id,
                 item_number=item["number"],
                 item_action=item["action"],
+                item_link=item["link"],
             )
         response["message"] = "%s Created" % (checklist_name)
         response["status"] = 200

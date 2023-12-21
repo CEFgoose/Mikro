@@ -268,6 +268,13 @@ export const DashboardCard = (props) => {
 };
 
 export const TasksMappedCard = (props) => {
+  let updatedLineData = props.lineData;
+
+  // Check if lineData is falsy or has a length less than or equal to 1
+  if (!updatedLineData || updatedLineData.length <= 1) {
+    // If true, set lineData to an array of zeros
+    updatedLineData = [0, 0, 0, 0, 0, 0];
+  }
   return (
     <DashCard>
       <div
@@ -300,7 +307,7 @@ export const TasksMappedCard = (props) => {
             marginLeft: "2vh",
           }}
         >
-          <LineChart lineData={props.lineData}></LineChart>
+          <LineChart lineData={updatedLineData}></LineChart>
         </div>
       </div>
       <div

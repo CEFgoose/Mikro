@@ -171,7 +171,7 @@ const Sidebar = (props) => {
         >
           <MenuItem>
             <ProjectIcon src={checklist_icon} />
-            <Header>{sidebarOpen ? "Checklists" : ""}</Header>
+            <Header>{sidebarOpen ? "Activites" : ""}</Header>
           </MenuItem>
         </NavLink>
 
