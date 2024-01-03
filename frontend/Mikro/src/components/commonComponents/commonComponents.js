@@ -13,7 +13,7 @@ import Chart from "react-apexcharts";
 import { DataContext } from "../../common/DataContext";
 import positive_trend_icon from "../../images/Up-trend-icon.png";
 import negative_trend_icon from "../../images/Down-Trend-Icon.png";
-import { DashCard } from "./styles.js";
+import { DashCard, ProjectCardContainer } from "./styles.js";
 
 import {
   Card,
@@ -1218,15 +1218,11 @@ export const ProjectCardGrid = (props) => {
 
 export const ProjectCard = (props) => {
   return (
-    <Card
+    <ProjectCardContainer
       key={props.id}
-      style={{
-        boxShadow: "1px 1px 6px 2px gray",
-        width: "18vw",
-        marginLeft: "2vw",
-        marginTop: "2vh",
+      onClick={() => {
+        window.open(props.url, "_blank");
       }}
-      onDoubleClick={() => props.goToSource(props.url)}
     >
       <AdminCardMediaStyle>
         <input
@@ -1298,7 +1294,7 @@ export const ProjectCard = (props) => {
           total={props.total_tasks * 2}
         />
 
-        <button
+        {/* <button
           style={{
             borderRadius: "6px",
             backgroundColor: "#fd7e14",
@@ -1312,8 +1308,8 @@ export const ProjectCard = (props) => {
           }}
         >
           Start Mapping
-        </button>
+        </button> */}
       </div>
-    </Card>
+    </ProjectCardContainer>
   );
 };

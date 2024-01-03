@@ -100,3 +100,15 @@ export const TextArea = styled.textarea`
   border-radius: 6px;
   box-sizing: border-box;
 `;
+
+export const ProjectCardContainer = styled(Card)(() => ({
+  boxShadow: "1px 1px 6px gray",
+  width: "18vw",
+  marginLeft: "2vw",
+  marginTop: "2vh",
+  transition: "box-shadow 0.3s ease",
+  "&:hover": {
+    boxShadow: "2px 2px 6px gray",
+    cursor: "pointer",
+  },
+}));
