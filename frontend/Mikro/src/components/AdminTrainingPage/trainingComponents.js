@@ -636,7 +636,7 @@ export const AdminTrainingTable = (props) => {
       }}
     >
       <TableCard
-        style={{ boxShadow: "1px 1px 6px 2px gray", overflowY: "scroll" }}
+        style={{ boxShadow: "1px 1px 6px 2px gray", overflow: "auto" }}
       >
         <CardMediaStyle />
         <Table style={{}}>

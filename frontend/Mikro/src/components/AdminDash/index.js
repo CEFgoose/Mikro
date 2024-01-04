@@ -148,7 +148,7 @@ export const AdminDash = () => {
         style={{
           display: "flex",
           flexDirection: "row",
-          height: "67vh",
+          height: "65vh",
         }}
       >
         <TableCard

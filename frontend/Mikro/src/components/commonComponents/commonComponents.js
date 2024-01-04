@@ -352,7 +352,7 @@ export const ValidationCard = (props) => {
             display: "flex",
             flexDirection: "column",
             justifyContent: "space-between",
-            marginTop: "1vh",
+            marginTop: "1.5vh",
           }}
         >
           <p>{bar.title}</p>
@@ -369,15 +369,11 @@ export const ValidationCard = (props) => {
 
 export const PaymentCard = (props) => {
   return (
-    <DashCard>
+    <DashCard key={props.title}>
       <SectionTitle title_text={props.title} />
       <h1
         style={{
           alignSelf: "center",
-          paddingLeft: "1vw",
-          paddingRight: "1vw",
-          marginBottom: "1vh",
-          marginTop: "1vh",
         }}
       >
         {props.currentBalance}
@@ -393,22 +389,33 @@ export const PaymentCard = (props) => {
         <p>{props.subtitle}</p>
         <p>{props.overallAccountPayment}</p>
       </div>
-      <button
+      <div
         style={{
-          borderRadius: "6px",
-          backgroundColor: "#fd7e14",
-          width: "100%",
-          border: "none",
-          height: "30px",
-          cursor: "pointer",
-        }}
-        onClick={() => {
-          window.location.href =
-            props.role === "admin" ? "/AdminPaymentsPage" : "/UserPaymentsPage";
+          display: "flex",
+          flexDirection: "row",
+          justifyContent: "space-around",
+          marginTop: "1vh",
         }}
       >
-        See Payment Details
-      </button>
+        <button
+          style={{
+            borderRadius: "6px",
+            backgroundColor: "#fd7e14",
+            width: "80%",
+            border: "none",
+            height: "30px",
+            cursor: "pointer",
+          }}
+          onClick={() => {
+            window.location.href =
+              props.role === "admin"
+                ? "/AdminPaymentsPage"
+                : "/UserPaymentsPage";
+          }}
+        >
+          See Payment Details
+        </button>
+      </div>
     </DashCard>
   );
 };
@@ -563,8 +570,6 @@ export const SectionTitle = (props) => {
     <Typography
       align="center"
       style={{
-        // paddingLeft: "1vw",
-        paddingRight: "1vw",
         marginBottom: "1vh",
         marginTop: "1vh",
       }}
@@ -1301,7 +1306,7 @@ export const ProjectCard = (props) => {
           flexDirection: "column",
           justifyContent: "center",
           padding: "1vw",
-          gap: "1vw",
+          gap: ".5vw",
         }}
       >
         <div

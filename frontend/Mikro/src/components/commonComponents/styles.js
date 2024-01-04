@@ -33,7 +33,7 @@ export const DashCard = styled(Card)(() => ({
   display: "flex",
   position: "relative",
   flexDirection: "column",
-  height: "23vh",
+  height: "28vh",
   width: "25vw",
   boxShadow: "0 0 4px gray",
   marginBottom: "1vh",
@@ -102,7 +102,7 @@ export const TextArea = styled.textarea`
 
 export const ProjectCardContainer = styled(Card)(() => ({
   boxShadow: "1px 1px 6px gray",
-  width: "18vw",
+  width: "20vw",
   marginLeft: "2vw",
   marginTop: "2vh",
   transition: "box-shadow 0.3s ease",

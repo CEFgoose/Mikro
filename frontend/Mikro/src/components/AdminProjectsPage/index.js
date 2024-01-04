@@ -127,10 +127,6 @@ export const AdminProjectsPage = () => {
     }
   };
 
-  const handleViewSidebar = () => {
-    handleSetSidebarState();
-  };
-
   const handleSetUrl = (e) => {
     setUrl(e.target.value);
   };
