@@ -66,15 +66,16 @@ export const TableCard = styled(Card)(() => ({
 
 export const ModalWrapper = styled("div")(() => ({
   position: "fixed",
+  display: "flex",
+  flexDirection: "column",
   top: "50%",
   left: "55%",
   backgroundColor: "white",
-  backdropFilter: "blur(3px)",
-  WebkitBackdropFilter: "blur(3px)",
   borderRadius: "6px",
   width: "50%",
   boxShadow: "0 2px 4px rgba(0, 0, 0, 0.3)",
   transform: "translate(-50%, -50%)",
+  padding: "1vw",
 }));
 
 export const ButtonDiv = styled("div")(({ theme }) => ({
@@ -221,7 +222,6 @@ export const DashboardCard = (props) => {
         >
           <SectionTitle title_text={props.title} bold={true} />
         </div>
-        <Divider />
         <div
           style={{
             display: "flex",
@@ -232,7 +232,6 @@ export const DashboardCard = (props) => {
           <SectionTitle title_text={props.subtitle_text_1} bold={true} />
           <SectionTitle title_text={props.value_1} />
         </div>
-        <Divider />
         <div
           style={{
             display: "flex",
@@ -243,7 +242,6 @@ export const DashboardCard = (props) => {
           <SectionTitle title_text={props.subtitle_text_2} bold={true} />
           <SectionTitle title_text={props.value_2} />
         </div>
-        <Divider />
         <div
           style={{
             display: "flex",
@@ -254,7 +252,6 @@ export const DashboardCard = (props) => {
           <SectionTitle title_text={props.subtitle_text_3} bold={true} />
           <SectionTitle title_text={props.value_3} />
         </div>
-        <Divider />
         <div
           style={{
             display: "flex",
@@ -553,7 +550,7 @@ export const ConfirmButton = (props) => {
   return (
     <Button
       onClick={(e) => props.confirm_action(e)}
-      style={{ boxShadow: "1px 1px 6px 2px gray" }}
+      style={{ boxShadow: "1px 1px 4px gray" }}
     >
       {props.confirm_text}
     </Button>
@@ -566,7 +563,7 @@ export const SectionTitle = (props) => {
     <Typography
       align="center"
       style={{
-        paddingLeft: "1vw",
+        // paddingLeft: "1vw",
         paddingRight: "1vw",
         marginBottom: "1vh",
         marginTop: "1vh",
@@ -599,7 +596,7 @@ export const SectionSubtitle = (props) => {
           props.margin_bottom && props.margin_bottom
             ? props.margin_bottom
             : "1vh",
-        marginTop: "1vh",
+        marginTop: ".5vh",
       }}
       sx={{ mt: 6 }}
     >
@@ -618,13 +615,84 @@ export const CloseButton = (props) => {
     <img
       src={close_icon}
       style={{
-        position: "relative",
-        left: "95%",
-        width: "2%",
+        width: "2vh",
+        height: "2vh",
       }}
       alt={"close_button"}
       onClick={props.close_action}
     ></img>
+  );
+};
+
+export const ModalHeader = (props) => {
+  return (
+    <div
+      style={{
+        display: "flex",
+        flexDirection: "row",
+        justifyContent: "space-between",
+      }}
+    >
+      <div style={{ flex: 1 }}>
+        <SectionTitle title_text={<strong>{props.title}</strong>} />
+      </div>
+      <CloseButton close_action={props.close_action} />
+    </div>
+  );
+};
+
+export const InputWithLabel = (props) => {
+  return (
+    <div
+      style={{
+        display: "flex",
+        flexDirection: "row",
+        alignItems: "baseline",
+        gap: "1vw",
+      }}
+    >
+      <p
+        style={{
+          whiteSpace: "nowrap",
+        }}
+      >
+        {props.label}
+      </p>
+      <input
+        type={props.type}
+        defaultValue={props.defaultValue}
+        placeholder={props.placeholder}
+        value={props.value}
+        min={props.min}
+        max={props.max}
+        disabled={props.disabled}
+        onChange={(e) => {
+          props.onChange(e);
+        }}
+      />
+    </div>
+  );
+};
+
+export const DifficultySelector = (props) => {
+  return (
+    <div
+      style={{
+        display: "flex",
+        flexDirection: "row",
+        alignItems: "center",
+      }}
+    >
+      <SectionTitle title_text={"Difficulty:"} />
+      <select
+        value={props.value}
+        onChange={(e) => props.handleSetDifficulty(e.target.value)}
+      >
+        <option value="Easy">Easy</option>
+        <option value="Intermediate">Intermediate</option>
+        <option value="Hard">Hard</option>
+      </select>
+    </div>
   );
 };
 
@@ -876,7 +944,6 @@ export const ConfirmModalCommon = (props) => {
         >
           {props.interrogative}
         </Typography>
-        <Divider style={{ marginTop: "1vh" }} />
         <div
           style={{
             display: "flex",
@@ -933,7 +1000,6 @@ export const CompleteQuizModal = (props) => {
         >
           {props.quizStatusText}
         </Typography>
-        <Divider style={{ marginTop: "1vh" }} />
         <div
           style={{
             display: "flex",
@@ -1140,20 +1206,6 @@ export const AdminPaymentsTable = (props) => {
   );
 };
 
-export const Divider = () => {
-  return (
-    <div
-      style={{
-        width: "90%",
-        backgroundColor: "black",
-        height: ".05vh",
-        margin: "auto",
-        marginTop: ".5vh",
-      }}
-    />
-  );
-};
-
 export const ProjectCardGrid = (props) => {
   return (
     <div style={{ overflowY: "scroll", width: "85vw", height: "99vh" }}>
@@ -1220,7 +1272,7 @@ export const ProjectCard = (props) => {
   return (
     <ProjectCardContainer
       key={props.id}
-      onClick={() => {
+      onDoubleClick={() => {
         window.open(props.url, "_blank");
       }}
     >

@@ -21,7 +21,7 @@ export const LoginPage = styled.div`
 export const LoginForm = styled.form`
   font-size: 16px;
   line-height: 2;
-  max-width: 450px;
+  max-width: 410px;
   width: 100%;
   text-align: center;
 `;
@@ -36,16 +36,6 @@ export const LoginImage = styled.img`
 export const Title = styled.h1`
   text-align: center;
   font-size: 56px;
-`;
-
-export const LoginInput = styled.input`
-  width: 80%;
-  padding: 12px 20px;
-  margin: 8px 0;
-  display: inline-block;
-  border: 1px solid #ccc;
-  border-radius: 6px;
-  box-sizing: border-box;
 `;
 
 export const LoginButton = styled.button`

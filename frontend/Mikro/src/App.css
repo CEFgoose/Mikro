@@ -32,3 +32,18 @@ body {
 .goog-te-banner-frame {
   display: none !important;
 }
+
+input[type="text"],
+input[type="number"],
+input[type="date"],
+input[type="password"],
+select {
+  height: 5vh; 
+  width: 100%;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  margin-top: 1vh;
+  margin-bottom: 1vh;
+  padding-left: 1vh;
+}

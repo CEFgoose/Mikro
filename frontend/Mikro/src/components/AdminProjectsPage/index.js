@@ -104,6 +104,8 @@ export const AdminProjectsPage = () => {
       setProjectDifficulty(selectedProject.difficulty);
       setProjectSelectedDetails(selectedProject);
       toggleModifyOpen();
+    } else {
+      alert("Select a project to edit");
     }
   };
 
@@ -142,7 +144,7 @@ export const AdminProjectsPage = () => {
   };
 
   const handleSetProjectDifficulty = (e) => {
-    setProjectDifficulty(e.target.value);
+    setProjectDifficulty(e);
   };
 
   const handleSetValidationRate = (e) => {
@@ -248,7 +250,7 @@ export const AdminProjectsPage = () => {
       <DeleteProjectModal
         deleteOpen={deleteOpen}
         handleDeleteOpen={handleDeleteOpen}
-        projectSelected={projectSelected}
+        projectSelectedDetails={projectSelectedDetails}
         handleDeleteProject={handleDeleteProject}
       />
       <ModifyProjectModal

@@ -122,6 +122,8 @@ export const AdminChecklistsPage = () => {
   const handleDeleteOpen = () => {
     if (checklistSelected !== null) {
       toggleDeleteOpen();
+    } else {
+      alert("No checklist Selected");
     }
   };
 
@@ -145,6 +147,8 @@ export const AdminChecklistsPage = () => {
       setChecklistDifficulty(selectedChecklist.difficulty);
       setChecklistSelectedDetails(selectedChecklist);
       toggleModifyOpen();
+    } else {
+      alert("No Checklist Selected");
     }
   };
 
@@ -199,7 +203,7 @@ export const AdminChecklistsPage = () => {
   };
 
   const handleSetChecklistDifficulty = (e) => {
-    setChecklistDifficulty(e.target.value);
+    setChecklistDifficulty(e);
   };
 
   const handleToggleVisibility = (e) => {
@@ -456,6 +460,7 @@ export const AdminChecklistsPage = () => {
         deleteOpen={deleteOpen}
         handleDeleteOpen={handleDeleteOpen}
         checklistSelected={checklistSelected}
+        checklistName={checklistSelectedDetails}
         handleDeleteChecklist={handleDeleteChecklist}
       />
 

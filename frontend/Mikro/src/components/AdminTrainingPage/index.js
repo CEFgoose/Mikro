@@ -77,13 +77,13 @@ export const AdminTrainingPage = () => {
     if (trainingSelected) {
       setModalPage(1);
       toggleModifyOpen();
+    } else {
+      alert("No Training Selected");
     }
   };
 
   const handleAddOpen = () => {
-    setModalPage(1);
     setTrainingSelected(null);
-
     toggleAddOpen();
   };
 

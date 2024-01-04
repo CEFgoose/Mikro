@@ -2,7 +2,7 @@ import React from "react";
 import Select from "react-select";
 import { styled } from "@mui/material/styles";
 import { Input, SelectWrapper } from "./styles";
-import { Modal, Divider } from "@mui/material";
+import { Modal } from "@mui/material";
 import {
   CancelButton,
   CloseButton,
@@ -11,6 +11,9 @@ import {
   SectionSubtitle,
   ButtonDiv,
   ModalWrapper,
+  ModalHeader,
+  ModalButtons,
+  InputWithLabel,
 } from "../commonComponents/commonComponents";
 
 export const USER_TABLE_HEAD = [
@@ -35,57 +38,32 @@ export const AddUserModal = (props) => {
   return (
     <Modal open={props.addOpen} key="add">
       <ModalWrapper>
-        <CloseButton close_action={props.handleAddOpen} />
-        <SectionTitle title_text={"Invite a new user"} />
+        <ModalHeader
+          close_action={props.handleAddOpen}
+          title={"Invite a new user"}
+        />
         <SectionSubtitle
           subtitle_text={
             "An invitation to join Mikro under your organization will be sent to the email address entered below"
           }
         />
-        <Divider />
-        <EnterEmailArea handleSetInviteEmail={props.handleSetInviteEmail} />
-        <Divider />
-        <AddUserButtons
-          form={props.form}
-          do_invite_user={props.do_invite_user}
-          handleAddOpen={props.handleAddOpen}
+        <InputWithLabel
+          label="Email Address:"
+          type="text"
+          name="name"
+          placeholder="InviteUser@mikro.com"
+          onChange={(e) => {
+            props.handleSetInviteEmail(e.target.value);
+          }}
+        />
+        <ModalButtons
+          cancel_action={props.handleAddOpen}
+          cancel_text={"Cancel"}
+          confirm_text={"Send"}
+          confirm_action={props.do_invite_user}
         />
       </ModalWrapper>
     </Modal>
-  );
-};
-
-// ADD USER BUTTONS //
-export const AddUserButtons = (props) => {
-  return (
-    <ButtonDiv>
-      <CancelButton
-        cancel_action={props.handleAddOpen}
-        cancel_text={"Cancel"}
-      />
-      <ConfirmButton
-        confirm_text={"Send"}
-        confirm_action={props.do_invite_user}
-      />
-    </ButtonDiv>
-  );
-};
-
-// ENTER EMAIL TEXT FIELD //
-export const EnterEmailArea = (props) => {
-  return (
-    <>
-      <SectionTitle text={"Email Address:"} style={{ marginBottom: "2vh" }} />
-      <Input
-        style={{ marginLeft: "2.5vw", marginBottom: "2vh" }}
-        type="text"
-        name="name"
-        placeholder="InviteUser@mikro.com"
-        onChange={(e) => {
-          props.handleSetInviteEmail(e.target.value);
-        }}
-      />
-    </>
   );
 };
 
@@ -94,35 +72,21 @@ export const DeleteUserModal = (props) => {
   return (
     <Modal open={props.deleteOpen} key="add">
       <ModalWrapper>
-        <CloseButton action={props.handleDeleteOpen} />
-        <SectionTitle title_text={"Remove a user"} />
-        <SectionSubtitle
-          subtitle_text={`User - ${props.selected_user}  will be removed from your organization`}
+        <ModalHeader
+          close_action={props.handleDeleteOpen}
+          title={"Remove a user"}
         />
-        <Divider />
-        <DeleteUserButtons
-          form={props.form}
-          do_remove_user={props.do_remove_user}
-          handleDeleteOpen={props.handleDeleteOpen}
+        <SectionSubtitle
+          subtitle_text={`User - ${props.selected_user_name}  will be removed from your organization`}
+        />
+        <ModalButtons
+          cancel_action={props.handleDeleteOpen}
+          cancel_text={"Cancel"}
+          confirm_text={"Remove"}
+          confirm_action={() => props.do_remove_user(props.form)}
         />
       </ModalWrapper>
     </Modal>
-  );
-};
-
-// DELETE USER BUTTONS //
-export const DeleteUserButtons = (props) => {
-  return (
-    <ButtonDiv>
-      <CancelButton
-        cancel_action={props.handleDeleteOpen}
-        cancel_text={"Cancel"}
-      />
-      <ConfirmButton
-        confirm_text={"Remove"}
-        confirm_action={() => props.do_remove_user(props.form)}
-      />
-    </ButtonDiv>
   );
 };
 
@@ -131,62 +95,47 @@ export const ModifyUserModal = (props) => {
   return (
     <Modal open={props.modifyOpen} key="modify">
       <ModalWrapper>
-        <CloseButton close_action={props.handleModifyOpen} />
-        <SectionTitle
-          title_text={
-            "Edit the role of the selected user within your organization"
-          }
+        <ModalHeader
+          close_action={props.handleModifyOpen}
+          title={"Edit the role of the selected user within your organization"}
         />
         <RoleDiv>
+          <SectionSubtitle subtitle_text={"Admin"} />
           <input
             type="radio"
             value="Admin"
             name="role"
             onChange={() => props.handleRoleSelected("admin")}
             checked={props.roleSelected === "admin"}
-          />{" "}
-          Admin
+          />
           <span style={{ width: "5vw" }} />
+          <SectionSubtitle subtitle_text={"Validator"} />
           <input
             type="radio"
             value="User"
             name="role"
             onChange={() => props.handleRoleSelected("validator")}
             checked={props.roleSelected === "validator"}
-          />{" "}
-          Validator
+          />
           <span style={{ width: "5vw" }} />
+          <SectionSubtitle subtitle_text={"User"} />
           <input
             type="radio"
             value="User"
             name="role"
             onChange={() => props.handleRoleSelected("user")}
             checked={props.roleSelected === "user"}
-          />{" "}
-          User
+          />
         </RoleDiv>
-        <ModifyUserButtons
-          handleModifyOpen={props.handleModifyOpen}
-          do_modify_user={props.do_modify_user}
+
+        <ModalButtons
+          cancel_text={"Cancel"}
+          cancel_action={props.handleModifyOpen}
+          confirm_text={"Confirm"}
+          confirm_action={props.do_modify_user}
         />
       </ModalWrapper>
     </Modal>
-  );
-};
-
-// MODIFY USER BUTTONS //
-export const ModifyUserButtons = (props) => {
-  return (
-    <ButtonDiv>
-      <CancelButton
-        cancel_text={"Cancel"}
-        cancel_action={props.handleModifyOpen}
-      />
-      <ConfirmButton
-        confirm_text={"Confirm"}
-        confirm_action={props.do_modify_user}
-      />
-    </ButtonDiv>
   );
 };
 
@@ -197,7 +146,6 @@ export const AssignUserModal = (props) => {
       <ModalWrapper>
         <CloseButton close_action={props.handleAssignOpen} />
         <SectionTitle title_text={"Assign the selected user to a Team"} />
-        <Divider />
         <SectionSubtitle subtitle_text={"Select team"} />
         <SelectTeamArea
           assignedTeams={props.assignedTeams}

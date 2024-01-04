@@ -1,6 +1,6 @@
 import React from "react";
 import { styled } from "@mui/material/styles";
-import { Modal, Divider, Card, Grid } from "@mui/material";
+import { Modal } from "@mui/material";
 import {
   CancelButton,
   CloseButton,

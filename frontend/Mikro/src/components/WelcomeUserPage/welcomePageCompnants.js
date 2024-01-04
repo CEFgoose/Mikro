@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { styled } from "@mui/material/styles";
-import { Modal, Divider, Table, TableBody, Card, Grid } from "@mui/material";
+import { Modal, Table, TableBody, Card, Grid } from "@mui/material";
 import { Tab, TabList, TabPanel, Tabs } from "react-tabs";
 import {
   CancelButton,
@@ -27,7 +27,6 @@ export const FirstLoginModal = (props) => {
         {props.modalPage === 1 ? (
           <>
             <SectionTitle title_text={"Step 1: OSM Username"} />
-            <Divider />
             <SectionSubtitle
               subtitle_text={
                 "Mikro needs your OSM username to track your task completion."
@@ -38,7 +37,6 @@ export const FirstLoginModal = (props) => {
                 'Please enter your username below and press "ok" to proceed'
               }
             />
-            <Divider />
             <div
               style={{
                 display: "flex",
@@ -69,7 +67,6 @@ export const FirstLoginModal = (props) => {
         ) : props.modalPage === 2 ? (
           <>
             <SectionTitle title_text={"Step 2: Payment Email"} />
-            <Divider />
             <SectionSubtitle
               subtitle_text={
                 "Mikro needs your Payoneer email address in order to make payments."
@@ -80,7 +77,6 @@ export const FirstLoginModal = (props) => {
                 'Please enter your Payoneer email below and press "ok" to proceed'
               }
             />
-            <Divider />
             <div
               style={{
                 display: "flex",
@@ -111,7 +107,6 @@ export const FirstLoginModal = (props) => {
         ) : props.modalPage === 3 ? (
           <>
             <SectionTitle title_text={"Step 3: Location"} />
-            <Divider />
             <SectionSubtitle
               subtitle_text={
                 "Mikro needs to know your area of residence to be in compliance with payment regulations."
@@ -122,7 +117,6 @@ export const FirstLoginModal = (props) => {
                 'Please enter your Country and City of residence below and press "ok" to proceed'
               }
             />
-            <Divider />
             <div
               style={{
                 display: "flex",
@@ -165,7 +159,6 @@ export const FirstLoginModal = (props) => {
         ) : props.modalPage === 4 ? (
           <>
             <SectionTitle title_text={"Step 4: Terms of Service"} />
-            <Divider />
             <SectionSubtitle
               subtitle_text={
                 "Mikro has a few terms and conditions which need your approval."
@@ -176,7 +169,6 @@ export const FirstLoginModal = (props) => {
                 'Please read the terms and conditions. If you agree, press "ok" to proceed'
               }
             />
-            <Divider />
             <div
               style={{
                 display: "flex",
@@ -338,7 +330,6 @@ export const FirstLoginModal = (props) => {
         ) : (
           <>
             <SectionTitle title_text={"Step 4: Start Mapping!"} />
-            <Divider />
             <SectionSubtitle
               subtitle_text={"Registration with Mikro is complete."}
             />
@@ -347,7 +338,6 @@ export const FirstLoginModal = (props) => {
                 "Press the button below to proceed to your user dashboard and start making money!"
               }
             />
-            <Divider />
             <div
               style={{
                 display: "flex",

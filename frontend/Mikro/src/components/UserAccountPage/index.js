@@ -1,7 +1,6 @@
 import React, { useContext, useEffect } from "react";
 import { DataContext } from "common/DataContext";
 import { AuthContext } from "common/AuthContext";
-import { Divider } from "@mui/material";
 import useToggle from "../../hooks/useToggle.js";
 import Sidebar from "../sidebar/sidebar.js";
 import "./styles.css";
@@ -212,14 +211,6 @@ export const UserAccountPage = () => {
 
                 <div
                   style={{
-                    width: "100%",
-                    backgroundColor: "black",
-                    height: ".05vh",
-                  }}
-                />
-
-                <div
-                  style={{
                     display: "flex",
                     flexDirection: "row",
                     height: "15vh",
@@ -268,14 +259,6 @@ export const UserAccountPage = () => {
                     />
                   </div>
                 </div>
-
-                <div
-                  style={{
-                    width: "100%",
-                    backgroundColor: "black",
-                    height: ".05vh",
-                  }}
-                />
 
                 <div
                   style={{

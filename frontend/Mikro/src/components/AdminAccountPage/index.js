@@ -224,14 +224,6 @@ export const AdminAccountPage = () => {
 
                 <div
                   style={{
-                    width: "100%",
-                    backgroundColor: "black",
-                    height: ".05vh",
-                  }}
-                />
-
-                <div
-                  style={{
                     display: "flex",
                     flexDirection: "row",
                     height: "15vh",
@@ -280,14 +272,6 @@ export const AdminAccountPage = () => {
                     />
                   </div>
                 </div>
-
-                <div
-                  style={{
-                    width: "100%",
-                    backgroundColor: "black",
-                    height: ".05vh",
-                  }}
-                />
 
                 <div
                   style={{

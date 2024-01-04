@@ -8,123 +8,69 @@ import {
   SectionTitle,
   SectionSubtitle,
   ModalWrapper,
-  Divider,
+  ModalHeader,
+  InputWithLabel,
+  ModalButtons,
 } from "../commonComponents/commonComponents";
 
 export const AddTransactionModal = (props) => {
   return (
     <Modal open={props.addOpen} key="add">
       <ModalWrapper>
-        <CloseButton close_action={props.handleAddOpen} />
-        <SectionTitle title_text={"Add New Pay Request"} bold={true} />
+        <ModalHeader
+          close_action={props.handleAddOpen}
+          title={"Add New Pay Request"}
+        />
         <SectionSubtitle
           subtitle_text={
             "Enter the Username, payment email request amount and task IDs for this request."
           }
         />
-        <Divider />
-        <div style={{ display: "flex", flexDirection: "column" }}>
-          <div
-            style={{
-              display: "flex",
-              flexDirection: "row",
-              alignItems: "center",
-              marginLeft: "1vw",
-              width: "100%",
-            }}
-          >
-            <SectionTitle title_text={"User ID:"} />
-            <input
-              type="text"
-              value={props.userID}
-              onChange={(e) => props.handleSetUserID(e)}
-              style={{ height: "5vh", marginRight: "3vw", width: "95%" }}
-            />
-          </div>
-        </div>
-        <Divider />
-        <div style={{ display: "flex", flexDirection: "column" }}>
-          <div
-            style={{
-              display: "flex",
-              flexDirection: "row",
-              alignItems: "center",
-              marginLeft: "1vw",
-              width: "100%",
-            }}
-          >
-            <SectionTitle title_text={"Request Amount:"} />
-            <input
-              type="number"
-              min="0.01"
-              step="0.01"
-              value={props.requestAmount}
-              onChange={(e) => props.handleSetRequestAmount(e)}
-              style={{ height: "5vh", marginRight: "3vw", width: "95%" }}
-            />
-          </div>
-          <Divider />
-          <div
-            style={{
-              display: "flex",
-              flexDirection: "row",
-              alignItems: "center",
-              marginLeft: "1vw",
-              width: "100%",
-            }}
-          >
-            <SectionTitle title_text={"Task IDs:"} />
-            <input
-              type="text"
-              value={props.taskIDs}
-              onChange={(e) => props.handleSetTaskIds(e)}
-              style={{ height: "5vh", marginRight: "3vw", width: "95%" }}
-              placeholder="Task IDS separated by commas"
-            />
-          </div>
-        </div>
+        <InputWithLabel
+          label="User ID:"
+          type="text"
+          value={props.userID}
+          onChange={(e) => props.handleSetUserID(e)}
+        />
+        <InputWithLabel
+          label="Request Amount:"
+          type="number"
+          min="0.01"
+          step="0.01"
+          value={props.requestAmount}
+          onChange={(e) => props.handleSetRequestAmount(e)}
+        />
+        <InputWithLabel
+          label="Task IDs:"
+          type="text"
+          value={props.taskIDs}
+          onChange={(e) => props.handleSetTaskIds(e)}
+          placeholder="Task IDS separated by commas"
+        />
+
         <ModalButtons
           confirm_text={"Add"}
           confirm_action={props.handleCreateTransactions}
+          cancel_text="Cancel"
           cancel_action={props.handleAddOpen}
         />
       </ModalWrapper>
     </Modal>
   );
 };
-
-export const ModalButtons = (props) => {
-  return (
-    <div
-      style={{
-        display: "flex",
-        flexDirection: "row",
-        textAlign: "center",
-        justifyContent: "center",
-      }}
-    >
-      <CancelButton
-        cancel_action={props.cancel_action}
-        cancel_text={"Cancel"}
-      />
-      <ConfirmButton
-        confirm_action={props.confirm_action}
-        confirm_text={props.confirm_text}
-      />
-    </div>
-  );
-};
-
 export const DeleteModal = (props) => {
   return (
     <Modal open={props.deleteOpen} key="delete">
       <ModalWrapper>
-        <CloseButton close_action={props.handleDeleteOpen} />
-        <SectionTitle title_text={props.title_text} />
+        <ModalHeader
+          close_action={props.handleDeleteOpen}
+          title={props.title_text}
+        />
         <ModalButtons
           confirm_text={"Delete"}
           cancel_action={props.handleDeleteOpen}
           confirm_action={props.handleDeleteRequest}
+          cancel_text="Cancel"
         />
       </ModalWrapper>
     </Modal>
@@ -135,154 +81,74 @@ export const DetailsModal = (props) => {
   return (
     <Modal open={props.detailsOpen} key="delete">
       <ModalWrapper>
-        <CloseButton close_action={props.handleDetailsOpen} />
-        <SectionTitle title_text={props.title_text} bold={true} />
-        <div style={{ display: "flex", flexDirection: "column" }}>
-          <Divider />
-          <div
-            style={{
-              display: "flex",
-              flexDirection: "row",
-              alignItems: "center",
-              justifyContent: "left",
-              marginLeft: "2vw",
-              width: "100%",
-            }}
-          >
-            <SectionTitle title_text={"User:"} bold={true} />
-            <input
-              type="text"
-              value={props.user_name}
-              style={{ height: "5vh", marginRight: "0vw", width: "40%" }}
-            />
-            <SectionTitle title_text={"OSM Username:"} bold={true} />
-            <input
-              type="text"
-              value={props.osm_username}
-              style={{ height: "5vh", marginRight: "6vw", width: "40%" }}
-            />
-          </div>
-          <Divider />
-          <div
-            style={{
-              display: "flex",
-              flexDirection: "row",
-              alignItems: "center",
-              justifyContent: "left",
-              marginLeft: "0vw",
-              marginTop: "1vh",
-              width: "100%",
-            }}
-          >
-            <SectionTitle title_text={"Mapping Amount:"} bold={true} />
-            <input
-              type="text"
-              value={`$${props.amount_paid}`}
-              style={{ height: "5vh", marginRight: "0vw", width: "10%" }}
-            />
-            <SectionTitle title_text={"Validation Amount:"} bold={true} />
-            <input
-              type="text"
-              value={`$${props.amount_paid}`}
-              style={{ height: "5vh", marginRight: "0vw", width: "10%" }}
-            />
-            <SectionTitle title_text={"Total Payment:"} bold={true} />
-            <input
-              type="text"
-              value={`$${props.amount_paid}`}
-              style={{ height: "5vh", marginRight: "3.75vw", width: "10%" }}
-            />
-          </div>
+        <ModalHeader
+          close_action={props.handleDetailsOpen}
+          title={props.title_text}
+        />
 
-          <Divider />
-          <div
-            style={{
-              display: "flex",
-              flexDirection: "row",
-              alignItems: "center",
-              justifyContent: "left",
-              marginLeft: "2vw",
-              marginTop: "1vh",
-              marginBottom: "1vh",
-              width: "100%",
-            }}
-          >
-            <SectionTitle title_text={"Date Paid:"} bold={true} />
-            <input
-              type="text"
-              value={props.date_paid}
-              style={{ height: "5vh", marginRight: "3.75vw", width: "31%" }}
-            />
-            <SectionTitle title_text={"Payoneer ID:"} bold={true} />
-            <input
-              type="text"
-              value={props.payoneer_id}
-              style={{ height: "5vh", marginRight: "1vw", width: "10%" }}
-            />
-          </div>
-          <Divider />
-          <div
-            style={{
-              display: "flex",
-              flexDirection: "row",
-              alignItems: "center",
-              justifyContent: "left",
-              marginLeft: "2vw",
-              marginTop: "1vh",
-              width: "100%",
-            }}
-          >
-            <SectionTitle title_text={"Payment Email:"} bold={true} />
-            <input
-              type="text"
-              value={props.payment_email}
-              style={{ height: "5vh", marginRight: "3vw", width: "63%" }}
-            />
-          </div>
-          <Divider />
-          <div
-            style={{
-              display: "flex",
-              flexDirection: "row",
-              alignItems: "center",
-              justifyContent: "left",
-              marginLeft: "2vw",
-              width: "100%",
-            }}
-          >
-            <SectionTitle title_text={"Task IDs:"} bold={true} />
-            <input
-              type="text"
-              value={props.task_ids}
-              style={{ height: "5vh", marginRight: "3vw", width: "72%" }}
-            />
-          </div>
-          <Divider />
-          <div
-            style={{
-              display: "flex",
-              flexDirection: "row",
-              alignItems: "center",
-              justifyContent: "left",
-              marginLeft: "2vw",
-              width: "100%",
-              marginTop: "1vh",
-              marginBottom: "2vh",
-            }}
-          >
-            <SectionTitle title_text={"Notes:"} bold={true} />
-            <input
-              type="text"
-              value={props.notes}
-              style={{
-                height: "5vh",
-                marginLeft: "1.75vw",
-                marginRight: "0vw",
-                width: "72%",
-              }}
-            />
-          </div>
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "2fr 3fr",
+            columnGap: "1vw",
+          }}
+        >
+          <InputWithLabel label="User:" type="text" value={props.user_name} />
+          <InputWithLabel
+            label="OSM Username:"
+            type="text"
+            value={props.osm_username}
+          />
         </div>
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "1fr 1fr 1fr",
+            columnGap: "1vw",
+          }}
+        >
+          <InputWithLabel
+            label="Mapping Amount:"
+            type="text"
+            value={`$${props.amount_paid}`}
+          />
+          <InputWithLabel
+            label="Validation Amount:"
+            type="text"
+            value={`$${props.amount_paid}`}
+          />
+          <InputWithLabel
+            label="Total Payment:"
+            type="text"
+            value={`$${props.amount_paid}`}
+          />
+        </div>
+
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "1fr 1fr",
+            columnGap: "1vw",
+          }}
+        >
+          <InputWithLabel
+            label="Date Paid:"
+            type="text"
+            value={props.date_paid}
+          />
+          <InputWithLabel
+            label="Payoneer ID:"
+            type="text"
+            value={props.payoneer_id}
+          />
+        </div>
+        <InputWithLabel
+          label="Payment Email:"
+          type="text"
+          value={props.payment_email}
+        />
+        <InputWithLabel label="Task IDs:" type="text" value={props.task_ids} />
+        <InputWithLabel label="Notes:" type="text" value={props.notes} />
       </ModalWrapper>
     </Modal>
   );
@@ -292,115 +158,70 @@ export const ProcessRequestModal = (props) => {
   return (
     <Modal open={props.processOpen} key="process">
       <ModalWrapper>
-        <CloseButton close_action={props.handleProcessOpen} />
-        <SectionTitle title_text={props.title_text} />
-        <div style={{ display: "flex", flexDirection: "column" }}>
-          <Divider />
-          <div
-            style={{
-              display: "flex",
-              flexDirection: "row",
-              alignItems: "center",
-              marginLeft: "1vw",
-              width: "100%",
-            }}
-          >
-            <SectionTitle title_text={"User Requesting Payment:"} />
-            <input
-              type="text"
-              value={props.userName}
-              style={{ height: "5vh", marginRight: "3vw", width: "95vw" }}
-            />
-          </div>
-          <Divider />
-          <div
-            style={{
-              display: "flex",
-              flexDirection: "row",
-              alignItems: "center",
-              marginLeft: "1vw",
-              width: "100%",
-            }}
-          >
-            <SectionTitle title_text={"Amount Requested:"} />
-            <input
-              type="text"
-              value={`$${props.requestAmount}`}
-              style={{ height: "5vh", marginRight: "3vw", width: "15vw" }}
-            />
-            <SectionTitle title_text={"Date Requested:"} />
-            <input
-              type="text"
-              value={props.requestDate}
-              style={{ height: "5vh", marginRight: "3vw", width: "20vw" }}
-            />
-          </div>
-          <Divider />
-          <div
-            style={{
-              display: "flex",
-              flexDirection: "row",
-              alignItems: "center",
-              marginLeft: "1vw",
-              width: "100%",
-            }}
-          >
-            <SectionTitle title_text={"Payment Email:"} />
-            <input
-              type="text"
-              value={props.payEmail}
-              style={{ height: "5vh", marginRight: "3vw", width: "15vw" }}
-            />
-            <SectionTitle title_text={"Task IDs:"} />
-            <input
-              type="text"
-              value={props.taskIDs}
-              onChange={(e) => props.handleSetTaskIds(e)}
-              style={{ height: "5vh", marginRight: "3vw", width: "20vw" }}
-            />
-          </div>
-          <Divider />
-          <div
-            style={{
-              display: "flex",
-              flexDirection: "row",
-              alignItems: "center",
-              marginLeft: "1vw",
-              width: "100%",
-            }}
-          >
-            <SectionTitle title_text={"Payoneer transaction ID:"} />
-            <input
-              type="text"
-              value={props.payoneerID}
-              onChange={(e) => props.handleSetPayoneerID(e)}
-              style={{ height: "5vh", marginRight: "3vw", width: "95%" }}
-            />
-          </div>
-          <Divider />
-          <div
-            style={{
-              display: "flex",
-              flexDirection: "row",
-              alignItems: "center",
-              marginLeft: "1vw",
-              width: "100%",
-            }}
-          >
-            <SectionTitle title_text={"Transaction Notes:"} />
-            <input
-              type="text"
-              value={props.notes}
-              onChange={(e) => props.handleSetNotes(e)}
-              placeholder="Limit 100 Characters"
-              style={{ height: "5vh", marginRight: "3vw", width: "95%" }}
-            />
-          </div>
+        <ModalHeader
+          close_action={props.handleProcessOpen}
+          title={props.title_text}
+        />
+        <InputWithLabel
+          label="User Requesting Payment:"
+          type="text"
+          value={props.userName}
+        />
+
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "1fr 1fr",
+            columnGap: "1vw",
+          }}
+        >
+          <InputWithLabel
+            label="Amount Requested:"
+            type="text"
+            value={`$${props.requestAmount}`}
+          />
+          <InputWithLabel
+            label="Date Requested:"
+            type="text"
+            value={props.requestDate}
+          />
         </div>
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "1fr 1fr",
+            columnGap: "1vw",
+          }}
+        >
+          <InputWithLabel
+            label="Payment Email:"
+            type="text"
+            value={props.payEmail}
+          />
+          <InputWithLabel
+            label="Task IDs:"
+            type="text"
+            value={props.taskIDs}
+            onChange={(e) => props.handleSetTaskIds(e)}
+          />
+        </div>
+        <InputWithLabel
+          label="Payoneer transaction ID:"
+          type="text"
+          value={props.payoneerID}
+          onChange={(e) => props.handleSetPayoneerID(e)}
+        />
+        <InputWithLabel
+          label="Transaction Notes:"
+          type="text"
+          value={props.notes}
+          onChange={(e) => props.handleSetNotes(e)}
+        />
         <ModalButtons
           confirm_text={"Process"}
           cancel_action={props.handleProcessOpen}
           confirm_action={props.handleProcessPayRequest}
+          cancel_text="Cancel"
         />
       </ModalWrapper>
     </Modal>

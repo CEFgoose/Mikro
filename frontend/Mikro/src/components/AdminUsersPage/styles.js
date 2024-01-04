@@ -145,22 +145,6 @@ background-color:red;
 z-index: 9999; */
 `;
 
-export const Input = styled.input`
-  box-sizing: inherit;
-  font-family: sans-serif;
-  font-size: 100%;
-  line-height: 1.15;
-  overflow: visible;
-  width: 90%;
-  display: flex;
-  align-self: center;
-  padding: 12px 20px;
-  margin: 8px 0;
-  display: inline-block;
-  border: 1px solid #ccc;
-  border-radius: 6px;
-`;
-
 export const SelectWrapper = styled.div`
   margin-left: 2em;
   margin-right: 2em;

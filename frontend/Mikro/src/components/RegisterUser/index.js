@@ -16,6 +16,8 @@ import {
   NameInput,
 } from "./styles.js";
 
+import "../../App.css";
+
 export const RegisterUser = () => {
   const [firstName, setFirstName] = useState("");
   const [lastName, setlastName] = useState("");
@@ -54,7 +56,7 @@ export const RegisterUser = () => {
             alt="Kaart Logo"
           />
           <Title>Sign Up for Mikro</Title>
-          <NameInput
+          <input
             type="text"
             name="First Name"
             placeholder="First Name"
@@ -62,7 +64,7 @@ export const RegisterUser = () => {
               setFirstName(e.target.value);
             }}
           />
-          <NameInput
+          <input
             type="text"
             name="Last Name"
             placeholder="Last Name"
@@ -70,7 +72,7 @@ export const RegisterUser = () => {
               setlastName(e.target.value);
             }}
           />
-          <RegisterInput
+          <input
             type="text"
             name="Email"
             placeholder="Email"
@@ -79,7 +81,7 @@ export const RegisterUser = () => {
             }}
           />
 
-          <RegisterInput
+          <input
             type="password"
             name="Password"
             placeholder="Password"
@@ -87,7 +89,7 @@ export const RegisterUser = () => {
               setPassword(e.target.value);
             }}
           />
-          <RegisterInput
+          <input
             type="text"
             name="Organization"
             placeholder="Organization"

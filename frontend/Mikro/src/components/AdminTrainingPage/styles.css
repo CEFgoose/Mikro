@@ -7,3 +7,9 @@
   height: 80px;
   width: 80px;
 }
+
+.StyledInput{
+  border-radius: 6px;
+  height: 5vh;
+  width: 100%;
+}

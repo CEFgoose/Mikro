@@ -10,16 +10,20 @@ import {
   SectionSubtitle,
   ModalWrapper,
   StyledButton,
-  Divider,
   TableCard,
   ProjectRow,
   ProjectCell,
   ListHead,
   AdminCardMediaStyle,
   CardMediaStyle,
+  ModalHeader,
+  InputWithLabel,
+  DifficultySelector,
+  ModalButtons,
 } from "../commonComponents/commonComponents";
 import { TextArea } from "components/commonComponents/styles";
 import "./styles.css";
+import "../../App.css";
 
 export const ChecklistCardGrid = (props) => {
   return (
@@ -209,10 +213,11 @@ export const AddChecklistModal = (props) => {
   return (
     <Modal open={props.addOpen} key="add">
       <ModalWrapper>
-        <CloseButton close_action={props.handleAddOpen} />
-        <SectionTitle title_text={"Add New Checklist"} bold={true} />
+        <ModalHeader
+          title={"Add New Checklist"}
+          close_action={props.handleAddOpen}
+        />
         <SectionSubtitle
-          bold={true}
           subtitle_text={
             props.page === 1
               ? "Enter the details about your new checklist."
@@ -221,291 +226,180 @@ export const AddChecklistModal = (props) => {
               : ""
           }
         />
-        <Divider />
-        <div style={{ display: "flex", flexDirection: "column" }}>
-          {/* PAGE 1 */}
-          {props.page === 1 ? (
-            <>
-              <div
-                style={{
-                  display: "flex",
-                  flexDirection: "row",
-                  alignItems: "center",
-                  marginLeft: "1vw",
-                  width: "100%",
-                  marginTop: "1vh",
-                  marginBottom: "1vh",
-                }}
-              >
-                <SectionTitle title_text={"Name:"} bold={true} />
-                <input
-                  type="text"
-                  value={props.checklistName}
-                  onChange={(e) => props.handleSetChecklistName(e)}
-                  style={{ height: "5vh", marginRight: "3vw", width: "95%" }}
-                />
-              </div>
-              <Divider />
-              <div
-                style={{
-                  display: "flex",
-                  flexDirection: "row",
-                  alignItems: "center",
-                  marginLeft: "1vw",
-                  marginTop: "1vh",
-                  marginBottom: "1vh",
-                  width: "100%",
-                }}
-              >
-                <SectionTitle title_text={"Description:"} bold={true} />
-                <input
-                  type="text"
-                  value={props.checklistDescription}
-                  onChange={(e) => props.handleSetChecklistDescription(e)}
-                  style={{ height: "5vh", marginRight: "3vw", width: "95%" }}
-                />
-              </div>
-              <Divider />
-              <div
-                style={{
-                  display: "flex",
-                  flexDirection: "row",
-                  alignItems: "center",
-                  marginLeft: "1vw",
-                  marginTop: "1vh",
-                  marginBottom: "1vh",
-                  width: "100%",
-                }}
-              >
-                <SectionTitle title_text={"Due Date:"} bold={true} />
-                <input
-                  type="date"
-                  value={props.dueDate}
-                  onChange={(e) => props.handleSetDueDate(e)}
-                  style={{ height: "5vh", marginRight: "3vw", width: "70%" }}
-                />
-              </div>
-              <Divider />
-              <div
-                style={{
-                  display: "flex",
-                  flexDirection: "row",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  marginTop: "1vh",
-                  marginBottom: "1vh",
-                  marginLeft: "0vw",
-                }}
-              >
-                <SectionTitle title_text={"Completion Rate:"} bold={true} />
-                <input
-                  type="number"
-                  min="0.01"
-                  step="0.01"
-                  value={props.completion_rate}
-                  onChange={(e) => props.handleSetCompletionRate(e)}
-                  style={{ height: "5vh", marginRight: "0vw", width: "5vw" }}
-                />
-                <SectionTitle title_text={"Validation Rate:"} bold={true} />
-                <input
-                  type="number"
-                  min="0.01"
-                  step="0.01"
-                  value={props.validation_rate}
-                  onChange={(e) => props.handleSetValidationRate(e)}
-                  style={{ height: "5vh", marginRight: "0vw", width: "5vw" }}
-                />
-              </div>
-              <Divider />
-              <div
-                style={{
-                  marginTop: "1vh",
-                  display: "flex",
-                  flexDirection: "row",
-                  alignItems: "center",
-                  marginLeft: "1vw",
-                }}
-              >
-                <SectionTitle title_text={"Visibility:"} bold={true} />
-                <span style={{ width: "3vw" }} />
-                <SectionSubtitle subtitle_text={"Public:"} bold={true} />
-                <input
-                  type="radio"
-                  value="public"
-                  name="public"
-                  onChange={() => props.handleToggleVisibility()}
-                  checked={props.visibility === true}
-                />
-                <span style={{ width: "5vw" }} />
-                <SectionSubtitle subtitle_text={"Private:"} bold={true} />
-                <input
-                  type="radio"
-                  value="private"
-                  name="private"
-                  onChange={() => props.handleToggleVisibility()}
-                  checked={props.visibility === false}
-                  style={{ marginRight: "2vw" }}
-                />
-                <SectionTitle title_text={"Difficulty:"} bold={true} />
-                <select
-                  value={props.checklistDifficulty}
-                  style={{ marginRight: "0vw" }}
-                  onChange={props.handleSetProjectDifficulty}
-                >
-                  <option
-                    value="Easy"
-                    onChange={(e) => props.handleSetChecklistDifficulty(e)}
-                  >
-                    Easy
-                  </option>
-                  <option
-                    value="Intermediate"
-                    onChange={(e) => props.handleSetChecklistDifficulty(e)}
-                  >
-                    Intermediate
-                  </option>
-                  <option
-                    value="Hard"
-                    onChange={(e) => props.handleSetChecklistDifficulty(e)}
-                  >
-                    Hard
-                  </option>
-                </select>
-              </div>
 
-              <Divider />
-            </>
+        {/* PAGE 1 */}
+        {props.page === 1 ? (
+          <>
+            <input
+              type="text"
+              value={props.checklistName}
+              onChange={(e) => props.handleSetChecklistName(e)}
+              placeholder="Name"
+            />
+
+            <input
+              type="text"
+              value={props.checklistDescription}
+              onChange={(e) => props.handleSetChecklistDescription(e)}
+              placeholder="Description"
+            />
+            <InputWithLabel
+              label="Due Date:"
+              type="date"
+              value={props.dueDate}
+              onChange={(e) => props.handleSetDueDate(e)}
+            />
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "1fr 1fr 1fr",
+                columnGap: "1vw",
+              }}
+            >
+              <InputWithLabel
+                label="Completion Rate:"
+                type="number"
+                min="0.01"
+                step="0.01"
+                value={props.completion_rate}
+                onChange={(e) => props.handleSetCompletionRate(e)}
+              />
+              <InputWithLabel
+                label="Validation Rate:"
+                type="number"
+                min="0.01"
+                step="0.01"
+                value={props.validation_rate}
+                onChange={(e) => props.handleSetValidationRate(e)}
+              />
+
+              <DifficultySelector
+                value={props.checklistDifficulty}
+                handleSetDifficulty={(e) =>
+                  props.handleSetChecklistDifficulty(e)
+                }
+              />
+            </div>
+            <div
+              style={{
+                display: "flex",
+                flexDirection: "row",
+              }}
+            >
+              <SectionTitle title_text={"Visibility:"} />
+              <SectionSubtitle subtitle_text={"Public:"} />
+              <input
+                type="radio"
+                value="public"
+                name="public"
+                onChange={() => props.handleToggleVisibility()}
+                checked={props.visibility === true}
+              />
+              <SectionSubtitle subtitle_text={"Private:"} />
+              <input
+                type="radio"
+                value="private"
+                name="private"
+                onChange={() => props.handleToggleVisibility()}
+                checked={props.visibility === false}
+              />
+            </div>
+          </>
+        ) : (
+          <></>
+        )}
+        {/* PAGE 2 */}
+        {props.page === 2 ? (
+          <>
+            <div
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                height: "30vh",
+                overflowY: "scroll",
+                gap: "1vh",
+              }}
+            >
+              {props.listItems &&
+                props.listItems.slice().map((list_item) => {
+                  const { action, link, number } = list_item;
+                  return (
+                    <>
+                      <div
+                        style={{
+                          display: "flex",
+                          flexDirection: "row",
+                        }}
+                      >
+                        <SectionSubtitle
+                          subtitle_text={`Item ${number}:`}
+                          bold={true}
+                        />
+                        <SectionSubtitle subtitle_text={action} />
+                        <SectionSubtitle subtitle_text={link} />
+                      </div>
+                    </>
+                  );
+                })}
+            </div>
+            <InputWithLabel
+              label="Action:"
+              type="text"
+              value={props.tempAction}
+              onChange={(e) => props.handleSetTempAction(e)}
+            />
+            <InputWithLabel
+              label="Link:"
+              type="text"
+              value={props.tempLink}
+              onChange={(e) => props.handleSetTempLink(e)}
+            />
+          </>
+        ) : (
+          <></>
+        )}
+        {/* BUTTON COMPONENT */}
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "row",
+            alignItems: "center",
+            marginBottom: "1vh",
+            marginTop: "2vh",
+            marginLeft: "1vw",
+            justifyContent: "center",
+          }}
+        >
+          {props.page !== 1 ? (
+            <StyledButton
+              button_text="Back"
+              button_action={() => props.handleSetPage("back")}
+            />
           ) : (
             <></>
           )}
-          {/* PAGE 2 */}
+          <StyledButton
+            button_text={props.page === 1 ? "Next" : "Add"}
+            button_action={
+              props.page === 1 ? (
+                () => props.handleSetPage("next")
+              ) : props.page === 2 ? (
+                () => props.handleSetTempListItem()
+              ) : (
+                <></>
+              )
+            }
+          />
           {props.page === 2 ? (
             <>
-              <div
-                style={{
-                  height: "30vh",
-                  overflowY: "scroll",
-                }}
-              >
-                {props.listItems &&
-                  props.listItems.slice().map((list_item) => {
-                    const { action, link, number } = list_item;
-                    return (
-                      <>
-                        <div
-                          style={{
-                            display: "flex",
-                            flexDirection: "row",
-                            alignItems: "center",
-                            justifyContent: "center",
-                            marginLeft: "1vw",
-                            width: "100%",
-                            marginTop: "1vh",
-                            marginBottom: "1vh",
-                          }}
-                        >
-                          <SectionSubtitle
-                            subtitle_text={`Item ${number}:`}
-                            bold={true}
-                          />
-                          <SectionSubtitle subtitle_text={action} />
-                          <SectionSubtitle subtitle_text={link} />
-                        </div>
-                      </>
-                    );
-                  })}
-              </div>
-              <div
-                style={{
-                  display: "flex",
-                  flexDirection: "row",
-                  alignItems: "center",
-                  marginLeft: "1vw",
-                  width: "100%",
-                  marginTop: "1vh",
-                  marginBottom: "1vh",
-                }}
-              >
-                <SectionTitle title_text={"Action:"} bold={true} />
-                <input
-                  type="text"
-                  value={props.tempAction}
-                  onChange={(e) => props.handleSetTempAction(e)}
-                  style={{ height: "5vh", marginRight: "3vw", width: "95%" }}
-                />
-              </div>
-              <Divider />
-              <div
-                style={{
-                  display: "flex",
-                  flexDirection: "row",
-                  alignItems: "center",
-                  marginLeft: "1vw",
-                  width: "100%",
-                  marginTop: "1vh",
-                  marginBottom: "1vh",
-                }}
-              >
-                <SectionTitle title_text={"Link:"} bold={true} />
-                <input
-                  type="text"
-                  value={props.tempLink}
-                  onChange={(e) => props.handleSetTempLink(e)}
-                  style={{
-                    height: "5vh",
-                    marginRight: "3vw",
-                    width: "95%",
-                  }}
-                />
-              </div>
-              <Divider />
+              <StyledButton
+                button_text={"Create"}
+                button_action={() => props.handleCreateChecklist(false)}
+              />
             </>
           ) : (
             <></>
           )}
-          {/* BUTTON COMPONENT */}
-          <div
-            style={{
-              display: "flex",
-              flexDirection: "row",
-              alignItems: "center",
-              marginBottom: "1vh",
-              marginTop: "2vh",
-              marginLeft: "1vw",
-              justifyContent: "center",
-            }}
-          >
-            {props.page !== 1 ? (
-              <StyledButton
-                button_text="Back"
-                button_action={() => props.handleSetPage("back")}
-              />
-            ) : (
-              <></>
-            )}
-            <StyledButton
-              button_text={props.page === 1 ? "Next" : "Add"}
-              button_action={
-                props.page === 1 ? (
-                  () => props.handleSetPage("next")
-                ) : props.page === 2 ? (
-                  () => props.handleSetTempListItem()
-                ) : (
-                  <></>
-                )
-              }
-            />
-            {props.page === 2 ? (
-              <>
-                <StyledButton
-                  button_text={"Create"}
-                  button_action={() => props.handleCreateChecklist(false)}
-                />
-              </>
-            ) : (
-              <></>
-            )}
-          </div>
         </div>
       </ModalWrapper>
     </Modal>
@@ -587,49 +481,25 @@ export const ConfirmationModal = (props) => {
 
 // DELETE CHecklist MODAL //
 export const DeleteChecklistModal = (props) => {
+  const projectName = props.projectSelectedDetails?.name || "Unknown";
   return (
     <Modal open={props.deleteOpen} key="delete">
       <ModalWrapper>
-        <CloseButton close_action={props.handleDeleteOpen} />
-        <SectionTitle
-          title_text={
-            "Are you sure you want to delete the following checklist?"
-          }
+        <ModalHeader
+          close_action={props.handleDeleteOpen}
+          title={"Are you sure you want to delete the following checklist?"}
         />
-        <SectionSubtitle
-          subtitle_text={`checklist # ${props.checklistSelected}`}
-        />
+        <SectionSubtitle subtitle_text={`${props.projectName}`} />
         <div style={{ marginBottom: "2vh" }}>
-          <DeleteChecklistButtons
+          <ModalButtons
             cancel_action={props.handleDeleteOpen}
+            cancel_text={"Cancel"}
             confirm_action={props.handleDeleteChecklist}
+            confirm_text={"Delete"}
           />
         </div>
       </ModalWrapper>
     </Modal>
-  );
-};
-
-// DELETE Checklist BUTTONS //
-export const DeleteChecklistButtons = (props) => {
-  return (
-    <div
-      style={{
-        display: "flex",
-        flexDirection: "row",
-        textAlign: "center",
-        justifyContent: "center",
-      }}
-    >
-      <CancelButton
-        cancel_action={props.cancel_action}
-        cancel_text={"Cancel"}
-      />
-      <ConfirmButton
-        confirm_action={props.confirm_action}
-        confirm_text={"Delete"}
-      />
-    </div>
   );
 };
 
@@ -644,378 +514,216 @@ export const ModifyChecklistModal = (props) => {
     }
     // eslint-disable-next-line
   }, [props.checklistSelected]);
-
   return (
     <>
       {props.checklistSelectedDetails &&
       props.checklistSelectedDetails != null ? (
         <Modal open={props.modifyOpen} key="modify">
           <ModalWrapper>
-            <CloseButton close_action={props.handleModifyOpen} />
-            <SectionTitle
-              bold={true}
-              title_text={`Edit ${props.checklistSelectedDetails.name}`}
+            <ModalHeader
+              title={`Edit ${props.checklistSelectedDetails.name}`}
+              close_action={props.handleModifyOpen}
             />
             <Tabs>
-              <div
-                style={{
-                  display: "flex",
-                  flexDirection: "column",
-                  alignItems: "center",
-                }}
-              >
-                <TabList>
-                  <Tab>Details</Tab>
-                  <Tab>Users</Tab>
-                  <Tab>Settings</Tab>
-                </TabList>
-                {/* BUDGET TAB */}
-                <TabPanel>
-                  <div
-                    style={{
-                      width: "90%",
-                      backgroundColor: "black",
-                      height: ".05vh",
-                      margin: "auto",
-                      marginBottom: "1vh",
-                    }}
-                  />
-                  <div
-                    style={{
-                      display: "flex",
-                      flexDirection: "row",
-                      alignItems: "center",
-                      marginLeft: "1vw",
-                      width: "100%",
-                      marginTop: "1vh",
-                      marginBottom: "1vh",
-                    }}
-                  >
-                    <SectionTitle title_text={"Name:"} bold={true} />
-                    <input
-                      type="text"
-                      value={props.checklistName}
-                      onChange={(e) => props.handleSetChecklistName(e)}
-                      style={{
-                        height: "5vh",
-                        marginRight: "3vw",
-                        width: "95%",
-                      }}
-                    />
-                  </div>
-                  <Divider />
-                  <div
-                    style={{
-                      display: "flex",
-                      flexDirection: "row",
-                      alignItems: "center",
-                      marginLeft: "1vw",
-                      marginTop: "1vh",
-                      marginBottom: "1vh",
-                      width: "100%",
-                    }}
-                  >
-                    <SectionTitle title_text={"Description:"} bold={true} />
-                    <input
-                      type="text"
-                      value={props.checklistDescription}
-                      onChange={(e) => props.handleSetChecklistDescription(e)}
-                      style={{
-                        height: "5vh",
-                        marginRight: "3vw",
-                        width: "95%",
-                      }}
-                    />
-                  </div>
-                  <div
-                    style={{
-                      display: "flex",
-                      flexDirection: "row",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      marginLeft: "1vw",
-                    }}
-                  >
-                    <SectionTitle title_text={"Budget:"} bold={true} ma />
-                    <SectionSubtitle
-                      subtitle_text={"Completion Rate"}
-                      bold={true}
-                    />
-                    <input
-                      type="number"
-                      min="0.01"
-                      step=".01"
-                      value={props.completion_rate}
-                      onChange={(e) => props.handleSetCompletionRate(e)}
-                      style={{
-                        height: "5vh",
-                        marginRight: "1vw",
-                        width: "5vw",
-                      }}
-                    />
-                    <SectionSubtitle
-                      subtitle_text={"Validation Rate"}
-                      bold={true}
-                    />
-                    <input
-                      type="number"
-                      min="0.01"
-                      step=".01"
-                      value={props.validation_rate}
-                      onChange={(e) => props.handleSetValidationRate(e)}
-                      style={{
-                        height: "5vh",
-                        marginRight: "1vw",
-                        width: "5vw",
-                      }}
-                    />
-                  </div>
-                  <div
-                    style={{
-                      width: "90%",
-                      backgroundColor: "black",
-                      height: ".05vh",
-                      margin: "auto",
-                      marginTop: "1vh",
-                      marginBottom: "1vh",
-                    }}
-                  />
-
-                  <ModifyProjectButtons
-                    handleModifyOpen={props.handleModifyOpen}
-                    confirm_action={props.handleModifyChecklist}
-                    confirm_text={"Update"}
-                  />
-                </TabPanel>
-
-                {/* USERS TAB */}
-
-                <TabPanel>
-                  <div
-                    style={{
-                      display: "flex",
-                      flexDirection: "row",
-                      alignItems: "center",
-                      marginLeft: "1vw",
-                      marginBottom: "2vh",
-                      width: "100%",
-                    }}
-                  >
-                    <TableCard
-                      TableCard
-                      style={{
-                        boxShadow: "1px 1px 6px 2px gray",
-                        width: "45vw",
-                      }}
-                    >
-                      <Table>
-                        <ListHead headLabel={ASSIGN_USERS_TABLE_HEADERS} />
-                        <TableBody>
-                          {props.checklistUsers &&
-                            props.checklistUsers
-                              .slice(
-                                page * rowsPerPage,
-                                page * rowsPerPage + rowsPerPage
-                              )
-                              .map((row) => {
-                                const {
-                                  id,
-                                  name,
-                                  role,
-                                  assigned_projects,
-                                  assigned,
-                                } = row;
-                                return (
-                                  <ProjectRow
-                                    sx={{
-                                      "&:hover": {
-                                        backgroundColor:
-                                          "rgba(145, 165, 172, 0.5)",
-                                        cursor: "pointer",
-                                      },
-                                    }}
-                                    align="center"
-                                    key={id}
-                                    tabIndex={-1}
-                                    onClick={() =>
-                                      props.handleSetUserSelected(id, assigned)
-                                    }
-                                    selected={props.userSelected === id}
-                                  >
-                                    <ProjectCell
-                                      key={name}
-                                      entry={<strong>{name}</strong>}
-                                    />
-                                    <ProjectCell key={role} entry={role} />
-                                    <ProjectCell
-                                      key={assigned}
-                                      entry={assigned}
-                                    />
-                                    <ProjectCell
-                                      key={assigned_projects}
-                                      entry={assigned_projects}
-                                    />
-                                  </ProjectRow>
-                                );
-                              })}
-                        </TableBody>
-                      </Table>
-                    </TableCard>
-                  </div>
-                  <ModifyProjectButtons
-                    handleModifyOpen={props.handleModifyOpen}
-                    confirm_action={props.handleAssignUser}
-                    confirm_text={props.assignmentButtonText}
-                  />
-                </TabPanel>
-
-                {/* SETTINGS TAB */}
+              <TabList>
+                <Tab>Details</Tab>
+                <Tab>Users</Tab>
+              </TabList>
+              {/* Details Tab */}
+              <TabPanel>
+                <InputWithLabel
+                  label="Name:"
+                  type="text"
+                  value={props.checklistSelectedDetails.name}
+                  onChange={(e) => props.handleSetChecklistName(e)}
+                />
+                <InputWithLabel
+                  label="Description:"
+                  type="text"
+                  value={props.checklistSelectedDetails.description}
+                  onChange={(e) => props.handleSetChecklistDescription(e)}
+                />
+                <InputWithLabel
+                  label="Due Date:"
+                  type="date"
+                  value={props.checklistSelectedDetails.due_date}
+                  onChange={(e) => props.handleSetDueDate(e)}
+                />
                 <div
                   style={{
-                    width: "100%",
-                    backgroundColor: "black",
-                    height: ".05vh",
+                    display: "grid",
+                    gridTemplateColumns: "1fr 1fr 1fr",
+                    columnGap: "1vw",
                   }}
+                >
+                  <InputWithLabel
+                    label="Completion Rate"
+                    type="number"
+                    value={props.completion_rate}
+                    min={0.01}
+                    max={1.0}
+                    onChange={(e) => props.handleSetCompletionRate(e)}
+                  />
+                  <InputWithLabel
+                    label="Validation Rate"
+                    type="number"
+                    value={props.validation_rate}
+                    min={0.01}
+                    step={0.01}
+                    onChange={(e) => props.handleSetValidationRate(e)}
+                  />
+                  <DifficultySelector
+                    checklistDifficulty={props.checklistDifficulty}
+                    handleSetDifficulty={(value) =>
+                      props.handleSetChecklistDifficulty(value)
+                    }
+                  />
+                </div>
+                <div
+                  style={{
+                    display: "flex",
+                    flexDirection: "row",
+                    alignItems: "center",
+                  }}
+                >
+                  <SectionTitle title_text={"Visibility:"} />
+                  <SectionSubtitle subtitle_text={"Public:"} />
+                  <input
+                    type="radio"
+                    value="public"
+                    name="public"
+                    defaultChecked={
+                      props.checklistSelectedDetails.visibility === true
+                    }
+                    onChange={() => props.handleToggleVisibility()}
+                    checked={props.visibility === true}
+                  />
+                  <SectionSubtitle subtitle_text={"Private:"} />
+                  <input
+                    type="radio"
+                    value="private"
+                    name="private"
+                    onChange={() => props.handleToggleVisibility()}
+                    checked={props.visibility === false}
+                  />
+                </div>
+                <div
+                  style={{
+                    display: "flex",
+                    flexDirection: "row",
+                    alignItems: "center",
+                  }}
+                >
+                  <SectionTitle title_text={"Status:"} />
+                  <SectionSubtitle subtitle_text={"Active:"} />
+                  <input
+                    type="radio"
+                    value="Active"
+                    name="active"
+                    defaultChecked={
+                      props.checklistSelectedDetails.visibility === true
+                    }
+                    onChange={() => props.handleSetChecklistStatus()}
+                    checked={props.checklistStatus === true}
+                  />
+                  <SectionSubtitle subtitle_text={"Inactive:"} />
+                  <input
+                    type="radio"
+                    value="inactive"
+                    name="inactive"
+                    onChange={() => props.handleSetChecklistStatus()}
+                    checked={props.checklistStatus === false}
+                    style={{ marginRight: "6.5vw" }}
+                  />
+                </div>
+
+                <ModifyProjectButtons
+                  handleModifyOpen={props.handleModifyOpen}
+                  confirm_action={props.handleModifyChecklist}
+                  confirm_text={"Update"}
                 />
-                <TabPanel>
-                  <div
+              </TabPanel>
+
+              {/* USERS TAB */}
+
+              <TabPanel>
+                <div
+                  style={{
+                    display: "flex",
+                    flexDirection: "row",
+                    alignItems: "center",
+                    marginLeft: "1vw",
+                    marginBottom: "2vh",
+                    width: "100%",
+                  }}
+                >
+                  <TableCard
+                    TableCard
                     style={{
-                      display: "flex",
-                      flexDirection: "row",
-                      alignItems: "center",
-                      marginLeft: "1vw",
+                      boxShadow: "1px 1px 6px 2px gray",
+                      width: "45vw",
                     }}
                   >
-                    <SectionTitle title_text={"Visibility:"} bold={true} />
-                    <span style={{ width: "3vw" }} />
-                    <SectionSubtitle subtitle_text={"Public:"} bold={true} />
-                    <input
-                      type="radio"
-                      value="public"
-                      name="public"
-                      defaultChecked={
-                        props.checklistSelectedDetails.visibility === true
-                      }
-                      onChange={() => props.handleToggleVisibility()}
-                      checked={props.visibility === true}
-                    />
-                    <span style={{ width: "5vw" }} />
-                    <SectionSubtitle subtitle_text={"Private:"} bold={true} />
-                    <input
-                      type="radio"
-                      value="private"
-                      name="private"
-                      onChange={() => props.handleToggleVisibility()}
-                      checked={props.visibility === false}
-                      style={{ marginRight: "6.5vw" }}
-                    />
-                  </div>
-
-                  <div
-                    style={{
-                      width: "100%",
-                      backgroundColor: "black",
-                      height: ".05vh",
-                    }}
-                  />
-
-                  <div
-                    style={{
-                      display: "flex",
-                      flexDirection: "row",
-                      alignItems: "center",
-                      marginLeft: "1vw",
-                    }}
-                  >
-                    <SectionTitle title_text={"Status:"} bold={true} />
-                    <span style={{ width: "3vw" }} />
-                    <SectionSubtitle subtitle_text={"Active:"} bold={true} />
-                    <input
-                      type="radio"
-                      value="Active"
-                      name="active"
-                      defaultChecked={
-                        props.checklistSelectedDetails.visibility === true
-                      }
-                      onChange={() => props.handleSetChecklistStatus()}
-                      checked={props.checklistStatus === true}
-                    />
-                    <span style={{ width: "5vw" }} />
-                    <SectionSubtitle subtitle_text={"Inactive:"} bold={true} />
-                    <input
-                      type="radio"
-                      value="inactive"
-                      name="inactive"
-                      onChange={() => props.handleSetChecklistStatus()}
-                      checked={props.checklistStatus === false}
-                      style={{ marginRight: "6.5vw" }}
-                    />
-                  </div>
-                  <div
-                    style={{
-                      width: "100%",
-                      backgroundColor: "black",
-                      height: ".05vh",
-                    }}
-                  />
-                  <div
-                    style={{
-                      display: "flex",
-                      flexDirection: "row",
-                      alignItems: "center",
-                      marginLeft: "1vw",
-                    }}
-                  >
-                    <SectionTitle title_text={"Difficulty:"} bold={true} />
-                    <select
-                      value={props.checklistDifficulty}
-                      style={{ marginRight: "0vw" }}
-                      onChange={props.handleSetChecklistDifficulty}
-                    >
-                      <option
-                        value="Easy"
-                        onChange={(e) => props.handleSetChecklistDifficulty(e)}
-                      >
-                        Easy
-                      </option>
-                      <option
-                        value="Intermediate"
-                        onChange={(e) => props.handleSetChecklistDifficulty(e)}
-                      >
-                        Intermediate
-                      </option>
-                      <option
-                        value="Hard"
-                        onChange={(e) => props.handleSetChecklistDifficulty(e)}
-                      >
-                        Hard
-                      </option>
-                    </select>
-
-                    <SectionTitle title_text={"Due Date:"} bold={true} />
-
-                    <input
-                      type="date"
-                      value={props.dueDate}
-                      onChange={(e) => props.handleSetDueDate(e)}
-                      style={{ height: "3vh" }}
-                    />
-                  </div>
-                  <div
-                    style={{
-                      width: "100%",
-                      backgroundColor: "black",
-                      height: ".05vh",
-                      marginBottom: "1vh",
-                    }}
-                  />
-                  <ModifyProjectButtons
-                    handleModifyOpen={props.handleModifyOpen}
-                    confirm_action={props.handleModifyChecklist}
-                    confirm_text={"Update"}
-                  />
-                </TabPanel>
-              </div>
+                    <Table>
+                      <ListHead headLabel={ASSIGN_USERS_TABLE_HEADERS} />
+                      <TableBody>
+                        {props.checklistUsers &&
+                          props.checklistUsers
+                            .slice(
+                              page * rowsPerPage,
+                              page * rowsPerPage + rowsPerPage
+                            )
+                            .map((row) => {
+                              const {
+                                id,
+                                name,
+                                role,
+                                assigned_projects,
+                                assigned,
+                              } = row;
+                              return (
+                                <ProjectRow
+                                  sx={{
+                                    "&:hover": {
+                                      backgroundColor:
+                                        "rgba(145, 165, 172, 0.5)",
+                                      cursor: "pointer",
+                                    },
+                                  }}
+                                  align="center"
+                                  key={id}
+                                  tabIndex={-1}
+                                  onClick={() =>
+                                    props.handleSetUserSelected(id, assigned)
+                                  }
+                                  selected={props.userSelected === id}
+                                >
+                                  <ProjectCell
+                                    key={name}
+                                    entry={<strong>{name}</strong>}
+                                  />
+                                  <ProjectCell key={role} entry={role} />
+                                  <ProjectCell
+                                    key={assigned}
+                                    entry={assigned}
+                                  />
+                                  <ProjectCell
+                                    key={assigned_projects}
+                                    entry={assigned_projects}
+                                  />
+                                </ProjectRow>
+                              );
+                            })}
+                      </TableBody>
+                    </Table>
+                  </TableCard>
+                </div>
+                <ModifyProjectButtons
+                  handleModifyOpen={props.handleModifyOpen}
+                  confirm_action={props.handleAssignUser}
+                  confirm_text={props.assignmentButtonText}
+                />
+              </TabPanel>
             </Tabs>
           </ModalWrapper>
         </Modal>
@@ -1345,7 +1053,6 @@ export const AddItemModal = (props) => {
           subtitle_text={"Add Items to your Checklist."}
         />
 
-        <Divider />
         <div
           style={{
             display: "flex",
@@ -1418,7 +1125,6 @@ export const AddItemModal = (props) => {
                 }}
               />
             </div>
-            <Divider />
             <div
               style={{
                 display: "flex",
@@ -1442,7 +1148,6 @@ export const AddItemModal = (props) => {
                 }}
               />
             </div>
-            <Divider />
           </>
           {/* BUTTON COMPONENT */}
           <div

@@ -47,14 +47,6 @@ export const AddProjectModal = (props) => {
             "Disclaimer: The Budget calculator assumes each task in the project will only need to be validated once. Validators earn the validation rate for the task regardless of the outcome of the validation, so the final total budget may be higher if some tasks are invalidated, corrected, and later approved."
           }
         />
-        <div
-          style={{
-            width: "100%",
-            backgroundColor: "black",
-            height: ".05vh",
-            marginTop: ".5vh",
-          }}
-        />
         <div style={{ display: "flex", flexDirection: "column" }}>
           <div
             style={{
@@ -323,15 +315,6 @@ export const ModifyProjectModal = (props) => {
                 <TabPanel>
                   <div
                     style={{
-                      width: "90%",
-                      backgroundColor: "black",
-                      height: ".05vh",
-                      margin: "auto",
-                      marginBottom: "1vh",
-                    }}
-                  />
-                  <div
-                    style={{
                       display: "flex",
                       flexDirection: "row",
                       alignItems: "center",
@@ -375,16 +358,6 @@ export const ModifyProjectModal = (props) => {
                   </div>
                   <div
                     style={{
-                      width: "90%",
-                      backgroundColor: "black",
-                      height: ".05vh",
-                      margin: "auto",
-                      marginTop: "1vh",
-                      marginBottom: "1vh",
-                    }}
-                  />
-                  <div
-                    style={{
                       display: "flex",
                       flexDirection: "row",
                       alignItems: "center",
@@ -408,16 +381,6 @@ export const ModifyProjectModal = (props) => {
                       }}
                     />
                   </div>
-
-                  <div
-                    style={{
-                      width: "90%",
-                      backgroundColor: "black",
-                      height: ".05vh",
-                      margin: "auto",
-                      marginBottom: "2vh",
-                    }}
-                  />
                   <div
                     style={{
                       position: "absolute",
@@ -517,13 +480,7 @@ export const ModifyProjectModal = (props) => {
                   />
                 </TabPanel>
                 {/* SETTINGS TAB */}
-                <div
-                  style={{
-                    width: "100%",
-                    backgroundColor: "black",
-                    height: ".05vh",
-                  }}
-                />
+
                 <TabPanel>
                   <div
                     style={{

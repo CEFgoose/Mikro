@@ -37,6 +37,7 @@ export const AdminUsersPage = () => {
   const [deleteOpen, toggleDeleteOpen] = useToggle(false);
   const [modifyOpen, toggleModifyOpen] = useToggle(false);
   const [userSelected, setUserSelected] = useState(null);
+  const [userSelectedName, setUserSelectedName] = useState("");
   const [roleSelected, setRoleSelected] = useState(null);
   const [inviteEmail, setInviteEmail] = useState(null);
   const [form, setForm] = useState({ name: "", desc: "" });
@@ -69,11 +70,14 @@ export const AdminUsersPage = () => {
   const handleModifyOpen = () => {
     if (userSelected !== null) {
       toggleModifyOpen();
+    } else {
+      alert("No user selected");
     }
   };
 
-  const handleSetUserSelected = (id) => {
+  const handleSetUserSelected = (id, name) => {
     setUserSelected(id);
+    setUserSelectedName(name);
   };
 
   const handleRoleSelected = (e) => {
@@ -144,6 +148,7 @@ export const AdminUsersPage = () => {
       <DeleteUserModal
         deleteOpen={deleteOpen}
         selected_user={userSelected}
+        selected_user_name={userSelectedName}
         handleDeleteOpen={handleDeleteOpen}
         do_remove_user={do_remove_user}
       />
@@ -231,7 +236,7 @@ export const AdminUsersPage = () => {
                       align="center"
                       key={row}
                       tabIndex={-1}
-                      onClick={() => handleSetUserSelected(id)}
+                      onClick={() => handleSetUserSelected(id, name)}
                       selected={userSelected === id}
                     >
                       <ProjectCell entry={<strong>{name}</strong>} />

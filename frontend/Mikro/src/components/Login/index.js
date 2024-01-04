@@ -15,6 +15,8 @@ import {
   LoginPage,
 } from "./styles";
 
+import "../../App.css";
+
 //VARIABLES
 var checkrole;
 
@@ -80,7 +82,6 @@ export const Login = () => {
         }
       })
 
-      
       .catch((error) => {
         setFetching(false);
         if (error.status && error.status === 400) {
@@ -119,7 +120,7 @@ export const Login = () => {
           }}
         >
           <LoginImage src={kaartLogo} alt="Kaart Logo" />
-          <LoginInput
+          <input
             name="email"
             type="text"
             autoComplete="username"
@@ -127,7 +128,7 @@ export const Login = () => {
             value={email}
             onChange={onEmailChange}
           />
-          <LoginInput
+          <input
             name="password"
             type="password"
             autoComplete="current-password"
