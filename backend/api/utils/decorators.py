@@ -4,11 +4,20 @@ import pstats
 from functools import wraps
 from enum import IntFlag
 from flask import g, request
+from flask_jwt_extended import verify_jwt_in_request
 
 """
 If these enums/intflags are modified, please update relevant
 enums in frontend/Mikro/src/components/constants.js
 """
+
+"""
+
+Set these to true when testing
+
+"""
+DISABLE_JWT_VERIFICATION = False
+DISABLE_ADMIN_VERIFICATION = False
 
 
 class TeamRole(IntFlag):
@@ -53,13 +62,25 @@ def profile(func):  # pragma: no cover
 def requires_admin(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
+        if DISABLE_ADMIN_VERIFICATION:
+            return f(*args, **kwargs)
         if g.user.role != "admin":
-            return {
-                "message": "You must be an admin to perform this action."
-            }, 401
+            return {"message": "You must be an admin to perform this action."}, 401
         return f(*args, **kwargs)
 
     return decorated_function
+
+
+def jwt_verification(f):
+    @wraps(f)
+    def wrapper(*args, **kwargs):
+        if (
+            not app.configDISABLE_JWT_VERIFICATION
+        ):  # Make sure to define DISABLE_JWT_VERIFICATION in your code
+            verify_jwt_in_request()
+        return f(*args, **kwargs)
+
+    return wrapper
 
 
 def verify_access_to_resources(f):

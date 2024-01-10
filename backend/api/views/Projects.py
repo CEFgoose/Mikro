@@ -1,4 +1,4 @@
-from ..utils import requires_admin
+from ..utils import requires_admin, jwt_verification
 import requests
 import re
 from ..database import (
@@ -12,16 +12,13 @@ from ..database import (
 )
 from flask.views import MethodView
 from flask import g, request
-from flask_jwt_extended import (
-    jwt_required,
-)
 
 from datetime import datetime, timedelta
 from sqlalchemy import func
 
 
 class ProjectAPI(MethodView):
-    @jwt_required()
+    @jwt_verification
     def post(self, path: str):
         if path == "create_project":
             return self.create_project()
@@ -58,20 +55,7 @@ class ProjectAPI(MethodView):
 
     @requires_admin
     def create_project(self):
-        response = {}
-        # Check if user is authenticated
-        if not g:
-            response["message"] = "User not found"
-            response["status"] = 304
-            return response
         # Check if required data is provided
-        url = request.json.get("url")
-        rateType = request.json.get("rate_type")
-        mapping_rate = float(request.json.get("mapping_rate"))
-        validation_rate = float(request.json.get("validation_rate"))
-        max_editors = request.json.get("max_editors")
-        max_validators = request.json.get("max_validators")
-        visibility = request.json.get("visibility")
         required_args = [
             "url",
             "rate_type",
@@ -79,10 +63,22 @@ class ProjectAPI(MethodView):
             "validation_rate",
             "max_editors",
             "visibility",
+            "max_validators",
         ]
+
         for arg in required_args:
             if not request.json.get(arg):
                 return {"message": f"{arg} required", "status": 400}
+
+        # Assign the data to variables
+        url = request.json.get("url")
+        rateType = request.json.get("rate_type")
+        mapping_rate = float(request.json.get("mapping_rate"))
+        validation_rate = float(request.json.get("validation_rate"))
+        max_editors = request.json.get("max_editors")
+        max_validators = request.json.get("max_validators")
+        visibility = request.json.get("visibility")
+
         # Extract project ID from URL
         m = re.match(r"^.*\/([0-9]+)$", url)
         if not m:
@@ -123,7 +119,8 @@ class ProjectAPI(MethodView):
         #     rate = float(rate)
         #     rate = rate / totalTasks
         #     calculation = rate
-
+        if not hasattr(g, "user") or not g.user:
+            return {"message": "Missing user info", "status": 304}
         # Create new project
         if mapping_rate >= 0.01 and validation_rate >= 0.01:
             Project.create(
@@ -148,10 +145,8 @@ class ProjectAPI(MethodView):
     def update_project(self):
         response = {}
         # Check if user is authenticated
-        if not g:
-            response["message"] = "User not found"
-            response["status"] = 304
-            return response
+        if not hasattr(g, "user") or not g.user:
+            return {"message": "Missing user info", "status": 304}
         # Check if required data is provided
         project_id = request.json.get("project_id")
         difficulty = request.json.get("difficulty")
@@ -187,16 +182,7 @@ class ProjectAPI(MethodView):
         # Calculate payment rate and rate based on rate type
         if mapping_rate != 0 and validation_rate != 0:
             if rate_type is True:
-                # validation_calculation = (
-                #     validation_rate * target_project.total_tasks
-                # )
                 mapping_calculation = mapping_rate * target_project.total_tasks
-            # FOR TOTAL BUDGET, UNCOMMENT WHEN VALIDATION RATE CALC SORTED
-            # elif rate_type is False:
-            #     rate = float(rate)
-            #     rate = rate / target_project.total_tasks
-            #     calculation = rate
-
             target_project.update(
                 mapping_rate_per_task=mapping_rate,
                 max_payment=float(mapping_calculation),
@@ -213,7 +199,6 @@ class ProjectAPI(MethodView):
             target_project.update(
                 max_validators=max_validators,
             )
-        # Put logic here to process remaining payouts or whatever else before deletion  # noqa: E501
         response["status"] = 200
         return response
 
@@ -221,10 +206,8 @@ class ProjectAPI(MethodView):
     def delete_project(self):
         response = {}
         # Check if user is authenticated
-        if not g:
-            response["message"] = "User not found"
-            response["status"] = 304
-            return response
+        if not hasattr(g, "user") or not g.user:
+            return {"message": "Missing user info", "status": 304}
         # Check if required data is provided
         project_id = request.json.get("project_id")
         if not project_id:
@@ -245,27 +228,19 @@ class ProjectAPI(MethodView):
 
     @requires_admin
     def calculate_budget(self):
-        response = {}
         # Check if user is authenticated
-        if not g:
-            response["message"] = "User not found"
-            response["status"] = 304
-            return response
+        if not hasattr(g, "user") or not g.user:
+            return {"message": "Missing user info", "status": 304}
         url = request.json.get("url")
-        rate_type = request.json.get("rate_type")
-        if not rate_type:
-            rate_type = False
+        rate_type = bool(request.json.get("rate_type"))
         mapping_rate = request.json.get("mapping_rate")
         validation_rate = request.json.get("validation_rate")
         project_id = request.json.get("project_id")
-        required_args = ["mapping_rate", "validation_rate"]
+        required_args = ["mapping_rate", "validation_rate", "project_id", "url"]
         # Check required inputs
         for arg in required_args:
             if not request.json.get(arg):
                 return {"message": f"{arg} required", "status": 400}
-        if not url:
-            if not project_id:
-                return {"message": "url or project_id required", "status": 400}
         # Determine stats API URL
         if project_id is not None:
             # Fetch project data
@@ -323,25 +298,6 @@ class ProjectAPI(MethodView):
             return_text = f"${mapping_rate:.2f}(Mapping) + ${validation_rate:.2f}(Validation)  x {total_tasks} Tasks = Projected Budget: ${total_projected_budget:.2f}"  # noqa: E501
 
             return {"calculation": return_text, "status": 200}
-        # elif rate_type is False:
-        #     rate = float(rate)
-        #     dollars = int(rate)
-        #     cents = int(rate % 1 * 100)
-        #     dollarcents = dollars * 100 + cents
-        #     calculation = dollarcents / total_tasks
-        #     if calculation <= 0.10:
-        #         calculation /= 10
-        #     else:
-        #         calculation /= 100
-        #     adjusted_budget = total_tasks / 100
-        #     return_text = f"${rate:.2f} / {total_tasks} tasks =  ${calculation:.2f} per task."  # noqa: E501
-        #     adjust_budget_text = (
-        #         f"  - Recommended adjusted budget = ${adjusted_budget:.2f}"
-        #     )
-        #     if calculation < 0.01:
-        #         return_text = f"${rate:.2f} / {total_tasks} tasks =   less than $0.01 per task."  # noqa: E501
-        #         return_text += adjust_budget_text
-        #     return {"calculation": return_text, "status": 200}
 
     @requires_admin
     def fetch_org_projects(self):
