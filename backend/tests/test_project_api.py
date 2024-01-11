@@ -482,4 +482,4 @@ def test_user_join_project_the_same_project_twice(client):
     response_json = result.json
     print(response_json)
     status_code = response_json.get("status")
-    assert status_code == 200
+    assert status_code == 400

@@ -212,13 +212,6 @@ class ProjectAPI(MethodView):
         project_id = request.json.get("project_id")
         if not project_id:
             return {"message": "project_id required", "status": 400}
-        print(vars(g.user))
-        try:
-            print(g.user.org_id)
-        except Exception as e:
-            print(f"Error setting g.user: {e}")
-            # Optionally, raise the exception to propagate it further
-            raise
         target_project = Project.query.filter_by(
             org_id=g.user.org_id, id=project_id
         ).first()
@@ -920,7 +913,7 @@ class ProjectAPI(MethodView):
             return {
                 "message": "User %s has already joined project %s"
                 % (g.user.id, project_id),
-                "status": 200,
+                "status": 400,
             }
         ProjectUser.create(project_id=project_id, user_id=g.user.id)
         count = target_project.total_editors + 1

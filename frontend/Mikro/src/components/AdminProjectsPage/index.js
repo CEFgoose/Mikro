@@ -2,7 +2,6 @@ import React, { useContext, useState, useEffect } from "react";
 import { DataContext } from "common/DataContext";
 import { AuthContext } from "../../common/AuthContext";
 import useToggle from "../../hooks/useToggle.js";
-import Sidebar from "../sidebar/sidebar";
 import "./styles.css";
 import { Tab, TabList, TabPanel, Tabs } from "react-tabs";
 import { ProjectCardGrid } from "components/commonComponents/commonComponents";

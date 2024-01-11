@@ -14,6 +14,7 @@ import logouticon from "../../images/newIcons/round2/log out.png";
 import expand_icon from "../../images/Open Menu.svg";
 import minimize_icon from "../../images/Close Menu.svg";
 import mikroLogo from "../../images/5.png";
+import account_icon from "../../images/newIcons/round2/account.png";
 
 import "./styles.css";
 import {
@@ -218,14 +219,7 @@ const Sidebar = (props) => {
             <Header>{sidebarOpen ? "Payments" : ""}</Header>
           </MenuItem>
         </NavLink>
-
-        <NavLink to={"/login"} style={{ textDecoration: "none" }}>
-          <MenuItem onClick={logout}>
-            <ProjectIcon onClick={logout} src={logouticon} />
-            <Header onClick={logout}>{sidebarOpen ? "Logout" : ""}</Header>
-          </MenuItem>
-        </NavLink>
-        {/* {role === "admin" ? (
+        {role === "admin" ? (
           <NavLink to={"/AdminAccountPage"} style={{ textDecoration: "none" }}>
             <MenuItem style={{ width: "100%" }}>
               <ProjectIcon src={account_icon} />
@@ -239,7 +233,14 @@ const Sidebar = (props) => {
               <Header>{sidebarOpen ? "Account" : ""}</Header>
             </MenuItem>
           </NavLink>
-        )} */}
+        )}
+        <NavLink to={"/login"} style={{ textDecoration: "none" }}>
+          <MenuItem onClick={logout}>
+            <ProjectIcon onClick={logout} src={logouticon} />
+            <Header onClick={logout}>{sidebarOpen ? "Logout" : ""}</Header>
+          </MenuItem>
+        </NavLink>
+
         {/* <NavLink to={"/FAQPage"} style={{ textDecoration: "none" }}>
           <MenuItem style={{ width: "100%" }}>
             <ProjectIcon src={faq_icon} />

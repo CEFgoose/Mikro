@@ -183,7 +183,9 @@ function App() {
               <Route path="/UserTrainingPage" element={<Root />}>
                 <Route index element={<UserTrainingPage />} />
               </Route>
-              <Route path="/UserAccountPage" element={<UserAccountPage />} />
+              <Route path="/UserAccountPage" element={<Root />}>
+                <Route index element={<UserAccountPage />} />
+              </Route>
 
               {/* Other Routes */}
               <Route path="/registerUser" element={<RegisterUser />} />

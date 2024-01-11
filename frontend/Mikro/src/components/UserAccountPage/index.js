@@ -2,15 +2,15 @@ import React, { useContext, useEffect } from "react";
 import { DataContext } from "common/DataContext";
 import { AuthContext } from "common/AuthContext";
 import useToggle from "../../hooks/useToggle.js";
-import Sidebar from "../sidebar/sidebar.js";
-import "./styles.css";
 import {
   TableCard,
   CardMediaStyle,
   SectionTitle,
   StyledButton,
   ConfirmModalCommon,
+  InputWithLabel,
 } from "components/commonComponents/commonComponents";
+import "../../App.css";
 
 export const UserAccountPage = () => {
   const {
@@ -21,11 +21,9 @@ export const UserAccountPage = () => {
     country,
     email,
     payEmail,
-    sidebarOpen,
     fetchUserDetails,
     updateUserDetails,
     handleUserDetailsStates,
-    handleSetSidebarState,
     history,
   } = useContext(DataContext);
 
@@ -36,21 +34,12 @@ export const UserAccountPage = () => {
     if (user) {
       refresh();
     }
-    if (user === null) {
+    if (user === null || (user.role !== "user" && user.role !== "validator")) {
       history("/login");
-    }
-    if (user !== null) {
-      if (user.role !== "user" && user.role !== "validator") {
-        history("/login");
-      }
     }
     fetchUserDetails();
     // eslint-disable-next-line
   }, []);
-
-  const handleViewSidebar = () => {
-    handleSetSidebarState();
-  };
 
   const handleModalOpen = () => {
     toggleModalOpen();
@@ -76,245 +65,82 @@ export const UserAccountPage = () => {
         button_2_text="Cancel"
         button_2_action={handleModalOpen}
       />
-      <div
-        style={{
-          display: "flex",
-          flexDirection: "row",
-          width: "100%",
-          height: "100%",
-          float: "left",
-        }}
-      >
-        <Sidebar isOpen={sidebarOpen} />
-        <div style={{ width: "100%", height: "100%" }}>
-          <div
-            style={{
-              display: "flex",
-              position: "relative",
-              marginLeft: ".5vw",
-              flexDirection: "column",
-              height: "100vh",
-            }}
-          >
-            <div
-              style={{
-                display: "flex",
-                marginLeft: "5vh",
-                flexDirection: "row",
-              }}
-            >
-              <h1
-                style={{
-                  marginLeft: ".5vw",
-                  marginTop: "1vw",
-                  paddingBottom: "2vh",
-                }}
-              >
-                <strong>Account:</strong>
-              </h1>
-              <div
-                style={{
-                  marginTop: "2vw",
-                  position: "relative",
-                  top: "2vh",
-                  left: "61vw",
-                }}
-              >
-                <StyledButton
-                  button_text={"submit"}
-                  button_action={handleConfirmUpdateUserDetails}
-                />
-              </div>
-            </div>
-            <div
-              style={{
-                display: "flex",
-                flexDirection: "row",
-                marginLeft: "3vw",
-                marginTop: "1vw",
-                height: "50%",
-                width: "79vw",
-              }}
-            >
-              <TableCard style={{ boxShadow: "1px 1px 6px 2px gray" }}>
-                <CardMediaStyle />
 
-                <div
-                  style={{
-                    display: "flex",
-                    flexDirection: "row",
-                    height: "15vh",
-                    marginTop: "0vh",
-                    marginBottom: "0vh",
-                  }}
-                >
-                  <div
-                    style={{
-                      display: "flex",
-                      flexDirection: "row",
-                      alignItems: "center",
-                    }}
-                  >
-                    <SectionTitle title_text={"First Name:"} bold={true} />
-                    <input
-                      type="text"
-                      value={firstName}
-                      onChange={(e) => handleUserDetailsStates("first_name", e)}
-                      style={{
-                        height: "5vh",
-                        marginRight: "2vw",
-                        width: "13vw",
-                      }}
-                    />
-                  </div>
+      <TableCard>
+        <CardMediaStyle />
 
-                  <div
-                    style={{
-                      display: "flex",
-                      flexDirection: "row",
-                      alignItems: "center",
-                    }}
-                  >
-                    <SectionTitle title_text={"Last Name:"} bold={true} />
-                    <input
-                      type="text"
-                      value={lastName}
-                      onChange={(e) => handleUserDetailsStates("last_name", e)}
-                      style={{
-                        height: "5vh",
-                        marginRight: "2vw",
-                        width: "13vw",
-                      }}
-                    />
-                  </div>
-
-                  <div
-                    style={{
-                      display: "flex",
-                      flexDirection: "row",
-                      alignItems: "center",
-                    }}
-                  >
-                    <SectionTitle title_text={"OSM Username:"} bold={true} />
-                    <input
-                      type="text"
-                      value={OSMname}
-                      onChange={(e) => handleUserDetailsStates("osm_name", e)}
-                      style={{
-                        height: "5vh",
-                        marginRight: "2vw",
-                        width: "13vw",
-                      }}
-                    />
-                  </div>
-                </div>
-
-                <div
-                  style={{
-                    display: "flex",
-                    flexDirection: "row",
-                    height: "15vh",
-                    marginTop: "0vh",
-                    marginBottom: "0vh",
-                    justifyContent: "center",
-                  }}
-                >
-                  <div
-                    style={{
-                      display: "flex",
-                      flexDirection: "row",
-                      alignItems: "center",
-                    }}
-                  >
-                    <SectionTitle title_text={"City:"} bold={true} />
-                    <input
-                      type="text"
-                      value={city}
-                      onChange={(e) => handleUserDetailsStates("city", e)}
-                      style={{
-                        height: "5vh",
-                        marginRight: "5vw",
-                        width: "15vw",
-                      }}
-                    />
-                  </div>
-
-                  <div
-                    style={{
-                      display: "flex",
-                      flexDirection: "row",
-                      alignItems: "center",
-                    }}
-                  >
-                    <SectionTitle title_text={"Country:"} bold={true} />
-                    <input
-                      type="text"
-                      value={country}
-                      onChange={(e) => handleUserDetailsStates("country", e)}
-                      style={{
-                        height: "5vh",
-                        marginRight: "5vw",
-                        width: "15vw",
-                      }}
-                    />
-                  </div>
-                </div>
-
-                <div
-                  style={{
-                    display: "flex",
-                    flexDirection: "row",
-                    height: "15vh",
-                    justifyContent: "center",
-                    marginTop: "0vh",
-                    marginBottom: "0vh",
-                  }}
-                >
-                  <div
-                    style={{
-                      display: "flex",
-                      flexDirection: "row",
-                      alignItems: "center",
-                    }}
-                  >
-                    <SectionTitle title_text={"Personal Email:"} bold={true} />
-                    <input
-                      type="text"
-                      value={email}
-                      onChange={(e) => handleUserDetailsStates("email", e)}
-                      style={{
-                        height: "5vh",
-                        marginRight: "5vw",
-                        width: "20vw",
-                      }}
-                    />
-                  </div>
-
-                  <div
-                    style={{
-                      display: "flex",
-                      flexDirection: "row",
-                      alignItems: "center",
-                    }}
-                  >
-                    <SectionTitle title_text={"Payment Email:"} bold={true} />
-                    <input
-                      type="text"
-                      value={payEmail}
-                      onChange={(e) => handleUserDetailsStates("pay_email", e)}
-                      style={{
-                        height: "5vh",
-                        marginRight: "5vw",
-                        width: "20vw",
-                      }}
-                    />
-                  </div>
-                </div>
-              </TableCard>
-            </div>
-          </div>
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "row",
+            alignItems: "center",
+          }}
+        >
+          <InputWithLabel
+            label="First Name:"
+            type="text"
+            value={firstName}
+            onChange={(e) => handleUserDetailsStates("first_name", e)}
+          />
+          <InputWithLabel
+            label="Last Name:"
+            type="text"
+            value={lastName}
+            onChange={(e) => handleUserDetailsStates("last_name", e)}
+          />
+          <InputWithLabel
+            label="OSM Username:"
+            type="text"
+            value={OSMname}
+            onChange={(e) => handleUserDetailsStates("osm_name", e)}
+          />
         </div>
-      </div>
+
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "row",
+          }}
+        >
+          <InputWithLabel
+            label="City:"
+            type="text"
+            value={city}
+            onChange={(e) => handleUserDetailsStates("city", e)}
+          />
+          <InputWithLabel
+            label="Country:"
+            type="text"
+            value={country}
+            onChange={(e) => handleUserDetailsStates("country", e)}
+          />
+        </div>
+
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "row",
+          }}
+        >
+          <InputWithLabel
+            label="Email:"
+            type="text"
+            value={email}
+            onChange={(e) => handleUserDetailsStates("email", e)}
+          />
+          <InputWithLabel
+            label="Payment Email:"
+            type="text"
+            value={payEmail}
+            onChange={(e) => handleUserDetailsStates("pay_email", e)}
+          />
+        </div>
+
+        <StyledButton
+          button_text={"submit"}
+          button_action={handleConfirmUpdateUserDetails}
+        />
+      </TableCard>
     </>
   );
 };
