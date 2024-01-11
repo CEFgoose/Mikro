@@ -55,6 +55,8 @@ class ProjectAPI(MethodView):
 
     @requires_admin
     def create_project(self):
+        if not g.user:
+            return {"message": "Missing user info", "status": 304}
         # Check if required data is provided
         required_args = [
             "url",
@@ -119,8 +121,6 @@ class ProjectAPI(MethodView):
         #     rate = float(rate)
         #     rate = rate / totalTasks
         #     calculation = rate
-        if not hasattr(g, "user") or not g.user:
-            return {"message": "Missing user info", "status": 304}
         # Create new project
         if mapping_rate >= 0.01 and validation_rate >= 0.01:
             Project.create(
@@ -206,12 +206,19 @@ class ProjectAPI(MethodView):
     def delete_project(self):
         response = {}
         # Check if user is authenticated
-        if not hasattr(g, "user") or not g.user:
+        if not g.user:
             return {"message": "Missing user info", "status": 304}
         # Check if required data is provided
         project_id = request.json.get("project_id")
         if not project_id:
             return {"message": "project_id required", "status": 400}
+        print(vars(g.user))
+        try:
+            print(g.user.org_id)
+        except Exception as e:
+            print(f"Error setting g.user: {e}")
+            # Optionally, raise the exception to propagate it further
+            raise
         target_project = Project.query.filter_by(
             org_id=g.user.org_id, id=project_id
         ).first()
@@ -708,11 +715,11 @@ class ProjectAPI(MethodView):
 
     def fetch_user_projects(self):
         # Check if user is authenticated
-        if not g:
+        if not g.user:
             return {"message": "User not found", "status": 304}
         # Get all projects for the organization
-        org_active_projects = []
-        org_inactive_projects = []
+        user_projects = []
+
         all_user_project_ids = [
             relation.project_id
             for relation in ProjectUser.query.filter_by(user_id=g.user.id).all()
@@ -772,31 +779,11 @@ class ProjectAPI(MethodView):
                     and task.invalidated is True
                 ]
             )
-            # user_project_validated_tasks = len(
-            #     [
-            #         task
-            #         for task in all_project_tasks
-            #         if task.mapped == True
-            #         and task.validated is True
-            #         and task.invalidated is False
-            #         and task.validated_by is g.user.osm_username
-            #     ]
-            # )
-            # user_project_invalidated_tasks = len(
-            #     [
-            #         task
-            #         for task in all_project_tasks
-            #         if task.mapped is True
-            #         and task.validated is False
-            #         and task.invalidated is True
-            #         and task.validated_by is g.user.osm_username
-            #     ]
-            # )
             user_mapping_earnings = (
                 project.mapping_rate_per_task * user_project_approved_tasks
             )
             user_project_earnings = user_mapping_earnings
-            org_active_projects.append(
+            user_projects.append(
                 {
                     "id": project.id,
                     "name": project.name,
@@ -825,7 +812,7 @@ class ProjectAPI(MethodView):
                 }
             )
         for project in user_available_projects:
-            org_inactive_projects.append(
+            user_projects.append(
                 {
                     "id": project.id,
                     "name": project.name,
@@ -850,8 +837,7 @@ class ProjectAPI(MethodView):
                 }
             )
         return {
-            "org_active_projects": org_active_projects,
-            "org_inactive_projects": org_inactive_projects,
+            "user_projects": user_projects,
             "message": "Projects found",
             "status": 200,
         }
@@ -915,20 +901,30 @@ class ProjectAPI(MethodView):
 
     def user_join_project(self):
         # Check if user is authenticated
-        if not g:
+        if not g.user:
             return {"message": "User not found", "status": 304}
         project_id = request.json.get("project_id")
         if not project_id:
             return {"message": "project_id required", "status": 400}
-        ProjectUser.create(project_id=project_id, user_id=g.user.id)
         target_project = Project.query.filter_by(id=project_id).first()
         if not target_project:
             return {
                 "message": "project %s not found" % (project_id),
                 "status": 400,
             }
-        new_editor_count = target_project.total_editors + 1
-        target_project.update(total_editors=new_editor_count)
+        existing_user_project_relation = ProjectUser.query.filter_by(
+            project_id=project_id, user_id=g.user.id
+        ).first()
+
+        if existing_user_project_relation:
+            return {
+                "message": "User %s has already joined project %s"
+                % (g.user.id, project_id),
+                "status": 200,
+            }
+        ProjectUser.create(project_id=project_id, user_id=g.user.id)
+        count = target_project.total_editors + 1
+        target_project.update(total_editors=count)
         return {
             "message": "User %s has joined project %s" % (g.user.id, project_id),
             "status": 200,
@@ -964,7 +960,8 @@ class ProjectAPI(MethodView):
         # Check if user is authenticated
         if not g:
             return {"message": "User not found", "status": 304}
-        # Get all projects for the organization
+
+        # Get all projects for the validator
         org_active_projects = []
         org_inactive_projects = []
         all_user_project_ids = [

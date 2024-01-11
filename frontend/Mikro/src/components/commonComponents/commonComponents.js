@@ -1277,53 +1277,19 @@ export const ProjectCard = (props) => {
   return (
     <ProjectCardContainer
       key={props.id}
-      onDoubleClick={() => {
+      onClick={() => {
         window.open(props.url, "_blank");
+        props.handleSetProjectSelected(props.id);
       }}
     >
-      <AdminCardMediaStyle>
-        <input
-          type={"checkbox"}
-          id={props.id}
-          value={props.id}
-          checked={props.id === props.projectSelected}
-          onChange={(e) => {
-            if (props.id === props.projectSelected) {
-              props.handleSetProjectSelected(null, props.name);
-            } else {
-              props.handleSetProjectSelected(props.id, props.name);
-            }
-          }}
-          style={{
-            marginLeft: "1vw",
-            marginBottom: "1vh",
-          }}
-        />
-      </AdminCardMediaStyle>
+      <CardMediaStyle />
       <div
         style={{
-          display: "flex",
-          flexDirection: "column",
-          justifyContent: "center",
           padding: "1vw",
           gap: ".5vw",
         }}
       >
-        <div
-          style={{
-            display: "flex",
-            flexDirection: "row",
-            justifyContent: "space-between",
-          }}
-        >
-          <p>
-            Editors: {props.total_editors}/{props.max_editors}{" "}
-          </p>
-          <p>
-            Validators: {props.total_editors}/{props.max_editors}{" "}
-          </p>
-          <p>{`${props.difficulty}`}</p>
-        </div>
+        <p>{`${props.difficulty}`}</p>
         <h3>{props.name}</h3>
 
         <p>Mapping Rate: {`$${props.mapping_rate_per_task.toFixed(2)}`}</p>
@@ -1350,22 +1316,6 @@ export const ProjectCard = (props) => {
           current={props.tasks_mapped + props.tasks_validated}
           total={props.total_tasks * 2}
         />
-
-        {/* <button
-          style={{
-            borderRadius: "6px",
-            backgroundColor: "#fd7e14",
-            width: "100%",
-            border: "none",
-            height: "30px",
-            cursor: "pointer",
-          }}
-          onClick={() => {
-            window.open(props.url, "_blank");
-          }}
-        >
-          Start Mapping
-        </button> */}
       </div>
     </ProjectCardContainer>
   );

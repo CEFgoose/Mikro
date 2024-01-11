@@ -184,7 +184,7 @@ export const TermsModal = (props) => {
           />
           <StyledButton
             button_text={"ok"}
-            button_action={() => props.handleSetModalPage(5)}
+            button_action={() => props.handleModalOpen()}
           />
         </div>
       </ModalWrapper>

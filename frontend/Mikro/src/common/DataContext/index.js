@@ -61,6 +61,7 @@ export const DataProvider = ({ children }) => {
   const [inactiveProjects, setInactiveProjects] = useState(null);
   const [activeProjectsCount, setActiveProjectsCount] = useState(null);
   const [inactiveProjectsCount, setInactiveProjectsCount] = useState(null);
+  const [userProjects, setUserProjects] = useState(null);
   const [completedProjects, setCompletedProjects] = useState(null);
   const [tasksMapped, setTasksMapped] = useState(null);
   const [tasksValidated, setTasksValidated] = useState(null);
@@ -914,8 +915,7 @@ export const DataProvider = ({ children }) => {
     let fetchUserURL = "project/fetch_user_projects";
     fetcher(fetchUserURL).then((response) => {
       if (response.status === 200) {
-        setActiveProjects(response.org_active_projects);
-        setInactiveProjects(response.org_inactive_projects);
+        setUserProjects(response.user_projects);
         return;
       } else if (response.status === 304) {
         history("/login");
@@ -1599,6 +1599,8 @@ export const DataProvider = ({ children }) => {
     setTutorialStepTitle,
     tutorialStepContent,
     setTutorialStepContent,
+
+    userProjects,
   };
 
   return value ? (

@@ -1,31 +1,19 @@
 import React, { useContext, useState, useEffect } from "react";
 import { DataContext } from "common/DataContext";
 import { AuthContext } from "../../common/AuthContext";
-import useToggle from "../../hooks/useToggle.js";
-import { ButtonDivComponent } from "components/commonComponents/commonComponents";
 import "./styles.css";
-import { Tab, TabList, TabPanel, Tabs } from "react-tabs";
-import { UserProjectModal } from "./projectComponents";
 import { ProjectCardGrid } from "components/commonComponents/commonComponents";
 export const UserProjectsPage = () => {
   const {
-    sidebarOpen,
-    handleSetSidebarState,
     fetchUserProjects,
-    activeProjects,
-    inactiveProjects,
+    userProjects,
     userJoinProject,
-    userLeaveProject,
     goToSource,
     history,
   } = useContext(DataContext);
 
   const { refresh, user } = useContext(AuthContext);
-  const [modalOpen, toggleModalOpen] = useToggle(false);
   const [projectSelected, setProjectSelected] = useState(null);
-  const [projectName, setProjectName] = useState(null);
-
-  const [activeTab, setActiveTab] = useState(1);
 
   useEffect(() => {
     if (user) {
@@ -43,89 +31,24 @@ export const UserProjectsPage = () => {
     // eslint-disable-next-line
   }, []);
 
-  const handleSetActiveTab = (e) => {
-    setActiveTab(e.target.value);
-  };
-
-  const handleSetModalOpen = () => {
-    if (projectSelected !== null) {
-      toggleModalOpen();
-    }
-  };
-
-  const handleSetProjectSelected = (projectID, projectName) => {
+  const handleSetProjectSelected = (projectID) => {
     setProjectSelected(parseInt(projectID));
-    setProjectName(projectName);
-  };
-
-  const handleUserLeaveProject = () => {
-    userLeaveProject(projectSelected);
-    toggleModalOpen();
+    handleUserJoinProject();
   };
 
   const handleUserJoinProject = () => {
     userJoinProject(projectSelected);
-    toggleModalOpen();
   };
 
   return (
     <>
-      <UserProjectModal
-        modalOpen={modalOpen}
-        handleSetModalOpen={handleSetModalOpen}
+      <ProjectCardGrid
+        key={1}
+        goToSource={goToSource}
+        projects={userProjects}
+        handleSetProjectSelected={handleSetProjectSelected}
         projectSelected={projectSelected}
-        projectName={projectName}
-        confirm_text={activeTab === 1 ? "Leave" : "Join"}
-        cancel_action={handleSetModalOpen}
-        confirm_action={
-          activeTab === 1 ? handleUserLeaveProject : handleUserJoinProject
-        }
       />
-
-      <div
-        style={{
-          position: "absolute",
-          right: "10vw",
-        }}
-      >
-        <ButtonDivComponent
-          button1={true}
-          button2={false}
-          button3={false}
-          button1_text={activeTab === 1 ? "Leave" : "Join"}
-          button2_text={"Edit"}
-          button3_text={"Delete"}
-          button1_action={handleSetModalOpen}
-        />
-      </div>
-      <Tabs>
-        <TabList>
-          <Tab value={1} onClick={(e) => handleSetActiveTab(e)}>
-            Joined
-          </Tab>
-          <Tab value={2} onClick={(e) => handleSetActiveTab(e)}>
-            Available
-          </Tab>
-        </TabList>
-        <TabPanel>
-          <ProjectCardGrid
-            key={1}
-            goToSource={goToSource}
-            projects={activeProjects}
-            handleSetProjectSelected={handleSetProjectSelected}
-            projectSelected={projectSelected}
-          />
-        </TabPanel>
-        <TabPanel>
-          <ProjectCardGrid
-            key={2}
-            goToSource={goToSource}
-            projects={inactiveProjects}
-            handleSetProjectSelected={handleSetProjectSelected}
-            projectSelected={projectSelected}
-          />
-        </TabPanel>
-      </Tabs>
     </>
   );
 };

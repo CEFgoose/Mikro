@@ -16,6 +16,9 @@ enums in frontend/Mikro/src/components/constants.js
 Set these to true when testing
 
 """
+# DISABLE_JWT_VERIFICATION = True
+# DISABLE_ADMIN_VERIFICATION = True
+
 DISABLE_JWT_VERIFICATION = False
 DISABLE_ADMIN_VERIFICATION = False
 
