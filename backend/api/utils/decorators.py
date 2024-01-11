@@ -75,7 +75,7 @@ def jwt_verification(f):
     @wraps(f)
     def wrapper(*args, **kwargs):
         if (
-            not app.configDISABLE_JWT_VERIFICATION
+            not DISABLE_JWT_VERIFICATION
         ):  # Make sure to define DISABLE_JWT_VERIFICATION in your code
             verify_jwt_in_request()
         return f(*args, **kwargs)

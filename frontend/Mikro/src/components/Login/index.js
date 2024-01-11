@@ -49,7 +49,6 @@ export const Login = () => {
     let city;
     fetch(url, {
       method: "post",
-      // mode: "cors",
       credentials: "include",
       headers: {
         "X-CSRF-TOKEN": `${Cookie.get("csrf_access_token")}`,
@@ -61,14 +60,26 @@ export const Login = () => {
       })
       .then((response) => {
         setFetching(false);
-        setUser(response);
-        checkrole = response.role;
-        osm_username = response.osm_username;
-        payment_email = response.payment_email;
-        city = response.city;
-        country = response.country;
+        const updatedResponse = { ...response }; // Create a new object
+
+        Object.entries(response).forEach((entry) => {
+          const [key, value] = entry;
+          console.log(`${key}: ${value}`);
+          if (!value) {
+            const storedValue = localStorage.getItem(key);
+            updatedResponse[key] = storedValue; // Update the property in the new object
+          }
+        });
+
+        console.log("here");
+        setUser(updatedResponse);
+        checkrole = updatedResponse.role;
+        osm_username = updatedResponse.osm_username;
+        payment_email = updatedResponse.payment_email;
+        city = updatedResponse.city;
+        country = updatedResponse.country;
       })
-      .then((response) => {
+      .then(() => {
         if (!osm_username || !payment_email || !city || !country) {
           history("/welcome");
         } else {
@@ -81,7 +92,6 @@ export const Login = () => {
           );
         }
       })
-
       .catch((error) => {
         setFetching(false);
         if (error.status && error.status === 400) {

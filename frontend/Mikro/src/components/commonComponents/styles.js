@@ -15,7 +15,7 @@ export const Button = styled.div`
   color: white;
   text-transform: capitalize;
   background-color: #253e45;
-  width: 8rem;
+  width: 9rem;
   min-height: 2.8em;
   margin-right: 1vw;
   height: 2.8em;
