@@ -35,8 +35,12 @@ ASCII_LINE_FEED = b"\x0A"
 
 SSO_BASE_URL = "https://my.kaart.com/api/"
 API_BASE_URL = "https://mikro.kaart.com/api"
+DISABLE_JWT_VERIFICATION = False
+DISABLE_ADMIN_VERIFICATION = False
 
 # DEV
 
 # SSO_BASE_URL = "http://127.0.0.1:5001/api/"
 # API_BASE_URL = "http://127.0.0.1:3000/api"
+# DISABLE_JWT_VERIFICATION = True
+# DISABLE_ADMIN_VERIFICATION = True

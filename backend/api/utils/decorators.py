@@ -6,6 +6,8 @@ from enum import IntFlag
 from flask import g, request
 from flask_jwt_extended import verify_jwt_in_request
 
+from static_variables import DISABLE_ADMIN_VERIFICATION, DISABLE_JWT_VERIFICATION
+
 """
 If these enums/intflags are modified, please update relevant
 enums in frontend/Mikro/src/components/constants.js
@@ -16,11 +18,11 @@ enums in frontend/Mikro/src/components/constants.js
 Set these to true when testing
 
 """
-# DISABLE_JWT_VERIFICATION = True
-# DISABLE_ADMIN_VERIFICATION = True
+DISABLE_JWT_VERIFICATION = True
+DISABLE_ADMIN_VERIFICATION = True
 
-DISABLE_JWT_VERIFICATION = False
-DISABLE_ADMIN_VERIFICATION = False
+# DISABLE_JWT_VERIFICATION = False
+# DISABLE_ADMIN_VERIFICATION = False
 
 
 class TeamRole(IntFlag):
