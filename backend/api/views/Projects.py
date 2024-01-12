@@ -715,8 +715,8 @@ class ProjectAPI(MethodView):
         user_projects = []
 
         active_projects = Project.query.filter(
-            org_id=g.user.org_id,
-            status=True,
+            Project.org_id == g.user.org_id,
+            Project.status == True,
         ).all()
 
         for project in active_projects:
