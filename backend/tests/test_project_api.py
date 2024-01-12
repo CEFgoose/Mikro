@@ -404,81 +404,81 @@ def test_fetch_user_projects(client, benchmark):
         ), f"Missing keys in project: {set(expected_project_keys) - set(project.keys())}"
 
 
-"""
+# """
 
-user_join_project testing
+# user_join_project testing
 
-"""
-
-
-def test_user_join_project_without_org_id(client):
-    """
-    This test attempts to join a project without g.user
-    """
-    g.user = None
-    result = client.post(USER_JOIN_PROJECT_ENDPOINT)
-    response_json = result.json
-    print(response_json)
-    status_code = response_json.get("status")
-    assert status_code == 304
+# """
 
 
-def test_user_join_project_without_project_id(client):
-    """
-    This test attempts to join a project without a project_id
-    """
-
-    result = client.post(USER_JOIN_PROJECT_ENDPOINT, json={"project_id": ""})
-    response_json = result.json
-    print(response_json)
-    status_code = response_json.get("status")
-    assert status_code == 400
-
-
-def test_user_join_project_without_invalid_project_id(client):
-    """
-    This test attempts to join a project that doesn't exist
-    """
-
-    result = client.post(USER_JOIN_PROJECT_ENDPOINT, json={"project_id": "10000000"})
-    response_json = result.json
-    print(response_json)
-    status_code = response_json.get("status")
-    assert status_code == 400
+# def test_user_join_project_without_org_id(client):
+#     """
+#     This test attempts to join a project without g.user
+#     """
+#     g.user = None
+#     result = client.post(USER_JOIN_PROJECT_ENDPOINT)
+#     response_json = result.json
+#     print(response_json)
+#     status_code = response_json.get("status")
+#     assert status_code == 304
 
 
-def test_user_join_project(client):
-    """
-    This test attempts to joins a project
-    """
-    # Create a project
-    client.post(CREATE_PROJECT_ENDPOINT, json=data_with_all_required_args)
+# def test_user_join_project_without_project_id(client):
+#     """
+#     This test attempts to join a project without a project_id
+#     """
 
-    # Get its ID
-    url_id = get_project_id(data_with_all_required_args["url"])
-
-    # Join it
-    result = client.post(USER_JOIN_PROJECT_ENDPOINT, json={"project_id": url_id})
-    response_json = result.json
-    print(response_json)
-    status_code = response_json.get("status")
-    assert status_code == 200
+#     result = client.post(USER_JOIN_PROJECT_ENDPOINT, json={"project_id": ""})
+#     response_json = result.json
+#     print(response_json)
+#     status_code = response_json.get("status")
+#     assert status_code == 400
 
 
-def test_user_join_project_the_same_project_twice(client):
-    """
-    This test attempts to joins a project multiple times
-    """
-    # Create a project
-    client.post(CREATE_PROJECT_ENDPOINT, json=data_with_all_required_args)
+# def test_user_join_project_without_invalid_project_id(client):
+#     """
+#     This test attempts to join a project that doesn't exist
+#     """
 
-    # Get its ID
-    url_id = get_project_id(data_with_all_required_args["url"])
+#     result = client.post(USER_JOIN_PROJECT_ENDPOINT, json={"project_id": "10000000"})
+#     response_json = result.json
+#     print(response_json)
+#     status_code = response_json.get("status")
+#     assert status_code == 400
 
-    # Join it twice
-    client.post(USER_JOIN_PROJECT_ENDPOINT, json={"project_id": url_id})
-    result = client.post(USER_JOIN_PROJECT_ENDPOINT, json={"project_id": url_id})
-    response_json = result.json
-    print(response_json)
-    status_code = response_json.get("status")
-    assert status_code == 400
+
+# def test_user_join_project(client):
+#     """
+#     This test attempts to joins a project
+#     """
+#     # Create a project
+#     client.post(CREATE_PROJECT_ENDPOINT, json=data_with_all_required_args)
+
+#     # Get its ID
+#     url_id = get_project_id(data_with_all_required_args["url"])
+
+#     # Join it
+#     result = client.post(USER_JOIN_PROJECT_ENDPOINT, json={"project_id": url_id})
+#     response_json = result.json
+#     print(response_json)
+#     status_code = response_json.get("status")
+#     assert status_code == 200
+
+
+# def test_user_join_project_the_same_project_twice(client):
+#     """
+#     This test attempts to joins a project multiple times
+#     """
+#     # Create a project
+#     client.post(CREATE_PROJECT_ENDPOINT, json=data_with_all_required_args)
+
+#     # Get its ID
+#     url_id = get_project_id(data_with_all_required_args["url"])
+
+#     # Join it twice
+#     client.post(USER_JOIN_PROJECT_ENDPOINT, json={"project_id": url_id})
+#     result = client.post(USER_JOIN_PROJECT_ENDPOINT, json={"project_id": url_id})
+#     response_json = result.json
+#     print(response_json)
+#     status_code = response_json.get("status")
+#     assert status_code == 400

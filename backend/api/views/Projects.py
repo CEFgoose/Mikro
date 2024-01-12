@@ -856,36 +856,36 @@ class ProjectAPI(MethodView):
             "status": 200,
         }
 
-    def user_join_project(self):
-        # Check if user is authenticated
-        if not g.user:
-            return {"message": "User not found", "status": 304}
-        project_id = request.json.get("project_id")
-        if not project_id:
-            return {"message": "project_id required", "status": 400}
-        target_project = Project.query.filter_by(id=project_id).first()
-        if not target_project:
-            return {
-                "message": "project %s not found" % (project_id),
-                "status": 400,
-            }
-        existing_user_project_relation = ProjectUser.query.filter_by(
-            project_id=project_id, user_id=g.user.id
-        ).first()
+    # def user_join_project(self):
+    #     # Check if user is authenticated
+    #     if not g.user:
+    #         return {"message": "User not found", "status": 304}
+    #     project_id = request.json.get("project_id")
+    #     if not project_id:
+    #         return {"message": "project_id required", "status": 400}
+    #     target_project = Project.query.filter_by(id=project_id).first()
+    #     if not target_project:
+    #         return {
+    #             "message": "project %s not found" % (project_id),
+    #             "status": 400,
+    #         }
+    #     existing_user_project_relation = ProjectUser.query.filter_by(
+    #         project_id=project_id, user_id=g.user.id
+    #     ).first()
 
-        if existing_user_project_relation:
-            return {
-                "message": "User %s has already joined project %s"
-                % (g.user.id, project_id),
-                "status": 400,
-            }
-        ProjectUser.create(project_id=project_id, user_id=g.user.id)
-        count = target_project.total_editors + 1
-        target_project.update(total_editors=count)
-        return {
-            "message": "User %s has joined project %s" % (g.user.id, project_id),
-            "status": 200,
-        }
+    #     if existing_user_project_relation:
+    #         return {
+    #             "message": "User %s has already joined project %s"
+    #             % (g.user.id, project_id),
+    #             "status": 400,
+    #         }
+    #     ProjectUser.create(project_id=project_id, user_id=g.user.id)
+    #     count = target_project.total_editors + 1
+    #     target_project.update(total_editors=count)
+    #     return {
+    #         "message": "User %s has joined project %s" % (g.user.id, project_id),
+    #         "status": 200,
+    #     }
 
     # def user_leave_project(self):
     #     # Check if user is authenticated

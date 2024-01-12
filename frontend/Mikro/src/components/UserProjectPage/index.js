@@ -7,7 +7,7 @@ export const UserProjectsPage = () => {
   const {
     fetchUserProjects,
     userProjects,
-    userJoinProject,
+    // userJoinProject,
     goToSource,
     history,
   } = useContext(DataContext);
@@ -36,9 +36,9 @@ export const UserProjectsPage = () => {
     handleUserJoinProject();
   };
 
-  const handleUserJoinProject = () => {
-    userJoinProject(projectSelected);
-  };
+  // const handleUserJoinProject = () => {
+  //   userJoinProject(projectSelected);
+  // };
 
   return (
     <>
