@@ -21,8 +21,6 @@ import {
 export const UserDashboard = () => {
   const {
     goToSource,
-    activeProjects,
-    setActiveProjects,
     tasksMapped,
     tasksValidated,
     tasksInvalidated,
@@ -30,6 +28,7 @@ export const UserDashboard = () => {
     paidTotal,
     fetchUserDashStats,
     fetchUserProjects,
+    userProjects,
     update_user_tasks,
     history,
     setBarOptionSelected,
@@ -228,12 +227,12 @@ export const UserDashboard = () => {
           <Table>
             <ListHead
               headLabel={USER_PROJECTS_TABLE_HEADERS}
-              tableData={activeProjects}
-              updateData={setActiveProjects}
+              tableData={userProjects}
+              updateData={userProjects}
             />
             <TableBody>
-              {activeProjects &&
-                activeProjects.slice().map((row) => {
+              {userProjects &&
+                userProjects.slice().map((row) => {
                   const {
                     id,
                     name,

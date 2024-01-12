@@ -1278,11 +1278,35 @@ export const ProjectCard = (props) => {
     <ProjectCardContainer
       key={props.id}
       onClick={() => {
-        window.open(props.url, "_blank");
+        if (props.role != "admin") {
+          window.open(props.url, "_blank");
+        }
         props.handleSetProjectSelected(props.id);
+      }}
+      onDoubleClick={() => {
+        window.open(props.url, "_blank");
       }}
     >
       <CardMediaStyle />
+      {/* <AdminCardMediaStyle>
+        <input
+          type={"checkbox"}
+          id={props.id}
+          value={props.id}
+          checked={props.id === props.projectSelected}
+          onChange={(e) => {
+            if (props.id === props.projectSelected) {
+              props.handleSetProjectSelected(null, props.name);
+            } else {
+              props.handleSetProjectSelected(props.id, props.name);
+            }
+          }}
+          style={{
+            marginLeft: "1vw",
+            marginBottom: "1vh",
+          }}
+        />
+      </AdminCardMediaStyle> */}
       <div
         style={{
           padding: "1vw",

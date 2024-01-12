@@ -464,7 +464,7 @@ class ProjectAPI(MethodView):
 
     def fetch_user_dash_stats(self):
         # Check if user is authenticated
-        if not g:
+        if not g.user:
             return {"message": "User not found", "status": 304}
         user_id = g.user.id
         all_user_assignments_count = len(
@@ -578,9 +578,9 @@ class ProjectAPI(MethodView):
             "month_contribution_change": month_contribution_change,
             "total_contributions_for_month": total_contributions_this_month,
             "weekly_contributions_array": weekly_contributions_array,
-            "active_projects": all_user_assignments_count,
-            "inactive_projects": active_projects_count - all_user_assignments_count,
-            "completed_projects": completed_projects_count,
+            # "active_projects": all_user_assignments_count,
+            # "inactive_projects": active_projects_count - all_user_assignments_count,
+            # "completed_projects": completed_projects_count,
             "mapped_tasks": user_mapped_tasks_count,
             "validated_tasks": user_validated_tasks_count,
             "invalidated_tasks": user_invalidated_tasks_count,
@@ -720,8 +720,6 @@ class ProjectAPI(MethodView):
         ).all()
 
         for project in active_projects:
-            if project.total_editors >= project.max_editors:
-                continue
             user_task_ids = [
                 relation.task_id
                 for relation in UserTasks.query.filter_by(user_id=g.user.id).all()

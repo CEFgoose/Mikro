@@ -14,8 +14,6 @@ import "./styles.css";
 
 export const UserPaymentsPage = () => {
   const {
-    sidebarOpen,
-    handleSetSidebarState,
     orgPayments,
     setOrgPayments,
     orgRequests,
@@ -74,10 +72,6 @@ export const UserPaymentsPage = () => {
 
   const handleChangeRowsPerPage = (e) => {
     setRowsPerPage(e.target.value);
-  };
-
-  const handleViewSidebar = () => {
-    handleSetSidebarState();
   };
 
   const handleRequestOpen = () => {

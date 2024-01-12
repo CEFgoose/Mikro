@@ -33,12 +33,9 @@ export const UserProjectsPage = () => {
 
   const handleSetProjectSelected = (projectID) => {
     setProjectSelected(parseInt(projectID));
-    handleUserJoinProject();
   };
 
-  // const handleUserJoinProject = () => {
-  //   userJoinProject(projectSelected);
-  // };
+  console.log(userProjects);
 
   return (
     <>
