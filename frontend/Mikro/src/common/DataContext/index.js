@@ -940,7 +940,6 @@ export const DataProvider = ({ children }) => {
     });
   };
   //Task oriented functions
-  //Task oriented functions
 
   const checkUserStats = () => {
     let fetchUserURL = "project/TM4_payment_call";

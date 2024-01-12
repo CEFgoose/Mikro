@@ -710,30 +710,18 @@ class ProjectAPI(MethodView):
         # Check if user is authenticated
         if not g.user:
             return {"message": "User not found", "status": 304}
-        # Get all projects for the organization
+
+        # Fetch all active projects
         user_projects = []
 
-        all_user_project_ids = [
-            relation.project_id
-            for relation in ProjectUser.query.filter_by(user_id=g.user.id).all()
-        ]
-        user_joined_projects = [
-            project
-            for project in Project.query.filter_by(
-                org_id=g.user.org_id, status=True
-            ).all()
-            if project.id in all_user_project_ids
-        ]
-        user_available_projects = [
-            project
-            for project in Project.query.filter_by(
-                org_id=g.user.org_id, status=True
-            ).all()
-            if project.id not in all_user_project_ids
-            and project.total_editors < project.max_editors
-        ]
-        # Add each project to the list
-        for project in user_joined_projects:
+        active_projects = Project.query.filter(
+            org_id=g.user.org_id,
+            status=True,
+        ).all()
+
+        for project in active_projects:
+            if project.total_editors >= project.max_editors:
+                continue
             user_task_ids = [
                 relation.task_id
                 for relation in UserTasks.query.filter_by(user_id=g.user.id).all()
@@ -804,31 +792,7 @@ class ProjectAPI(MethodView):
                     "status": project.status,
                 }
             )
-        for project in user_available_projects:
-            user_projects.append(
-                {
-                    "id": project.id,
-                    "name": project.name,
-                    "visibility": project.visibility,
-                    "max_payment": project.max_payment,
-                    "payment_due": project.payment_due,
-                    "total_payout": project.total_payout,
-                    "validation_rate_per_task": project.validation_rate_per_task,  # noqa: E501
-                    "mapping_rate_per_task": project.mapping_rate_per_task,
-                    "max_editors": project.max_editors,
-                    "total_editors": project.total_editors,
-                    "max_validators": project.max_editors,
-                    "total_validators": project.total_editors,
-                    "total_tasks": project.total_tasks,
-                    "url": project.url,
-                    "source": project.source,
-                    "difficulty": project.difficulty,
-                    "total_mapped": project.tasks_mapped,
-                    "total_validated": project.tasks_validated,
-                    "total_invalidated": project.tasks_invalidated,
-                    "status": project.status,
-                }
-            )
+
         return {
             "user_projects": user_projects,
             "message": "Projects found",
@@ -923,31 +887,31 @@ class ProjectAPI(MethodView):
             "status": 200,
         }
 
-    def user_leave_project(self):
-        # Check if user is authenticated
-        if not g:
-            return {"message": "User not found", "status": 304}
-        project_id = request.json.get("project_id")
-        if not project_id:
-            return {"message": "project_id required", "status": 400}
-        target_relation = ProjectUser.query.filter_by(
-            project_id=project_id, user_id=g.user.id
-        ).first()
-        if not target_relation:
-            return {"message": "project assignment not found", "status": 400}
-        target_relation.delete(soft=False)
-        target_project = Project.query.filter_by(id=project_id).first()
-        if not target_project:
-            return {
-                "message": "project %s not found" % (project_id),
-                "status": 400,
-            }
-        new_editor_count = target_project.total_editors - 1
-        target_project.update(total_editors=new_editor_count)
-        return {
-            "message": "User %s has left project %s" % (g.user.id, project_id),
-            "status": 200,
-        }
+    # def user_leave_project(self):
+    #     # Check if user is authenticated
+    #     if not g:
+    #         return {"message": "User not found", "status": 304}
+    #     project_id = request.json.get("project_id")
+    #     if not project_id:
+    #         return {"message": "project_id required", "status": 400}
+    #     target_relation = ProjectUser.query.filter_by(
+    #         project_id=project_id, user_id=g.user.id
+    #     ).first()
+    #     if not target_relation:
+    #         return {"message": "project assignment not found", "status": 400}
+    #     target_relation.delete(soft=False)
+    #     target_project = Project.query.filter_by(id=project_id).first()
+    #     if not target_project:
+    #         return {
+    #             "message": "project %s not found" % (project_id),
+    #             "status": 400,
+    #         }
+    #     new_editor_count = target_project.total_editors - 1
+    #     target_project.update(total_editors=new_editor_count)
+    #     return {
+    #         "message": "User %s has left project %s" % (g.user.id, project_id),
+    #         "status": 200,
+    #     }
 
     def fetch_validator_projects(self):
         # Check if user is authenticated

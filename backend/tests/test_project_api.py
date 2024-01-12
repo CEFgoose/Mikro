@@ -13,7 +13,6 @@ from ..api.static_variables import (
     TESTING_PORT,
     TESTING_USER,
 )
-from sqlalchemy import create_engine
 
 # CONSTANTS FOR IMPORTS
 CREATE_PROJECT_ENDPOINT = "/api/project/create_project"
@@ -352,12 +351,12 @@ def test_fetch_user_projects_without_org_id(client):
     assert status_code == 304
 
 
-def test_fetch_user_projects(client):
+def test_fetch_user_projects(client, benchmark):
     """
     This test that if g.user is present a correct response is given
     """
-    result = client.post(FETCH_USER_PROJECTS_ENDPOINT)
-    response_json = result.json
+    response = benchmark(lambda: client.post(FETCH_USER_PROJECTS_ENDPOINT))
+    response_json = response.json
     print(response_json)
 
     status_code = response_json.get("status")
