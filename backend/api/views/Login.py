@@ -20,7 +20,7 @@ class LoginAPI(MethodView):
             return self.do_login()
         except Exception as e:
             current_app.logger.error(str(e))
-            return jsonify({"message": "ERROR!"}), 500
+            return jsonify({"message": "ERROR!"}), 405
 
     def do_login(self):
         # Initialize the return object

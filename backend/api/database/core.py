@@ -257,6 +257,21 @@ class ProjectUser(CRUDMixin, SurrogatePK, db.Model):
         nullable=True,
     )
 
+
+#     timestamp = db.Column(db.TIMESTAMP, nullable=False)
+
+
+# # Define a function to be called before a delete operation on ProjectUser
+# def before_project_user_insert(mapper, connection, target):
+#     # Delete rows with a timestamp greater than 1 hour
+#     current_time = datetime.utcnow()
+#     delete_condition = ProjectUser.timestamp < (current_time - timedelta(hours=1))
+#     ProjectUser.query.filter(delete_condition).delete()
+
+
+# event.listen(ProjectUser, "before_insert", before_project_user_insert)
+
+
 class UserTasks(CRUDMixin, SurrogatePK, db.Model):
     __tablename__ = "user_tasks"
     user_id = db.Column(
