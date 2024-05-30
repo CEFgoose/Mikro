@@ -108,7 +108,6 @@ export const AddTrainingModal = (props) => {
     setTitle(null);
     setURL(null);
     setDifficulty("easy");
-    props.handleAddOpen();
   };
 
   const handleSetPage = () => {
@@ -122,8 +121,15 @@ export const AddTrainingModal = (props) => {
     }
     if (page === 2) {
       handleSetQuestionObject();
-      handleResetForm();
+      handleResetQuestionFields();
     }
+  };
+
+  const handleResetQuestionFields = () => {
+    setTempQuestion("");
+    setTempCorrect("");
+    setTempIncorrect("");
+    setTempIncorrectAnswers([]);
   };
 
   const handleCreateTraining = () => {
@@ -137,6 +143,8 @@ export const AddTrainingModal = (props) => {
       );
       handleResetForm();
       props.handleAddOpen();
+    } else {
+      alert("Trainings need atleast one question");
     }
   };
 
@@ -145,7 +153,7 @@ export const AddTrainingModal = (props) => {
       <ModalWrapper>
         <ModalHeader
           title="Add New Training Lesson"
-          close_action={handleResetForm}
+          close_action={() => handleResetForm()}
         />
 
         {page === 1 ? (
@@ -172,15 +180,6 @@ export const AddTrainingModal = (props) => {
                 flexDirection: "row",
               }}
             >
-              {/* <SectionTitle title_text={"Point Value:"} />
-              <input
-                type="number"
-                min="1"
-                step="1"
-                value={point_value}
-                onChange={(e) => handleSetPointValue(e)}
-                style={{ height: "5vh", marginRight: "3vw", width: "10vw" }}
-              /> */}
               <DifficultySelector
                 value={difficulty}
                 handleSetDifficulty={(e) => handleSetDifficulty(e)}
@@ -275,12 +274,12 @@ export const AddTrainingModal = (props) => {
         ) : (
           <></>
         )}
-
         <div
           style={{
             display: "flex",
             flexDirection: "row",
             justifyContent: "center",
+            marginTop: "1vh",
           }}
         >
           <CancelButton
@@ -291,10 +290,14 @@ export const AddTrainingModal = (props) => {
             confirm_action={() => handleSetPage()}
             confirm_text={"Next"}
           />
-          <ConfirmButton
-            confirm_action={() => handleCreateTraining()}
-            confirm_text={"Submit"}
-          />
+          {page === 2 ? (
+            <ConfirmButton
+              confirm_action={() => handleCreateTraining()}
+              confirm_text={"Submit"}
+            />
+          ) : (
+            <></>
+          )}
         </div>
       </ModalWrapper>
     </Modal>
