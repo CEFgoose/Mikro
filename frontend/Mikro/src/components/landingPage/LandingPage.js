@@ -107,7 +107,7 @@ export const LandingPage = (props) => {
             </Typography>
             <div style={{ marginTop: "4vh" }}>
               <Typography variant="h6" sx={{ color: "common.white" }}>
-                Micro-payments platform for Open Street Map©
+                Micro-payments platform for OpenStreetMap©
               </Typography>
             </div>
 
