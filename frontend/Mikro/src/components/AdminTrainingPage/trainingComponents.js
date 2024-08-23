@@ -62,7 +62,7 @@ export const AddTrainingModal = (props) => {
   };
 
   const handleSetDifficulty = (e) => {
-    setDifficulty(e.target.value);
+    setDifficulty(e);
   };
 
   const handleSetTempQuestion = (e) => {
