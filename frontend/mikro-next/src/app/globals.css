@@ -1,0 +1,136 @@
+@import "tailwindcss";
+
+:root {
+  /* Background and foreground */
+  --background: #ffffff;
+  --foreground: #171717;
+
+  /* Kaart Brand Colors */
+  --kaart-orange: #ff6b35;
+  --kaart-orange-light: #ff8c5a;
+  --kaart-orange-dark: #e55a2b;
+  --kaart-blue: #004e89;
+  --kaart-blue-light: #0066b3;
+  --kaart-blue-dark: #003d6b;
+  --kaart-dark: #1a1a2e;
+
+  /* Primary (using Kaart orange) */
+  --primary: #ff6b35;
+  --primary-foreground: #ffffff;
+
+  /* Secondary */
+  --secondary: #f3f4f6;
+  --secondary-foreground: #1f2937;
+
+  /* Accent */
+  --accent: #004e89;
+  --accent-foreground: #ffffff;
+
+  /* Muted */
+  --muted: #f9fafb;
+  --muted-foreground: #6b7280;
+
+  /* Card */
+  --card: #ffffff;
+  --card-foreground: #171717;
+
+  /* Border */
+  --border: #e5e7eb;
+
+  /* Input */
+  --input: #e5e7eb;
+
+  /* Ring (focus) */
+  --ring: #ff6b35;
+
+  /* Destructive */
+  --destructive: #ef4444;
+  --destructive-foreground: #ffffff;
+
+  /* Success */
+  --success: #22c55e;
+  --success-foreground: #ffffff;
+
+  /* Warning */
+  --warning: #f59e0b;
+  --warning-foreground: #ffffff;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
+  --color-warning: var(--warning);
+  --color-warning-foreground: var(--warning-foreground);
+
+  /* Kaart brand colors */
+  --color-kaart-orange: var(--kaart-orange);
+  --color-kaart-orange-light: var(--kaart-orange-light);
+  --color-kaart-orange-dark: var(--kaart-orange-dark);
+  --color-kaart-blue: var(--kaart-blue);
+  --color-kaart-blue-light: var(--kaart-blue-light);
+  --color-kaart-blue-dark: var(--kaart-blue-dark);
+  --color-kaart-dark: var(--kaart-dark);
+
+  --font-sans: var(--font-geist-sans), system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), monospace;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #0a0a0a;
+    --foreground: #ededed;
+    --card: #1a1a2e;
+    --card-foreground: #ededed;
+    --muted: #1f2937;
+    --muted-foreground: #9ca3af;
+    --border: #374151;
+    --input: #374151;
+  }
+}
+
+* {
+  box-sizing: border-box;
+  padding: 0;
+  margin: 0;
+}
+
+html,
+body {
+  max-width: 100vw;
+  overflow-x: hidden;
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+/* Utility classes */
+.text-balance {
+  text-wrap: balance;
+}
