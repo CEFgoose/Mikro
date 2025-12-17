@@ -1,4 +1,4 @@
-import { getSession } from "@auth0/nextjs-auth0";
+import { auth0 } from "@/lib/auth0";
 import { redirect } from "next/navigation";
 import { Header } from "@/components/layout/Header";
 import { Sidebar } from "@/components/layout/Sidebar";
@@ -8,22 +8,22 @@ export default async function AuthenticatedLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const session = await getSession();
+  const session = await auth0.getSession();
 
   if (!session) {
     redirect("/api/auth/login");
   }
 
-  const user = session.user;
-  const role = (user?.["mikro/roles"]?.[0] as "user" | "validator" | "admin") || "user";
+  // Get user role from session claims
+  const role = (session.user?.["mikro/roles"] as string[] | undefined)?.[0] || "user";
 
   return (
     <div className="min-h-screen bg-background">
       <Header />
-      <div className="flex">
-        <Sidebar role={role} />
-        <main className="flex-1 ml-64 p-6">{children}</main>
-      </div>
+      <Sidebar role={role as "user" | "validator" | "admin"} />
+      <main className="pl-64 pt-16">
+        <div className="p-6">{children}</div>
+      </main>
     </div>
   );
 }

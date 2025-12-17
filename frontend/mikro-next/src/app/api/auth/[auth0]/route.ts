@@ -1,13 +1,10 @@
-import { handleAuth, handleLogin, handleLogout } from "@auth0/nextjs-auth0";
+import { auth0 } from "@/lib/auth0";
+import { NextRequest } from "next/server";
 
-export const GET = handleAuth({
-  login: handleLogin({
-    authorizationParams: {
-      audience: process.env.AUTH0_AUDIENCE,
-      scope: "openid profile email",
-    },
-  }),
-  logout: handleLogout({
-    returnTo: process.env.AUTH0_BASE_URL,
-  }),
-});
+export async function GET(req: NextRequest) {
+  return auth0.middleware(req);
+}
+
+export async function POST(req: NextRequest) {
+  return auth0.middleware(req);
+}

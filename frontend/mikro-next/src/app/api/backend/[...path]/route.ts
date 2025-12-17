@@ -1,4 +1,4 @@
-import { getAccessToken, withApiAuthRequired } from "@auth0/nextjs-auth0";
+import { auth0 } from "@/lib/auth0";
 import { NextRequest, NextResponse } from "next/server";
 
 const BACKEND_URL = process.env.FLASK_BACKEND_URL || "http://localhost:5004";
@@ -9,54 +9,58 @@ const BACKEND_URL = process.env.FLASK_BACKEND_URL || "http://localhost:5004";
  *
  * Example: /api/backend/user/fetch_user_role -> BACKEND_URL/api/user/fetch_user_role
  */
-async function handler(
-  req: NextRequest,
+async function handleRequest(
+  request: NextRequest,
   { params }: { params: Promise<{ path: string[] }> }
 ) {
   try {
-    const resolvedParams = await params;
-    const path = resolvedParams.path.join("/");
-    const { accessToken } = await getAccessToken(req, NextResponse.next());
+    const session = await auth0.getSession();
 
-    // Build the backend URL
-    const backendUrl = `${BACKEND_URL}/api/${path}`;
-
-    // Get the request body if present
-    let body: string | undefined;
-    if (req.method !== "GET" && req.method !== "HEAD") {
-      try {
-        body = await req.text();
-      } catch {
-        body = undefined;
-      }
+    if (!session) {
+      return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
     }
 
-    // Forward the request to the backend
+    const { path } = await params;
+    const backendPath = path.join("/");
+    const url = new URL(request.url);
+    const queryString = url.search;
+
+    const backendUrl = `${BACKEND_URL}/api/${backendPath}${queryString}`;
+
+    // Get the access token for API calls
+    const tokenResponse = await auth0.getAccessToken();
+    const accessToken = tokenResponse?.token;
+
+    const headers: HeadersInit = {
+      "Content-Type": "application/json",
+    };
+
+    if (accessToken) {
+      headers["Authorization"] = `Bearer ${accessToken}`;
+    }
+
+    const body = request.method !== "GET" ? await request.text() : undefined;
+
     const response = await fetch(backendUrl, {
-      method: req.method,
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${accessToken}`,
-      },
-      body: body || undefined,
+      method: request.method,
+      headers,
+      body,
     });
 
-    // Get the response data
-    const data = await response.json().catch(() => ({}));
+    const data = await response.json();
 
     return NextResponse.json(data, { status: response.status });
   } catch (error) {
     console.error("Backend proxy error:", error);
     return NextResponse.json(
-      { error: "Failed to communicate with backend" },
+      { error: "Failed to proxy request to backend" },
       { status: 500 }
     );
   }
 }
 
-// Export handlers for different HTTP methods
-export const GET = withApiAuthRequired(handler);
-export const POST = withApiAuthRequired(handler);
-export const PUT = withApiAuthRequired(handler);
-export const DELETE = withApiAuthRequired(handler);
-export const PATCH = withApiAuthRequired(handler);
+export const GET = handleRequest;
+export const POST = handleRequest;
+export const PUT = handleRequest;
+export const DELETE = handleRequest;
+export const PATCH = handleRequest;
