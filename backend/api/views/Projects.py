@@ -1,6 +1,20 @@
-from ..utils import requires_admin, jwt_verification
-import requests
+#!/usr/bin/env python3
+"""
+Project API endpoints for Mikro.
+
+Handles project management operations.
+TM3 support has been removed - all projects are now TM4.
+"""
+
 import re
+from datetime import datetime, timedelta
+
+import requests
+from flask.views import MethodView
+from flask import g, request, current_app
+from sqlalchemy import func
+
+from ..utils import requires_admin
 from ..database import (
     Project,
     Task,
@@ -10,15 +24,15 @@ from ..database import (
     UserTasks,
     User,
 )
-from flask.views import MethodView
-from flask import g, request
-
-from datetime import datetime, timedelta
-from sqlalchemy import func
 
 
 class ProjectAPI(MethodView):
-    @jwt_verification
+    """Project management API endpoints."""
+
+    def _get_tm4_base_url(self):
+        """Get TM4 API base URL from config."""
+        return current_app.config.get("TM4_API_URL", "https://tasks.kaart.com/api/v2")
+
     def post(self, path: str):
         if path == "create_project":
             return self.create_project()
@@ -55,8 +69,10 @@ class ProjectAPI(MethodView):
 
     @requires_admin
     def create_project(self):
+        """Create a new TM4 project."""
         if not g.user:
             return {"message": "Missing user info", "status": 304}
+
         # Check if required data is provided
         required_args = [
             "url",
@@ -74,7 +90,7 @@ class ProjectAPI(MethodView):
 
         # Assign the data to variables
         url = request.json.get("url")
-        rateType = request.json.get("rate_type")
+        rate_type = request.json.get("rate_type")
         mapping_rate = float(request.json.get("mapping_rate"))
         validation_rate = float(request.json.get("validation_rate"))
         max_editors = request.json.get("max_editors")
@@ -85,56 +101,51 @@ class ProjectAPI(MethodView):
         m = re.match(r"^.*\/([0-9]+)$", url)
         if not m:
             return {
-                "message": "Cannot get URL from project info",
+                "message": "Cannot get project ID from URL",
                 "status": 400,
             }
         project_id = m.group(1)
-        # Determine which version of the API to use
-        TMregex = re.search(r"(?<=\//)(.*?)(?=\.)", url)
-        APImatch = TMregex.group(1)
-        tm3StatsUrl = "https://tm3.kaart.com/api/v1/stats/project/%s" % project_id
-        tm4StatsUrl = "https://tasks.kaart.com/api/v2/projects/%s/" % project_id
-        statsAPI = tm3StatsUrl if APImatch == "tm3" else tm4StatsUrl
+
         # Check if project already exists
-        project_exists = Project.query.filter_by(
-            id=project_id,
-        ).first()
+        project_exists = Project.query.filter_by(id=project_id).first()
         if project_exists:
             return {"message": "Project already exists", "status": 400}
-        # Fetch project data
-        tm_fetch = requests.request("GET", statsAPI)
-        if not tm_fetch.ok:
-            return {"message": "Failed to fetch project data", "status": 400}
-        # Calculate payment rate and rate based on rate type
-        project_data = tm_fetch.json()
-        project_name = project_data["projectInfo"]["name"]
-        if APImatch == "tm3":
-            totalTasks = project_data["totalTasks"]
-        else:
-            totalTasks = len(project_data["tasks"]["features"])
 
-        if rateType is True:
-            mapping_rate = float(mapping_rate)
-            validation_rate = float(validation_rate)
-            calculation = mapping_rate + validation_rate * totalTasks
-        # elif rateType is False:
-        #     rate = float(rate)
-        #     rate = rate / totalTasks
-        #     calculation = rate
+        # Fetch project data from TM4 API
+        base_url = self._get_tm4_base_url()
+        stats_api = f"{base_url}/projects/{project_id}/"
+
+        try:
+            tm_fetch = requests.get(stats_api, timeout=30)
+            if not tm_fetch.ok:
+                return {"message": "Failed to fetch project data from TM4", "status": 400}
+        except requests.RequestException as e:
+            current_app.logger.error(f"TM4 API error: {e}")
+            return {"message": "TM4 API error", "status": 500}
+
+        project_data = tm_fetch.json()
+        project_name = project_data.get("projectInfo", {}).get("name", f"Project {project_id}")
+        total_tasks = len(project_data.get("tasks", {}).get("features", []))
+
+        # Calculate budget
+        if rate_type is True:
+            calculation = (mapping_rate + validation_rate) * total_tasks
+        else:
+            calculation = 0
+
         # Create new project
         if mapping_rate >= 0.01 and validation_rate >= 0.01:
             Project.create(
                 id=project_id,
                 org_id=g.user.org_id,
                 name=project_name,
-                total_tasks=totalTasks,
+                total_tasks=total_tasks,
                 max_payment=float(calculation),
                 url=url,
                 validation_rate_per_task=validation_rate,
                 mapping_rate_per_task=mapping_rate,
                 max_editors=max_editors,
                 max_validators=max_validators,
-                source=APImatch,
                 visibility=visibility,
             )
             return {"message": "Project created", "status": 200}
@@ -228,76 +239,64 @@ class ProjectAPI(MethodView):
 
     @requires_admin
     def calculate_budget(self):
-        # Check if user is authenticated
+        """Calculate projected budget for a TM4 project."""
         if not hasattr(g, "user") or not g.user:
             return {"message": "Missing user info", "status": 304}
+
         url = request.json.get("url")
         rate_type = bool(request.json.get("rate_type"))
         mapping_rate = request.json.get("mapping_rate")
         validation_rate = request.json.get("validation_rate")
         project_id = request.json.get("project_id")
+
         required_args = ["mapping_rate", "validation_rate", "project_id", "url"]
-        # Check required inputs
         for arg in required_args:
             if not request.json.get(arg):
                 return {"message": f"{arg} required", "status": 400}
-        # Determine stats API URL
+
+        # Get TM4 API URL
+        base_url = self._get_tm4_base_url()
+
         if project_id is not None:
-            # Fetch project data
             project = Project.query.filter_by(id=project_id).first()
             if not project:
                 return {"message": "Project not found", "status": 400}
-            if project.source == "tm3":
-                statsAPI = f"https://tm3.kaart.com/api/v1/stats/project/{project_id}"
-            else:
-                statsAPI = f"https://tasks.kaart.com/api/v2/projects/{project_id}/"
-            matcher = project.source
         else:
-            # Extract project ID and determine stats API URL
             m = re.match(r"^.*\/([0-9]+)$", url)
             if not m:
-                return {
-                    "message": "Cannot get URL from project info",
-                    "status": 400,
-                }
+                return {"message": "Cannot get project ID from URL", "status": 400}
             project_id = m.group(1)
-            APImatch = re.search(r"(?<=\//)(.*?)(?=\.)", url)
 
-            if APImatch.group(1) == "tm3":
-                statsAPI = f"https://tm3.kaart.com/api/v1/stats/project/{project_id}"
-            else:
-                statsAPI = f"https://tasks.kaart.com/api/v2/projects/{project_id}/"
-            matcher = APImatch.group(1)
-        # Fetch project data
-        tm_fetch = requests.get(statsAPI)
-        if not tm_fetch.ok:
-            return {"message": "Failed to fetch project data", "status": 500}
+        stats_api = f"{base_url}/projects/{project_id}/"
+
+        # Fetch project data from TM4
+        try:
+            tm_fetch = requests.get(stats_api, timeout=30)
+            if not tm_fetch.ok:
+                return {"message": "Failed to fetch project data", "status": 500}
+        except requests.RequestException as e:
+            current_app.logger.error(f"TM4 API error: {e}")
+            return {"message": "TM4 API error", "status": 500}
+
         json_data = tm_fetch.json()
-        # Calculate payment
-        total_tasks = (
-            json_data["totalTasks"]
-            if matcher == "tm3"
-            else len(json_data["tasks"]["features"])
-        )
+        total_tasks = len(json_data.get("tasks", {}).get("features", []))
+
         if rate_type is True:
             mapping_rate = float(mapping_rate)
-            mapping_dollars = int(mapping_rate)
-            mapping_cents = int(mapping_rate % 1 * 100)
-            mapping_dollarcents = mapping_dollars * 100 + mapping_cents
-            projected_mapping_budget = mapping_dollarcents * total_tasks / 100
-
             validation_rate = float(validation_rate)
-            validation_dollars = int(validation_rate)
-            validation_cents = int(validation_rate % 1 * 100)
-            validation_dollarcents = validation_dollars * 100 + validation_cents
-            projected_validation_budget = validation_dollarcents * total_tasks / 100
 
-            total_projected_budget = (
-                projected_mapping_budget + projected_validation_budget
+            projected_mapping_budget = mapping_rate * total_tasks
+            projected_validation_budget = validation_rate * total_tasks
+            total_projected_budget = projected_mapping_budget + projected_validation_budget
+
+            return_text = (
+                f"${mapping_rate:.2f}(Mapping) + ${validation_rate:.2f}(Validation) "
+                f"x {total_tasks} Tasks = Projected Budget: ${total_projected_budget:.2f}"
             )
-            return_text = f"${mapping_rate:.2f}(Mapping) + ${validation_rate:.2f}(Validation)  x {total_tasks} Tasks = Projected Budget: ${total_projected_budget:.2f}"  # noqa: E501
 
             return {"calculation": return_text, "status": 200}
+
+        return {"message": "rate_type must be true", "status": 400}
 
     @requires_admin
     def fetch_org_projects(self):
