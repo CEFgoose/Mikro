@@ -1,9 +1,0 @@
-**/.DS_Store
-**/.dockerignore
-**/.eslintcache
-**/.git
-**/.gitignore
-**/.prettierignore
-**/build
-**/node_modules
-**/npm-debug.log
