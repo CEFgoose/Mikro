@@ -6,15 +6,24 @@ function variables() {
 	DEBUG=0
 
 	DATABASE_DIR="$(pwd)/test_db"
-	POSTGRES_DB="devel_mikro"
-	POSTGRES_USER="devel_mikro"
-	#TODO change the password
-	POSTGRES_PASSWORD="mikro"
-	POSTGRES_ENDPOINT="localhost"
-	POSTGRES_PORT=5000
-    if [ -f "mikro.env" ]; then
-	    source mikro.env
-       fi
+
+	# Load from environment or mikro.env file
+	if [ -f "mikro.env" ]; then
+		source mikro.env
+	fi
+
+	# Use environment variables with defaults for non-sensitive values only
+	POSTGRES_DB="${POSTGRES_DB:-devel_mikro}"
+	POSTGRES_USER="${POSTGRES_USER:-devel_mikro}"
+	POSTGRES_ENDPOINT="${POSTGRES_ENDPOINT:-localhost}"
+	POSTGRES_PORT="${POSTGRES_PORT:-5000}"
+
+	# Password MUST be set via environment variable or mikro.env
+	if [ -z "${POSTGRES_PASSWORD}" ]; then
+		echo "ERROR: POSTGRES_PASSWORD must be set in environment or mikro.env file"
+		echo "Create a mikro.env file with: POSTGRES_PASSWORD=your_secure_password"
+		exit 1
+	fi
 }
 
 function check_dependencies() {
@@ -87,4 +96,3 @@ function main() {
 	start_server
 }
 main $@
-

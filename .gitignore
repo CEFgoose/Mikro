@@ -1,15 +1,78 @@
+# IDE
 .vscode/
+.idea/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.pyc
+*.pyo
+*.pyd
+.python-version
+venv/
+env/
+.env
+*.egg-info/
+dist/
+build/
+.eggs/
+
+# Testing
+.coverage
+htmlcov/
+.pytest_cache/
+.tox/
+nosetests.xml
+coverage.xml
+
+# Backend specific
 backend/.coverage
 backend/htmlcov/
 backend/vector_tile_cache/
-frontend/Mikro/.eslintcache
-venv
-test_db/
-*.pyc
-logfile
-<<<<<<< HEAD
-.flaskenv
-<<<<<<< HEAD
-*.env
-node_modules
+backend/test_db/
+backend/logfile
+backend/mikro.env
+backend/.env
+backend/.flaskenv
 
+# Frontend
+frontend/Mikro/.eslintcache
+frontend/Mikro/build/
+frontend/Mikro/node_modules/
+frontend/mikro-next/node_modules/
+frontend/mikro-next/.next/
+frontend/mikro-next/.env
+frontend/mikro-next/.env.local
+node_modules/
+
+# Logs
+*.log
+yarn-error.log
+npm-debug.log*
+
+# Source maps (contain original source code)
+*.map
+
+# Environment files (keep examples)
+*.env
+!*.env.example
+.flaskenv
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Test databases
+test_db/
+*.db
+*.sqlite
+
+# Misc
+logfile
+*.bak
+*.swp
+*.swo
+*~
