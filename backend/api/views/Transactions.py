@@ -1,15 +1,20 @@
 #!/usr/bin/env python3
-from ..utils import requires_admin
-from ..database import User, PayRequests, Payments, UserTasks, Task
+"""
+Transaction API endpoints for Mikro.
+
+Handles payment and transaction operations.
+"""
+
 from flask.views import MethodView
 from flask import g, request
-from flask_jwt_extended import (
-    jwt_required,
-)
+
+from ..utils import requires_admin
+from ..database import User, PayRequests, Payments, UserTasks, Task
 
 
 class TransactionAPI(MethodView):
-    @jwt_required()
+    """Payment and transaction management API endpoints."""
+
     def post(self, path: str):
         if path == "fetch_org_transactions":
             return self.fetch_org_transactions()

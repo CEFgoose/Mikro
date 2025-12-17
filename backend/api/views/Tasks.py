@@ -1,5 +1,16 @@
-from ..utils import requires_admin
+#!/usr/bin/env python3
+"""
+Task API endpoints for Mikro.
+
+Handles task synchronization with TM4.
+"""
+
 import requests
+
+from flask.views import MethodView
+from flask import g, request, current_app
+
+from ..utils import requires_admin
 from ..database import (
     Project,
     Task,
@@ -7,15 +18,11 @@ from ..database import (
     UserTasks,
     User,
 )
-from flask.views import MethodView
-from flask import g, request
-from flask_jwt_extended import (
-    jwt_required,
-)
 
 
 class TaskAPI(MethodView):
-    @jwt_required()
+    """Task management API endpoints for TM4 integration."""
+
     def post(self, path: str):
         if path == "update_user_tasks":
             return self.update_user_tasks()

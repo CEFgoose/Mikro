@@ -1,3 +1,13 @@
+#!/usr/bin/env python3
+"""
+Training API endpoints for Mikro.
+
+Handles training module management operations.
+"""
+
+from flask.views import MethodView
+from flask import g, request
+
 from ..utils import requires_admin
 from ..database import (
     Training,
@@ -5,15 +15,11 @@ from ..database import (
     TrainingQuestion,
     TrainingQuestionAnswer,
 )
-from flask.views import MethodView
-from flask import g, request
-from flask_jwt_extended import (
-    jwt_required,
-)
 
 
 class TrainingAPI(MethodView):
-    @jwt_required()
+    """Training module management API endpoints."""
+
     def post(self, path: str):
         if path == "create_training":
             return self.create_training()

@@ -1,0 +1,99 @@
+"""
+Configuration module for Mikro API.
+
+This module provides configuration classes for different environments.
+All sensitive values are loaded from environment variables.
+"""
+
+import os
+
+
+class BaseConfig:
+    """Base configuration with settings common to all environments."""
+
+    # Flask
+    SECRET_KEY = os.environ.get("SECRET_KEY", "dev-secret-key-change-in-prod")
+
+    # Auth0 Configuration
+    ALGORITHMS = ["RS256"]
+    AUTH0_DOMAIN = os.environ.get("AUTH0_DOMAIN")
+    API_AUDIENCE = os.environ.get("API_AUDIENCE", "https://mikro/api/authorize")
+    AUTH0_NAMESPACE = "mikro"  # For custom claims like mikro/roles
+
+    # Database Configuration
+    DB_USERNAME = os.environ.get("POSTGRES_USER")
+    DB_PASSWORD = os.environ.get("POSTGRES_PASSWORD")
+    DB_HOST = os.environ.get("POSTGRES_ENDPOINT", "localhost")
+    DB_NAME = os.environ.get("POSTGRES_DB")
+    DB_PORT = os.environ.get("POSTGRES_PORT", "5432")
+
+    @property
+    def SQLALCHEMY_DATABASE_URI(self):
+        """Build the database URI from environment variables."""
+        if all([self.DB_USERNAME, self.DB_PASSWORD, self.DB_NAME]):
+            return (
+                f"postgresql://{self.DB_USERNAME}:{self.DB_PASSWORD}"
+                f"@{self.DB_HOST}:{self.DB_PORT}/{self.DB_NAME}"
+            )
+        return None
+
+    SQLALCHEMY_TRACK_MODIFICATIONS = False
+    SQLALCHEMY_ENGINE_OPTIONS = {
+        "pool_pre_ping": True,
+        "pool_recycle": 300,
+    }
+
+    # TM4 Integration
+    TM4_API_URL = os.environ.get("TM4_API_URL", "https://tasks.kaart.com/api/v2")
+    TM4_API_TOKEN = os.environ.get("TM4_API_TOKEN")
+
+    # Logging
+    LOG_LEVEL = os.environ.get("LOG_LEVEL", "INFO")
+
+    # CORS
+    CORS_ORIGINS = os.environ.get("CORS_ORIGINS", "*")
+
+
+class DevelopmentConfig(BaseConfig):
+    """Development configuration."""
+
+    DEBUG = True
+    TESTING = False
+
+
+class ProductionConfig(BaseConfig):
+    """Production configuration."""
+
+    DEBUG = False
+    TESTING = False
+
+    # In production, SECRET_KEY must be set
+    @property
+    def SECRET_KEY(self):
+        key = os.environ.get("SECRET_KEY")
+        if not key:
+            raise ValueError("SECRET_KEY environment variable must be set in production")
+        return key
+
+
+class TestingConfig(BaseConfig):
+    """Testing configuration."""
+
+    DEBUG = True
+    TESTING = True
+    SQLALCHEMY_DATABASE_URI = "sqlite:///:memory:"
+
+
+# Configuration mapping
+config = {
+    "development": DevelopmentConfig,
+    "production": ProductionConfig,
+    "testing": TestingConfig,
+    "default": DevelopmentConfig,
+}
+
+
+def get_config():
+    """Get the configuration class based on environment."""
+    env = os.environ.get("FLASK_ENV", "development")
+    return config.get(env, config["default"])

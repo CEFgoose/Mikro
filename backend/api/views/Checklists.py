@@ -1,5 +1,16 @@
-from ..utils import requires_admin
+#!/usr/bin/env python3
+"""
+Checklist API endpoints for Mikro.
+
+Handles checklist management operations.
+"""
+
 from datetime import datetime
+
+from flask.views import MethodView
+from flask import g, request
+
+from ..utils import requires_admin
 from ..database import (
     Checklist,
     ChecklistItem,
@@ -8,15 +19,11 @@ from ..database import (
     UserChecklistItem,
     User,
 )
-from flask.views import MethodView
-from flask import g, request
-from flask_jwt_extended import (
-    jwt_required,
-)
 
 
 class ChecklistAPI(MethodView):
-    @jwt_required()
+    """Checklist management API endpoints."""
+
     def post(self, path: str):
         if path == "create_checklist":
             return self.create_checklist()

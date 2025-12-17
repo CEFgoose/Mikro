@@ -1,16 +1,20 @@
 #!/usr/bin/env python3
-# from backend import app
-from ..utils import requires_admin
-import requests
-from ..database import User, ProjectUser
+"""
+User API endpoints for Mikro.
+
+Handles user management operations.
+"""
+
 from flask.views import MethodView
-from flask import g, request
-from flask_jwt_extended import jwt_required
-from ..static_variables import SSO_BASE_URL
+from flask import g, request, current_app
+
+from ..utils import requires_admin
+from ..database import User, ProjectUser
 
 
 class UserAPI(MethodView):
-    @jwt_required()
+    """User management API endpoints."""
+
     def post(self, path: str):
         if path == "fetch_user_role":
             return self.fetch_user_role()
@@ -44,51 +48,18 @@ class UserAPI(MethodView):
             "message": "Only /project/{fetch_users,fetch_user_projects} is permitted with GET",  # noqa: E501
         }, 405
 
-    # MASS IMPORT
-    # @app.route('/import_users', methods=['POST'])
-    # @requires_admin
+    # DEPRECATED: Mass import - SSO has been replaced with Auth0
+    # User registration is now handled directly through Auth0
+    @requires_admin
     def import_users(self):
-        # Get the JSON data from the request body
-        json_data = request.json
-
-        if json_data:
-            # Create new user profiles from the JSON data
-            for user in json_data:
-                # Extract the necessary information from the user object
-                email = user.get("email")
-                first_name = user.get("first_name")
-                last_name = user.get("last_name")
-
-                # Create a new user registration payload
-                registration_payload = {
-                    "email": email,
-                    "firstName": first_name,
-                    "lastName": last_name,
-                    "password": "password",
-                    "org": "org",
-                    "int": "micro",
-                }
-
-                # Send a POST request to the SSO server's register_user endpoint  # noqa: E501
-                url = SSO_BASE_URL + "auth/register_user"
-                response = requests.post(url, json=registration_payload)
-
-                if response.status_code == 200:
-                    resp = response.json()
-                    if resp["code"] == 0:
-                        message = f"User {email} registered successfully"
-                    else:
-                        message = f"Error registering user {email}: {resp['message']}"  # noqa: E501
-                else:
-                    message = (
-                        f"Error registering user {email}: {response.text}"
-                    )
-
-                # Print or store the registration message as needed
-                print(message)
-
-        # Return a success response
-        return {"message": "User profiles created successfully", "status": 200}
+        """
+        DEPRECATED: This method relied on the old Kaart SSO.
+        User registration is now handled through Auth0.
+        """
+        return {
+            "message": "User import via SSO is deprecated. Use Auth0 for user management.",
+            "status": 501,
+        }
 
     # FETCH USER ROLE ON LOGIN FOR UI RENDER
     def fetch_user_role(self):
@@ -337,37 +308,18 @@ class UserAPI(MethodView):
         response = {"message": "User details updated", "status": 200}
         return response
 
-    # ADMIN ONLY ROUTE - SEND EMAIL INVITE TO USER FOR JOINING MIKRO UNDER THE ADMINS ORG # noqa: E501
+    # DEPRECATED: Invite user via SSO - now handled through Auth0
     @requires_admin
     def invite_user(self):
-        # Initialize an empty dictionary to store the response
-        return_obj = {}
-        # Get the target email address from the request
-        target_email = request.json.get("email")
-        if not target_email:
-            return {
-                "message": "target_email integration required",
-                "status": 400,
-            }
-
-        app = request.json.get("app")
-        if not app:
-            return {"message": "app integration required", "status": 400}
-        # Check if the email address is not provided or is an empty string
-        if not target_email or target_email == "":
-            return_obj["message"] = "email address required"
-            return_obj["status"] = 400
-            return return_obj
-        # Construct the URL for sending the registration email
-        url = SSO_BASE_URL + "auth/send_reg_email"
-        # Send the request to the SSO API
-        response = requests.post(url, json={"email": target_email, "app": app})
-        # Update the return object with the response from the SSO API
-        return_obj["message"] = "email sent"
-        return_obj["sso_response"] = response.status_code
-        return_obj["status"] = 200
-        # Return the response
-        return return_obj
+        """
+        DEPRECATED: This method relied on the old Kaart SSO.
+        User invitations are now handled through Auth0.
+        TODO: Implement Auth0-based user invitation using Management API.
+        """
+        return {
+            "message": "User invitation via SSO is deprecated. Use Auth0 for user management.",
+            "status": 501,
+        }
 
     @requires_admin
     def do_remove_users(self):
