@@ -87,6 +87,10 @@ def authenticate_request():
     if request.path in ["/health", "/api/health"]:
         return None
 
+    # Only authenticate /api/* routes - let other routes pass through
+    if not request.path.startswith("/api/"):
+        return None
+
     try:
         auth0_domain = current_app.config.get("AUTH0_DOMAIN")
         api_audience = current_app.config.get("API_AUDIENCE")
