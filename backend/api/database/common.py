@@ -1,10 +1,11 @@
-from flask_sqlalchemy import BaseQuery, SQLAlchemy
+from flask_sqlalchemy import SQLAlchemy
+from flask_sqlalchemy.query import Query
 import datetime
 
 db = SQLAlchemy()
 
 
-class QueryWithSoftDelete(BaseQuery):
+class QueryWithSoftDelete(Query):
     """https://github.com/miguelgrinberg/sqlalchemy-soft-delete"""
 
     _with_deleted = False
