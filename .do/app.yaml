@@ -1,0 +1,108 @@
+name: mikro
+region: nyc
+
+services:
+  # Backend - Flask API
+  - name: mikro-backend
+    github:
+      repo: CEFgoose/Mikro
+      branch: master
+      deploy_on_push: true
+    source_dir: backend
+    environment_slug: python
+    instance_count: 1
+    instance_size_slug: professional-xs
+    http_port: 8080
+    routes:
+      - path: /api
+    health_check:
+      http_path: /health
+      initial_delay_seconds: 10
+      period_seconds: 10
+      timeout_seconds: 5
+      success_threshold: 1
+      failure_threshold: 3
+    envs:
+      # Flask
+      - key: FLASK_APP
+        value: app.py
+      - key: FLASK_ENV
+        value: production
+      - key: SECRET_KEY
+        type: SECRET
+        value: ${SECRET_KEY}
+
+      # Database - auto-populated by DigitalOcean when database is attached
+      - key: DATABASE_URL
+        scope: RUN_TIME
+        value: ${db.DATABASE_URL}
+
+      # Auth0
+      - key: AUTH0_DOMAIN
+        type: SECRET
+        value: ${AUTH0_DOMAIN}
+      - key: AUTH0_API_AUDIENCE
+        value: https://mikro/api/authorize
+
+      # Tasking Manager 4
+      - key: TM4_API_TOKEN
+        type: SECRET
+        value: ${TM4_API_TOKEN}
+      - key: TM4_API_URL
+        value: https://tasks.kaart.com/api/v2
+
+  # Frontend - Next.js
+  - name: mikro-frontend
+    github:
+      repo: CEFgoose/Mikro
+      branch: master
+      deploy_on_push: true
+    source_dir: frontend/mikro-next
+    environment_slug: node-js
+    instance_count: 1
+    instance_size_slug: professional-xs
+    http_port: 3000
+    build_command: npm run build
+    run_command: npm start
+    routes:
+      - path: /
+    health_check:
+      http_path: /
+      initial_delay_seconds: 20
+      period_seconds: 10
+      timeout_seconds: 5
+      success_threshold: 1
+      failure_threshold: 3
+    envs:
+      # Auth0 - Next.js SDK
+      - key: AUTH0_DOMAIN
+        type: SECRET
+        value: ${AUTH0_DOMAIN}
+      - key: AUTH0_CLIENT_ID
+        type: SECRET
+        value: ${AUTH0_CLIENT_ID}
+      - key: AUTH0_CLIENT_SECRET
+        type: SECRET
+        value: ${AUTH0_CLIENT_SECRET}
+      - key: AUTH0_SECRET
+        type: SECRET
+        value: ${AUTH0_SECRET}
+      - key: AUTH0_AUDIENCE
+        value: https://mikro/api/authorize
+
+      # App URLs
+      - key: APP_BASE_URL
+        value: ${APP_BASE_URL}
+      - key: NEXT_PUBLIC_API_URL
+        value: ${APP_BASE_URL}/api
+
+      # Backend API (internal routing)
+      - key: BACKEND_URL
+        value: http://mikro-backend:8080
+
+databases:
+  - name: db
+    engine: PG
+    version: "16"
+    size: db-s-1vcpu-1gb
+    num_nodes: 1
