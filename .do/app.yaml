@@ -97,7 +97,7 @@ services:
         value: ${APP_BASE_URL}/api
 
       # Backend API (internal routing)
-      - key: BACKEND_URL
+      - key: FLASK_BACKEND_URL
         value: http://mikro-backend:8080
 
 databases:

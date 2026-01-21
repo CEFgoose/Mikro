@@ -31,7 +31,7 @@ class ProjectAPI(MethodView):
 
     def _get_tm4_base_url(self):
         """Get TM4 API base URL from config."""
-        return current_app.config.get("TM4_API_URL", "https://tasks.kaart.com/api/v2")
+        return current_app.config.get("TM4_API_URL", "https://tasks.kaart.com/api")
 
     def post(self, path: str):
         if path == "create_project":
