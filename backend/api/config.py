@@ -21,6 +21,7 @@ class BaseConfig:
     AUTH0_NAMESPACE = "mikro"  # For custom claims like mikro/roles
 
     # Database Configuration
+    # Supports both DATABASE_URL (DigitalOcean) and individual vars
     DB_USERNAME = os.environ.get("POSTGRES_USER")
     DB_PASSWORD = os.environ.get("POSTGRES_PASSWORD")
     DB_HOST = os.environ.get("POSTGRES_ENDPOINT", "localhost")
@@ -30,6 +31,12 @@ class BaseConfig:
     @property
     def SQLALCHEMY_DATABASE_URI(self):
         """Build the database URI from environment variables."""
+        # First check for DATABASE_URL (DigitalOcean Apps Platform format)
+        database_url = os.environ.get("DATABASE_URL")
+        if database_url:
+            # DigitalOcean uses postgresql:// which SQLAlchemy supports
+            return database_url
+        # Fall back to individual vars
         if all([self.DB_USERNAME, self.DB_PASSWORD, self.DB_NAME]):
             return (
                 f"postgresql://{self.DB_USERNAME}:{self.DB_PASSWORD}"
