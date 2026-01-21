@@ -3,12 +3,12 @@
 import { useState, useEffect } from "react";
 import { useUser } from "@auth0/nextjs-auth0/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui";
-import { Project, DashboardStats } from "@/types";
+import { Project, ValidatorDashboardStats } from "@/types";
 
 export default function ValidatorDashboard() {
-  const { user, isLoading: userLoading } = useUser();
+  const { isLoading: userLoading } = useUser();
   const [projects, setProjects] = useState<Project[]>([]);
-  const [stats, setStats] = useState<DashboardStats | null>(null);
+  const [stats, setStats] = useState<ValidatorDashboardStats | null>(null);
   const [selectedProject, setSelectedProject] = useState<number | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -65,7 +65,7 @@ export default function ValidatorDashboard() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold">{stats?.tasksMapped ?? 0}</div>
+            <div className="text-3xl font-bold">{stats?.tasks_mapped ?? 0}</div>
             <p className="text-xs text-muted-foreground mt-1">
               Total tasks you have mapped
             </p>
@@ -84,15 +84,15 @@ export default function ValidatorDashboard() {
               <div>
                 <div className="flex justify-between text-sm mb-1">
                   <span>Validated</span>
-                  <span className="text-green-600">{stats?.tasksValidated ?? 0}</span>
+                  <span className="text-green-600">{stats?.tasks_validated ?? 0}</span>
                 </div>
                 <div className="h-2 bg-muted rounded-full overflow-hidden">
                   <div
                     className="h-full bg-green-500 rounded-full"
                     style={{
                       width: `${
-                        stats?.tasksMapped
-                          ? ((stats?.tasksValidated ?? 0) / stats.tasksMapped) * 100
+                        stats?.tasks_mapped
+                          ? ((stats?.tasks_validated ?? 0) / stats.tasks_mapped) * 100
                           : 0
                       }%`,
                     }}
@@ -102,15 +102,15 @@ export default function ValidatorDashboard() {
               <div>
                 <div className="flex justify-between text-sm mb-1">
                   <span>Invalidated</span>
-                  <span className="text-blue-600">{stats?.tasksInvalidated ?? 0}</span>
+                  <span className="text-blue-600">{stats?.tasks_invalidated ?? 0}</span>
                 </div>
                 <div className="h-2 bg-muted rounded-full overflow-hidden">
                   <div
                     className="h-full bg-blue-500 rounded-full"
                     style={{
                       width: `${
-                        stats?.tasksMapped
-                          ? ((stats?.tasksInvalidated ?? 0) / stats.tasksMapped) * 100
+                        stats?.tasks_mapped
+                          ? ((stats?.tasks_invalidated ?? 0) / stats.tasks_mapped) * 100
                           : 0
                       }%`,
                     }}
@@ -130,10 +130,10 @@ export default function ValidatorDashboard() {
           </CardHeader>
           <CardContent>
             <div className="text-3xl font-bold text-kaart-orange">
-              ${stats?.payableTotal?.toFixed(2) ?? "0.00"}
+              ${stats?.payable_total?.toFixed(2) ?? "0.00"}
             </div>
             <p className="text-xs text-muted-foreground mt-1">
-              Total paid: ${stats?.paidTotal?.toFixed(2) ?? "0.00"}
+              Total paid: ${stats?.paid_total?.toFixed(2) ?? "0.00"}
             </p>
           </CardContent>
         </Card>

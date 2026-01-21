@@ -1,220 +1,466 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { Card, CardContent, CardHeader, CardTitle, Button } from "@/components/ui";
-import { Checklist } from "@/types";
+import { useState, useMemo } from "react";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  Button,
+  Badge,
+  Modal,
+  Tabs,
+  TabsList,
+  TabsTrigger,
+  TabsContent,
+  Skeleton,
+} from "@/components/ui";
+import { useToastActions } from "@/components/ui";
+import {
+  useUserChecklists,
+  useCompleteChecklistItem,
+  useSubmitChecklist,
+} from "@/hooks";
+import type { Checklist, ChecklistItem } from "@/types";
+
+function formatCurrency(amount: number): string {
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "USD",
+  }).format(amount);
+}
+
+function formatDate(dateString: string): string {
+  return new Date(dateString).toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
+}
 
 export default function UserChecklistsPage() {
-  const [activeChecklists, setActiveChecklists] = useState<Checklist[]>([]);
-  const [completedChecklists, setCompletedChecklists] = useState<Checklist[]>([]);
-  const [selectedChecklist, setSelectedChecklist] = useState<number | null>(null);
-  const [activeTab, setActiveTab] = useState<"active" | "completed">("active");
-  const [isLoading, setIsLoading] = useState(true);
+  const { data: checklists, loading, refetch } = useUserChecklists();
+  const { mutate: completeItem, loading: completing } = useCompleteChecklistItem();
+  const { mutate: submitChecklist, loading: submitting } = useSubmitChecklist();
+  const toast = useToastActions();
 
-  useEffect(() => {
-    fetchChecklists();
-  }, []);
+  const [selectedChecklist, setSelectedChecklist] = useState<Checklist | null>(null);
+  const [showDetailsModal, setShowDetailsModal] = useState(false);
 
-  const fetchChecklists = async () => {
-    try {
-      const response = await fetch("/api/backend/checklists/fetch_user_checklists");
-      if (response.ok) {
-        const data = await response.json();
-        setActiveChecklists(data.active_checklists || []);
-        setCompletedChecklists(data.completed_checklists || []);
-      }
-    } catch (error) {
-      console.error("Failed to fetch checklists:", error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  const activeChecklists = checklists?.active_checklists ?? [];
+  const completedChecklists = checklists?.completed_checklists ?? [];
+
+  // Calculate stats
+  const stats = useMemo(() => {
+    const all = [...activeChecklists, ...completedChecklists];
+    const totalEarned = completedChecklists.reduce((sum, c) => sum + c.completion_rate, 0);
+    const totalItems = all.reduce((sum, c) => sum + (c.list_items?.length ?? 0), 0);
+    const completedItems = all.reduce(
+      (sum, c) => sum + (c.list_items?.filter((i) => i.completed).length ?? 0),
+      0
+    );
+    return {
+      total: all.length,
+      active: activeChecklists.length,
+      completed: completedChecklists.length,
+      totalEarned,
+      totalItems,
+      completedItems,
+    };
+  }, [activeChecklists, completedChecklists]);
 
   const handleCompleteItem = async (checklistId: number, itemNumber: number) => {
     try {
-      await fetch("/api/backend/checklists/complete_item", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          checklist_id: checklistId,
-          item_number: itemNumber,
-        }),
+      await completeItem({
+        checklist_id: checklistId,
+        item_number: itemNumber,
       });
-      fetchChecklists();
-    } catch (error) {
-      console.error("Failed to complete item:", error);
+      toast.success("Item marked as complete");
+      refetch();
+    } catch {
+      toast.error("Failed to complete item");
     }
   };
 
-  const handleSelectChecklist = (checklistId: number) => {
-    setSelectedChecklist(selectedChecklist === checklistId ? null : checklistId);
+  const handleSubmitChecklist = async (checklist: Checklist) => {
+    try {
+      await submitChecklist({ checklist_id: checklist.id });
+      toast.success("Checklist submitted for review");
+      refetch();
+    } catch {
+      toast.error("Failed to submit checklist");
+    }
   };
 
-  const currentChecklists = activeTab === "active" ? activeChecklists : completedChecklists;
+  const openDetailsModal = (checklist: Checklist) => {
+    setSelectedChecklist(checklist);
+    setShowDetailsModal(true);
+  };
 
-  if (isLoading) {
+  const ChecklistCard = ({ checklist, isActive = true }: { checklist: Checklist; isActive?: boolean }) => {
+    const completedItems = checklist.list_items?.filter((i) => i.completed).length ?? 0;
+    const totalItems = checklist.list_items?.length ?? 0;
+    const progress = totalItems > 0 ? (completedItems / totalItems) * 100 : 0;
+    const allComplete = totalItems > 0 && completedItems === totalItems;
+
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-kaart-orange" />
+      <Card
+        className={`hover:shadow-md transition-shadow ${
+          !isActive ? "border-green-500 bg-green-50/50 dark:bg-green-950/20" : ""
+        }`}
+      >
+        <CardHeader className="pb-2">
+          <div className="flex justify-between items-start">
+            <CardTitle className="text-lg">{checklist.name}</CardTitle>
+            <div className="flex gap-2">
+              <Badge
+                variant={
+                  checklist.difficulty === "Easy"
+                    ? "success"
+                    : checklist.difficulty === "Medium"
+                    ? "warning"
+                    : "destructive"
+                }
+              >
+                {checklist.difficulty}
+              </Badge>
+              {!isActive && <Badge variant="success">Completed</Badge>}
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <p className="text-sm text-muted-foreground mb-4 line-clamp-2">
+            {checklist.description || "No description"}
+          </p>
+
+          {/* Progress */}
+          <div className="mb-4">
+            <div className="flex justify-between text-xs text-muted-foreground mb-1">
+              <span>Progress</span>
+              <span>{completedItems}/{totalItems} items</span>
+            </div>
+            <div className="h-2 bg-muted rounded-full overflow-hidden">
+              <div
+                className={`h-full rounded-full transition-all ${
+                  allComplete ? "bg-green-500" : "bg-kaart-orange"
+                }`}
+                style={{ width: `${progress}%` }}
+              />
+            </div>
+          </div>
+
+          {/* Info */}
+          <div className="space-y-2 text-sm mb-4">
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">Reward:</span>
+              <span className="font-bold text-kaart-orange">{formatCurrency(checklist.completion_rate)}</span>
+            </div>
+            {checklist.due_date && (
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Due:</span>
+                <span className={new Date(checklist.due_date) < new Date() ? "text-red-600 font-medium" : ""}>
+                  {formatDate(checklist.due_date)}
+                </span>
+              </div>
+            )}
+          </div>
+
+          {/* Actions */}
+          <div className="flex gap-2">
+            <Button
+              size="sm"
+              variant="outline"
+              className="flex-1"
+              onClick={() => openDetailsModal(checklist)}
+            >
+              {isActive ? "Work on Tasks" : "View Details"}
+            </Button>
+            {isActive && allComplete && (
+              <Button
+                size="sm"
+                variant="primary"
+                className="flex-1"
+                onClick={() => handleSubmitChecklist(checklist)}
+                isLoading={submitting}
+              >
+                Submit for Review
+              </Button>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+    );
+  };
+
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        <Skeleton className="h-8 w-48" />
+        <div className="grid gap-4 md:grid-cols-4">
+          {[1, 2, 3, 4].map((i) => (
+            <Skeleton key={i} className="h-24 w-full" />
+          ))}
+        </div>
+        <Skeleton className="h-10 w-64" />
+        <div className="grid gap-4 md:grid-cols-2">
+          {[1, 2].map((i) => (
+            <Skeleton key={i} className="h-64 w-full" />
+          ))}
+        </div>
       </div>
     );
   }
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold">My Checklists</h1>
+      {/* Header */}
+      <div>
+        <h1 className="text-3xl font-bold tracking-tight">My Checklists</h1>
+        <p className="text-muted-foreground">
+          Complete checklists to earn rewards
+        </p>
+      </div>
+
+      {/* Stats Cards */}
+      <div className="grid gap-4 md:grid-cols-4">
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium">Active Checklists</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-kaart-orange">{stats.active}</div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium">Completed</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-green-600">{stats.completed}</div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium">Total Items</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">
+              {stats.completedItems}/{stats.totalItems}
+            </div>
+            <div className="w-full bg-muted rounded-full h-2 mt-2">
+              <div
+                className="bg-kaart-orange h-2 rounded-full transition-all"
+                style={{ width: `${stats.totalItems > 0 ? (stats.completedItems / stats.totalItems) * 100 : 0}%` }}
+              />
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium">Total Earned</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-green-600">{formatCurrency(stats.totalEarned)}</div>
+          </CardContent>
+        </Card>
+      </div>
 
       {/* Tabs */}
-      <div className="flex gap-2 border-b border-border">
-        <button
-          onClick={() => {
-            setActiveTab("active");
-            setSelectedChecklist(null);
-          }}
-          className={`px-4 py-2 font-medium transition-colors ${
-            activeTab === "active"
-              ? "text-kaart-orange border-b-2 border-kaart-orange"
-              : "text-muted-foreground hover:text-foreground"
-          }`}
-        >
-          Active ({activeChecklists.length})
-        </button>
-        <button
-          onClick={() => {
-            setActiveTab("completed");
-            setSelectedChecklist(null);
-          }}
-          className={`px-4 py-2 font-medium transition-colors ${
-            activeTab === "completed"
-              ? "text-kaart-orange border-b-2 border-kaart-orange"
-              : "text-muted-foreground hover:text-foreground"
-          }`}
-        >
-          Completed ({completedChecklists.length})
-        </button>
-      </div>
+      <Tabs defaultValue="active">
+        <TabsList>
+          <TabsTrigger value="active">Active ({activeChecklists.length})</TabsTrigger>
+          <TabsTrigger value="completed">Completed ({completedChecklists.length})</TabsTrigger>
+        </TabsList>
 
-      {/* Checklists */}
-      <div className="space-y-4">
-        {currentChecklists.map((checklist) => {
-          const completedItems = checklist.list_items?.filter((item) => item.completed).length ?? 0;
-          const totalItems = checklist.list_items?.length ?? 0;
-          const progress = totalItems > 0 ? (completedItems / totalItems) * 100 : 0;
+        <TabsContent value="active">
+          {activeChecklists.length > 0 ? (
+            <div className="grid gap-4 md:grid-cols-2">
+              {activeChecklists.map((checklist) => (
+                <ChecklistCard key={checklist.id} checklist={checklist} isActive />
+              ))}
+            </div>
+          ) : (
+            <Card>
+              <CardContent className="py-12 text-center">
+                <div className="mx-auto w-12 h-12 mb-4 rounded-full bg-muted flex items-center justify-center">
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="24"
+                    height="24"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    className="text-muted-foreground"
+                  >
+                    <path d="M9 11l3 3L22 4" />
+                    <path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11" />
+                  </svg>
+                </div>
+                <h3 className="font-semibold text-lg mb-2">No Active Checklists</h3>
+                <p className="text-muted-foreground max-w-sm mx-auto">
+                  You don&apos;t have any checklists assigned. Contact your administrator for assignments.
+                </p>
+              </CardContent>
+            </Card>
+          )}
+        </TabsContent>
 
-          return (
-            <Card
-              key={checklist.id}
-              className={`transition-all ${
-                selectedChecklist === checklist.id ? "ring-2 ring-kaart-orange" : ""
-              }`}
-            >
-              <CardHeader
-                className="cursor-pointer"
-                onClick={() => handleSelectChecklist(checklist.id)}
+        <TabsContent value="completed">
+          {completedChecklists.length > 0 ? (
+            <div className="grid gap-4 md:grid-cols-2">
+              {completedChecklists.map((checklist) => (
+                <ChecklistCard key={checklist.id} checklist={checklist} isActive={false} />
+              ))}
+            </div>
+          ) : (
+            <Card>
+              <CardContent className="py-12 text-center text-muted-foreground">
+                No completed checklists yet
+              </CardContent>
+            </Card>
+          )}
+        </TabsContent>
+      </Tabs>
+
+      {/* Details/Work Modal */}
+      <Modal
+        isOpen={showDetailsModal}
+        onClose={() => {
+          setShowDetailsModal(false);
+          setSelectedChecklist(null);
+        }}
+        title={selectedChecklist?.name ?? "Checklist"}
+        description={selectedChecklist?.description || "Complete all items to submit"}
+        size="lg"
+        footer={
+          <>
+            <Button variant="outline" onClick={() => setShowDetailsModal(false)}>
+              Close
+            </Button>
+            {activeChecklists.some((c) => c.id === selectedChecklist?.id) &&
+              selectedChecklist?.list_items?.every((i) => i.completed) && (
+                <Button
+                  variant="primary"
+                  onClick={() => selectedChecklist && handleSubmitChecklist(selectedChecklist)}
+                  isLoading={submitting}
+                >
+                  Submit for Review
+                </Button>
+              )}
+          </>
+        }
+      >
+        <div className="space-y-4">
+          {/* Summary */}
+          <div className="grid grid-cols-2 gap-4 bg-muted p-4 rounded-lg">
+            <div>
+              <p className="text-sm text-muted-foreground">Reward</p>
+              <p className="font-bold text-kaart-orange">
+                {formatCurrency(selectedChecklist?.completion_rate ?? 0)}
+              </p>
+            </div>
+            <div>
+              <p className="text-sm text-muted-foreground">Due Date</p>
+              <p className="font-bold">
+                {selectedChecklist?.due_date ? formatDate(selectedChecklist.due_date) : "No due date"}
+              </p>
+            </div>
+            <div>
+              <p className="text-sm text-muted-foreground">Difficulty</p>
+              <Badge
+                variant={
+                  selectedChecklist?.difficulty === "Easy"
+                    ? "success"
+                    : selectedChecklist?.difficulty === "Medium"
+                    ? "warning"
+                    : "destructive"
+                }
               >
-                <div className="flex justify-between items-start">
-                  <div>
-                    <CardTitle className="text-lg">{checklist.name}</CardTitle>
-                    <p className="text-sm text-muted-foreground mt-1">
-                      {checklist.description || "No description"}
-                    </p>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span
-                      className={`px-2 py-1 rounded text-xs font-medium ${
-                        checklist.difficulty === "Easy"
-                          ? "bg-green-100 text-green-800"
-                          : checklist.difficulty === "Medium"
-                          ? "bg-yellow-100 text-yellow-800"
-                          : "bg-red-100 text-red-800"
-                      }`}
-                    >
-                      {checklist.difficulty}
-                    </span>
-                    <span className="text-sm font-medium text-kaart-orange">
-                      ${checklist.completion_rate.toFixed(2)}
-                    </span>
-                  </div>
-                </div>
-                {/* Progress bar */}
-                <div className="mt-3">
-                  <div className="flex justify-between text-xs text-muted-foreground mb-1">
-                    <span>Progress</span>
-                    <span>
-                      {completedItems}/{totalItems} items
-                    </span>
-                  </div>
-                  <div className="h-2 bg-muted rounded-full overflow-hidden">
-                    <div
-                      className="h-full bg-kaart-orange rounded-full transition-all"
-                      style={{ width: `${progress}%` }}
-                    />
-                  </div>
-                </div>
-              </CardHeader>
-              {selectedChecklist === checklist.id && (
-                <CardContent>
-                  <div className="space-y-2">
-                    {checklist.list_items?.map((item, index) => (
-                      <div
-                        key={item.id ?? index}
-                        className={`flex items-center gap-3 p-2 rounded ${
-                          item.completed ? "bg-green-50" : "bg-muted/50"
+                {selectedChecklist?.difficulty}
+              </Badge>
+            </div>
+            <div>
+              <p className="text-sm text-muted-foreground">Progress</p>
+              <p className="font-bold">
+                {selectedChecklist?.list_items?.filter((i) => i.completed).length ?? 0}/
+                {selectedChecklist?.list_items?.length ?? 0} items
+              </p>
+            </div>
+          </div>
+
+          {/* Items */}
+          <div>
+            <h3 className="font-medium mb-3">Tasks</h3>
+            <div className="space-y-2">
+              {selectedChecklist?.list_items?.map((item, index) => {
+                const isActive = activeChecklists.some((c) => c.id === selectedChecklist?.id);
+
+                return (
+                  <div
+                    key={item.id ?? index}
+                    className={`flex items-center gap-3 p-3 rounded-lg transition-colors ${
+                      item.completed
+                        ? "bg-green-50 dark:bg-green-950"
+                        : "bg-muted hover:bg-muted/80"
+                    }`}
+                  >
+                    {isActive && !item.completed ? (
+                      <button
+                        onClick={() => handleCompleteItem(selectedChecklist!.id, item.number)}
+                        disabled={completing}
+                        className="h-5 w-5 rounded border-2 border-muted-foreground flex items-center justify-center hover:border-kaart-orange hover:bg-kaart-orange/10 transition-colors"
+                      >
+                        {completing && (
+                          <div className="h-3 w-3 border-2 border-kaart-orange border-t-transparent rounded-full animate-spin" />
+                        )}
+                      </button>
+                    ) : (
+                      <span
+                        className={`h-5 w-5 rounded-full flex items-center justify-center text-xs ${
+                          item.completed
+                            ? "bg-green-500 text-white"
+                            : "bg-muted-foreground/20"
                         }`}
                       >
-                        {activeTab === "active" && (
-                          <input
-                            type="checkbox"
-                            checked={item.completed}
-                            onChange={() => handleCompleteItem(checklist.id, item.number)}
-                            className="h-4 w-4 rounded border-gray-300 text-kaart-orange focus:ring-kaart-orange"
-                          />
-                        )}
-                        {activeTab === "completed" && (
-                          <span className="h-4 w-4 flex items-center justify-center text-green-600">
-                            ✓
-                          </span>
-                        )}
-                        <span
-                          className={`flex-1 ${
-                            item.completed ? "line-through text-muted-foreground" : ""
-                          }`}
-                        >
-                          {item.action}
-                        </span>
-                        {item.link && (
-                          <a
-                            href={item.link}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-kaart-orange hover:underline text-sm"
-                          >
-                            View
-                          </a>
-                        )}
-                      </div>
-                    ))}
-                    {(!checklist.list_items || checklist.list_items.length === 0) && (
-                      <p className="text-sm text-muted-foreground">No items in this checklist</p>
+                        {item.completed ? "✓" : item.number}
+                      </span>
+                    )}
+                    <span className={`flex-1 ${item.completed ? "line-through text-muted-foreground" : ""}`}>
+                      {item.action}
+                    </span>
+                    {item.link && (
+                      <a
+                        href={item.link}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-kaart-orange hover:underline text-sm"
+                      >
+                        View
+                      </a>
                     )}
                   </div>
-
-                  {checklist.due_date && (
-                    <p className="text-sm text-muted-foreground mt-4">
-                      Due: {checklist.due_date}
-                    </p>
-                  )}
-                </CardContent>
+                );
+              })}
+              {(!selectedChecklist?.list_items || selectedChecklist.list_items.length === 0) && (
+                <p className="text-muted-foreground text-center py-4">No items in this checklist</p>
               )}
-            </Card>
-          );
-        })}
-        {currentChecklists.length === 0 && (
-          <div className="text-center py-8 text-muted-foreground">
-            No {activeTab} checklists
+            </div>
           </div>
-        )}
-      </div>
+
+          {/* Completion message */}
+          {selectedChecklist?.list_items?.every((i) => i.completed) &&
+            activeChecklists.some((c) => c.id === selectedChecklist?.id) && (
+              <div className="rounded-lg bg-green-50 dark:bg-green-950 border border-green-200 dark:border-green-800 p-4 text-center">
+                <p className="text-green-700 dark:text-green-300 font-medium">
+                  All tasks complete! Submit this checklist for review to earn {formatCurrency(selectedChecklist?.completion_rate ?? 0)}.
+                </p>
+              </div>
+            )}
+        </div>
+      </Modal>
     </div>
   );
 }

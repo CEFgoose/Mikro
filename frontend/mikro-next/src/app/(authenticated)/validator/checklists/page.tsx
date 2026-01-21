@@ -1,7 +1,9 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Card, CardContent, CardHeader, CardTitle, Button } from "@/components/ui";
+import { Card, CardContent, CardHeader, CardTitle, Button, Modal } from "@/components/ui";
+import { useToastActions } from "@/components/ui";
+import { useAddChecklistComment } from "@/hooks";
 import { Checklist } from "@/types";
 
 export default function ValidatorChecklistsPage() {
@@ -10,7 +12,12 @@ export default function ValidatorChecklistsPage() {
   const [selectedChecklist, setSelectedChecklist] = useState<number | null>(null);
   const [activeTab, setActiveTab] = useState<"completed" | "confirmed">("completed");
   const [isLoading, setIsLoading] = useState(true);
-  const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [showCommentModal, setShowCommentModal] = useState(false);
+  const [commentChecklistId, setCommentChecklistId] = useState<number | null>(null);
+  const [commentText, setCommentText] = useState("");
+
+  const { mutate: addComment, loading: addingComment } = useAddChecklistComment();
+  const toast = useToastActions();
 
   useEffect(() => {
     fetchChecklists();
@@ -49,6 +56,30 @@ export default function ValidatorChecklistsPage() {
       fetchChecklists();
     } catch (error) {
       console.error("Failed to confirm item:", error);
+    }
+  };
+
+  const openCommentModal = (checklistId: number) => {
+    setCommentChecklistId(checklistId);
+    setCommentText("");
+    setShowCommentModal(true);
+  };
+
+  const handleAddComment = async () => {
+    if (!commentChecklistId || !commentText.trim()) return;
+
+    try {
+      await addComment({
+        checklist_id: commentChecklistId,
+        comment: commentText.trim(),
+      });
+      toast.success("Comment added successfully");
+      setShowCommentModal(false);
+      setCommentChecklistId(null);
+      setCommentText("");
+      fetchChecklists();
+    } catch {
+      toast.error("Failed to add comment");
     }
   };
 
@@ -186,7 +217,7 @@ export default function ValidatorChecklistsPage() {
                       <div key={comment.id} className="text-sm p-2 bg-muted rounded">
                         <div className="flex justify-between text-xs text-muted-foreground mb-1">
                           <span>{comment.author}</span>
-                          <span>{comment.created_at}</span>
+                          <span>{comment.date}</span>
                         </div>
                         <p>{comment.comment}</p>
                       </div>
@@ -197,7 +228,11 @@ export default function ValidatorChecklistsPage() {
 
               {activeTab === "completed" && (
                 <div className="mt-4 pt-4 border-t border-border">
-                  <Button variant="outline" size="sm">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => openCommentModal(checklist.id)}
+                  >
                     Add Comment
                   </Button>
                 </div>
@@ -211,6 +246,52 @@ export default function ValidatorChecklistsPage() {
           </div>
         )}
       </div>
+
+      {/* Add Comment Modal */}
+      <Modal
+        isOpen={showCommentModal}
+        onClose={() => {
+          setShowCommentModal(false);
+          setCommentChecklistId(null);
+          setCommentText("");
+        }}
+        title="Add Comment"
+        description="Add a comment to this checklist"
+        footer={
+          <>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setShowCommentModal(false);
+                setCommentChecklistId(null);
+                setCommentText("");
+              }}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleAddComment}
+              isLoading={addingComment}
+              disabled={!commentText.trim()}
+            >
+              Add Comment
+            </Button>
+          </>
+        }
+      >
+        <div className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium mb-1">Comment</label>
+            <textarea
+              className="w-full px-3 py-2 border border-input rounded-lg focus:outline-none focus:ring-2 focus:ring-ring bg-background"
+              rows={4}
+              placeholder="Enter your comment..."
+              value={commentText}
+              onChange={(e) => setCommentText(e.target.value)}
+            />
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 }

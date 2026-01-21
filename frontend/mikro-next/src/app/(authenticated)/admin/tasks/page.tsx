@@ -113,7 +113,7 @@ export default function AdminTasksPage() {
                   <tr
                     key={task.id}
                     onClick={() => handleSelectTask(task.id)}
-                    onDoubleClick={() => goToSource(task.project_url)}
+                    onDoubleClick={() => task.project_url && goToSource(task.project_url)}
                     className={`cursor-pointer hover:bg-muted/50 transition-colors ${
                       selectedTask === task.id ? "bg-kaart-orange/10" : ""
                     }`}

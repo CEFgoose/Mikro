@@ -1,316 +1,565 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { Card, CardContent, CardHeader, CardTitle, Button } from "@/components/ui";
-import { Project } from "@/types";
+import { useState } from "react";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  Button,
+  Badge,
+  Modal,
+  ConfirmDialog,
+  Input,
+  Select,
+  Tabs,
+  TabsList,
+  TabsTrigger,
+  TabsContent,
+  Table,
+  TableHeader,
+  TableBody,
+  TableHead,
+  TableRow,
+  TableCell,
+  Skeleton,
+} from "@/components/ui";
+import { useToastActions } from "@/components/ui";
+import {
+  useOrgProjects,
+  useCreateProject,
+  useUpdateProject,
+  useDeleteProject,
+  useApiMutation,
+} from "@/hooks";
+import type { Project } from "@/types";
+
+function formatCurrency(amount: number): string {
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "USD",
+  }).format(amount);
+}
+
+interface ProjectFormData {
+  url: string;
+  mapping_rate: string;
+  validation_rate: string;
+  max_editors: string;
+  max_validators: string;
+  visibility: boolean;
+  difficulty: string;
+  status: boolean;
+}
+
+const defaultFormData: ProjectFormData = {
+  url: "",
+  mapping_rate: "0.10",
+  validation_rate: "0.05",
+  max_editors: "5",
+  max_validators: "3",
+  visibility: true,
+  difficulty: "Medium",
+  status: true,
+};
 
 export default function AdminProjectsPage() {
-  const [activeProjects, setActiveProjects] = useState<Project[]>([]);
-  const [inactiveProjects, setInactiveProjects] = useState<Project[]>([]);
-  const [selectedProject, setSelectedProject] = useState<number | null>(null);
-  const [activeTab, setActiveTab] = useState<"active" | "inactive">("active");
-  const [isLoading, setIsLoading] = useState(true);
+  const { data: projects, loading, refetch } = useOrgProjects();
+  const { mutate: createProject, loading: creating } = useCreateProject();
+  const { mutate: updateProject, loading: updating } = useUpdateProject();
+  const { mutate: deleteProject, loading: deleting } = useDeleteProject();
+  const { mutate: calculateBudget } = useApiMutation<{ calculation: string; status: number }>(
+    "/project/calculate_budget"
+  );
+  const toast = useToastActions();
+
+  const [selectedProject, setSelectedProject] = useState<Project | null>(null);
   const [showAddModal, setShowAddModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
-
-  // Form state
-  const [projectUrl, setProjectUrl] = useState("");
-  const [mappingRate, setMappingRate] = useState("0.10");
-  const [validationRate, setValidationRate] = useState("0.05");
-  const [maxEditors, setMaxEditors] = useState("5");
-  const [maxValidators, setMaxValidators] = useState("3");
+  const [formData, setFormData] = useState<ProjectFormData>(defaultFormData);
   const [budgetCalculation, setBudgetCalculation] = useState("");
 
-  useEffect(() => {
-    fetchProjects();
-  }, []);
+  const activeProjects = projects?.org_active_projects ?? [];
+  const inactiveProjects = projects?.org_inactive_projects ?? [];
 
-  const fetchProjects = async () => {
-    try {
-      const response = await fetch("/api/backend/project/fetch_org_projects");
-      if (response.ok) {
-        const data = await response.json();
-        setActiveProjects(data.active_projects || []);
-        setInactiveProjects(data.inactive_projects || []);
-      }
-    } catch (error) {
-      console.error("Failed to fetch projects:", error);
-    } finally {
-      setIsLoading(false);
-    }
+  const handleInputChange = (field: keyof ProjectFormData, value: string | boolean) => {
+    setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
-  const calculateBudget = async () => {
+  const handleCalculateBudget = async () => {
+    if (!formData.url) {
+      toast.error("Please enter a project URL");
+      return;
+    }
+
     try {
-      const response = await fetch("/api/backend/project/calculate_budget", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          url: projectUrl,
-          rate_type: true,
-          mapping_rate: parseFloat(mappingRate),
-          validation_rate: parseFloat(validationRate),
-          project_id: selectedProject,
-        }),
+      const result = await calculateBudget({
+        url: formData.url,
+        rate_type: true,
+        mapping_rate: parseFloat(formData.mapping_rate),
+        validation_rate: parseFloat(formData.validation_rate),
+        project_id: selectedProject?.id,
       });
-      if (response.ok) {
-        const data = await response.json();
-        setBudgetCalculation(data.calculation || "");
-      }
-    } catch (error) {
-      console.error("Failed to calculate budget:", error);
+      setBudgetCalculation(result.calculation || "");
+    } catch {
+      toast.error("Failed to calculate budget");
     }
   };
 
-  const handleSelectProject = (projectId: number) => {
-    setSelectedProject(selectedProject === projectId ? null : projectId);
+  const handleCreateProject = async () => {
+    if (!formData.url) {
+      toast.error("Please enter a project URL");
+      return;
+    }
+
+    try {
+      await createProject({
+        url: formData.url,
+        rate_type: true,
+        mapping_rate: parseFloat(formData.mapping_rate),
+        validation_rate: parseFloat(formData.validation_rate),
+        max_editors: parseInt(formData.max_editors),
+        max_validators: parseInt(formData.max_validators),
+        visibility: formData.visibility,
+      });
+      toast.success("Project created successfully");
+      setShowAddModal(false);
+      setFormData(defaultFormData);
+      setBudgetCalculation("");
+      refetch();
+    } catch {
+      toast.error("Failed to create project");
+    }
   };
 
-  const currentProjects = activeTab === "active" ? activeProjects : inactiveProjects;
+  const handleUpdateProject = async () => {
+    if (!selectedProject) return;
 
-  if (isLoading) {
+    try {
+      await updateProject({
+        project_id: selectedProject.id,
+        difficulty: formData.difficulty,
+        rate_type: true,
+        mapping_rate: parseFloat(formData.mapping_rate),
+        validation_rate: parseFloat(formData.validation_rate),
+        max_editors: parseInt(formData.max_editors),
+        max_validators: parseInt(formData.max_validators),
+        visibility: formData.visibility,
+        project_status: formData.status,
+      });
+      toast.success("Project updated successfully");
+      setShowEditModal(false);
+      setSelectedProject(null);
+      refetch();
+    } catch {
+      toast.error("Failed to update project");
+    }
+  };
+
+  const handleDeleteProject = async () => {
+    if (!selectedProject) return;
+
+    try {
+      await deleteProject({ project_id: selectedProject.id });
+      toast.success("Project deleted successfully");
+      setShowDeleteModal(false);
+      setSelectedProject(null);
+      refetch();
+    } catch {
+      toast.error("Failed to delete project");
+    }
+  };
+
+  const openEditModal = (project: Project) => {
+    setSelectedProject(project);
+    setFormData({
+      url: project.url,
+      mapping_rate: project.mapping_rate_per_task.toString(),
+      validation_rate: project.validation_rate_per_task.toString(),
+      max_editors: project.max_editors?.toString() ?? "5",
+      max_validators: project.max_validators?.toString() ?? "3",
+      visibility: project.visibility ?? true,
+      difficulty: project.difficulty ?? "Medium",
+      status: project.status ?? true,
+    });
+    setShowEditModal(true);
+  };
+
+  const openDeleteModal = (project: Project) => {
+    setSelectedProject(project);
+    setShowDeleteModal(true);
+  };
+
+  const ProjectTable = ({ projectList }: { projectList: Project[] }) => (
+    <Table>
+      <TableHeader>
+        <TableRow>
+          <TableHead>Project</TableHead>
+          <TableHead>Tasks</TableHead>
+          <TableHead>Progress</TableHead>
+          <TableHead>Rates</TableHead>
+          <TableHead>Budget</TableHead>
+          <TableHead>Difficulty</TableHead>
+          <TableHead className="text-right">Actions</TableHead>
+        </TableRow>
+      </TableHeader>
+      <TableBody>
+        {projectList.map((project) => (
+          <TableRow key={project.id}>
+            <TableCell>
+              <div>
+                <p className="font-medium">{project.name}</p>
+                <a
+                  href={project.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-sm text-kaart-orange hover:underline"
+                >
+                  #{project.id}
+                </a>
+              </div>
+            </TableCell>
+            <TableCell>{project.total_tasks}</TableCell>
+            <TableCell>
+              <div className="text-sm">
+                <p className="text-green-600">{project.total_mapped ?? 0} mapped</p>
+                <p className="text-blue-600">{project.total_validated ?? 0} validated</p>
+                <p className="text-red-600">{project.total_invalidated ?? 0} invalidated</p>
+              </div>
+            </TableCell>
+            <TableCell>
+              <div className="text-sm">
+                <p>Map: {formatCurrency(project.mapping_rate_per_task)}</p>
+                <p>Val: {formatCurrency(project.validation_rate_per_task)}</p>
+              </div>
+            </TableCell>
+            <TableCell>
+              <div className="text-sm">
+                <p>Max: {formatCurrency(project.max_payment ?? 0)}</p>
+                <p className="text-muted-foreground">
+                  Paid: {formatCurrency(project.total_payout ?? 0)}
+                </p>
+              </div>
+            </TableCell>
+            <TableCell>
+              <Badge
+                variant={
+                  project.difficulty === "Easy"
+                    ? "success"
+                    : project.difficulty === "Medium"
+                    ? "warning"
+                    : "destructive"
+                }
+              >
+                {project.difficulty || "Unknown"}
+              </Badge>
+            </TableCell>
+            <TableCell className="text-right">
+              <div className="flex justify-end gap-2">
+                <Button size="sm" variant="outline" onClick={() => openEditModal(project)}>
+                  Edit
+                </Button>
+                <Button size="sm" variant="destructive" onClick={() => openDeleteModal(project)}>
+                  Delete
+                </Button>
+              </div>
+            </TableCell>
+          </TableRow>
+        ))}
+        {projectList.length === 0 && (
+          <TableRow>
+            <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
+              No projects found
+            </TableCell>
+          </TableRow>
+        )}
+      </TableBody>
+    </Table>
+  );
+
+  if (loading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-kaart-orange" />
+      <div className="space-y-6">
+        <div className="flex justify-between items-center">
+          <Skeleton className="h-8 w-32" />
+          <Skeleton className="h-10 w-24" />
+        </div>
+        <Skeleton className="h-10 w-64" />
+        <Skeleton className="h-64 w-full" />
       </div>
     );
   }
 
   return (
     <div className="space-y-6">
-      {/* Action Buttons */}
+      {/* Header */}
       <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-bold">Projects</h1>
-        <div className="flex gap-2">
-          <Button onClick={() => setShowAddModal(true)}>Add</Button>
-          <Button
-            variant="secondary"
-            onClick={() => selectedProject && setShowEditModal(true)}
-            disabled={!selectedProject}
-          >
-            Edit
-          </Button>
-          <Button
-            variant="destructive"
-            onClick={() => selectedProject && setShowDeleteModal(true)}
-            disabled={!selectedProject}
-          >
-            Delete
-          </Button>
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">Projects</h1>
+          <p className="text-muted-foreground">
+            Manage TM4 projects and payment rates
+          </p>
         </div>
+        <Button onClick={() => setShowAddModal(true)}>Add Project</Button>
       </div>
 
-      {/* Tabs */}
-      <div className="flex gap-2 border-b border-border">
-        <button
-          onClick={() => setActiveTab("active")}
-          className={`px-4 py-2 font-medium transition-colors ${
-            activeTab === "active"
-              ? "text-kaart-orange border-b-2 border-kaart-orange"
-              : "text-muted-foreground hover:text-foreground"
-          }`}
-        >
-          Active ({activeProjects.length})
-        </button>
-        <button
-          onClick={() => setActiveTab("inactive")}
-          className={`px-4 py-2 font-medium transition-colors ${
-            activeTab === "inactive"
-              ? "text-kaart-orange border-b-2 border-kaart-orange"
-              : "text-muted-foreground hover:text-foreground"
-          }`}
-        >
-          Inactive ({inactiveProjects.length})
-        </button>
+      {/* Stats Cards */}
+      <div className="grid gap-4 md:grid-cols-4">
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium">Active Projects</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-green-600">{activeProjects.length}</div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium">Inactive Projects</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-yellow-600">{inactiveProjects.length}</div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium">Total Tasks</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">
+              {[...activeProjects, ...inactiveProjects].reduce((sum, p) => sum + p.total_tasks, 0)}
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium">Total Paid Out</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">
+              {formatCurrency(
+                [...activeProjects, ...inactiveProjects].reduce(
+                  (sum, p) => sum + (p.total_payout ?? 0),
+                  0
+                )
+              )}
+            </div>
+          </CardContent>
+        </Card>
       </div>
 
-      {/* Projects Grid */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        {currentProjects.map((project) => (
-          <Card
-            key={project.id}
-            onClick={() => handleSelectProject(project.id)}
-            className={`cursor-pointer transition-all hover:shadow-md ${
-              selectedProject === project.id ? "ring-2 ring-kaart-orange" : ""
-            }`}
-          >
-            <CardHeader className="pb-2">
-              <CardTitle className="text-lg">{project.name}</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-2 text-sm">
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Total Tasks:</span>
-                  <span>{project.total_tasks}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Mapping Rate:</span>
-                  <span>${project.mapping_rate_per_task.toFixed(2)}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Validation Rate:</span>
-                  <span>${project.validation_rate_per_task.toFixed(2)}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Max Budget:</span>
-                  <span>${project.max_payment?.toFixed(2) ?? "N/A"}</span>
-                </div>
-                {project.difficulty && (
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Difficulty:</span>
-                    <span
-                      className={`px-2 py-0.5 rounded text-xs ${
-                        project.difficulty === "Easy"
-                          ? "bg-green-100 text-green-800"
-                          : project.difficulty === "Medium"
-                          ? "bg-yellow-100 text-yellow-800"
-                          : "bg-red-100 text-red-800"
-                      }`}
-                    >
-                      {project.difficulty}
-                    </span>
-                  </div>
-                )}
-              </div>
-              <a
-                href={project.url}
-                target="_blank"
-                rel="noopener noreferrer"
-                onClick={(e) => e.stopPropagation()}
-                className="mt-4 block text-center text-sm text-kaart-orange hover:underline"
-              >
-                View in Tasking Manager
-              </a>
+      {/* Projects Tabs */}
+      <Tabs defaultValue="active">
+        <TabsList>
+          <TabsTrigger value="active">Active ({activeProjects.length})</TabsTrigger>
+          <TabsTrigger value="inactive">Inactive ({inactiveProjects.length})</TabsTrigger>
+        </TabsList>
+        <TabsContent value="active">
+          <Card>
+            <CardContent className="p-0">
+              <ProjectTable projectList={activeProjects} />
             </CardContent>
           </Card>
-        ))}
-        {currentProjects.length === 0 && (
-          <div className="col-span-full text-center py-8 text-muted-foreground">
-            No {activeTab} projects found
-          </div>
-        )}
-      </div>
+        </TabsContent>
+        <TabsContent value="inactive">
+          <Card>
+            <CardContent className="p-0">
+              <ProjectTable projectList={inactiveProjects} />
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
 
       {/* Add Project Modal */}
-      {showAddModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <Card className="w-full max-w-lg max-h-[90vh] overflow-y-auto">
-            <CardHeader>
-              <CardTitle>Add Project</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium mb-1">TM4 Project URL</label>
-                <input
-                  type="url"
-                  value={projectUrl}
-                  onChange={(e) => setProjectUrl(e.target.value)}
-                  className="w-full px-3 py-2 border border-input rounded-lg focus:outline-none focus:ring-2 focus:ring-ring"
-                  placeholder="https://tasks.kaart.com/projects/123"
-                />
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium mb-1">Mapping Rate ($)</label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    value={mappingRate}
-                    onChange={(e) => setMappingRate(e.target.value)}
-                    className="w-full px-3 py-2 border border-input rounded-lg focus:outline-none focus:ring-2 focus:ring-ring"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium mb-1">Validation Rate ($)</label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    value={validationRate}
-                    onChange={(e) => setValidationRate(e.target.value)}
-                    className="w-full px-3 py-2 border border-input rounded-lg focus:outline-none focus:ring-2 focus:ring-ring"
-                  />
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium mb-1">Max Editors</label>
-                  <input
-                    type="number"
-                    value={maxEditors}
-                    onChange={(e) => setMaxEditors(e.target.value)}
-                    className="w-full px-3 py-2 border border-input rounded-lg focus:outline-none focus:ring-2 focus:ring-ring"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium mb-1">Max Validators</label>
-                  <input
-                    type="number"
-                    value={maxValidators}
-                    onChange={(e) => setMaxValidators(e.target.value)}
-                    className="w-full px-3 py-2 border border-input rounded-lg focus:outline-none focus:ring-2 focus:ring-ring"
-                  />
-                </div>
-              </div>
-              <div>
-                <Button variant="outline" onClick={calculateBudget} className="w-full">
-                  Calculate Budget
-                </Button>
-                {budgetCalculation && (
-                  <p className="mt-2 text-sm text-muted-foreground">{budgetCalculation}</p>
-                )}
-              </div>
-              <div className="flex gap-2 justify-end">
-                <Button variant="outline" onClick={() => setShowAddModal(false)}>
-                  Cancel
-                </Button>
-                <Button>Create Project</Button>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      )}
-
-      {/* Edit/Delete Modals would follow similar pattern */}
-      {showEditModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <Card className="w-full max-w-lg">
-            <CardHeader>
-              <CardTitle>Edit Project</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <p className="text-muted-foreground">Edit project settings here.</p>
-              <div className="flex gap-2 justify-end">
-                <Button variant="outline" onClick={() => setShowEditModal(false)}>
-                  Cancel
-                </Button>
-                <Button>Save Changes</Button>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      )}
-
-      {showDeleteModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <Card className="w-full max-w-md">
-            <CardHeader>
-              <CardTitle>Delete Project</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <p className="text-muted-foreground">
-                Are you sure you want to delete this project? This action cannot be undone.
+      <Modal
+        isOpen={showAddModal}
+        onClose={() => {
+          setShowAddModal(false);
+          setFormData(defaultFormData);
+          setBudgetCalculation("");
+        }}
+        title="Add New Project"
+        description="Add a TM4 project to Mikro for payment tracking"
+        size="lg"
+        footer={
+          <>
+            <Button variant="outline" onClick={() => setShowAddModal(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleCreateProject} isLoading={creating}>
+              Create Project
+            </Button>
+          </>
+        }
+      >
+        <div className="space-y-4">
+          <Input
+            label="TM4 Project URL"
+            placeholder="https://tasks.kaart.com/projects/123"
+            value={formData.url}
+            onChange={(e) => handleInputChange("url", e.target.value)}
+          />
+          <div className="grid grid-cols-2 gap-4">
+            <Input
+              label="Mapping Rate ($)"
+              type="number"
+              step="0.01"
+              value={formData.mapping_rate}
+              onChange={(e) => handleInputChange("mapping_rate", e.target.value)}
+            />
+            <Input
+              label="Validation Rate ($)"
+              type="number"
+              step="0.01"
+              value={formData.validation_rate}
+              onChange={(e) => handleInputChange("validation_rate", e.target.value)}
+            />
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <Input
+              label="Max Editors"
+              type="number"
+              value={formData.max_editors}
+              onChange={(e) => handleInputChange("max_editors", e.target.value)}
+            />
+            <Input
+              label="Max Validators"
+              type="number"
+              value={formData.max_validators}
+              onChange={(e) => handleInputChange("max_validators", e.target.value)}
+            />
+          </div>
+          <div className="flex items-center gap-2">
+            <input
+              type="checkbox"
+              id="visibility"
+              checked={formData.visibility}
+              onChange={(e) => handleInputChange("visibility", e.target.checked)}
+              className="rounded border-input"
+            />
+            <label htmlFor="visibility" className="text-sm">
+              Visible to users
+            </label>
+          </div>
+          <div className="border-t border-border pt-4">
+            <Button variant="outline" onClick={handleCalculateBudget} className="w-full">
+              Calculate Budget
+            </Button>
+            {budgetCalculation && (
+              <p className="mt-2 text-sm text-muted-foreground bg-muted p-3 rounded-lg">
+                {budgetCalculation}
               </p>
-              <div className="flex gap-2 justify-end">
-                <Button variant="outline" onClick={() => setShowDeleteModal(false)}>
-                  Cancel
-                </Button>
-                <Button variant="destructive">Delete</Button>
-              </div>
-            </CardContent>
-          </Card>
+            )}
+          </div>
         </div>
-      )}
+      </Modal>
+
+      {/* Edit Project Modal */}
+      <Modal
+        isOpen={showEditModal}
+        onClose={() => {
+          setShowEditModal(false);
+          setSelectedProject(null);
+        }}
+        title="Edit Project"
+        description={`Editing ${selectedProject?.name || "project"}`}
+        size="lg"
+        footer={
+          <>
+            <Button variant="outline" onClick={() => setShowEditModal(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleUpdateProject} isLoading={updating}>
+              Save Changes
+            </Button>
+          </>
+        }
+      >
+        <div className="space-y-4">
+          <div className="grid grid-cols-2 gap-4">
+            <Input
+              label="Mapping Rate ($)"
+              type="number"
+              step="0.01"
+              value={formData.mapping_rate}
+              onChange={(e) => handleInputChange("mapping_rate", e.target.value)}
+            />
+            <Input
+              label="Validation Rate ($)"
+              type="number"
+              step="0.01"
+              value={formData.validation_rate}
+              onChange={(e) => handleInputChange("validation_rate", e.target.value)}
+            />
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <Input
+              label="Max Editors"
+              type="number"
+              value={formData.max_editors}
+              onChange={(e) => handleInputChange("max_editors", e.target.value)}
+            />
+            <Input
+              label="Max Validators"
+              type="number"
+              value={formData.max_validators}
+              onChange={(e) => handleInputChange("max_validators", e.target.value)}
+            />
+          </div>
+          <Select
+            label="Difficulty"
+            value={formData.difficulty}
+            onChange={(value) => handleInputChange("difficulty", value)}
+            options={[
+              { value: "Easy", label: "Easy" },
+              { value: "Medium", label: "Medium" },
+              { value: "Hard", label: "Hard" },
+            ]}
+          />
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                id="edit-visibility"
+                checked={formData.visibility}
+                onChange={(e) => handleInputChange("visibility", e.target.checked)}
+                className="rounded border-input"
+              />
+              <label htmlFor="edit-visibility" className="text-sm">
+                Visible to users
+              </label>
+            </div>
+            <div className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                id="edit-status"
+                checked={formData.status}
+                onChange={(e) => handleInputChange("status", e.target.checked)}
+                className="rounded border-input"
+              />
+              <label htmlFor="edit-status" className="text-sm">
+                Active
+              </label>
+            </div>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Delete Confirmation */}
+      <ConfirmDialog
+        isOpen={showDeleteModal}
+        onClose={() => {
+          setShowDeleteModal(false);
+          setSelectedProject(null);
+        }}
+        onConfirm={handleDeleteProject}
+        title="Delete Project"
+        message={`Are you sure you want to delete "${selectedProject?.name}"? This action cannot be undone and will remove all associated task and payment data.`}
+        confirmText="Delete"
+        variant="destructive"
+        isLoading={deleting}
+      />
     </div>
   );
 }

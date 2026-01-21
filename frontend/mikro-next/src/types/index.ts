@@ -1,68 +1,111 @@
 /**
  * Type definitions for Mikro application.
+ * Updated to match backend API response formats.
  */
 
+// User types
 export interface User {
-  id: number;
+  id: string; // Auth0 sub (string, not number)
   name: string;
   email: string;
   role: "admin" | "validator" | "user";
   osm_username?: string;
   payment_email?: string;
+  first_name?: string;
+  last_name?: string;
+  city?: string;
+  country?: string;
   assigned_projects?: number;
   total_tasks_mapped?: number;
   total_tasks_validated?: number;
   total_tasks_invalidated?: number;
   awaiting_payment?: number;
   total_payout?: number;
-  org_id?: number;
+  org_id?: string;
   first_login?: boolean;
+  needs_onboarding?: boolean;
+  joined?: string;
+  requesting_payment?: boolean;
+  validated_tasks_amounts?: number;
 }
 
+export interface UserListItem extends User {
+  assigned?: "Yes" | "No";
+}
+
+// Project types
 export interface Project {
   id: number;
   name: string;
   url: string;
   total_tasks: number;
-  tasks_mapped?: number;
-  tasks_validated?: number;
-  tasks_invalidated?: number;
+  total_mapped?: number;
+  total_validated?: number;
+  total_invalidated?: number;
   mapping_rate_per_task: number;
   validation_rate_per_task: number;
   max_payment?: number;
+  payment_due?: number;
+  total_payout?: number;
   max_editors?: number;
   max_validators?: number;
+  total_editors?: number;
+  total_validators?: number;
   visibility?: boolean;
   status?: boolean;
   difficulty?: "Easy" | "Medium" | "Hard";
+  completed?: boolean;
+  // User-specific stats (for user/validator dashboards)
+  tasks_mapped?: number;
+  tasks_validated?: number;
+  tasks_invalidated?: number;
   user_earnings?: number;
 }
 
-export interface Task {
-  id: number;
-  project_id: number;
-  project_name: string;
-  project_url: string;
-  mapped_by?: string;
-  validated_by?: string;
-  status?: string;
+export interface ProjectsResponse {
+  org_active_projects: Project[];
+  org_inactive_projects: Project[];
+  message: string;
+  status: number;
 }
 
+// Task types
+export interface Task {
+  id: number;
+  task_id: number;
+  project_id: number;
+  project_name?: string;
+  project_url?: string;
+  org_id?: string;
+  mapping_rate?: number;
+  validation_rate?: number;
+  mapped?: boolean;
+  validated?: boolean;
+  invalidated?: boolean;
+  paid_out?: boolean;
+  mapped_by?: string;
+  validated_by?: string;
+  date_mapped?: string;
+  date_validated?: string;
+}
+
+// Payment types
 export interface PayRequest {
   id: number;
-  user_id: number;
-  user_name: string;
-  amount: number;
+  user_id: string;
+  user: string;
+  osm_username: string;
+  amount_requested: number;
   date_requested: string;
   payment_email?: string;
   task_ids?: number[];
-  status?: string;
+  notes?: string;
 }
 
 export interface Payment {
   id: number;
-  user_id: number;
-  user_name: string;
+  user_id: string;
+  user: string;
   osm_username?: string;
   amount_paid: number;
   date_paid: string;
@@ -72,13 +115,31 @@ export interface Payment {
   notes?: string;
 }
 
+export interface TransactionsResponse {
+  requests: PayRequest[];
+  payments: Payment[];
+  message: string;
+  status: number;
+}
+
+export interface UserPayableResponse {
+  message: string;
+  checklist_earnings: number;
+  mapping_earnings: number;
+  validation_earnings: number;
+  payable_total: number;
+  status: number;
+}
+
+// Training types
 export interface Training {
   id: number;
   title: string;
   training_url: string;
   point_value: number;
   difficulty: "Easy" | "Medium" | "Hard";
-  training_type: "Mapping" | "Validation" | "Project";
+  training_type?: "Mapping" | "Validation" | "Project" | "mapping" | "validation" | "project";
+  project_id?: number;
   questions?: TrainingQuestion[];
 }
 
@@ -91,23 +152,42 @@ export interface TrainingQuestion {
 export interface TrainingAnswer {
   id: number;
   answer: string;
-  is_correct: boolean;
+  correct: boolean;
 }
 
+export interface TrainingsResponse {
+  // Admin response format
+  org_mapping_trainings?: Training[];
+  org_validation_trainings?: Training[];
+  org_project_trainings?: Training[];
+  // User response format
+  mapping_trainings?: Training[];
+  validation_trainings?: Training[];
+  project_trainings?: Training[];
+  user_completed_trainings?: Training[];
+  status: number;
+}
+
+// Checklist types
 export interface Checklist {
   id: number;
   name: string;
+  author?: string;
   description?: string;
   difficulty: "Easy" | "Medium" | "Hard";
-  active_status: boolean;
+  active_status?: boolean;
   visibility?: boolean;
   completion_rate: number;
   validation_rate: number;
   due_date?: string;
-  list_items: ChecklistItem[];
-  comments?: ChecklistComment[];
+  list_items?: ChecklistItem[];
+  assigned_users?: number;
   assigned_user?: string;
   assigned_user_id?: number;
+  status?: "active" | "inactive" | "pending" | "completed" | "confirmed" | "stale";
+  user_name?: string;
+  user_id?: string;
+  comments?: ChecklistComment[];
 }
 
 export interface ChecklistItem {
@@ -117,28 +197,128 @@ export interface ChecklistItem {
   link?: string;
   completed?: boolean;
   confirmed?: boolean;
+  completion_date?: string;
+  confirmation_date?: string;
 }
 
 export interface ChecklistComment {
   id: number;
   comment: string;
   author: string;
-  created_at: string;
+  role: string;
+  date: string;
 }
 
-export interface DashboardStats {
-  tasksMapped: number;
-  tasksValidated: number;
-  tasksInvalidated: number;
-  payableTotal: number;
-  requestsTotal: number;
-  paidTotal: number;
-  activeProjectsCount: number;
-  inactiveProjectsCount: number;
+export interface UserChecklist extends Checklist {
+  user_id: string;
+  checklist_id: number;
+  date_created: string;
+  completed: boolean;
+  confirmed: boolean;
+  last_completion_date?: string;
+  last_confirmation_date?: string;
+  final_completion_date?: string;
+  final_confirmation_date?: string;
+  comments?: ChecklistComment[];
 }
 
+export interface UserChecklistItem extends ChecklistItem {
+  user_id: string;
+  checklist_id: number;
+}
+
+export interface ChecklistsResponse {
+  // Admin response format (all checklist types)
+  checklists?: Checklist[];
+  active_checklists?: Checklist[];
+  inactive_checklists?: Checklist[];
+  completed_checklists?: Checklist[];
+  confirmed_checklists?: Checklist[];
+  stale_checklists?: Checklist[];
+  pending_checklists?: Checklist[];
+  status: number;
+}
+
+// Dashboard Stats types
+export interface AdminDashboardStats {
+  month_contribution_change: number;
+  total_contributions_for_month: number;
+  weekly_contributions_array: number[];
+  active_projects: number;
+  inactive_projects: number;
+  completed_projects: number;
+  mapped_tasks: number;
+  validated_tasks: number;
+  invalidated_tasks: number;
+  payable_total: number;
+  requests_total: number;
+  payouts_total: number;
+  message: string;
+  status: number;
+}
+
+export interface UserDashboardStats {
+  month_contribution_change: number;
+  total_contributions_for_month: number;
+  weekly_contributions_array: number[];
+  mapped_tasks: number;
+  validated_tasks: number;
+  invalidated_tasks: number;
+  validator_validated: number;
+  validator_invalidated: number;
+  mapping_payable_total: number;
+  validation_payable_total: number;
+  payable_total: number;
+  requests_total: number;
+  payouts_total: number;
+  message: string;
+  status: number;
+}
+
+// Validator Dashboard Stats (snake_case to match backend API response)
+export interface ValidatorDashboardStats {
+  tasks_mapped: number;
+  tasks_validated: number;
+  tasks_invalidated: number;
+  payable_total: number;
+  paid_total: number;
+}
+
+// API Response types
 export interface ApiResponse<T = unknown> {
   data?: T;
+  error?: string;
   message?: string;
+  status: number;
+}
+
+export interface UsersResponse {
+  users: User[];
+  status: number;
+}
+
+export interface UserDetailsResponse {
+  role: string;
+  first_name: string;
+  last_name: string;
+  full_name: string;
+  osm_username: string;
+  city: string;
+  country: string;
+  email: string;
+  payment_email: string;
+  status: number;
+}
+
+export interface LoginResponse {
+  id: string;
+  name: string;
+  email: string;
+  role: string;
+  osm_username: string;
+  payment_email: string;
+  city: string;
+  country: string;
+  needs_onboarding: boolean;
   status: number;
 }
