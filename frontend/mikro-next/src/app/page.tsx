@@ -32,7 +32,7 @@ export default function LandingPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background flex flex-col">
       {/* Header */}
       <header className="border-b border-border">
         <div className="container mx-auto flex h-16 items-center justify-between px-4">
@@ -49,7 +49,7 @@ export default function LandingPage() {
       </header>
 
       {/* Hero Section */}
-      <main className="container mx-auto px-4 py-16 md:py-24">
+      <main className="flex-1 container mx-auto px-4 py-16 md:py-24 flex flex-col justify-center">
         <div className="text-center space-y-8 max-w-3xl mx-auto">
           <h1 className="text-4xl md:text-6xl font-bold tracking-tight text-foreground">
             OSM Micropayments
@@ -81,7 +81,7 @@ export default function LandingPage() {
         </div>
 
         {/* Features */}
-        <div className="mt-24 grid gap-8 md:grid-cols-3">
+        <div className="mt-16 grid gap-8 md:grid-cols-3">
           <div className="text-center space-y-4 p-6">
             <div className="mx-auto w-12 h-12 rounded-lg bg-kaart-orange/10 flex items-center justify-center">
               <svg
@@ -153,7 +153,7 @@ export default function LandingPage() {
       </main>
 
       {/* Footer */}
-      <footer className="border-t border-border py-8 mt-16">
+      <footer className="border-t border-border py-8 mt-auto">
         <div className="container mx-auto px-4 text-center text-sm text-muted-foreground">
           <p>&copy; {new Date().getFullYear()} Kaart. All rights reserved.</p>
         </div>
