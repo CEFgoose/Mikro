@@ -9,8 +9,9 @@ Mikro is an OSM (OpenStreetMap) micropayments platform by Kaart. It tracks user 
 ## Tech Stack
 
 - **Backend**: Python 3, Flask, SQLAlchemy, PostgreSQL with PostGIS
-- **Frontend**: React 18, styled-components, MUI, Bootstrap, React Router 6
-- **Authentication**: JWT cookies via Kaart SSO (my.kaart.com)
+- **Frontend (Legacy)**: React 18, styled-components, MUI, Bootstrap, React Router 6 (`frontend/Mikro/`)
+- **Frontend (New)**: Next.js 16, React 19, Tailwind CSS 4, Auth0 (`frontend/mikro-next/`)
+- **Authentication**: Auth0 (migrated from Kaart SSO)
 
 ## Development Commands
 
@@ -22,7 +23,14 @@ pip3 install -r requirements.txt  # Install dependencies
 flask run -p 5004 --reload        # Run dev server on port 5004
 ```
 
-### Frontend
+### Frontend (New - mikro-next)
+```bash
+cd frontend/mikro-next
+npm install
+npm run dev                       # Run on port 3000
+```
+
+### Frontend (Legacy)
 ```bash
 cd frontend/Mikro
 npm install                       # or yarn install
@@ -104,3 +112,33 @@ Migrations handled via Flask-Migrate (Alembic).
 ## Deployment
 
 Deployed to mikro.kaart.com via GitLab CI/CD to Kubernetes. See `deployment/kubernetes/` for configs.
+
+## Auth0 Configuration (mikro-next)
+
+### Environment Variables
+Create `frontend/mikro-next/.env.local` with:
+```
+AUTH0_SECRET=<random-32-char-string>
+AUTH0_DOMAIN=dev-p6r3cciondp4has2.us.auth0.com
+AUTH0_ISSUER_BASE_URL=https://dev-p6r3cciondp4has2.us.auth0.com
+AUTH0_CLIENT_ID=<your-client-id>
+AUTH0_CLIENT_SECRET=<your-client-secret>
+AUTH0_BASE_URL=http://localhost:3000
+AUTH0_AUDIENCE=https://mikro/api/authorize
+```
+
+### Auth0 Dashboard Setup
+1. **Application Type**: Regular Web Application
+2. **Allowed Callback URLs**: `http://localhost:3000/auth/callback`
+3. **Allowed Logout URLs**: `http://localhost:3000`
+4. **API Authorization**: In Application → APIs tab, ensure **User Access** is AUTHORIZED for the Mikro API (not just Client Access)
+
+### SDK v4 + Next.js 16 Notes
+- Auth0 SDK v4 uses `/auth/login`, `/auth/logout`, `/auth/callback` routes (not `/api/auth/`)
+- Next.js 16 uses `proxy.ts` instead of `middleware.ts` (middleware is deprecated)
+- Route handlers are in `src/app/auth/login/route.ts`, `src/app/auth/logout/route.ts`, `src/app/auth/callback/route.ts`
+- Auth0 client config is in `src/lib/auth0.ts`
+
+### Troubleshooting
+- **"Client not authorized to access resource server"**: Go to Application → APIs tab → Edit the API → Toggle **User Access** to AUTHORIZED
+- **Callback URL mismatch**: Add `http://localhost:3000/auth/callback` to Allowed Callback URLs in Auth0 Application settings
