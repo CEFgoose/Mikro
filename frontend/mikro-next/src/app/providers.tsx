@@ -1,6 +1,6 @@
 "use client";
 
-import { Auth0Provider } from "@auth0/nextjs-auth0";
+import { Auth0Provider } from "@auth0/nextjs-auth0/client";
 import { ToastProvider } from "@/components/ui";
 
 interface ProvidersProps {
