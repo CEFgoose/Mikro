@@ -118,7 +118,7 @@ export default function LandingPage() {
             </div>
           </div>
 
-          {/* Stats Row */}
+          {/* Stats Row - commented out for now
           <div className="grid-responsive-4" style={{ marginTop: 80, maxWidth: 896, marginLeft: "auto", marginRight: "auto" }}>
             <div style={{ textAlign: "center" }}>
               <div style={{ fontSize: "clamp(1.875rem, 3vw, 2.25rem)", fontWeight: "bold", color: "#ff6b35" }}>100+</div>
@@ -137,6 +137,7 @@ export default function LandingPage() {
               <div style={{ fontSize: 14, color: "#6b7280", marginTop: 8 }}>Paid Out</div>
             </div>
           </div>
+          */}
         </div>
       </section>
 
