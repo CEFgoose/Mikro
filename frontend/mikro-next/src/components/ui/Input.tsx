@@ -8,15 +8,15 @@ export interface InputProps
 }
 
 const Input = forwardRef<HTMLInputElement, InputProps>(
-  ({ className, type, error, label, id, ...props }, ref) => {
+  ({ className, type, error, label, id, style, ...props }, ref) => {
     const inputId = id || (label ? label.toLowerCase().replace(/\s+/g, "-") : undefined);
 
     return (
-      <div className="w-full">
+      <div style={{ width: "100%" }}>
         {label && (
           <label
             htmlFor={inputId}
-            className="block text-sm font-medium mb-1"
+            style={{ display: "block", fontSize: 14, fontWeight: 500, marginBottom: 6 }}
           >
             {label}
           </label>
@@ -25,15 +25,21 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
           id={inputId}
           type={type}
           className={cn(
-            "flex h-10 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50",
+            "flex w-full rounded-lg border border-input bg-background ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50",
             error && "border-destructive focus-visible:ring-destructive",
             className
           )}
+          style={{
+            height: 42,
+            padding: "10px 14px",
+            fontSize: 15,
+            ...style,
+          }}
           ref={ref}
           {...props}
         />
         {error && (
-          <p className="mt-1 text-sm text-destructive">{error}</p>
+          <p style={{ marginTop: 4, fontSize: 14, color: "#dc2626" }}>{error}</p>
         )}
       </div>
     );

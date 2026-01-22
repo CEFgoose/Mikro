@@ -194,11 +194,11 @@ export default function UserChecklistsPage() {
 
   if (loading) {
     return (
-      <div className="space-y-6">
+      <div style={{ display: "flex", flexDirection: "column", gap: 32 }}>
         <Skeleton className="h-8 w-48" />
-        <div className="grid gap-4 md:grid-cols-4">
+        <div style={{ display: "grid", gap: 16, gridTemplateColumns: "repeat(4, 1fr)" }}>
           {[1, 2, 3, 4].map((i) => (
-            <Skeleton key={i} className="h-24 w-full" />
+            <Skeleton key={i} className="h-16 w-full" />
           ))}
         </div>
         <Skeleton className="h-10 w-64" />
@@ -212,56 +212,53 @@ export default function UserChecklistsPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div style={{ display: "flex", flexDirection: "column", gap: 32 }}>
       {/* Header */}
-      <div>
+      <div style={{ marginBottom: 8 }}>
         <h1 className="text-3xl font-bold tracking-tight">My Checklists</h1>
-        <p className="text-muted-foreground">
+        <p className="text-muted-foreground" style={{ marginTop: 8 }}>
           Complete checklists to earn rewards
         </p>
       </div>
 
-      {/* Stats Cards */}
-      <div className="grid gap-4 md:grid-cols-4">
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">Active Checklists</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-kaart-orange">{stats.active}</div>
-          </CardContent>
+      {/* Stats Cards - Compact Row */}
+      <div style={{ display: "grid", gap: 16, gridTemplateColumns: "repeat(4, 1fr)" }} className="grid-stats">
+        <Card style={{ padding: 0 }}>
+          <div style={{ padding: "12px 16px" }}>
+            <p style={{ fontSize: 12, color: "#6b7280", marginBottom: 4 }}>Active Checklists</p>
+            <div style={{ fontSize: 20, fontWeight: 700, color: "#ff6b35" }}>{stats.active}</div>
+          </div>
         </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">Completed</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-green-600">{stats.completed}</div>
-          </CardContent>
+        <Card style={{ padding: 0 }}>
+          <div style={{ padding: "12px 16px" }}>
+            <p style={{ fontSize: 12, color: "#6b7280", marginBottom: 4 }}>Completed</p>
+            <div style={{ fontSize: 20, fontWeight: 700, color: "#16a34a" }}>{stats.completed}</div>
+          </div>
         </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">Total Items</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
+        <Card style={{ padding: 0 }}>
+          <div style={{ padding: "12px 16px" }}>
+            <p style={{ fontSize: 12, color: "#6b7280", marginBottom: 4 }}>Items Progress</p>
+            <div style={{ fontSize: 20, fontWeight: 700 }}>
               {stats.completedItems}/{stats.totalItems}
             </div>
-            <div className="w-full bg-muted rounded-full h-2 mt-2">
+            <div style={{ width: "100%", backgroundColor: "#e5e7eb", borderRadius: 4, height: 4, marginTop: 8 }}>
               <div
-                className="bg-kaart-orange h-2 rounded-full transition-all"
-                style={{ width: `${stats.totalItems > 0 ? (stats.completedItems / stats.totalItems) * 100 : 0}%` }}
+                style={{
+                  backgroundColor: "#ff6b35",
+                  height: 4,
+                  borderRadius: 4,
+                  width: `${stats.totalItems > 0 ? (stats.completedItems / stats.totalItems) * 100 : 0}%`,
+                  transition: "width 0.3s"
+                }}
               />
             </div>
-          </CardContent>
+          </div>
         </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">Total Earned</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-green-600">{formatCurrency(stats.totalEarned)}</div>
-          </CardContent>
+        <Card style={{ padding: 0 }}>
+          <div style={{ padding: "12px 16px" }}>
+            <p style={{ fontSize: 12, color: "#6b7280", marginBottom: 4 }}>Total Earned</p>
+            <div style={{ fontSize: 20, fontWeight: 700, color: "#16a34a" }}>{formatCurrency(stats.totalEarned)}</div>
+          </div>
         </Card>
       </div>
 
@@ -281,8 +278,17 @@ export default function UserChecklistsPage() {
             </div>
           ) : (
             <Card>
-              <CardContent className="py-12 text-center">
-                <div className="mx-auto w-12 h-12 mb-4 rounded-full bg-muted flex items-center justify-center">
+              <CardContent style={{ padding: "48px 24px", textAlign: "center" }}>
+                <div style={{
+                  width: 48,
+                  height: 48,
+                  margin: "0 auto 16px",
+                  borderRadius: "50%",
+                  backgroundColor: "#f3f4f6",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center"
+                }}>
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
                     width="24"
@@ -293,14 +299,14 @@ export default function UserChecklistsPage() {
                     strokeWidth="2"
                     strokeLinecap="round"
                     strokeLinejoin="round"
-                    className="text-muted-foreground"
+                    style={{ color: "#6b7280" }}
                   >
                     <path d="M9 11l3 3L22 4" />
                     <path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11" />
                   </svg>
                 </div>
-                <h3 className="font-semibold text-lg mb-2">No Active Checklists</h3>
-                <p className="text-muted-foreground max-w-sm mx-auto">
+                <h3 style={{ fontWeight: 600, fontSize: 18, marginBottom: 8 }}>No Active Checklists</h3>
+                <p style={{ color: "#6b7280", maxWidth: 320, margin: "0 auto" }}>
                   You don&apos;t have any checklists assigned. Contact your administrator for assignments.
                 </p>
               </CardContent>
@@ -317,7 +323,7 @@ export default function UserChecklistsPage() {
             </div>
           ) : (
             <Card>
-              <CardContent className="py-12 text-center text-muted-foreground">
+              <CardContent style={{ padding: "48px 24px", textAlign: "center", color: "#6b7280" }}>
                 No completed checklists yet
               </CardContent>
             </Card>

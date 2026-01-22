@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle, Skeleton, Badge, Button } fro
 import { useUserDashboardStats, useUserProjects, useUserPayable, useSubmitPaymentRequest } from "@/hooks";
 import { useToastActions } from "@/components/ui";
 import Link from "next/link";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 function formatCurrency(amount: number): string {
   return new Intl.NumberFormat("en-US", {
@@ -22,6 +22,13 @@ export default function UserDashboard() {
   const { mutate: submitPayment, loading: submittingPayment } = useSubmitPaymentRequest();
   const toast = useToastActions();
   const [isRequestingPayment, setIsRequestingPayment] = useState(false);
+
+  // Show error as toast instead of inline
+  useEffect(() => {
+    if (statsError) {
+      toast.error(`Dashboard: ${statsError}`);
+    }
+  }, [statsError]);
 
   const handleRequestPayment = async () => {
     if (!payable || payable.payable_total <= 0) {
@@ -44,22 +51,17 @@ export default function UserDashboard() {
   const activeProjects = projects?.org_active_projects?.length ?? 0;
 
   return (
-    <div className="space-y-6">
-      <div>
+    <div style={{ display: "flex", flexDirection: "column", gap: 32 }}>
+      <div style={{ marginBottom: 8 }}>
         <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
-        <p className="text-muted-foreground">
+        <p className="text-muted-foreground" style={{ marginTop: 8 }}>
           Welcome back, {user?.name || user?.email}!
         </p>
       </div>
 
-      {statsError && (
-        <div className="rounded-lg bg-destructive/10 p-4 text-destructive">
-          Error loading dashboard: {statsError}
-        </div>
-      )}
 
       {/* Main Stats Cards */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      <div style={{ display: "grid", gap: 24, gridTemplateColumns: "repeat(4, 1fr)" }} className="grid-stats">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Tasks Mapped</CardTitle>
@@ -191,89 +193,76 @@ export default function UserDashboard() {
         </Card>
       </div>
 
-      {/* Earnings Breakdown */}
-      <div className="grid gap-4 md:grid-cols-3">
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">Mapping Earnings</CardTitle>
-          </CardHeader>
-          <CardContent>
+      {/* Earnings & Payments - Compact Row */}
+      <div style={{ display: "grid", gap: 16, gridTemplateColumns: "repeat(5, 1fr)" }} className="grid-earnings">
+        <Card style={{ padding: 0 }}>
+          <div style={{ padding: "12px 16px" }}>
+            <p style={{ fontSize: 12, color: "#6b7280", marginBottom: 4 }}>Mapping Earnings</p>
             {payableLoading ? (
-              <Skeleton className="h-10 w-24" />
+              <Skeleton className="h-6 w-20" />
             ) : (
-              <div className="text-3xl font-bold text-kaart-orange">
+              <div style={{ fontSize: 20, fontWeight: 700, color: "#ff6b35" }}>
                 {formatCurrency(payable?.mapping_earnings ?? 0)}
               </div>
             )}
-          </CardContent>
+          </div>
         </Card>
 
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">Validation Earnings</CardTitle>
-          </CardHeader>
-          <CardContent>
+        <Card style={{ padding: 0 }}>
+          <div style={{ padding: "12px 16px" }}>
+            <p style={{ fontSize: 12, color: "#6b7280", marginBottom: 4 }}>Validation Earnings</p>
             {payableLoading ? (
-              <Skeleton className="h-10 w-24" />
+              <Skeleton className="h-6 w-20" />
             ) : (
-              <div className="text-3xl font-bold text-blue-600">
+              <div style={{ fontSize: 20, fontWeight: 700, color: "#2563eb" }}>
                 {formatCurrency(payable?.validation_earnings ?? 0)}
               </div>
             )}
-          </CardContent>
+          </div>
         </Card>
 
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">Checklist Earnings</CardTitle>
-          </CardHeader>
-          <CardContent>
+        <Card style={{ padding: 0 }}>
+          <div style={{ padding: "12px 16px" }}>
+            <p style={{ fontSize: 12, color: "#6b7280", marginBottom: 4 }}>Checklist Earnings</p>
             {payableLoading ? (
-              <Skeleton className="h-10 w-24" />
+              <Skeleton className="h-6 w-20" />
             ) : (
-              <div className="text-3xl font-bold text-purple-600">
+              <div style={{ fontSize: 20, fontWeight: 700, color: "#9333ea" }}>
                 {formatCurrency(payable?.checklist_earnings ?? 0)}
               </div>
             )}
-          </CardContent>
+          </div>
         </Card>
-      </div>
 
-      {/* Payment History Overview */}
-      <div className="grid gap-4 md:grid-cols-2">
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">Pending Requests</CardTitle>
-          </CardHeader>
-          <CardContent>
+        <Card style={{ padding: 0 }}>
+          <div style={{ padding: "12px 16px" }}>
+            <p style={{ fontSize: 12, color: "#6b7280", marginBottom: 4 }}>Pending Requests</p>
             {statsLoading ? (
-              <Skeleton className="h-10 w-24" />
+              <Skeleton className="h-6 w-20" />
             ) : (
-              <div className="text-3xl font-bold text-yellow-600">
+              <div style={{ fontSize: 20, fontWeight: 700, color: "#ca8a04" }}>
                 {formatCurrency(stats?.requests_total ?? 0)}
               </div>
             )}
-          </CardContent>
+          </div>
         </Card>
 
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">Total Received</CardTitle>
-          </CardHeader>
-          <CardContent>
+        <Card style={{ padding: 0 }}>
+          <div style={{ padding: "12px 16px" }}>
+            <p style={{ fontSize: 12, color: "#6b7280", marginBottom: 4 }}>Total Received</p>
             {statsLoading ? (
-              <Skeleton className="h-10 w-24" />
+              <Skeleton className="h-6 w-20" />
             ) : (
-              <div className="text-3xl font-bold text-green-600">
+              <div style={{ fontSize: 20, fontWeight: 700, color: "#16a34a" }}>
                 {formatCurrency(stats?.payouts_total ?? 0)}
               </div>
             )}
-          </CardContent>
+          </div>
         </Card>
       </div>
 
       {/* Recent Projects */}
-      <div className="grid gap-4 md:grid-cols-2">
+      <div style={{ display: "grid", gap: 24, gridTemplateColumns: "repeat(2, 1fr)" }} className="grid-projects">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle>Your Projects</CardTitle>

@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect } from "react";
 import {
   Card,
   CardContent,
@@ -7,6 +8,7 @@ import {
   CardTitle,
   Badge,
   Skeleton,
+  useToastActions,
 } from "@/components/ui";
 import { useUserProjects } from "@/hooks";
 import type { Project } from "@/types";
@@ -25,7 +27,7 @@ function ProjectCard({ project }: { project: Project }) {
 
   return (
     <Card className="hover:shadow-md transition-shadow">
-      <CardHeader className="pb-2">
+      <CardHeader>
         <div className="flex items-start justify-between">
           <div>
             <CardTitle className="text-lg">{project.name}</CardTitle>
@@ -127,12 +129,20 @@ function ProjectCard({ project }: { project: Project }) {
 
 export default function UserProjectsPage() {
   const { data: projects, loading, error } = useUserProjects();
+  const toast = useToastActions();
+
+  // Show error as toast instead of inline
+  useEffect(() => {
+    if (error) {
+      toast.error(`Projects: ${error}`);
+    }
+  }, [error]);
 
   const activeProjects = projects?.org_active_projects ?? [];
 
   if (loading) {
     return (
-      <div className="space-y-6">
+      <div style={{ display: "flex", flexDirection: "column", gap: 32 }}>
         <Skeleton className="h-10 w-48" />
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
           {[1, 2, 3].map((i) => (
@@ -144,56 +154,43 @@ export default function UserProjectsPage() {
   }
 
   return (
-    <div className="space-y-6">
-      <div>
+    <div style={{ display: "flex", flexDirection: "column", gap: 32 }}>
+      {/* Header */}
+      <div style={{ marginBottom: 8 }}>
         <h1 className="text-3xl font-bold tracking-tight">Your Projects</h1>
-        <p className="text-muted-foreground">
+        <p className="text-muted-foreground" style={{ marginTop: 8 }}>
           Projects assigned to you for mapping and validation
         </p>
       </div>
 
-      {error && (
-        <div className="rounded-lg bg-destructive/10 p-4 text-destructive">
-          Error loading projects: {error}
-        </div>
-      )}
-
-      {/* Stats Summary */}
-      <div className="grid gap-4 md:grid-cols-4">
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">Active Projects</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{activeProjects.length}</div>
-          </CardContent>
+      {/* Stats Summary - Compact Row */}
+      <div style={{ display: "grid", gap: 16, gridTemplateColumns: "repeat(4, 1fr)" }} className="grid-stats">
+        <Card style={{ padding: 0 }}>
+          <div style={{ padding: "12px 16px" }}>
+            <p style={{ fontSize: 12, color: "#6b7280", marginBottom: 4 }}>Active Projects</p>
+            <div style={{ fontSize: 20, fontWeight: 700 }}>{activeProjects.length}</div>
+          </div>
         </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">Total Tasks</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
+        <Card style={{ padding: 0 }}>
+          <div style={{ padding: "12px 16px" }}>
+            <p style={{ fontSize: 12, color: "#6b7280", marginBottom: 4 }}>Total Tasks</p>
+            <div style={{ fontSize: 20, fontWeight: 700 }}>
               {activeProjects.reduce((sum, p) => sum + p.total_tasks, 0)}
             </div>
-          </CardContent>
+          </div>
         </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">Tasks Completed</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-green-600">
+        <Card style={{ padding: 0 }}>
+          <div style={{ padding: "12px 16px" }}>
+            <p style={{ fontSize: 12, color: "#6b7280", marginBottom: 4 }}>Tasks Completed</p>
+            <div style={{ fontSize: 20, fontWeight: 700, color: "#16a34a" }}>
               {activeProjects.reduce((sum, p) => sum + (p.total_mapped ?? 0), 0)}
             </div>
-          </CardContent>
+          </div>
         </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">Potential Earnings</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-kaart-orange">
+        <Card style={{ padding: 0 }}>
+          <div style={{ padding: "12px 16px" }}>
+            <p style={{ fontSize: 12, color: "#6b7280", marginBottom: 4 }}>Potential Earnings</p>
+            <div style={{ fontSize: 20, fontWeight: 700, color: "#ff6b35" }}>
               {formatCurrency(
                 activeProjects.reduce(
                   (sum, p) =>
@@ -203,7 +200,7 @@ export default function UserProjectsPage() {
                 )
               )}
             </div>
-          </CardContent>
+          </div>
         </Card>
       </div>
 
@@ -216,8 +213,17 @@ export default function UserProjectsPage() {
         </div>
       ) : (
         <Card>
-          <CardContent className="py-12 text-center">
-            <div className="mx-auto w-12 h-12 mb-4 rounded-full bg-muted flex items-center justify-center">
+          <CardContent style={{ padding: "48px 24px", textAlign: "center" }}>
+            <div style={{
+              width: 48,
+              height: 48,
+              margin: "0 auto 16px",
+              borderRadius: "50%",
+              backgroundColor: "#f3f4f6",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center"
+            }}>
               <svg
                 xmlns="http://www.w3.org/2000/svg"
                 width="24"
@@ -228,13 +234,13 @@ export default function UserProjectsPage() {
                 strokeWidth="2"
                 strokeLinecap="round"
                 strokeLinejoin="round"
-                className="text-muted-foreground"
+                style={{ color: "#6b7280" }}
               >
                 <path d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
               </svg>
             </div>
-            <h3 className="font-semibold text-lg mb-2">No Projects Assigned</h3>
-            <p className="text-muted-foreground max-w-sm mx-auto">
+            <h3 style={{ fontWeight: 600, fontSize: 18, marginBottom: 8 }}>No Projects Assigned</h3>
+            <p style={{ color: "#6b7280", maxWidth: 320, margin: "0 auto" }}>
               You don&apos;t have any projects assigned yet. Contact your administrator to get
               started with mapping.
             </p>

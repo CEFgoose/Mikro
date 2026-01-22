@@ -1,75 +1,95 @@
 "use client";
 
 import Link from "next/link";
-import { useUser } from "@auth0/nextjs-auth0";
-import { cn } from "@/lib/utils";
+import Image from "next/image";
+import { useUser } from "@auth0/nextjs-auth0/client";
 
-interface HeaderProps {
-  className?: string;
-}
-
-export function Header({ className }: HeaderProps) {
+export function Header() {
   const { user, isLoading } = useUser();
 
   return (
     <header
-      className={cn(
-        "sticky top-0 z-50 w-full border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60",
-        className
-      )}
+      style={{
+        position: "fixed",
+        top: 0,
+        left: 0,
+        right: 0,
+        zIndex: 50,
+        backgroundColor: "white",
+        borderBottom: "1px solid #e5e7eb",
+        height: 64,
+      }}
     >
-      <div className="flex h-16 items-center justify-between px-4 md:px-6">
+      <div
+        style={{
+          display: "flex",
+          height: "100%",
+          alignItems: "center",
+          justifyContent: "space-between",
+          paddingLeft: 24,
+          paddingRight: 24,
+          maxWidth: "100%",
+        }}
+      >
         {/* Logo */}
-        <Link href="/" className="flex items-center space-x-2">
-          <span className="text-xl font-bold text-kaart-orange">Mikro</span>
+        <Link href="/" style={{ display: "flex", alignItems: "center", gap: 12, textDecoration: "none" }}>
+          <Image src="/mikro-logo.png" alt="Mikro" width={36} height={36} />
+          <span style={{ fontSize: 20, fontWeight: 600, color: "#111827" }}>Mikro</span>
         </Link>
 
-        {/* Navigation */}
-        <nav className="hidden md:flex items-center space-x-6">
-          {user && (
-            <>
-              <Link
-                href="/user/dashboard"
-                className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
-              >
-                Dashboard
-              </Link>
-              <Link
-                href="/user/projects"
-                className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
-              >
-                Projects
-              </Link>
-              <Link
-                href="/user/payments"
-                className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
-              >
-                Payments
-              </Link>
-            </>
-          )}
-        </nav>
-
         {/* User Menu */}
-        <div className="flex items-center space-x-4">
+        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
           {isLoading ? (
-            <div className="h-8 w-8 animate-pulse rounded-full bg-muted" />
+            <div style={{ width: 32, height: 32, borderRadius: "50%", backgroundColor: "#e5e7eb" }} />
           ) : user ? (
-            <div className="flex items-center space-x-4">
-              <span className="text-sm text-muted-foreground hidden md:inline">
+            <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+              <span className="hide-mobile" style={{ fontSize: 14, color: "#6b7280" }}>
                 {user.name || user.email}
               </span>
               <Link
-                href="/api/auth/logout"
-                className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
+                href="/account"
+                style={{
+                  fontSize: 14,
+                  fontWeight: 500,
+                  color: "#4b5563",
+                  textDecoration: "none",
+                  padding: "8px 12px",
+                  borderRadius: 6,
+                  backgroundColor: "#f3f4f6",
+                }}
+              >
+                Settings
+              </Link>
+              <Link
+                href="/auth/logout"
+                style={{
+                  fontSize: 14,
+                  fontWeight: 500,
+                  color: "#374151",
+                  textDecoration: "none",
+                  padding: "8px 12px",
+                  borderRadius: 6,
+                  border: "1px solid #d1d5db",
+                }}
               >
                 Logout
               </Link>
             </div>
           ) : (
             <Link
-              href="/api/auth/login"
-              className="inline-flex items-center justify-center rounded-md bg-kaart-orange px-4 py-2 text-sm font-medium text-white hover:bg-kaart-orange-dark transition-colors"
+              href="/auth/login"
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                justifyContent: "center",
+                borderRadius: 6,
+                backgroundColor: "#ff6b35",
+                padding: "8px 16px",
+                fontSize: 14,
+                fontWeight: 500,
+                color: "white",
+                textDecoration: "none",
+              }}
             >
               Sign In
             </Link>

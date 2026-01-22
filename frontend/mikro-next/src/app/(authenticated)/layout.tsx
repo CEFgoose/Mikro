@@ -11,18 +11,24 @@ export default async function AuthenticatedLayout({
   const session = await auth0.getSession();
 
   if (!session) {
-    redirect("/api/auth/login");
+    redirect("/auth/login");
   }
 
   // Get user role from session claims
   const role = (session.user?.["mikro/roles"] as string[] | undefined)?.[0] || "user";
 
   return (
-    <div className="min-h-screen bg-background">
+    <div style={{ minHeight: "100vh", backgroundColor: "#f9fafb" }}>
       <Header />
       <Sidebar role={role as "user" | "validator" | "admin"} />
-      <main className="pl-64 pt-16">
-        <div className="p-6">{children}</div>
+      <main
+        className="main-content"
+        style={{
+          paddingTop: 64,
+          paddingBottom: 120,
+        }}
+      >
+        <div style={{ padding: 24 }}>{children}</div>
       </main>
     </div>
   );

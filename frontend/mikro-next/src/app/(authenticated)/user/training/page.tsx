@@ -116,7 +116,7 @@ export default function UserTrainingPage() {
         training.completed ? "border-green-500 bg-green-50/50 dark:bg-green-950/20" : ""
       }`}
     >
-      <CardHeader className="pb-2">
+      <CardHeader>
         <div className="flex justify-between items-start">
           <CardTitle className="text-lg">{training.title}</CardTitle>
           {training.completed && (
@@ -178,11 +178,11 @@ export default function UserTrainingPage() {
 
   if (loading) {
     return (
-      <div className="space-y-6">
+      <div style={{ display: "flex", flexDirection: "column", gap: 32 }}>
         <Skeleton className="h-8 w-48" />
-        <div className="grid gap-4 md:grid-cols-4">
+        <div style={{ display: "grid", gap: 16, gridTemplateColumns: "repeat(4, 1fr)" }}>
           {[1, 2, 3, 4].map((i) => (
-            <Skeleton key={i} className="h-24 w-full" />
+            <Skeleton key={i} className="h-16 w-full" />
           ))}
         </div>
         <Skeleton className="h-10 w-64" />
@@ -196,54 +196,51 @@ export default function UserTrainingPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div style={{ display: "flex", flexDirection: "column", gap: 32 }}>
       {/* Header */}
-      <div>
+      <div style={{ marginBottom: 8 }}>
         <h1 className="text-3xl font-bold tracking-tight">Training</h1>
-        <p className="text-muted-foreground">
+        <p className="text-muted-foreground" style={{ marginTop: 8 }}>
           Complete training modules to earn points and improve your skills
         </p>
       </div>
 
-      {/* Stats Cards */}
-      <div className="grid gap-4 md:grid-cols-4">
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">Total Trainings</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats.total}</div>
-          </CardContent>
+      {/* Stats Cards - Compact Row */}
+      <div style={{ display: "grid", gap: 16, gridTemplateColumns: "repeat(4, 1fr)" }} className="grid-stats">
+        <Card style={{ padding: 0 }}>
+          <div style={{ padding: "12px 16px" }}>
+            <p style={{ fontSize: 12, color: "#6b7280", marginBottom: 4 }}>Total Trainings</p>
+            <div style={{ fontSize: 20, fontWeight: 700 }}>{stats.total}</div>
+          </div>
         </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">Completed</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-green-600">{stats.completed}</div>
-            <div className="w-full bg-muted rounded-full h-2 mt-2">
+        <Card style={{ padding: 0 }}>
+          <div style={{ padding: "12px 16px" }}>
+            <p style={{ fontSize: 12, color: "#6b7280", marginBottom: 4 }}>Completed</p>
+            <div style={{ fontSize: 20, fontWeight: 700, color: "#16a34a" }}>{stats.completed}</div>
+            <div style={{ width: "100%", backgroundColor: "#e5e7eb", borderRadius: 4, height: 4, marginTop: 8 }}>
               <div
-                className="bg-green-600 h-2 rounded-full transition-all"
-                style={{ width: `${stats.total > 0 ? (stats.completed / stats.total) * 100 : 0}%` }}
+                style={{
+                  backgroundColor: "#16a34a",
+                  height: 4,
+                  borderRadius: 4,
+                  width: `${stats.total > 0 ? (stats.completed / stats.total) * 100 : 0}%`,
+                  transition: "width 0.3s"
+                }}
               />
             </div>
-          </CardContent>
+          </div>
         </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">Pending</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-yellow-600">{stats.pending}</div>
-          </CardContent>
+        <Card style={{ padding: 0 }}>
+          <div style={{ padding: "12px 16px" }}>
+            <p style={{ fontSize: 12, color: "#6b7280", marginBottom: 4 }}>Pending</p>
+            <div style={{ fontSize: 20, fontWeight: 700, color: "#ca8a04" }}>{stats.pending}</div>
+          </div>
         </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">Points Earned</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-kaart-orange">{stats.totalPoints}</div>
-          </CardContent>
+        <Card style={{ padding: 0 }}>
+          <div style={{ padding: "12px 16px" }}>
+            <p style={{ fontSize: 12, color: "#6b7280", marginBottom: 4 }}>Points Earned</p>
+            <div style={{ fontSize: 20, fontWeight: 700, color: "#ff6b35" }}>{stats.totalPoints}</div>
+          </div>
         </Card>
       </div>
 
@@ -263,7 +260,7 @@ export default function UserTrainingPage() {
             </div>
           ) : (
             <Card>
-              <CardContent className="py-12 text-center text-muted-foreground">
+              <CardContent style={{ padding: "48px 24px", textAlign: "center", color: "#6b7280" }}>
                 No mapping trainings available
               </CardContent>
             </Card>
@@ -278,7 +275,7 @@ export default function UserTrainingPage() {
             </div>
           ) : (
             <Card>
-              <CardContent className="py-12 text-center text-muted-foreground">
+              <CardContent style={{ padding: "48px 24px", textAlign: "center", color: "#6b7280" }}>
                 No validation trainings available
               </CardContent>
             </Card>
@@ -293,7 +290,7 @@ export default function UserTrainingPage() {
             </div>
           ) : (
             <Card>
-              <CardContent className="py-12 text-center text-muted-foreground">
+              <CardContent style={{ padding: "48px 24px", textAlign: "center", color: "#6b7280" }}>
                 No project-specific trainings available
               </CardContent>
             </Card>

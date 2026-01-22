@@ -17,6 +17,7 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(
       isLoading = false,
       disabled,
       children,
+      style,
       ...props
     },
     ref
@@ -34,16 +35,17 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(
       link: "text-kaart-orange underline-offset-4 hover:underline",
     };
 
-    const sizes = {
-      sm: "h-9 px-3 text-sm",
-      md: "h-10 px-4 text-sm",
-      lg: "h-11 px-8 text-base",
-      icon: "h-10 w-10",
+    const sizeStyles: Record<string, React.CSSProperties> = {
+      sm: { height: 36, padding: "8px 14px", fontSize: 14 },
+      md: { height: 42, padding: "10px 18px", fontSize: 14 },
+      lg: { height: 46, padding: "12px 24px", fontSize: 16 },
+      icon: { height: 42, width: 42, padding: 0 },
     };
 
     return (
       <button
-        className={cn(baseStyles, variants[variant], sizes[size], className)}
+        className={cn(baseStyles, variants[variant], className)}
+        style={{ ...sizeStyles[size], ...style }}
         ref={ref}
         disabled={disabled || isLoading}
         {...props}

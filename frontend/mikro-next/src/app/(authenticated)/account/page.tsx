@@ -79,20 +79,54 @@ export default function AccountPage() {
 
   if (userLoading || isLoading) {
     return (
-      <div className="flex items-center justify-center h-64">
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: 256 }}>
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-kaart-orange" />
       </div>
     );
   }
 
   return (
-    <div className="max-w-2xl mx-auto space-y-6">
-      <h1 className="text-2xl font-bold">Account Settings</h1>
+    <div style={{ display: "flex", flexDirection: "column", gap: 32, maxWidth: 720, margin: "0 auto" }}>
+      {/* Header */}
+      <div style={{ marginBottom: 8 }}>
+        <h1 className="text-3xl font-bold tracking-tight">Account Settings</h1>
+        <p className="text-muted-foreground" style={{ marginTop: 8 }}>
+          Manage your profile and preferences
+        </p>
+      </div>
+
+      {/* Stats Row - Compact */}
+      <div style={{ display: "grid", gap: 16, gridTemplateColumns: "repeat(3, 1fr)" }}>
+        <Card style={{ padding: 0 }}>
+          <div style={{ padding: "12px 16px", textAlign: "center" }}>
+            <p style={{ fontSize: 12, color: "#6b7280", marginBottom: 4 }}>Tasks Mapped</p>
+            <div style={{ fontSize: 24, fontWeight: 700, color: "#ff6b35" }}>
+              {profile?.total_tasks_mapped ?? 0}
+            </div>
+          </div>
+        </Card>
+        <Card style={{ padding: 0 }}>
+          <div style={{ padding: "12px 16px", textAlign: "center" }}>
+            <p style={{ fontSize: 12, color: "#6b7280", marginBottom: 4 }}>Tasks Validated</p>
+            <div style={{ fontSize: 24, fontWeight: 700, color: "#2563eb" }}>
+              {profile?.total_tasks_validated ?? 0}
+            </div>
+          </div>
+        </Card>
+        <Card style={{ padding: 0 }}>
+          <div style={{ padding: "12px 16px", textAlign: "center" }}>
+            <p style={{ fontSize: 12, color: "#6b7280", marginBottom: 4 }}>Total Earned</p>
+            <div style={{ fontSize: 24, fontWeight: 700, color: "#16a34a" }}>
+              ${profile?.total_payout?.toFixed(2) ?? "0.00"}
+            </div>
+          </div>
+        </Card>
+      </div>
 
       {/* Profile Card */}
       <Card>
         <CardHeader>
-          <div className="flex justify-between items-center">
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
             <CardTitle>Profile Information</CardTitle>
             {!isEditing && (
               <Button variant="outline" onClick={() => setIsEditing(true)}>
@@ -101,25 +135,45 @@ export default function AccountPage() {
             )}
           </div>
         </CardHeader>
-        <CardContent className="space-y-4">
+        <CardContent>
           {/* Avatar and Name */}
-          <div className="flex items-center gap-4 pb-4 border-b border-border">
-            <div className="h-16 w-16 rounded-full bg-kaart-orange flex items-center justify-center text-white text-2xl font-bold">
+          <div style={{ display: "flex", alignItems: "center", gap: 16, paddingBottom: 20, marginBottom: 20, borderBottom: "1px solid #e5e7eb" }}>
+            <div style={{
+              width: 64,
+              height: 64,
+              borderRadius: "50%",
+              backgroundColor: "#ff6b35",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              color: "white",
+              fontSize: 24,
+              fontWeight: 700
+            }}>
               {profile?.name?.charAt(0).toUpperCase() || auth0User?.name?.charAt(0).toUpperCase() || "U"}
             </div>
             <div>
-              <h2 className="text-xl font-semibold">{profile?.name || auth0User?.name}</h2>
-              <p className="text-sm text-muted-foreground">{profile?.email || auth0User?.email}</p>
-              <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-kaart-orange/10 text-kaart-orange mt-1">
+              <h2 style={{ fontSize: 20, fontWeight: 600, marginBottom: 4 }}>{profile?.name || auth0User?.name}</h2>
+              <p style={{ fontSize: 14, color: "#6b7280", marginBottom: 6 }}>{profile?.email || auth0User?.email}</p>
+              <span style={{
+                display: "inline-flex",
+                alignItems: "center",
+                padding: "4px 10px",
+                borderRadius: 12,
+                fontSize: 12,
+                fontWeight: 500,
+                backgroundColor: "rgba(255, 107, 53, 0.1)",
+                color: "#ff6b35"
+              }}>
                 {profile?.role || "user"}
               </span>
             </div>
           </div>
 
           {/* Editable Fields */}
-          <div className="grid gap-4">
+          <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
             <div>
-              <label className="block text-sm font-medium mb-1">OSM Username</label>
+              <label style={{ display: "block", fontSize: 14, fontWeight: 500, marginBottom: 6 }}>OSM Username</label>
               {isEditing ? (
                 <Input
                   value={osmUsername}
@@ -127,12 +181,12 @@ export default function AccountPage() {
                   placeholder="Your OpenStreetMap username"
                 />
               ) : (
-                <p className="text-foreground">{profile?.osm_username || "-"}</p>
+                <p style={{ fontSize: 15, color: "#111827" }}>{profile?.osm_username || "-"}</p>
               )}
             </div>
 
             <div>
-              <label className="block text-sm font-medium mb-1">Payment Email (Payoneer)</label>
+              <label style={{ display: "block", fontSize: 14, fontWeight: 500, marginBottom: 6 }}>Payment Email (Payoneer)</label>
               {isEditing ? (
                 <Input
                   type="email"
@@ -141,13 +195,13 @@ export default function AccountPage() {
                   placeholder="your-payoneer@email.com"
                 />
               ) : (
-                <p className="text-foreground">{profile?.payment_email || "-"}</p>
+                <p style={{ fontSize: 15, color: "#111827" }}>{profile?.payment_email || "-"}</p>
               )}
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
               <div>
-                <label className="block text-sm font-medium mb-1">City</label>
+                <label style={{ display: "block", fontSize: 14, fontWeight: 500, marginBottom: 6 }}>City</label>
                 {isEditing ? (
                   <Input
                     value={city}
@@ -155,11 +209,11 @@ export default function AccountPage() {
                     placeholder="City"
                   />
                 ) : (
-                  <p className="text-foreground">{profile?.city || "-"}</p>
+                  <p style={{ fontSize: 15, color: "#111827" }}>{profile?.city || "-"}</p>
                 )}
               </div>
               <div>
-                <label className="block text-sm font-medium mb-1">Country</label>
+                <label style={{ display: "block", fontSize: 14, fontWeight: 500, marginBottom: 6 }}>Country</label>
                 {isEditing ? (
                   <Input
                     value={country}
@@ -167,7 +221,7 @@ export default function AccountPage() {
                     placeholder="Country"
                   />
                 ) : (
-                  <p className="text-foreground">{profile?.country || "-"}</p>
+                  <p style={{ fontSize: 15, color: "#111827" }}>{profile?.country || "-"}</p>
                 )}
               </div>
             </div>
@@ -175,7 +229,7 @@ export default function AccountPage() {
 
           {/* Save/Cancel Buttons */}
           {isEditing && (
-            <div className="flex gap-2 justify-end pt-4">
+            <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", paddingTop: 20, marginTop: 20, borderTop: "1px solid #e5e7eb" }}>
               <Button
                 variant="outline"
                 onClick={() => {
@@ -196,44 +250,29 @@ export default function AccountPage() {
         </CardContent>
       </Card>
 
-      {/* Stats Card */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Statistics</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-3 gap-4 text-center">
-            <div className="p-4 bg-muted rounded-lg">
-              <div className="text-2xl font-bold text-kaart-orange">
-                {profile?.total_tasks_mapped ?? 0}
-              </div>
-              <div className="text-sm text-muted-foreground">Tasks Mapped</div>
-            </div>
-            <div className="p-4 bg-muted rounded-lg">
-              <div className="text-2xl font-bold text-kaart-blue">
-                {profile?.total_tasks_validated ?? 0}
-              </div>
-              <div className="text-sm text-muted-foreground">Tasks Validated</div>
-            </div>
-            <div className="p-4 bg-muted rounded-lg">
-              <div className="text-2xl font-bold text-green-600">
-                ${profile?.total_payout?.toFixed(2) ?? "0.00"}
-              </div>
-              <div className="text-sm text-muted-foreground">Total Earned</div>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Logout */}
+      {/* Session Card */}
       <Card>
         <CardHeader>
           <CardTitle>Session</CardTitle>
         </CardHeader>
         <CardContent>
+          <p style={{ fontSize: 14, color: "#6b7280", marginBottom: 12 }}>
+            Sign out of your account on this device.
+          </p>
           <a
             href="/api/auth/logout"
-            className="inline-flex items-center justify-center rounded-lg bg-destructive px-4 py-2 text-sm font-medium text-white hover:bg-destructive/90 transition-colors"
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              justifyContent: "center",
+              borderRadius: 8,
+              backgroundColor: "#dc2626",
+              padding: "8px 16px",
+              fontSize: 14,
+              fontWeight: 500,
+              color: "white",
+              textDecoration: "none"
+            }}
           >
             Sign Out
           </a>

@@ -80,120 +80,113 @@ export default function UserPaymentsPage() {
 
   if (loading) {
     return (
-      <div className="space-y-6">
+      <div style={{ display: "flex", flexDirection: "column", gap: 32 }}>
         <Skeleton className="h-8 w-48" />
         <div className="grid gap-4 md:grid-cols-4">
           {[1, 2, 3, 4].map((i) => (
-            <Skeleton key={i} className="h-32 w-full" />
+            <Skeleton key={i} className="h-24 w-full" />
           ))}
         </div>
-        <Skeleton className="h-96 w-full" />
+        <Skeleton className="h-64 w-full" />
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
+    <div style={{ display: "flex", flexDirection: "column", gap: 32 }}>
       {/* Header */}
-      <div>
+      <div style={{ marginBottom: 8 }}>
         <h1 className="text-3xl font-bold tracking-tight">Payments</h1>
-        <p className="text-muted-foreground">
+        <p className="text-muted-foreground" style={{ marginTop: 8 }}>
           Track your earnings and payment history
         </p>
       </div>
 
-      {/* Stats Cards */}
-      <div className="grid gap-4 md:grid-cols-4">
-        <Card className="border-2 border-kaart-orange">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">Available Balance</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold text-kaart-orange">
+      {/* Stats Row */}
+      <div style={{ display: "grid", gap: 16, gridTemplateColumns: "1.5fr 1fr 1fr 1fr" }} className="grid-stats">
+        {/* Available Balance - larger with button */}
+        <Card style={{ padding: 0, border: "2px solid #ff6b35" }}>
+          <div style={{ padding: "16px 20px" }}>
+            <p style={{ fontSize: 12, color: "#6b7280", marginBottom: 8 }}>Available Balance</p>
+            <div style={{ fontSize: 28, fontWeight: 700, color: "#ff6b35" }}>
               {formatCurrency(payable?.payable_total ?? 0)}
             </div>
-            <p className="text-xs text-muted-foreground mt-1">
-              Ready for payout
-            </p>
+            <p style={{ fontSize: 11, color: "#6b7280", marginTop: 4 }}>Ready for payout</p>
             <Button
-              className="mt-4 w-full"
+              style={{ marginTop: 12, width: "100%" }}
               onClick={() => setShowRequestModal(true)}
               disabled={(payable?.payable_total ?? 0) <= 0}
             >
               Request Payment
             </Button>
-          </CardContent>
+          </div>
         </Card>
 
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">Pending Requests</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-yellow-600">
+        {/* Compact stats */}
+        <Card style={{ padding: 0 }}>
+          <div style={{ padding: "12px 16px" }}>
+            <p style={{ fontSize: 12, color: "#6b7280", marginBottom: 4 }}>Pending Requests</p>
+            <div style={{ fontSize: 20, fontWeight: 700, color: "#ca8a04" }}>
               {formatCurrency(pendingTotal)}
             </div>
-            <p className="text-xs text-muted-foreground mt-1">
-              {requests.length} request{requests.length !== 1 ? "s" : ""} awaiting approval
+            <p style={{ fontSize: 11, color: "#6b7280", marginTop: 4 }}>
+              {requests.length} awaiting approval
             </p>
-          </CardContent>
+          </div>
         </Card>
 
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">Total Received</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-green-600">
+        <Card style={{ padding: 0 }}>
+          <div style={{ padding: "12px 16px" }}>
+            <p style={{ fontSize: 12, color: "#6b7280", marginBottom: 4 }}>Total Received</p>
+            <div style={{ fontSize: 20, fontWeight: 700, color: "#16a34a" }}>
               {formatCurrency(totalReceived)}
             </div>
-            <p className="text-xs text-muted-foreground mt-1">
-              Lifetime earnings paid
-            </p>
-          </CardContent>
+            <p style={{ fontSize: 11, color: "#6b7280", marginTop: 4 }}>Lifetime earnings</p>
+          </div>
         </Card>
 
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">Total Payments</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{payments.length}</div>
-            <p className="text-xs text-muted-foreground mt-1">
-              Completed payouts
-            </p>
-          </CardContent>
+        <Card style={{ padding: 0 }}>
+          <div style={{ padding: "12px 16px" }}>
+            <p style={{ fontSize: 12, color: "#6b7280", marginBottom: 4 }}>Total Payments</p>
+            <div style={{ fontSize: 20, fontWeight: 700 }}>{payments.length}</div>
+            <p style={{ fontSize: 11, color: "#6b7280", marginTop: 4 }}>Completed payouts</p>
+          </div>
         </Card>
       </div>
 
-      {/* Earnings Breakdown */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Earnings Breakdown</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid gap-4 md:grid-cols-3">
-            <div className="rounded-lg bg-green-50 dark:bg-green-950 p-4">
-              <p className="text-sm text-green-700 dark:text-green-300">Mapping Earnings</p>
-              <p className="text-2xl font-bold text-green-800 dark:text-green-200">
-                {formatCurrency(payable?.mapping_earnings ?? 0)}
-              </p>
-            </div>
-            <div className="rounded-lg bg-blue-50 dark:bg-blue-950 p-4">
-              <p className="text-sm text-blue-700 dark:text-blue-300">Validation Earnings</p>
-              <p className="text-2xl font-bold text-blue-800 dark:text-blue-200">
-                {formatCurrency(payable?.validation_earnings ?? 0)}
-              </p>
-            </div>
-            <div className="rounded-lg bg-purple-50 dark:bg-purple-950 p-4">
-              <p className="text-sm text-purple-700 dark:text-purple-300">Checklist Earnings</p>
-              <p className="text-2xl font-bold text-purple-800 dark:text-purple-200">
-                {formatCurrency(payable?.checklist_earnings ?? 0)}
-              </p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+      {/* Earnings Breakdown - Compact */}
+      <div style={{ display: "grid", gap: 16, gridTemplateColumns: "repeat(3, 1fr)" }}>
+        <div style={{
+          padding: "12px 16px",
+          backgroundColor: "rgba(34, 197, 94, 0.1)",
+          borderRadius: 8
+        }}>
+          <p style={{ fontSize: 12, color: "#15803d" }}>Mapping Earnings</p>
+          <p style={{ fontSize: 20, fontWeight: 700, color: "#166534" }}>
+            {formatCurrency(payable?.mapping_earnings ?? 0)}
+          </p>
+        </div>
+        <div style={{
+          padding: "12px 16px",
+          backgroundColor: "rgba(59, 130, 246, 0.1)",
+          borderRadius: 8
+        }}>
+          <p style={{ fontSize: 12, color: "#1d4ed8" }}>Validation Earnings</p>
+          <p style={{ fontSize: 20, fontWeight: 700, color: "#1e40af" }}>
+            {formatCurrency(payable?.validation_earnings ?? 0)}
+          </p>
+        </div>
+        <div style={{
+          padding: "12px 16px",
+          backgroundColor: "rgba(168, 85, 247, 0.1)",
+          borderRadius: 8
+        }}>
+          <p style={{ fontSize: 12, color: "#7c3aed" }}>Checklist Earnings</p>
+          <p style={{ fontSize: 20, fontWeight: 700, color: "#6d28d9" }}>
+            {formatCurrency(payable?.checklist_earnings ?? 0)}
+          </p>
+        </div>
+      </div>
 
       {/* Tabs for Requests and History */}
       <Tabs defaultValue="pending">
@@ -203,8 +196,8 @@ export default function UserPaymentsPage() {
         </TabsList>
 
         <TabsContent value="pending">
-          <Card>
-            <CardContent className="p-0">
+          <Card style={{ padding: 0 }}>
+            <CardContent style={{ padding: 0 }}>
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -233,7 +226,7 @@ export default function UserPaymentsPage() {
                   ))}
                   {requests.length === 0 && (
                     <TableRow>
-                      <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
+                      <TableCell colSpan={5} style={{ textAlign: "center", padding: "32px 16px", color: "#6b7280" }}>
                         No pending payment requests
                       </TableCell>
                     </TableRow>
@@ -245,8 +238,8 @@ export default function UserPaymentsPage() {
         </TabsContent>
 
         <TabsContent value="history">
-          <Card>
-            <CardContent className="p-0">
+          <Card style={{ padding: 0 }}>
+            <CardContent style={{ padding: 0 }}>
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -275,7 +268,7 @@ export default function UserPaymentsPage() {
                   ))}
                   {payments.length === 0 && (
                     <TableRow>
-                      <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
+                      <TableCell colSpan={5} style={{ textAlign: "center", padding: "32px 16px", color: "#6b7280" }}>
                         No payment history yet
                       </TableCell>
                     </TableRow>
