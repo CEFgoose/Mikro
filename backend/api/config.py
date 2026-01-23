@@ -58,9 +58,11 @@ class BaseConfig:
     OSM_OAUTH_CLIENT_ID = os.environ.get("OSM_OAUTH_CLIENT_ID")
     OSM_OAUTH_CLIENT_SECRET = os.environ.get("OSM_OAUTH_CLIENT_SECRET")
     OSM_OAUTH_REDIRECT_URI = os.environ.get(
-        "OSM_OAUTH_REDIRECT_URI", "http://localhost:3000/api/osm/callback"
+        "OSM_OAUTH_REDIRECT_URI", "http://localhost:5004/api/osm/callback"
     )
     OSM_API_URL = os.environ.get("OSM_API_URL", "https://www.openstreetmap.org")
+    # Frontend URL for OAuth redirect after completion
+    FRONTEND_URL = os.environ.get("FRONTEND_URL", "http://localhost:3000")
 
     # Logging
     LOG_LEVEL = os.environ.get("LOG_LEVEL", "INFO")

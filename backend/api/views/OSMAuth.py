@@ -118,8 +118,9 @@ class OSMAuthAPI(MethodView):
         state = request.args.get("state")
         error = request.args.get("error")
 
-        # Frontend URL for redirect after OAuth
-        frontend_url = request.args.get("redirect", "http://localhost:3000/account")
+        # Frontend URL for redirect after OAuth (configurable for dev/prod)
+        base_url = current_app.config.get("FRONTEND_URL", "http://localhost:3000")
+        frontend_url = request.args.get("redirect", f"{base_url}/account")
 
         if error:
             current_app.logger.error(f"OSM OAuth error: {error}")
