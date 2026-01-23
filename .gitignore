@@ -36,6 +36,7 @@ backend/test_db/
 backend/logfile
 backend/mikro.env
 backend/.env
+backend/.env.local
 backend/.flaskenv
 
 # Frontend

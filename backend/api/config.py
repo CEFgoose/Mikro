@@ -54,6 +54,14 @@ class BaseConfig:
     TM4_API_URL = os.environ.get("TM4_API_URL", "https://tasks.kaart.com/api")
     TM4_API_TOKEN = os.environ.get("TM4_API_TOKEN")
 
+    # OSM OAuth Configuration
+    OSM_OAUTH_CLIENT_ID = os.environ.get("OSM_OAUTH_CLIENT_ID")
+    OSM_OAUTH_CLIENT_SECRET = os.environ.get("OSM_OAUTH_CLIENT_SECRET")
+    OSM_OAUTH_REDIRECT_URI = os.environ.get(
+        "OSM_OAUTH_REDIRECT_URI", "http://localhost:3000/api/osm/callback"
+    )
+    OSM_API_URL = os.environ.get("OSM_API_URL", "https://www.openstreetmap.org")
+
     # Logging
     LOG_LEVEL = os.environ.get("LOG_LEVEL", "INFO")
 

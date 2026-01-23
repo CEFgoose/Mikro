@@ -7,6 +7,7 @@ from .Transactions import TransactionAPI
 from .Tasks import TaskAPI
 from .Training import TrainingAPI
 from .Checklists import ChecklistAPI
+from .OSMAuth import OSMAuthAPI
 
 __all__ = {
     "UserAPI",
@@ -16,4 +17,5 @@ __all__ = {
     "TaskAPI",
     "TrainingAPI",
     "ChecklistAPI",
+    "OSMAuthAPI",
 }

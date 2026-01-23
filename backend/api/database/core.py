@@ -46,6 +46,11 @@ class User(ModelWithSoftDeleteAndCRUD, SurrogatePK):
     last_name = Column(String(100))
     osm_username = Column(String(100), unique=True, nullable=True, index=True)
 
+    # OSM Account Linking
+    osm_id = Column(BigInteger, nullable=True, unique=True, index=True)
+    osm_verified = Column(Boolean, default=False, server_default="False")
+    osm_verified_at = Column(DateTime, nullable=True)
+
     # Location
     city = Column(String(100), nullable=True)
     country = Column(String(100), nullable=True)

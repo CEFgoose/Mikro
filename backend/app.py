@@ -13,10 +13,15 @@ from flask import Flask, request, jsonify
 from flask_cors import CORS
 from flask_migrate import Migrate
 from flask_mail import Mail
+from pathlib import Path
 from dotenv import load_dotenv
 
 # Load environment variables
-load_dotenv()
+# First load .env (defaults), then .env.local (local overrides) if it exists
+env_path = Path(__file__).parent
+load_dotenv(env_path / ".env")
+if (env_path / ".env.local").exists():
+    load_dotenv(env_path / ".env.local", override=True)
 
 
 def create_app(config_class=None):
@@ -111,6 +116,7 @@ def _register_views(app):
         TaskAPI,
         TrainingAPI,
         ChecklistAPI,
+        OSMAuthAPI,
     )
 
     # Authentication
@@ -137,6 +143,9 @@ def _register_views(app):
     app.add_url_rule(
         "/api/checklist/<path>", view_func=ChecklistAPI.as_view("checklist")
     )
+
+    # OSM OAuth management
+    app.add_url_rule("/api/osm/<path>", view_func=OSMAuthAPI.as_view("osm"))
 
 
 # Create application instance for gunicorn

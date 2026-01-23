@@ -92,6 +92,7 @@
   --font-mono: var(--font-geist-mono), monospace;
 }
 
+/* Dark mode disabled for now - will implement properly later
 @media (prefers-color-scheme: dark) {
   :root {
     --background: #0a0a0a;
@@ -104,6 +105,7 @@
     --input: #374151;
   }
 }
+*/
 
 * {
   box-sizing: border-box;

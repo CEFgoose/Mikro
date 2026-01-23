@@ -2,13 +2,17 @@
 
 import { useState, useEffect } from "react";
 import { useUser } from "@auth0/nextjs-auth0/client";
+import { useSearchParams } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle, Button, Input } from "@/components/ui";
 
 interface UserProfile {
   id: number;
   name: string;
   email: string;
-  osm_username: string;
+  osm_username: string | null;
+  osm_id: number | null;
+  osm_verified: boolean;
+  osm_verified_at: string | null;
   payment_email: string;
   city: string;
   country: string;
@@ -20,20 +24,48 @@ interface UserProfile {
 
 export default function AccountPage() {
   const { user: auth0User, isLoading: userLoading } = useUser();
+  const searchParams = useSearchParams();
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [osmLinking, setOsmLinking] = useState(false);
+  const [osmUnlinking, setOsmUnlinking] = useState(false);
+  const [osmMessage, setOsmMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
 
   // Form state
-  const [osmUsername, setOsmUsername] = useState("");
   const [paymentEmail, setPaymentEmail] = useState("");
   const [city, setCity] = useState("");
   const [country, setCountry] = useState("");
 
   useEffect(() => {
     fetchProfile();
-  }, []);
+
+    // Check URL params for OSM OAuth result
+    const osmLinked = searchParams.get("osm_linked");
+    const osmError = searchParams.get("osm_error");
+
+    if (osmLinked === "true") {
+      setOsmMessage({ type: "success", text: "OSM account linked successfully!" });
+      // Clear the URL params
+      window.history.replaceState({}, "", "/account");
+    } else if (osmError) {
+      const errorMessages: Record<string, string> = {
+        missing_params: "Missing OAuth parameters",
+        invalid_state: "Invalid OAuth state - please try again",
+        session_expired: "Session expired - please try again",
+        token_exchange_failed: "Failed to exchange token with OSM",
+        no_access_token: "No access token received from OSM",
+        fetch_user_failed: "Failed to fetch OSM user details",
+        invalid_osm_user: "Invalid OSM user data received",
+        already_linked: "This OSM account is already linked to another user",
+        user_not_found: "User not found",
+        update_failed: "Failed to update user profile",
+      };
+      setOsmMessage({ type: "error", text: errorMessages[osmError] || `Error: ${osmError}` });
+      window.history.replaceState({}, "", "/account");
+    }
+  }, [searchParams]);
 
   const fetchProfile = async () => {
     try {
@@ -41,7 +73,6 @@ export default function AccountPage() {
       if (response.ok) {
         const data = await response.json();
         setProfile(data);
-        setOsmUsername(data.osm_username || "");
         setPaymentEmail(data.payment_email || "");
         setCity(data.city || "");
         setCountry(data.country || "");
@@ -60,7 +91,6 @@ export default function AccountPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          osm_username: osmUsername,
           payment_email: paymentEmail,
           city,
           country,
@@ -74,6 +104,54 @@ export default function AccountPage() {
       console.error("Failed to update profile:", error);
     } finally {
       setIsSaving(false);
+    }
+  };
+
+  const handleLinkOSM = async () => {
+    setOsmLinking(true);
+    setOsmMessage(null);
+    try {
+      const response = await fetch("/api/backend/osm/start", {
+        method: "POST",
+      });
+      if (response.ok) {
+        const data = await response.json();
+        // Redirect to OSM OAuth
+        window.location.href = data.auth_url;
+      } else {
+        const error = await response.json();
+        setOsmMessage({ type: "error", text: error.message || "Failed to start OSM linking" });
+        setOsmLinking(false);
+      }
+    } catch (error) {
+      console.error("Failed to start OSM linking:", error);
+      setOsmMessage({ type: "error", text: "Failed to start OSM linking" });
+      setOsmLinking(false);
+    }
+  };
+
+  const handleUnlinkOSM = async () => {
+    if (!confirm("Are you sure you want to unlink your OSM account?")) {
+      return;
+    }
+    setOsmUnlinking(true);
+    setOsmMessage(null);
+    try {
+      const response = await fetch("/api/backend/osm/unlink", {
+        method: "POST",
+      });
+      if (response.ok) {
+        setOsmMessage({ type: "success", text: "OSM account unlinked successfully" });
+        fetchProfile();
+      } else {
+        const error = await response.json();
+        setOsmMessage({ type: "error", text: error.message || "Failed to unlink OSM account" });
+      }
+    } catch (error) {
+      console.error("Failed to unlink OSM:", error);
+      setOsmMessage({ type: "error", text: "Failed to unlink OSM account" });
+    } finally {
+      setOsmUnlinking(false);
     }
   };
 
@@ -122,6 +200,135 @@ export default function AccountPage() {
           </div>
         </Card>
       </div>
+
+      {/* OSM Account Linking Card */}
+      <Card>
+        <CardHeader>
+          <CardTitle>OpenStreetMap Account</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {/* OSM Message Alert */}
+          {osmMessage && (
+            <div
+              style={{
+                padding: "12px 16px",
+                borderRadius: 8,
+                marginBottom: 16,
+                backgroundColor: osmMessage.type === "success" ? "#dcfce7" : "#fee2e2",
+                color: osmMessage.type === "success" ? "#166534" : "#991b1b",
+                fontSize: 14,
+              }}
+            >
+              {osmMessage.text}
+            </div>
+          )}
+
+          {profile?.osm_verified ? (
+            // Verified OSM Account Display
+            <div>
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 12,
+                  padding: 16,
+                  backgroundColor: "#f0fdf4",
+                  borderRadius: 8,
+                  border: "1px solid #bbf7d0",
+                }}
+              >
+                <div
+                  style={{
+                    width: 40,
+                    height: 40,
+                    borderRadius: "50%",
+                    backgroundColor: "#22c55e",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    color: "white",
+                    fontSize: 20,
+                  }}
+                >
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
+                    <polyline points="20 6 9 17 4 12" />
+                  </svg>
+                </div>
+                <div style={{ flex: 1 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                    <span style={{ fontWeight: 600, fontSize: 16 }}>{profile.osm_username}</span>
+                    <span
+                      style={{
+                        fontSize: 11,
+                        padding: "2px 8px",
+                        borderRadius: 12,
+                        backgroundColor: "#22c55e",
+                        color: "white",
+                        fontWeight: 500,
+                      }}
+                    >
+                      Verified
+                    </span>
+                  </div>
+                  <p style={{ fontSize: 13, color: "#6b7280", marginTop: 4 }}>
+                    Linked {profile.osm_verified_at ? new Date(profile.osm_verified_at).toLocaleDateString() : ""}
+                    {profile.osm_id && ` (OSM ID: ${profile.osm_id})`}
+                  </p>
+                </div>
+                <a
+                  href={`https://www.openstreetmap.org/user/${profile.osm_username}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={{
+                    padding: "6px 12px",
+                    fontSize: 13,
+                    color: "#2563eb",
+                    textDecoration: "none",
+                    borderRadius: 6,
+                    border: "1px solid #2563eb",
+                  }}
+                >
+                  View Profile
+                </a>
+              </div>
+              <div style={{ marginTop: 12, textAlign: "right" }}>
+                <button
+                  onClick={handleUnlinkOSM}
+                  disabled={osmUnlinking}
+                  style={{
+                    fontSize: 13,
+                    color: "#dc2626",
+                    background: "none",
+                    border: "none",
+                    cursor: osmUnlinking ? "not-allowed" : "pointer",
+                    textDecoration: "underline",
+                    opacity: osmUnlinking ? 0.5 : 1,
+                  }}
+                >
+                  {osmUnlinking ? "Unlinking..." : "Unlink OSM Account"}
+                </button>
+              </div>
+            </div>
+          ) : (
+            // Not Linked - Show Link Button
+            <div>
+              <p style={{ fontSize: 14, color: "#6b7280", marginBottom: 16 }}>
+                Link your OpenStreetMap account to verify your identity and enable automatic stats tracking.
+              </p>
+              <Button onClick={handleLinkOSM} disabled={osmLinking}>
+                {osmLinking ? (
+                  <>
+                    <span className="animate-spin mr-2">...</span>
+                    Connecting...
+                  </>
+                ) : (
+                  "Link OSM Account"
+                )}
+              </Button>
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       {/* Profile Card */}
       <Card>
@@ -173,19 +380,6 @@ export default function AccountPage() {
           {/* Editable Fields */}
           <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
             <div>
-              <label style={{ display: "block", fontSize: 14, fontWeight: 500, marginBottom: 6 }}>OSM Username</label>
-              {isEditing ? (
-                <Input
-                  value={osmUsername}
-                  onChange={(e) => setOsmUsername(e.target.value)}
-                  placeholder="Your OpenStreetMap username"
-                />
-              ) : (
-                <p style={{ fontSize: 15, color: "#111827" }}>{profile?.osm_username || "-"}</p>
-              )}
-            </div>
-
-            <div>
               <label style={{ display: "block", fontSize: 14, fontWeight: 500, marginBottom: 6 }}>Payment Email (Payoneer)</label>
               {isEditing ? (
                 <Input
@@ -234,7 +428,6 @@ export default function AccountPage() {
                 variant="outline"
                 onClick={() => {
                   setIsEditing(false);
-                  setOsmUsername(profile?.osm_username || "");
                   setPaymentEmail(profile?.payment_email || "");
                   setCity(profile?.city || "");
                   setCountry(profile?.country || "");

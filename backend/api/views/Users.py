@@ -18,9 +18,9 @@ class UserAPI(MethodView):
     def post(self, path: str):
         if path == "fetch_user_role":
             return self.fetch_user_role()
-        if path == "fetch_user_details":
+        if path == "fetch_user_details" or path == "fetch_user_profile":
             return self.fetch_user_details()
-        if path == "update_user_details":
+        if path == "update_user_details" or path == "update_profile":
             return self.update_user_details()
         elif path == "assign_user":
             return self.assign_user()
@@ -134,33 +134,44 @@ class UserAPI(MethodView):
         # initialize an empty dictionary to store the response
         response = {}
         # check if the user information is available in the global context
-        if not g:
+        if not g or not g.user:
             response["message"] = "User not found"
             response["status"] = 304
             return response
-        else:
-            # extract the role, first name, and last name from the user information # noqa: E501
-            first_name = g.user.first_name.capitalize()
-            last_name = g.user.last_name.capitalize()
-            osm_username = g.user.osm_username
-            role = g.user.role
-            city = g.user.city
-            country = g.user.country
-            email = g.user.email
-            payment_email = g.user.payment_email
-            full_name = f"{first_name} {last_name}"
-            # update the response dictionary with the extracted information
-            response["role"] = role
-            response["first_name"] = first_name
-            response["last_name"] = last_name
-            response["osm_username"] = osm_username
-            response["full_name"] = full_name
-            response["city"] = city
-            response["country"] = country
-            response["email"] = email
-            response["payment_email"] = payment_email
-            response["status"] = 200
-            return response
+
+        user = g.user
+        # extract user information
+        first_name = (user.first_name or "").capitalize()
+        last_name = (user.last_name or "").capitalize()
+        full_name = f"{first_name} {last_name}".strip()
+
+        # update the response dictionary with the extracted information
+        response["id"] = user.id
+        response["role"] = user.role
+        response["first_name"] = first_name
+        response["last_name"] = last_name
+        response["name"] = full_name
+        response["full_name"] = full_name
+        response["email"] = user.email
+        response["payment_email"] = user.payment_email
+        response["city"] = user.city
+        response["country"] = user.country
+
+        # OSM account linking fields
+        response["osm_username"] = user.osm_username
+        response["osm_id"] = user.osm_id
+        response["osm_verified"] = user.osm_verified or False
+        response["osm_verified_at"] = (
+            user.osm_verified_at.isoformat() if user.osm_verified_at else None
+        )
+
+        # Stats for display
+        response["total_tasks_mapped"] = user.total_tasks_mapped or 0
+        response["total_tasks_validated"] = user.total_tasks_validated or 0
+        response["total_payout"] = user.paid_total or 0
+
+        response["status"] = 200
+        return response
 
     @requires_admin
     def do_fetch_users(self):
