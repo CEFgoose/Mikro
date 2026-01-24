@@ -37,7 +37,7 @@ class User(ModelWithSoftDeleteAndCRUD, SurrogatePK):
 
     # Primary key is Auth0 sub (string format: "auth0|abc123" or "google-oauth2|123")
     id = db.Column(db.String(255), primary_key=True, nullable=False)
-    auth0_sub = db.Column(db.String(255), unique=True, nullable=False, index=True)
+    auth0_sub = db.Column(db.String(255), unique=True, nullable=True, index=True)
 
     # User info
     email = Column(String(255), unique=True, nullable=True, index=True)
