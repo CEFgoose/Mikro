@@ -3,19 +3,22 @@ import type { NextRequest } from "next/server";
 import { auth0 } from "./lib/auth0";
 
 export default async function proxy(request: NextRequest) {
-  // Only call Auth0 middleware for /auth routes
+  // Auth0 middleware handles /auth/* routes AND maintains session cookies
+  const authRes = await auth0.middleware(request);
+
+  // Let Auth0 fully handle /auth routes
   if (request.nextUrl.pathname.startsWith("/auth")) {
-    return auth0.middleware(request);
+    return authRes;
   }
 
-  // Public routes that don't need authentication
+  // Public routes - pass through with auth cookies maintained
   const publicRoutes = ["/", "/unauthorized"];
   const isPublicRoute = publicRoutes.some(
     (route) => request.nextUrl.pathname === route
   );
 
   if (isPublicRoute) {
-    return NextResponse.next();
+    return authRes;
   }
 
   // Protected routes require authentication
@@ -25,7 +28,7 @@ export default async function proxy(request: NextRequest) {
     return NextResponse.redirect(`${origin}/auth/login`);
   }
 
-  return NextResponse.next();
+  return authRes;
 }
 
 export const config = {
