@@ -69,7 +69,9 @@ export default function AccountPage() {
 
   const fetchProfile = async () => {
     try {
-      const response = await fetch("/api/backend/user/fetch_user_profile");
+      const response = await fetch("/api/backend/user/fetch_user_profile", {
+        method: "POST",
+      });
       if (response.ok) {
         const data = await response.json();
         setProfile(data);

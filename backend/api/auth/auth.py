@@ -87,6 +87,10 @@ def authenticate_request():
     if request.path in ["/health", "/api/health"]:
         return None
 
+    # Skip auth for OSM OAuth callback - it's called by OSM's redirect, not authenticated user
+    if request.path == "/api/osm/callback":
+        return None
+
     # Only authenticate /api/* routes - let other routes pass through
     if not request.path.startswith("/api/"):
         return None
