@@ -25,7 +25,7 @@ export default function ValidatorChecklistsPage() {
 
   const fetchChecklists = async () => {
     try {
-      const response = await fetch("/api/backend/checklists/fetch_validator_checklists");
+      const response = await fetch("/_backend/checklists/fetch_validator_checklists");
       if (response.ok) {
         const data = await response.json();
         setCompletedChecklists(data.completed_checklists || []);
@@ -44,7 +44,7 @@ export default function ValidatorChecklistsPage() {
 
   const handleConfirmItem = async (checklistId: number, itemNumber: number, userId: number) => {
     try {
-      await fetch("/api/backend/checklists/confirm_item", {
+      await fetch("/_backend/checklists/confirm_item", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

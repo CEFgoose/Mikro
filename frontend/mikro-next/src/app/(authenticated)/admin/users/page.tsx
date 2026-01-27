@@ -18,7 +18,7 @@ export default function AdminUsersPage() {
 
   const fetchUsers = async () => {
     try {
-      const response = await fetch("/api/backend/user/fetch_org_users");
+      const response = await fetch("/_backend/user/fetch_org_users");
       if (response.ok) {
         const data = await response.json();
         setUsers(data.users || []);

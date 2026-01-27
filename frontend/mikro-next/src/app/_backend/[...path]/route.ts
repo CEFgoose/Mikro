@@ -7,7 +7,7 @@ const BACKEND_URL = process.env.FLASK_BACKEND_URL || "http://localhost:5004";
  * Generic proxy handler for all backend API calls.
  * This route proxies requests to the Flask backend, adding the Auth0 access token.
  *
- * Example: /api/backend/user/fetch_user_role -> BACKEND_URL/api/user/fetch_user_role
+ * Example: /_backend/user/fetch_user_role -> BACKEND_URL/api/user/fetch_user_role
  */
 async function handleRequest(
   request: NextRequest,

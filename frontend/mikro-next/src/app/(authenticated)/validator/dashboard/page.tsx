@@ -19,8 +19,8 @@ export default function ValidatorDashboard() {
   const fetchDashboardData = async () => {
     try {
       const [projectsRes, statsRes] = await Promise.all([
-        fetch("/api/backend/project/fetch_validator_projects"),
-        fetch("/api/backend/user/fetch_validator_stats"),
+        fetch("/_backend/project/fetch_validator_projects"),
+        fetch("/_backend/user/fetch_validator_stats"),
       ]);
 
       if (projectsRes.ok) {

@@ -17,6 +17,10 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "Mikro - OSM Micropayments",
   description: "Task tracking and payments for OpenStreetMap mappers",
+  icons: {
+    icon: "/mikro-logo.png",
+    apple: "/mikro-logo.png",
+  },
 };
 
 export default async function RootLayout({

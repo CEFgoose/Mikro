@@ -33,7 +33,7 @@ export function useApiCall<T>(
       setError(null);
 
       try {
-        const response = await fetch(`/api/backend${endpoint}`, {
+        const response = await fetch(`/_backend${endpoint}`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(overrideBody || options?.body || {}),
@@ -164,7 +164,7 @@ export function useApiMutation<TResponse = { message: string; status: number }>(
       setError(null);
 
       try {
-        const response = await fetch(`/api/backend${endpoint}`, {
+        const response = await fetch(`/_backend${endpoint}`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(body),

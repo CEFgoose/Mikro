@@ -6,12 +6,14 @@ Handles OSM account linking via OAuth 2.0.
 Users verify they own their OSM account through this flow.
 """
 
+import hashlib
+import hmac
 import secrets
 from datetime import datetime
 from urllib.parse import urlencode
 
 import requests
-from flask import current_app, g, jsonify, redirect, request, session
+from flask import current_app, g, jsonify, redirect, request
 from flask.views import MethodView
 
 from ..database import User
@@ -66,6 +68,42 @@ class OSMAuthAPI(MethodView):
             }
         )
 
+    def _create_signed_state(self, user_id: str) -> str:
+        """
+        Create a signed state token that encodes the user_id.
+
+        Format: {nonce}:{user_id}:{signature}
+        """
+        secret = current_app.config.get("SECRET_KEY", "")
+        nonce = secrets.token_urlsafe(16)
+        message = f"{nonce}:{user_id}"
+        signature = hmac.new(
+            secret.encode(), message.encode(), hashlib.sha256
+        ).hexdigest()[:16]
+        return f"{nonce}:{user_id}:{signature}"
+
+    def _verify_signed_state(self, state: str) -> str | None:
+        """
+        Verify a signed state token and extract the user_id.
+
+        Returns user_id if valid, None if invalid.
+        """
+        try:
+            parts = state.split(":")
+            if len(parts) != 3:
+                return None
+            nonce, user_id, signature = parts
+            secret = current_app.config.get("SECRET_KEY", "")
+            message = f"{nonce}:{user_id}"
+            expected_sig = hmac.new(
+                secret.encode(), message.encode(), hashlib.sha256
+            ).hexdigest()[:16]
+            if hmac.compare_digest(signature, expected_sig):
+                return user_id
+            return None
+        except Exception:
+            return None
+
     def _start_oauth(self):
         """
         Initiate OSM OAuth flow.
@@ -84,12 +122,8 @@ class OSMAuthAPI(MethodView):
             current_app.logger.error("OSM_OAUTH_CLIENT_ID not configured")
             return jsonify({"message": "OSM OAuth not configured"}), 500
 
-        # Generate state token for CSRF protection
-        state = secrets.token_urlsafe(32)
-
-        # Store state in session tied to user
-        session["osm_oauth_state"] = state
-        session["osm_oauth_user_id"] = g.user.id
+        # Create signed state that encodes user_id (no Flask session needed)
+        state = self._create_signed_state(g.user.id)
 
         # Build authorization URL
         params = {
@@ -129,21 +163,11 @@ class OSMAuthAPI(MethodView):
         if not code or not state:
             return redirect(f"{frontend_url}?osm_error=missing_params")
 
-        # Validate state token
-        stored_state = session.get("osm_oauth_state")
-        user_id = session.get("osm_oauth_user_id")
-
-        if not stored_state or state != stored_state:
-            current_app.logger.error("OSM OAuth state mismatch")
-            return redirect(f"{frontend_url}?osm_error=invalid_state")
-
+        # Verify signed state token and extract user_id
+        user_id = self._verify_signed_state(state)
         if not user_id:
-            current_app.logger.error("No user_id in session")
-            return redirect(f"{frontend_url}?osm_error=session_expired")
-
-        # Clear session state
-        session.pop("osm_oauth_state", None)
-        session.pop("osm_oauth_user_id", None)
+            current_app.logger.error("OSM OAuth state verification failed")
+            return redirect(f"{frontend_url}?osm_error=invalid_state")
 
         # Exchange code for token
         token_data = self._exchange_code_for_token(code)

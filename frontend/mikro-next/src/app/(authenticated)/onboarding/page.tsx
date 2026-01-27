@@ -49,7 +49,7 @@ export default function OnboardingPage() {
   const handleSubmit = async () => {
     setIsSubmitting(true);
     try {
-      const response = await fetch("/api/backend/user/first_login_update", {
+      const response = await fetch("/_backend/user/first_login_update", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
