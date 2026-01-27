@@ -135,8 +135,7 @@ AUTH0_AUDIENCE=https://mikro/api/authorize
 
 ### SDK v4 + Next.js 16 Notes
 - Auth0 SDK v4 uses `/auth/login`, `/auth/logout`, `/auth/callback` routes (not `/api/auth/`)
-- Next.js 16 uses `proxy.ts` instead of `middleware.ts` (middleware is deprecated)
-- Route handlers are in `src/app/auth/login/route.ts`, `src/app/auth/logout/route.ts`, `src/app/auth/callback/route.ts`
+- Auth0 routes are handled by `auth0.middleware()` in `src/middleware.ts` (standard Next.js middleware)
 - Auth0 client config is in `src/lib/auth0.ts`
 
 ### Troubleshooting
