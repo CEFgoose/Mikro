@@ -188,10 +188,10 @@ class UserAPI(MethodView):
         org_users = []
         # Loop over each user and extract relevant information
         for user in users_in_org:
-            # Capitalize first and last name of the user
-            first_name = user.first_name.title()
-            last_name = user.last_name.title()
-            full_name = first_name + " " + last_name
+            # Capitalize first and last name of the user (handle None)
+            first_name = (user.first_name or "").title()
+            last_name = (user.last_name or "").title()
+            full_name = f"{first_name} {last_name}".strip() or user.email or "Unknown"
             if user.assigned_projects is not None:
                 assigned_projects_count = len(user.assigned_projects)
             else:
@@ -253,10 +253,10 @@ class UserAPI(MethodView):
         org_users = []
         # Loop over each user and extract relevant information
         for user in users_in_org:
-            # Capitalize first and last name of the user
-            first_name = user.first_name.title()
-            last_name = user.last_name.title()
-            full_name = first_name + " " + last_name
+            # Capitalize first and last name of the user (handle None)
+            first_name = (user.first_name or "").title()
+            last_name = (user.last_name or "").title()
+            full_name = f"{first_name} {last_name}".strip() or user.email or "Unknown"
             if user in assigned_users:
                 assigned = "Yes"
             if user in unassigned_users:
