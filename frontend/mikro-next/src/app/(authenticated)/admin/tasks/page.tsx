@@ -15,7 +15,7 @@ export default function AdminTasksPage() {
 
   const fetchExternalValidations = async () => {
     try {
-      const response = await fetch("/_backend/tasks/fetch_external_validations");
+      const response = await fetch("/backend/tasks/fetch_external_validations");
       if (response.ok) {
         const data = await response.json();
         setExternalValidations(data.validations || []);
@@ -30,7 +30,7 @@ export default function AdminTasksPage() {
   const handleValidateTask = async () => {
     if (!selectedTask) return;
     try {
-      await fetch("/_backend/tasks/update_task", {
+      await fetch("/backend/tasks/update_task", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ task_id: selectedTask, action: "Validate" }),
@@ -44,7 +44,7 @@ export default function AdminTasksPage() {
   const handleInvalidateTask = async () => {
     if (!selectedTask) return;
     try {
-      await fetch("/_backend/tasks/update_task", {
+      await fetch("/backend/tasks/update_task", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ task_id: selectedTask, action: "Invalidate" }),

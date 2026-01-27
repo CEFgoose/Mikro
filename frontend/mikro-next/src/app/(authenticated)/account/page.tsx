@@ -69,7 +69,7 @@ export default function AccountPage() {
 
   const fetchProfile = async () => {
     try {
-      const response = await fetch("/_backend/user/fetch_user_profile", {
+      const response = await fetch("/backend/user/fetch_user_profile", {
         method: "POST",
       });
       if (response.ok) {
@@ -89,7 +89,7 @@ export default function AccountPage() {
   const handleSave = async () => {
     setIsSaving(true);
     try {
-      const response = await fetch("/_backend/user/update_profile", {
+      const response = await fetch("/backend/user/update_profile", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -113,7 +113,7 @@ export default function AccountPage() {
     setOsmLinking(true);
     setOsmMessage(null);
     try {
-      const response = await fetch("/_backend/osm/start", {
+      const response = await fetch("/backend/osm/start", {
         method: "POST",
       });
       if (response.ok) {
@@ -139,7 +139,7 @@ export default function AccountPage() {
     setOsmUnlinking(true);
     setOsmMessage(null);
     try {
-      const response = await fetch("/_backend/osm/unlink", {
+      const response = await fetch("/backend/osm/unlink", {
         method: "POST",
       });
       if (response.ok) {
