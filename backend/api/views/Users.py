@@ -5,6 +5,7 @@ User API endpoints for Mikro.
 Handles user management operations.
 """
 
+import requests
 from flask.views import MethodView
 from flask import g, request, current_app
 
@@ -319,18 +320,80 @@ class UserAPI(MethodView):
         response = {"message": "User details updated", "status": 200}
         return response
 
-    # DEPRECATED: Invite user via SSO - now handled through Auth0
     @requires_admin
     def invite_user(self):
         """
-        DEPRECATED: This method relied on the old Kaart SSO.
-        User invitations are now handled through Auth0.
-        TODO: Implement Auth0-based user invitation using Management API.
+        Invite a user via Auth0 Management API.
+        Creates the user in Auth0 and triggers a password reset email.
         """
-        return {
-            "message": "User invitation via SSO is deprecated. Use Auth0 for user management.",
-            "status": 501,
-        }
+        email = request.json.get("email")
+        if not email:
+            return {"message": "Email is required", "status": 400}
+
+        # Get Auth0 config
+        domain = current_app.config.get("AUTH0_DOMAIN")
+        client_id = current_app.config.get("AUTH0_MGMT_CLIENT_ID")
+        client_secret = current_app.config.get("AUTH0_MGMT_CLIENT_SECRET")
+
+        if not all([domain, client_id, client_secret]):
+            current_app.logger.error("Auth0 Management API not configured")
+            return {
+                "message": "Auth0 Management API not configured. Please set AUTH0_MGMT_CLIENT_ID and AUTH0_MGMT_CLIENT_SECRET.",
+                "status": 500,
+            }
+
+        try:
+            # Get Management API access token
+            token_url = f"https://{domain}/oauth/token"
+            token_payload = {
+                "grant_type": "client_credentials",
+                "client_id": client_id,
+                "client_secret": client_secret,
+                "audience": f"https://{domain}/api/v2/",
+            }
+            token_response = requests.post(token_url, json=token_payload)
+            if not token_response.ok:
+                current_app.logger.error(f"Failed to get Auth0 token: {token_response.text}")
+                return {"message": "Failed to authenticate with Auth0", "status": 500}
+
+            access_token = token_response.json().get("access_token")
+
+            # Create user in Auth0
+            create_url = f"https://{domain}/api/v2/users"
+            headers = {"Authorization": f"Bearer {access_token}"}
+            user_payload = {
+                "email": email,
+                "connection": "Username-Password-Authentication",
+                "email_verified": False,
+                "password": f"TempPass{email.split('@')[0]}123!",  # Temp password, user will reset
+            }
+            create_response = requests.post(create_url, json=user_payload, headers=headers)
+
+            if create_response.status_code == 409:
+                return {"message": "User with this email already exists", "status": 400}
+            elif not create_response.ok:
+                current_app.logger.error(f"Failed to create Auth0 user: {create_response.text}")
+                return {"message": "Failed to create user in Auth0", "status": 500}
+
+            auth0_user = create_response.json()
+
+            # Trigger password reset email
+            reset_url = f"https://{domain}/dbconnections/change_password"
+            reset_payload = {
+                "client_id": client_id,
+                "email": email,
+                "connection": "Username-Password-Authentication",
+            }
+            requests.post(reset_url, json=reset_payload)
+
+            return {
+                "message": f"Invitation sent to {email}. They will receive an email to set their password.",
+                "status": 200,
+            }
+
+        except Exception as e:
+            current_app.logger.error(f"Error inviting user: {e}")
+            return {"message": "Failed to invite user", "status": 500}
 
     @requires_admin
     def do_remove_users(self):

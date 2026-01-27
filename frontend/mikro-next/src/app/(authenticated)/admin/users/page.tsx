@@ -11,6 +11,9 @@ export default function AdminUsersPage() {
   const [showAddModal, setShowAddModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [editRole, setEditRole] = useState<string>("user");
+  const [isSaving, setIsSaving] = useState(false);
+  const [inviteEmail, setInviteEmail] = useState("");
 
   useEffect(() => {
     fetchUsers();
@@ -36,6 +39,69 @@ export default function AdminUsersPage() {
     setSelectedUser(selectedUser === userId ? null : userId);
   };
 
+  const handleOpenEditModal = () => {
+    if (selectedUser) {
+      const user = users.find((u) => u.id === selectedUser);
+      setEditRole(user?.role || "user");
+      setShowEditModal(true);
+    }
+  };
+
+  const handleInviteUser = async () => {
+    if (!inviteEmail) {
+      alert("Please enter an email address");
+      return;
+    }
+    setIsSaving(true);
+    try {
+      const response = await fetch("/backend/user/invite_user", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: inviteEmail }),
+      });
+      const data = await response.json();
+      if (response.ok && data.status === 200) {
+        alert(data.message || "Invitation sent successfully");
+        setShowAddModal(false);
+        setInviteEmail("");
+        fetchUsers();
+      } else {
+        alert(data.message || "Failed to send invitation");
+      }
+    } catch (error) {
+      console.error("Failed to invite user:", error);
+      alert("Failed to send invitation");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleSaveRole = async () => {
+    if (!selectedUser) return;
+    setIsSaving(true);
+    try {
+      const response = await fetch("/backend/user/modify_users", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ user_id: selectedUser, role: editRole }),
+      });
+      const data = await response.json();
+      if (response.ok && data.status === 200) {
+        alert("User role updated successfully");
+        setShowEditModal(false);
+        setSelectedUser(null);
+        fetchUsers();
+      } else {
+        alert(data.message || "Failed to update user role");
+      }
+    } catch (error) {
+      console.error("Failed to update user role:", error);
+      alert("Failed to update user role");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -53,7 +119,7 @@ export default function AdminUsersPage() {
           <Button onClick={() => setShowAddModal(true)}>Add</Button>
           <Button
             variant="secondary"
-            onClick={() => selectedUser && setShowEditModal(true)}
+            onClick={handleOpenEditModal}
             disabled={!selectedUser}
           >
             Edit
@@ -148,13 +214,20 @@ export default function AdminUsersPage() {
                   type="email"
                   className="w-full px-3 py-2 border border-input rounded-lg focus:outline-none focus:ring-2 focus:ring-ring"
                   placeholder="user@example.com"
+                  value={inviteEmail}
+                  onChange={(e) => setInviteEmail(e.target.value)}
                 />
               </div>
+              <p className="text-sm text-muted-foreground">
+                The user will receive an email to set their password and complete registration.
+              </p>
               <div className="flex gap-2 justify-end">
-                <Button variant="outline" onClick={() => setShowAddModal(false)}>
+                <Button variant="outline" onClick={() => { setShowAddModal(false); setInviteEmail(""); }}>
                   Cancel
                 </Button>
-                <Button>Send Invite</Button>
+                <Button onClick={handleInviteUser} disabled={isSaving || !inviteEmail}>
+                  {isSaving ? "Sending..." : "Send Invite"}
+                </Button>
               </div>
             </CardContent>
           </Card>
@@ -171,7 +244,11 @@ export default function AdminUsersPage() {
             <CardContent className="space-y-4">
               <div>
                 <label className="block text-sm font-medium mb-1">Role</label>
-                <select className="w-full px-3 py-2 border border-input rounded-lg focus:outline-none focus:ring-2 focus:ring-ring">
+                <select
+                  className="w-full px-3 py-2 border border-input rounded-lg focus:outline-none focus:ring-2 focus:ring-ring"
+                  value={editRole}
+                  onChange={(e) => setEditRole(e.target.value)}
+                >
                   <option value="user">User</option>
                   <option value="validator">Validator</option>
                   <option value="admin">Admin</option>
@@ -181,7 +258,9 @@ export default function AdminUsersPage() {
                 <Button variant="outline" onClick={() => setShowEditModal(false)}>
                   Cancel
                 </Button>
-                <Button>Save Changes</Button>
+                <Button onClick={handleSaveRole} disabled={isSaving}>
+                  {isSaving ? "Saving..." : "Save Changes"}
+                </Button>
               </div>
             </CardContent>
           </Card>
