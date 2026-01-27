@@ -14,7 +14,7 @@ async function handleRequest(
   { params }: { params: Promise<{ path: string[] }> }
 ) {
   try {
-    const session = await auth0.getSession();
+    const session = await auth0.getSession(request);
 
     if (!session) {
       return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
@@ -27,15 +27,8 @@ async function handleRequest(
 
     const backendUrl = `${BACKEND_URL}/api/${backendPath}${queryString}`;
 
-    // Get the access token for API calls
-    let accessToken: string | undefined;
-    try {
-      const tokenResponse = await auth0.getAccessToken();
-      accessToken = tokenResponse?.token;
-    } catch (tokenError) {
-      console.error("Failed to get access token:", tokenError);
-      // Continue without token - backend will reject if auth required
-    }
+    // Get the access token from session
+    const accessToken = session.tokenSet?.accessToken;
 
     const headers: HeadersInit = {
       "Content-Type": "application/json",
