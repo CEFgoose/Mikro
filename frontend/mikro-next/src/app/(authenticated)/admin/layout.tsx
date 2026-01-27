@@ -9,7 +9,7 @@ export default async function AdminLayout({
   const session = await auth0.getSession();
 
   if (!session) {
-    redirect("/api/auth/login");
+    redirect("/auth/login");
   }
 
   // Get user role from session claims

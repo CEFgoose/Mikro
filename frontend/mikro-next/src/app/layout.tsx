@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { Providers } from "./providers";
+import { auth0 } from "@/lib/auth0";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -18,17 +19,20 @@ export const metadata: Metadata = {
   description: "Task tracking and payments for OpenStreetMap mappers",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  // Get session on server to pass to client-side Auth0Provider
+  const session = await auth0.getSession();
+
   return (
     <html lang="en">
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        <Providers>{children}</Providers>
+        <Providers user={session?.user}>{children}</Providers>
       </body>
     </html>
   );

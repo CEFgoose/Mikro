@@ -9,7 +9,7 @@ export default async function UserLayout({
   const session = await auth0.getSession();
 
   if (!session) {
-    redirect("/api/auth/login");
+    redirect("/auth/login");
   }
 
   // Any authenticated user can access user routes

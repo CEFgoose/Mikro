@@ -28,8 +28,14 @@ async function handleRequest(
     const backendUrl = `${BACKEND_URL}/api/${backendPath}${queryString}`;
 
     // Get the access token for API calls
-    const tokenResponse = await auth0.getAccessToken();
-    const accessToken = tokenResponse?.token;
+    let accessToken: string | undefined;
+    try {
+      const tokenResponse = await auth0.getAccessToken();
+      accessToken = tokenResponse?.token;
+    } catch (tokenError) {
+      console.error("Failed to get access token:", tokenError);
+      // Continue without token - backend will reject if auth required
+    }
 
     const headers: HeadersInit = {
       "Content-Type": "application/json",

@@ -455,7 +455,7 @@ export default function AccountPage() {
             Sign out of your account on this device.
           </p>
           <a
-            href="/api/auth/logout"
+            href="/auth/logout"
             style={{
               display: "inline-flex",
               alignItems: "center",
