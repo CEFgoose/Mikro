@@ -7,4 +7,16 @@ export const auth0 = new Auth0Client({
     audience: process.env.AUTH0_AUDIENCE,
     scope: "openid profile email",
   },
+  async beforeSessionSaved(session) {
+    // In SDK v4, session.user contains all ID token claims including custom ones
+    // Preserve mikro/roles and other custom claims
+    return {
+      ...session,
+      user: {
+        ...session.user,
+        // Ensure custom claims are preserved (they should already be there)
+        "mikro/roles": session.user["mikro/roles"],
+      },
+    };
+  },
 });

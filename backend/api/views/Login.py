@@ -95,13 +95,21 @@ class LoginAPI(MethodView):
                 return jsonify({"message": "Failed to create user", "status": 500}), 500
         else:
             # Update user info from Auth0 on each login
+            # Don't overwrite role from token if user already has a higher role in DB
             current_app.logger.info(f"Updating user {auth0_sub}")
             try:
+                # Only update role if token has a more privileged role than DB
+                # or if DB role is default "user"
+                role_priority = {"user": 0, "validator": 1, "admin": 2}
+                token_priority = role_priority.get(role, 0)
+                db_priority = role_priority.get(user.role, 0)
+                new_role = role if token_priority > db_priority else user.role
+
                 user.update(
                     email=email,
                     first_name=first_name,
                     last_name=last_name,
-                    role=role,
+                    role=new_role,
                 )
             except Exception as e:
                 current_app.logger.warning(f"Error updating user: {e}")

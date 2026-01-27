@@ -5,7 +5,7 @@ import { Sidebar } from "@/components/layout/Sidebar";
 
 const BACKEND_URL = process.env.FLASK_BACKEND_URL || "http://localhost:5004";
 
-async function syncUserWithBackend(accessToken: string) {
+async function syncUserWithBackend(accessToken: string): Promise<string> {
   try {
     const response = await fetch(`${BACKEND_URL}/api/login`, {
       method: "POST",
@@ -14,11 +14,15 @@ async function syncUserWithBackend(accessToken: string) {
         "Content-Type": "application/json",
       },
     });
-    if (!response.ok) {
-      console.error("Failed to sync user with backend:", response.status);
+    if (response.ok) {
+      const data = await response.json();
+      return data.role || "user";
     }
+    console.error("Failed to sync user with backend:", response.status);
+    return "user";
   } catch (error) {
     console.error("Error syncing user with backend:", error);
+    return "user";
   }
 }
 
@@ -33,18 +37,16 @@ export default async function AuthenticatedLayout({
     redirect("/auth/login");
   }
 
-  // Sync user with backend (creates user record if doesn't exist)
+  // Sync user with backend and get role from database
+  let role = "user";
   try {
     const tokenResponse = await auth0.getAccessToken();
     if (tokenResponse?.token) {
-      await syncUserWithBackend(tokenResponse.token);
+      role = await syncUserWithBackend(tokenResponse.token);
     }
   } catch (error) {
     console.error("Error getting access token for user sync:", error);
   }
-
-  // Get user role from session claims
-  const role = (session.user?.["mikro/roles"] as string[] | undefined)?.[0] || "user";
 
   return (
     <div style={{ minHeight: "100vh", backgroundColor: "#f9fafb" }}>
