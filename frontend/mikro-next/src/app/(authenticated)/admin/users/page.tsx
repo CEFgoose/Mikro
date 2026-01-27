@@ -45,10 +45,10 @@ export default function AdminUsersPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       {/* Action Buttons */}
       <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-bold">Users</h1>
+        <h1 className="text-2xl font-bold text-gray-900">Users</h1>
         <div className="flex gap-2">
           <Button onClick={() => setShowAddModal(true)}>Add</Button>
           <Button
@@ -74,19 +74,19 @@ export default function AdminUsersPage() {
         <CardContent className="p-0">
           <div className="overflow-x-auto">
             <table className="w-full">
-              <thead className="bg-muted">
+              <thead className="bg-muted border-b border-gray-200">
                 <tr>
-                  <th className="px-4 py-3 text-left text-sm font-medium">Name</th>
-                  <th className="px-4 py-3 text-left text-sm font-medium">Role</th>
-                  <th className="px-4 py-3 text-left text-sm font-medium">Projects</th>
-                  <th className="px-4 py-3 text-left text-sm font-medium">Mapped</th>
-                  <th className="px-4 py-3 text-left text-sm font-medium">Validated</th>
-                  <th className="px-4 py-3 text-left text-sm font-medium">Invalidated</th>
-                  <th className="px-4 py-3 text-left text-sm font-medium">Awaiting</th>
-                  <th className="px-4 py-3 text-left text-sm font-medium">Total Paid</th>
+                  <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">Name</th>
+                  <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">Role</th>
+                  <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">Projects</th>
+                  <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">Mapped</th>
+                  <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">Validated</th>
+                  <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">Invalidated</th>
+                  <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">Awaiting</th>
+                  <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">Total Paid</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-border">
+              <tbody className="divide-y divide-border bg-white">
                 {users.map((user) => (
                   <tr
                     key={user.id}
@@ -95,8 +95,8 @@ export default function AdminUsersPage() {
                       selectedUser === user.id ? "bg-kaart-orange/10" : ""
                     }`}
                   >
-                    <td className="px-4 py-3 font-medium">{user.name}</td>
-                    <td className="px-4 py-3">
+                    <td className="px-6 py-5 font-medium text-gray-900">{user.name?.trim() || user.email || "Unknown"}</td>
+                    <td className="px-6 py-5">
                       <span
                         className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
                           user.role === "admin"
@@ -109,14 +109,14 @@ export default function AdminUsersPage() {
                         {user.role}
                       </span>
                     </td>
-                    <td className="px-4 py-3">{user.assigned_projects ?? 0}</td>
-                    <td className="px-4 py-3">{user.total_tasks_mapped ?? 0}</td>
-                    <td className="px-4 py-3">{user.total_tasks_validated ?? 0}</td>
-                    <td className="px-4 py-3">{user.total_tasks_invalidated ?? 0}</td>
-                    <td className="px-4 py-3">
+                    <td className="px-6 py-5 text-gray-700">{user.assigned_projects ?? 0}</td>
+                    <td className="px-6 py-5 text-gray-700">{user.total_tasks_mapped ?? 0}</td>
+                    <td className="px-6 py-5 text-gray-700">{user.total_tasks_validated ?? 0}</td>
+                    <td className="px-6 py-5 text-gray-700">{user.total_tasks_invalidated ?? 0}</td>
+                    <td className="px-6 py-5 text-gray-700">
                       ${user.awaiting_payment?.toFixed(2) ?? "0.00"}
                     </td>
-                    <td className="px-4 py-3">
+                    <td className="px-6 py-5 text-gray-700">
                       ${user.total_payout?.toFixed(2) ?? "0.00"}
                     </td>
                   </tr>

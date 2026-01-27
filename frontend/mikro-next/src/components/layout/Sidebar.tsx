@@ -124,7 +124,7 @@ export function Sidebar({ role }: SidebarProps) {
         top: 64,
         zIndex: 40,
         height: "calc(100vh - 64px)",
-        width: 256,
+        width: 180,
         borderRight: "1px solid #e5e7eb",
         backgroundColor: "white",
       }}

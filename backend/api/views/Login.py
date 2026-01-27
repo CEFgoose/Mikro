@@ -7,7 +7,7 @@ Creates or retrieves user records based on Auth0 claims.
 """
 
 from flask.views import MethodView
-from flask import g, jsonify, current_app
+from flask import g, jsonify, current_app, request
 
 from ..database import User
 
@@ -60,10 +60,12 @@ class LoginAPI(MethodView):
         # Get the namespace from config
         namespace = current_app.config.get("AUTH0_NAMESPACE", "mikro")
 
-        # Extract user info from Auth0 token
-        email = auth0_payload.get("email")
-        name = auth0_payload.get("name", "")
-        name_parts = name.split(" ", 1)
+        # Extract user info from request body (sent by frontend from Auth0 session)
+        # Fall back to token claims if not in body
+        body = request.get_json(silent=True) or {}
+        email = body.get("email") or auth0_payload.get("email")
+        name = body.get("name") or auth0_payload.get("name", "")
+        name_parts = name.split(" ", 1) if name else []
         first_name = name_parts[0] if name_parts else ""
         last_name = name_parts[1] if len(name_parts) > 1 else ""
 

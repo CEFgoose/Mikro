@@ -5,7 +5,12 @@ import { Sidebar } from "@/components/layout/Sidebar";
 
 const BACKEND_URL = process.env.FLASK_BACKEND_URL || "http://localhost:5004";
 
-async function syncUserWithBackend(accessToken: string): Promise<string> {
+interface UserInfo {
+  name?: string;
+  email?: string;
+}
+
+async function syncUserWithBackend(accessToken: string, userInfo?: UserInfo): Promise<string> {
   try {
     const response = await fetch(`${BACKEND_URL}/api/login`, {
       method: "POST",
@@ -13,6 +18,7 @@ async function syncUserWithBackend(accessToken: string): Promise<string> {
         "Authorization": `Bearer ${accessToken}`,
         "Content-Type": "application/json",
       },
+      body: JSON.stringify(userInfo || {}),
     });
     if (response.ok) {
       const data = await response.json();
@@ -42,7 +48,12 @@ export default async function AuthenticatedLayout({
   try {
     const tokenResponse = await auth0.getAccessToken();
     if (tokenResponse?.token) {
-      role = await syncUserWithBackend(tokenResponse.token);
+      // Pass user info from session to backend for syncing
+      const userInfo = {
+        name: session.user?.name,
+        email: session.user?.email,
+      };
+      role = await syncUserWithBackend(tokenResponse.token, userInfo);
     }
   } catch (error) {
     console.error("Error getting access token for user sync:", error);
