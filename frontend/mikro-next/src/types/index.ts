@@ -232,9 +232,9 @@ export interface ChecklistsResponse {
   checklists?: Checklist[];
   active_checklists?: Checklist[];
   inactive_checklists?: Checklist[];
-  completed_checklists?: Checklist[];
-  confirmed_checklists?: Checklist[];
-  stale_checklists?: Checklist[];
+  ready_for_confirmation?: Checklist[];
+  confirmed_and_completed?: Checklist[];
+  stale_started_checklists?: Checklist[];
   pending_checklists?: Checklist[];
   status: number;
 }

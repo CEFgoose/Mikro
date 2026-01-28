@@ -141,3 +141,56 @@ AUTH0_AUDIENCE=https://mikro/api/authorize
 ### Troubleshooting
 - **"Client not authorized to access resource server"**: Go to Application → APIs tab → Edit the API → Toggle **User Access** to AUTHORIZED
 - **Callback URL mismatch**: Add `http://localhost:3000/auth/callback` to Allowed Callback URLs in Auth0 Application settings
+
+## API Field Naming Conventions
+
+**Important**: Backend expects camelCase field names in request payloads:
+
+### Checklists API (`/checklist/`)
+- `checklistName` (not `name`)
+- `checklistDescription` (not `description`)
+- `completionRate` (not `completion_rate`)
+- `validationRate` (not `validation_rate`)
+- `checklistDifficulty` (not `difficulty`) - for create
+- `difficulty` - for update
+- `checklistSelected` (not `checklist_id`) - for update/delete
+- `checklistStatus` (not `active_status`) - for update
+- `listItems` - array of `{number, action, link}`
+
+### Checklists Response Keys
+Backend returns these keys (update frontend types accordingly):
+- `active_checklists`
+- `inactive_checklists`
+- `ready_for_confirmation` (not `completed_checklists`)
+- `confirmed_and_completed` (not `confirmed_checklists`)
+- `stale_started_checklists` (not `stale_checklists`)
+- `pending_checklists`
+
+### Training API (`/training/`)
+- `update_training` - metadata-only updates (title, url, points, difficulty)
+- `modify_training` - full update including questions
+- Questions format returned: `{id, question, answers: [{id, answer, correct}]}`
+
+## Recent Development Notes (Jan 2025)
+
+### Fixes Applied
+
+1. **Projects 500 Error** - Removed references to non-existent `project.source` column in `backend/api/views/Projects.py` (5 occurrences)
+
+2. **Training Questions/Edit Crashes** - Updated `format_training()` in `Training.py` to return frontend-expected structure with `answers` array containing `{id, answer, correct}`
+
+3. **Training Update 405 Error** - Added new `update_training` endpoint for metadata-only updates (separate from `modify_training` which rebuilds questions)
+
+4. **Checklist Create TypeError** - Fixed frontend field names to match backend expectations (camelCase)
+
+5. **Checklists Not Showing in Table** - Fixed frontend to use correct backend response keys (`ready_for_confirmation`, `confirmed_and_completed`, etc.)
+
+6. **Checklist Update TypeError** - Fixed update payload field names (`checklistSelected`, `checklistName`, etc.)
+
+7. **Checklist Activation Toggle** - Added active status toggle to Edit Checklist modal in admin checklists page
+
+### Checklist Status Workflow
+- New checklists are created with `active_status=False` (appear in Inactive tab)
+- Admin must activate checklist via Edit modal toggle
+- Active checklists can be assigned to users
+- Assigned checklists appear in user's checklist tabs based on completion state

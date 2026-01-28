@@ -52,6 +52,7 @@ interface ChecklistFormData {
   difficulty: string;
   due_date: string;
   assigned_user_id: string;
+  active_status: boolean;
 }
 
 const defaultFormData: ChecklistFormData = {
@@ -62,6 +63,7 @@ const defaultFormData: ChecklistFormData = {
   difficulty: "Medium",
   due_date: "",
   assigned_user_id: "",
+  active_status: false,
 };
 
 interface ItemFormData {
@@ -88,9 +90,9 @@ export default function AdminChecklistsPage() {
 
   const activeChecklists = useMemo(() => checklists?.active_checklists ?? [], [checklists?.active_checklists]);
   const inactiveChecklists = useMemo(() => checklists?.inactive_checklists ?? [], [checklists?.inactive_checklists]);
-  const completedChecklists = useMemo(() => checklists?.completed_checklists ?? [], [checklists?.completed_checklists]);
-  const confirmedChecklists = useMemo(() => checklists?.confirmed_checklists ?? [], [checklists?.confirmed_checklists]);
-  const staleChecklists = useMemo(() => checklists?.stale_checklists ?? [], [checklists?.stale_checklists]);
+  const completedChecklists = useMemo(() => checklists?.ready_for_confirmation ?? [], [checklists?.ready_for_confirmation]);
+  const confirmedChecklists = useMemo(() => checklists?.confirmed_and_completed ?? [], [checklists?.confirmed_and_completed]);
+  const staleChecklists = useMemo(() => checklists?.stale_started_checklists ?? [], [checklists?.stale_started_checklists]);
 
   const users = useMemo(() => usersData?.users ?? [], [usersData?.users]);
 
@@ -161,12 +163,13 @@ export default function AdminChecklistsPage() {
 
     try {
       await updateChecklist({
-        checklist_id: selectedChecklist.id,
-        name: formData.name,
-        description: formData.description,
-        completion_rate: parseFloat(formData.completion_rate),
-        validation_rate: parseFloat(formData.validation_rate),
+        checklistSelected: selectedChecklist.id,
+        checklistName: formData.name,
+        checklistDescription: formData.description,
+        completionRate: parseFloat(formData.completion_rate),
+        validationRate: parseFloat(formData.validation_rate),
         difficulty: formData.difficulty,
+        checklistStatus: formData.active_status,
       });
       toast.success("Checklist updated successfully");
       setShowEditModal(false);
@@ -211,6 +214,7 @@ export default function AdminChecklistsPage() {
       difficulty: checklist.difficulty,
       due_date: checklist.due_date || "",
       assigned_user_id: checklist.assigned_user_id?.toString() || "",
+      active_status: checklist.active_status ?? false,
     });
     setShowEditModal(true);
   };
@@ -691,6 +695,23 @@ export default function AdminChecklistsPage() {
               { value: "Hard", label: "Hard" },
             ]}
           />
+          <div className="flex items-center gap-3 pt-2">
+            <label className="relative inline-flex items-center cursor-pointer">
+              <input
+                type="checkbox"
+                checked={formData.active_status}
+                onChange={(e) => handleInputChange("active_status", e.target.checked)}
+                className="sr-only peer"
+              />
+              <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-ring rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+              <span className="ml-3 text-sm font-medium">
+                {formData.active_status ? "Active" : "Inactive"}
+              </span>
+            </label>
+            <span className="text-xs text-muted-foreground">
+              (Active checklists can be assigned to users)
+            </span>
+          </div>
         </div>
       </Modal>
 
