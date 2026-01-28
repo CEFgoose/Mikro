@@ -125,19 +125,25 @@ export default function AdminChecklistsPage() {
       return;
     }
 
+    const filteredItems = items.filter((i) => i.action.trim());
+    if (filteredItems.length === 0) {
+      toast.error("Please add at least one checklist item");
+      return;
+    }
+
     try {
       await createChecklist({
-        name: formData.name,
-        description: formData.description,
-        completion_rate: parseFloat(formData.completion_rate),
-        validation_rate: parseFloat(formData.validation_rate),
-        difficulty: formData.difficulty,
-        due_date: formData.due_date || undefined,
-        assigned_user_id: formData.assigned_user_id ? parseInt(formData.assigned_user_id) : undefined,
-        items: items.filter((i) => i.action.trim()).map((i, idx) => ({
+        checklistName: formData.name,
+        checklistDescription: formData.description,
+        completionRate: parseFloat(formData.completion_rate),
+        validationRate: parseFloat(formData.validation_rate),
+        checklistDifficulty: formData.difficulty,
+        dueDate: formData.due_date || undefined,
+        visibility: true,
+        listItems: filteredItems.map((i, idx) => ({
           number: idx + 1,
           action: i.action,
-          link: i.link || undefined,
+          link: i.link || "",
         })),
       });
       toast.success("Checklist created successfully");
