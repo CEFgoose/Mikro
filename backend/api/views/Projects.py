@@ -31,7 +31,7 @@ class ProjectAPI(MethodView):
 
     def _get_tm4_base_url(self):
         """Get TM4 API base URL from config."""
-        return current_app.config.get("TM4_API_URL", "https://tasks.kaart.com/api")
+        return current_app.config.get("TM4_API_URL", "https://tasks.kaart.com/api/v2")
 
     def post(self, path: str):
         if path == "create_project":
@@ -116,14 +116,21 @@ class ProjectAPI(MethodView):
         stats_api = f"{base_url}/projects/{project_id}/"
 
         try:
+            current_app.logger.info(f"Fetching TM4 project data from: {stats_api}")
             tm_fetch = requests.get(stats_api, timeout=30)
             if not tm_fetch.ok:
-                return {"message": "Failed to fetch project data from TM4", "status": 400}
+                current_app.logger.error(f"TM4 API returned {tm_fetch.status_code}: {tm_fetch.text[:500]}")
+                return {"message": f"TM4 API returned status {tm_fetch.status_code}", "status": 400}
         except requests.RequestException as e:
-            current_app.logger.error(f"TM4 API error: {e}")
+            current_app.logger.error(f"TM4 API request error: {e}")
             return {"message": "TM4 API error", "status": 500}
 
-        project_data = tm_fetch.json()
+        try:
+            project_data = tm_fetch.json()
+        except requests.exceptions.JSONDecodeError:
+            current_app.logger.error(f"TM4 API returned non-JSON response: {tm_fetch.text[:500]}")
+            return {"message": "TM4 API returned invalid response - check project URL", "status": 400}
+
         project_name = project_data.get("projectInfo", {}).get("name", f"Project {project_id}")
         total_tasks = len(project_data.get("tasks", {}).get("features", []))
 
@@ -271,14 +278,21 @@ class ProjectAPI(MethodView):
 
         # Fetch project data from TM4
         try:
+            current_app.logger.info(f"Fetching TM4 project data from: {stats_api}")
             tm_fetch = requests.get(stats_api, timeout=30)
             if not tm_fetch.ok:
-                return {"message": "Failed to fetch project data", "status": 500}
+                current_app.logger.error(f"TM4 API returned {tm_fetch.status_code}: {tm_fetch.text[:500]}")
+                return {"message": f"TM4 API returned status {tm_fetch.status_code}", "status": 500}
         except requests.RequestException as e:
-            current_app.logger.error(f"TM4 API error: {e}")
+            current_app.logger.error(f"TM4 API request error: {e}")
             return {"message": "TM4 API error", "status": 500}
 
-        json_data = tm_fetch.json()
+        try:
+            json_data = tm_fetch.json()
+        except requests.exceptions.JSONDecodeError:
+            current_app.logger.error(f"TM4 API returned non-JSON response: {tm_fetch.text[:500]}")
+            return {"message": "TM4 API returned invalid response", "status": 500}
+
         total_tasks = len(json_data.get("tasks", {}).get("features", []))
 
         if rate_type is True:
