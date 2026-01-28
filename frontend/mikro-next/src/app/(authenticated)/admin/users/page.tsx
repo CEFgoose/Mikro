@@ -182,15 +182,20 @@ export default function AdminUsersPage() {
       const data = await response.json();
       if (response.ok && data.status === 200) {
         const successCount = data.results?.success?.length || 0;
-        const failedCount = data.results?.failed?.length || 0;
-        let message = `Successfully imported ${successCount} user(s).`;
-        if (failedCount > 0) {
-          message += ` ${failedCount} failed.`;
+        const failedItems = data.results?.failed || [];
+        if (successCount > 0) {
+          alert(`Successfully imported ${successCount} user(s).`);
+          setShowImportModal(false);
+          setCsvUsers([]);
+          fetchUsers();
         }
-        alert(message);
-        setShowImportModal(false);
-        setCsvUsers([]);
-        fetchUsers();
+        if (failedItems.length > 0) {
+          const errorDetails = failedItems.map((f: { email: string; error: string }) => `${f.email}: ${f.error}`).join("\n");
+          setImportError(`${failedItems.length} user(s) failed to import:\n${errorDetails}`);
+          if (successCount === 0) {
+            // Keep modal open to show errors
+          }
+        }
       } else {
         setImportError(data.message || "Import failed");
       }

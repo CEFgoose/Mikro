@@ -94,16 +94,21 @@ export default function AdminProjectsPage() {
     }
 
     try {
-      const result = await calculateBudget({
+      const payload: Record<string, unknown> = {
         url: formData.url,
         rate_type: true,
         mapping_rate: parseFloat(formData.mapping_rate),
         validation_rate: parseFloat(formData.validation_rate),
-        project_id: selectedProject?.id,
-      });
+      };
+      // Only include project_id if we're editing an existing project
+      if (selectedProject?.id) {
+        payload.project_id = selectedProject.id;
+      }
+      const result = await calculateBudget(payload);
       setBudgetCalculation(result.calculation || "");
-    } catch {
-      toast.error("Failed to calculate budget");
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Failed to calculate budget";
+      toast.error(message);
     }
   };
 
@@ -128,8 +133,9 @@ export default function AdminProjectsPage() {
       setFormData(defaultFormData);
       setBudgetCalculation("");
       refetch();
-    } catch {
-      toast.error("Failed to create project");
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Failed to create project";
+      toast.error(message);
     }
   };
 
@@ -152,8 +158,9 @@ export default function AdminProjectsPage() {
       setShowEditModal(false);
       setSelectedProject(null);
       refetch();
-    } catch {
-      toast.error("Failed to update project");
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Failed to update project";
+      toast.error(message);
     }
   };
 
@@ -166,8 +173,9 @@ export default function AdminProjectsPage() {
       setShowDeleteModal(false);
       setSelectedProject(null);
       refetch();
-    } catch {
-      toast.error("Failed to delete project");
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Failed to delete project";
+      toast.error(message);
     }
   };
 

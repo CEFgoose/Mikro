@@ -249,9 +249,9 @@ class ProjectAPI(MethodView):
         validation_rate = request.json.get("validation_rate")
         project_id = request.json.get("project_id")
 
-        required_args = ["mapping_rate", "validation_rate", "project_id", "url"]
+        required_args = ["mapping_rate", "validation_rate", "url"]
         for arg in required_args:
-            if not request.json.get(arg):
+            if request.json.get(arg) is None:
                 return {"message": f"{arg} required", "status": 400}
 
         # Get TM4 API URL
