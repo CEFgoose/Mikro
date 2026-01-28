@@ -25,6 +25,8 @@ class TrainingAPI(MethodView):
             return self.create_training()
         elif path == "modify_training":
             return self.modify_training()
+        elif path == "update_training":
+            return self.update_training()
         elif path == "fetch_org_trainings":
             return self.fetch_org_trainings()
         elif path == "fetch_user_trainings":
@@ -124,6 +126,34 @@ class TrainingAPI(MethodView):
             "org_project_trainings": org_project_trainings,
             "status": 200,
         }
+
+    @requires_admin
+    def update_training(self):
+        """Update training metadata (title, url, points, difficulty)."""
+        if not g:
+            return {"message": "User not found", "status": 304}
+
+        training_id = request.json.get("training_id")
+        if not training_id:
+            return {"message": "training_id required", "status": 400}
+
+        target_training = Training.query.filter_by(
+            id=training_id, org_id=g.user.org_id
+        ).first()
+        if not target_training:
+            return {"message": f"Training {training_id} not found", "status": 404}
+
+        # Update only the fields that are provided
+        if request.json.get("title"):
+            target_training.update(title=request.json.get("title"))
+        if request.json.get("training_url"):
+            target_training.update(training_url=request.json.get("training_url"))
+        if request.json.get("point_value") is not None:
+            target_training.update(point_value=request.json.get("point_value"))
+        if request.json.get("difficulty"):
+            target_training.update(difficulty=request.json.get("difficulty"))
+
+        return {"message": "Training updated", "status": 200}
 
     @requires_admin
     def modify_training(self):
