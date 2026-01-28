@@ -1,8 +1,14 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Card, CardContent, CardHeader, CardTitle, Button } from "@/components/ui";
 import { User } from "@/types";
+
+interface CsvUser {
+  email: string;
+  name: string;
+  role: string;
+}
 
 export default function AdminUsersPage() {
   const [users, setUsers] = useState<User[]>([]);
@@ -14,6 +20,10 @@ export default function AdminUsersPage() {
   const [editRole, setEditRole] = useState<string>("user");
   const [isSaving, setIsSaving] = useState(false);
   const [inviteEmail, setInviteEmail] = useState("");
+  const [showImportModal, setShowImportModal] = useState(false);
+  const [csvUsers, setCsvUsers] = useState<CsvUser[]>([]);
+  const [importError, setImportError] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     fetchUsers();
@@ -102,6 +112,96 @@ export default function AdminUsersPage() {
     }
   };
 
+  const handleImportClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setImportError(null);
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      try {
+        const text = event.target?.result as string;
+        const lines = text.trim().split("\n");
+        if (lines.length < 2) {
+          setImportError("CSV file must have a header row and at least one data row");
+          return;
+        }
+
+        const header = lines[0].split(",").map((h) => h.trim().toLowerCase());
+        const emailIdx = header.indexOf("email");
+        const nameIdx = header.indexOf("name");
+        const roleIdx = header.indexOf("role");
+
+        if (emailIdx === -1) {
+          setImportError("CSV must have an 'email' column");
+          return;
+        }
+
+        const parsed: CsvUser[] = [];
+        for (let i = 1; i < lines.length; i++) {
+          const values = lines[i].split(",").map((v) => v.trim());
+          if (values[emailIdx]) {
+            parsed.push({
+              email: values[emailIdx],
+              name: nameIdx !== -1 ? values[nameIdx] || "" : "",
+              role: roleIdx !== -1 ? values[roleIdx] || "user" : "user",
+            });
+          }
+        }
+
+        if (parsed.length === 0) {
+          setImportError("No valid users found in CSV");
+          return;
+        }
+
+        setCsvUsers(parsed);
+        setShowImportModal(true);
+      } catch {
+        setImportError("Failed to parse CSV file");
+      }
+    };
+    reader.readAsText(file);
+    // Reset input so same file can be selected again
+    e.target.value = "";
+  };
+
+  const handleImportUsers = async () => {
+    if (csvUsers.length === 0) return;
+    setIsSaving(true);
+    setImportError(null);
+    try {
+      const response = await fetch("/backend/user/import_users", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ users: csvUsers }),
+      });
+      const data = await response.json();
+      if (response.ok && data.status === 200) {
+        const successCount = data.results?.success?.length || 0;
+        const failedCount = data.results?.failed?.length || 0;
+        let message = `Successfully imported ${successCount} user(s).`;
+        if (failedCount > 0) {
+          message += ` ${failedCount} failed.`;
+        }
+        alert(message);
+        setShowImportModal(false);
+        setCsvUsers([]);
+        fetchUsers();
+      } else {
+        setImportError(data.message || "Import failed");
+      }
+    } catch (error) {
+      console.error("Failed to import users:", error);
+      setImportError("Failed to import users");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -131,7 +231,7 @@ export default function AdminUsersPage() {
           >
             Delete
           </Button>
-          <Button variant="outline">Import CSV</Button>
+          <Button variant="outline" onClick={handleImportClick}>Import CSV</Button>
         </div>
       </div>
 
@@ -283,6 +383,74 @@ export default function AdminUsersPage() {
                   Cancel
                 </Button>
                 <Button variant="destructive">Delete</Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      {/* Hidden file input for CSV import */}
+      <input
+        type="file"
+        ref={fileInputRef}
+        onChange={handleFileSelect}
+        accept=".csv,text/csv"
+        className="hidden"
+      />
+
+      {/* Import CSV Modal */}
+      {showImportModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <Card className="w-full max-w-2xl max-h-[80vh] overflow-hidden flex flex-col">
+            <CardHeader>
+              <CardTitle>Import Users from CSV</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4 overflow-auto flex-1">
+              {importError && (
+                <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
+                  {importError}
+                </div>
+              )}
+              <p className="text-sm text-muted-foreground">
+                The following {csvUsers.length} user(s) will be invited. Each will receive an email to set their password.
+              </p>
+              <div className="border rounded-lg overflow-hidden">
+                <table className="w-full text-sm">
+                  <thead className="bg-muted">
+                    <tr>
+                      <th className="px-4 py-2 text-left font-medium">Email</th>
+                      <th className="px-4 py-2 text-left font-medium">Name</th>
+                      <th className="px-4 py-2 text-left font-medium">Role</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y">
+                    {csvUsers.map((user, idx) => (
+                      <tr key={idx}>
+                        <td className="px-4 py-2">{user.email}</td>
+                        <td className="px-4 py-2">{user.name || "-"}</td>
+                        <td className="px-4 py-2">
+                          <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
+                            user.role === "admin"
+                              ? "bg-purple-100 text-purple-800"
+                              : user.role === "validator"
+                              ? "bg-blue-100 text-blue-800"
+                              : "bg-green-100 text-green-800"
+                          }`}>
+                            {user.role}
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              <div className="flex gap-2 justify-end">
+                <Button variant="outline" onClick={() => { setShowImportModal(false); setCsvUsers([]); }}>
+                  Cancel
+                </Button>
+                <Button onClick={handleImportUsers} disabled={isSaving}>
+                  {isSaving ? "Importing..." : `Import ${csvUsers.length} User(s)`}
+                </Button>
               </div>
             </CardContent>
           </Card>

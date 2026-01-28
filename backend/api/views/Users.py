@@ -49,18 +49,122 @@ class UserAPI(MethodView):
             "message": "Only /project/{fetch_users,fetch_user_projects} is permitted with GET",  # noqa: E501
         }, 405
 
-    # DEPRECATED: Mass import - SSO has been replaced with Auth0
-    # User registration is now handled directly through Auth0
     @requires_admin
     def import_users(self):
         """
-        DEPRECATED: This method relied on the old Kaart SSO.
-        User registration is now handled through Auth0.
+        Bulk import users via Auth0 Management API.
+        Expects JSON: { "users": [{ "email": "...", "name": "...", "role": "..." }, ...] }
         """
-        return {
-            "message": "User import via SSO is deprecated. Use Auth0 for user management.",
-            "status": 501,
-        }
+        users = request.json.get("users", [])
+        if not users:
+            return {"message": "No users provided", "status": 400}
+
+        # Get Auth0 config
+        domain = current_app.config.get("AUTH0_DOMAIN")
+        client_id = current_app.config.get("AUTH0_MGMT_CLIENT_ID")
+        client_secret = current_app.config.get("AUTH0_MGMT_CLIENT_SECRET")
+
+        if not all([domain, client_id, client_secret]):
+            return {
+                "message": "Auth0 Management API not configured",
+                "status": 500,
+            }
+
+        try:
+            # Get Management API access token
+            token_url = f"https://{domain}/oauth/token"
+            token_payload = {
+                "grant_type": "client_credentials",
+                "client_id": client_id,
+                "client_secret": client_secret,
+                "audience": f"https://{domain}/api/v2/",
+            }
+            token_response = requests.post(token_url, json=token_payload)
+            if not token_response.ok:
+                return {"message": "Failed to authenticate with Auth0", "status": 500}
+
+            access_token = token_response.json().get("access_token")
+            headers = {"Authorization": f"Bearer {access_token}"}
+
+            results = {"success": [], "failed": []}
+
+            for user_data in users:
+                email = user_data.get("email")
+                name = user_data.get("name", "")
+                role = user_data.get("role", "user")
+
+                if not email:
+                    results["failed"].append({"email": "unknown", "error": "No email provided"})
+                    continue
+
+                # Parse name into first/last
+                name_parts = name.strip().split(" ", 1) if name else ["", ""]
+                first_name = name_parts[0] if name_parts else ""
+                last_name = name_parts[1] if len(name_parts) > 1 else ""
+
+                try:
+                    # Create user in Auth0
+                    create_url = f"https://{domain}/api/v2/users"
+                    user_payload = {
+                        "email": email,
+                        "connection": "Username-Password-Authentication",
+                        "email_verified": False,
+                        "password": f"TempPass{email.split('@')[0]}123!",
+                        "name": name or email.split("@")[0],
+                        "given_name": first_name,
+                        "family_name": last_name,
+                    }
+                    create_response = requests.post(create_url, json=user_payload, headers=headers)
+
+                    if create_response.status_code == 409:
+                        results["failed"].append({"email": email, "error": "User already exists"})
+                        continue
+                    elif not create_response.ok:
+                        results["failed"].append({"email": email, "error": "Auth0 creation failed"})
+                        continue
+
+                    # Trigger password reset email
+                    reset_url = f"https://{domain}/dbconnections/change_password"
+                    reset_payload = {
+                        "client_id": client_id,
+                        "email": email,
+                        "connection": "Username-Password-Authentication",
+                    }
+                    requests.post(reset_url, json=reset_payload)
+
+                    # Create/update user in local database
+                    existing_user = User.query.filter_by(email=email).first()
+                    if existing_user:
+                        existing_user.update(
+                            first_name=first_name,
+                            last_name=last_name,
+                            role=role,
+                            org_id=g.user.org_id,
+                        )
+                    else:
+                        User.create(
+                            email=email,
+                            first_name=first_name,
+                            last_name=last_name,
+                            role=role,
+                            org_id=g.user.org_id,
+                        )
+
+                    results["success"].append(email)
+
+                except Exception as e:
+                    current_app.logger.error(f"Error importing user {email}: {e}")
+                    results["failed"].append({"email": email, "error": str(e)})
+
+            return {
+                "message": f"Imported {len(results['success'])} user(s)",
+                "results": results,
+                "status": 200,
+            }
+
+        except Exception as e:
+            current_app.logger.error(f"Error in bulk import: {e}")
+            return {"message": "Import failed", "status": 500}
 
     # FETCH USER ROLE ON LOGIN FOR UI RENDER
     def fetch_user_role(self):
