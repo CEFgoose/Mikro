@@ -55,7 +55,7 @@ class BaseConfig:
     }
 
     # TM4 Integration
-    TM4_API_URL = os.environ.get("TM4_API_URL", "https://tasks.kaart.com/api")
+    TM4_API_URL = os.environ.get("TM4_API_URL", "https://tasks.kaart.com/api/v2")
     TM4_API_TOKEN = os.environ.get("TM4_API_TOKEN")
 
     # OSM OAuth Configuration
