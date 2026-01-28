@@ -47,7 +47,7 @@ const defaultFormData: TrainingFormData = {
   training_url: "",
   point_value: "10",
   difficulty: "Medium",
-  training_type: "mapping",
+  training_type: "Mapping",
   project_id: "",
 };
 
@@ -86,6 +86,17 @@ export default function AdminTrainingPage() {
     }
 
     try {
+      // Transform questions to backend format
+      const formattedQuestions = questions.map((q) => {
+        const correctAnswer = q.answers.find((a) => a.correct);
+        const incorrectAnswers = q.answers.filter((a) => !a.correct);
+        return {
+          question: q.question,
+          correct: correctAnswer?.answer || "",
+          incorrect: incorrectAnswers.map((a) => ({ answer: a.answer })),
+        };
+      });
+
       await createTraining({
         title: formData.title,
         training_url: formData.training_url,
@@ -93,18 +104,16 @@ export default function AdminTrainingPage() {
         difficulty: formData.difficulty,
         training_type: formData.training_type,
         project_id: formData.project_id ? parseInt(formData.project_id) : undefined,
-        questions: questions.map((q) => ({
-          question: q.question,
-          answers: q.answers,
-        })),
+        questions: formattedQuestions,
       });
       toast.success("Training created successfully");
       setShowAddModal(false);
       setFormData(defaultFormData);
       setQuestions([]);
       refetch();
-    } catch {
-      toast.error("Failed to create training");
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Failed to create training";
+      toast.error(message);
     }
   };
 
@@ -149,7 +158,7 @@ export default function AdminTrainingPage() {
       training_url: training.training_url,
       point_value: training.point_value.toString(),
       difficulty: training.difficulty,
-      training_type: training.training_type ?? "mapping",
+      training_type: training.training_type ?? "Mapping",
       project_id: training.project_id?.toString() ?? "",
     });
     setShowEditModal(true);
@@ -430,12 +439,12 @@ export default function AdminTrainingPage() {
             value={formData.training_type}
             onChange={(value) => handleInputChange("training_type", value)}
             options={[
-              { value: "mapping", label: "Mapping" },
-              { value: "validation", label: "Validation" },
-              { value: "project", label: "Project Specific" },
+              { value: "Mapping", label: "Mapping" },
+              { value: "Validation", label: "Validation" },
+              { value: "Project", label: "Project Specific" },
             ]}
           />
-          {formData.training_type === "project" && (
+          {formData.training_type === "Project" && (
             <Input
               label="Project ID"
               type="number"

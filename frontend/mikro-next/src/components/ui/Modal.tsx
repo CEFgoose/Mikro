@@ -51,7 +51,7 @@ export function Modal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       {/* Backdrop */}
       <div
         className="fixed inset-0 bg-black/50 backdrop-blur-sm"
@@ -62,16 +62,17 @@ export function Modal({
       <div
         ref={modalRef}
         className={cn(
-          "relative z-50 w-full rounded-lg bg-background p-6 shadow-lg",
+          "relative z-50 w-full rounded-lg bg-background shadow-lg flex flex-col",
+          "max-h-[90vh]",
           sizes[size],
           "animate-in fade-in-0 zoom-in-95"
         )}
       >
         {/* Header */}
         {(title || description) && (
-          <div className="mb-4">
+          <div className="p-6 pb-0 flex-shrink-0">
             {title && (
-              <h2 className="text-lg font-semibold text-foreground">{title}</h2>
+              <h2 className="text-lg font-semibold text-foreground pr-8">{title}</h2>
             )}
             {description && (
               <p className="mt-1 text-sm text-muted-foreground">{description}</p>
@@ -80,10 +81,14 @@ export function Modal({
         )}
 
         {/* Content */}
-        <div>{children}</div>
+        <div className="p-6 overflow-y-auto flex-1 min-h-0">{children}</div>
 
         {/* Footer */}
-        {footer && <div className="mt-6 flex justify-end gap-3">{footer}</div>}
+        {footer && (
+          <div className="px-6 pb-6 pt-4 flex-shrink-0 flex justify-end gap-3 border-t border-border">
+            {footer}
+          </div>
+        )}
 
         {/* Close button */}
         <button
