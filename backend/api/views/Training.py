@@ -346,30 +346,23 @@ class TrainingAPI(MethodView):
             training_id=training.id
         ).all()
         for question in training_questions:
-            correct_training_question_answer = (
-                TrainingQuestionAnswer.query.filter_by(
-                    training_question_id=question.id,
-                    training_id=training.id,
-                    value=True,
-                ).first()
-            )
-            incorrect_training_question_answers = (
-                TrainingQuestionAnswer.query.filter_by(
-                    training_question_id=question.id,
-                    training_id=training.id,
-                    value=False,
-                ).all()
-            )
-            incorrect_answers = [
-                incorrect.answer
-                for incorrect in incorrect_training_question_answers
+            all_answers = TrainingQuestionAnswer.query.filter_by(
+                training_question_id=question.id,
+                training_id=training.id,
+            ).all()
+            answers = [
+                {
+                    "id": answer.id,
+                    "answer": answer.answer,
+                    "correct": answer.value,
+                }
+                for answer in all_answers
             ]
             question_obj = {
+                "id": question.id,
                 "question": question.question,
-                "correct": correct_training_question_answer.answer,
-                "incorrect": incorrect_answers,
+                "answers": answers,
             }
-            print(question_obj)
             questions.append(question_obj)
 
         return {
