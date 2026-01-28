@@ -154,6 +154,7 @@ class ProjectAPI(MethodView):
                 max_editors=max_editors,
                 max_validators=max_validators,
                 visibility=visibility,
+                status=True,  # New projects are active by default
             )
             return {"message": "Project created", "status": 200}
         else:
