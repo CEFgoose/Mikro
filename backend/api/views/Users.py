@@ -120,7 +120,9 @@ class UserAPI(MethodView):
                         results["failed"].append({"email": email, "error": "User already exists"})
                         continue
                     elif not create_response.ok:
-                        results["failed"].append({"email": email, "error": "Auth0 creation failed"})
+                        error_detail = create_response.json().get("message", create_response.text[:100])
+                        current_app.logger.error(f"Auth0 create user failed for {email}: {error_detail}")
+                        results["failed"].append({"email": email, "error": f"Auth0: {error_detail}"})
                         continue
 
                     # Trigger password reset email
