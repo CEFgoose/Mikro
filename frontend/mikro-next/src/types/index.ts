@@ -63,8 +63,11 @@ export interface Project {
 }
 
 export interface ProjectsResponse {
-  org_active_projects: Project[];
-  org_inactive_projects: Project[];
+  // Admin response format
+  org_active_projects?: Project[];
+  org_inactive_projects?: Project[];
+  // User response format
+  user_projects?: Project[];
   message: string;
   status: number;
 }

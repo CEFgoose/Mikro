@@ -138,7 +138,7 @@ export default function UserProjectsPage() {
     }
   }, [error]);
 
-  const activeProjects = projects?.org_active_projects ?? [];
+  const activeProjects = projects?.user_projects ?? [];
 
   if (loading) {
     return (

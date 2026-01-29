@@ -222,6 +222,10 @@ export function useDeleteProject() {
   return useApiMutation("/project/delete_project");
 }
 
+export function useFetchProjectUsers() {
+  return useApiMutation<{ users: Array<{ id: string; name: string; email: string; assigned: string }> }>("/user/fetch_project_users");
+}
+
 export function useAssignUser() {
   return useApiMutation("/user/assign_user");
 }

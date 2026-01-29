@@ -31,8 +31,17 @@ import {
   useUpdateProject,
   useDeleteProject,
   useApiMutation,
+  useFetchProjectUsers,
+  useAssignUser,
 } from "@/hooks";
 import type { Project } from "@/types";
+
+interface ProjectUserItem {
+  id: string;
+  name: string;
+  email: string;
+  assigned: string;
+}
 
 function formatCurrency(amount: number): string {
   return new Intl.NumberFormat("en-US", {
@@ -71,6 +80,8 @@ export default function AdminProjectsPage() {
   const { mutate: calculateBudget } = useApiMutation<{ calculation: string; status: number }>(
     "/project/calculate_budget"
   );
+  const { mutate: fetchProjectUsers, loading: loadingUsers } = useFetchProjectUsers();
+  const { mutate: toggleAssignUser, loading: assigning } = useAssignUser();
   const toast = useToastActions();
 
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
@@ -79,6 +90,8 @@ export default function AdminProjectsPage() {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [formData, setFormData] = useState<ProjectFormData>(defaultFormData);
   const [budgetCalculation, setBudgetCalculation] = useState("");
+  const [projectUsers, setProjectUsers] = useState<ProjectUserItem[]>([]);
+  const [editTab, setEditTab] = useState<"settings" | "users">("settings");
 
   const activeProjects = projects?.org_active_projects ?? [];
   const inactiveProjects = projects?.org_inactive_projects ?? [];
@@ -179,7 +192,7 @@ export default function AdminProjectsPage() {
     }
   };
 
-  const openEditModal = (project: Project) => {
+  const openEditModal = async (project: Project) => {
     setSelectedProject(project);
     setFormData({
       url: project.url,
@@ -191,7 +204,29 @@ export default function AdminProjectsPage() {
       difficulty: project.difficulty ?? "Medium",
       status: project.status ?? true,
     });
+    setEditTab("settings");
     setShowEditModal(true);
+    // Fetch users for this project
+    try {
+      const response = await fetchProjectUsers({ project_id: project.id });
+      setProjectUsers(response?.users ?? []);
+    } catch {
+      console.error("Failed to fetch project users");
+      setProjectUsers([]);
+    }
+  };
+
+  const handleToggleUserAssignment = async (userId: string) => {
+    if (!selectedProject) return;
+    try {
+      await toggleAssignUser({ project_id: selectedProject.id, user_id: userId });
+      // Refresh the users list
+      const response = await fetchProjectUsers({ project_id: selectedProject.id });
+      setProjectUsers(response?.users ?? []);
+      toast.success("User assignment updated");
+    } catch {
+      toast.error("Failed to update user assignment");
+    }
   };
 
   const openDeleteModal = (project: Project) => {
@@ -469,89 +504,155 @@ export default function AdminProjectsPage() {
         onClose={() => {
           setShowEditModal(false);
           setSelectedProject(null);
+          setProjectUsers([]);
         }}
         title="Edit Project"
         description={`Editing ${selectedProject?.name || "project"}`}
         size="lg"
         footer={
-          <>
+          editTab === "settings" ? (
+            <>
+              <Button variant="outline" onClick={() => setShowEditModal(false)}>
+                Cancel
+              </Button>
+              <Button onClick={handleUpdateProject} isLoading={updating}>
+                Save Changes
+              </Button>
+            </>
+          ) : (
             <Button variant="outline" onClick={() => setShowEditModal(false)}>
-              Cancel
+              Close
             </Button>
-            <Button onClick={handleUpdateProject} isLoading={updating}>
-              Save Changes
-            </Button>
-          </>
+          )
         }
       >
-        <div className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
-            <Input
-              label="Mapping Rate ($)"
-              type="number"
-              step="0.01"
-              value={formData.mapping_rate}
-              onChange={(e) => handleInputChange("mapping_rate", e.target.value)}
-            />
-            <Input
-              label="Validation Rate ($)"
-              type="number"
-              step="0.01"
-              value={formData.validation_rate}
-              onChange={(e) => handleInputChange("validation_rate", e.target.value)}
-            />
-          </div>
-          <div className="grid grid-cols-2 gap-4">
-            <Input
-              label="Max Editors"
-              type="number"
-              value={formData.max_editors}
-              onChange={(e) => handleInputChange("max_editors", e.target.value)}
-            />
-            <Input
-              label="Max Validators"
-              type="number"
-              value={formData.max_validators}
-              onChange={(e) => handleInputChange("max_validators", e.target.value)}
-            />
-          </div>
-          <Select
-            label="Difficulty"
-            value={formData.difficulty}
-            onChange={(value) => handleInputChange("difficulty", value)}
-            options={[
-              { value: "Easy", label: "Easy" },
-              { value: "Medium", label: "Medium" },
-              { value: "Hard", label: "Hard" },
-            ]}
-          />
-          <div className="flex items-center gap-4">
-            <div className="flex items-center gap-2">
-              <input
-                type="checkbox"
-                id="edit-visibility"
-                checked={formData.visibility}
-                onChange={(e) => handleInputChange("visibility", e.target.checked)}
-                className="rounded border-input"
+        <Tabs defaultValue="settings" value={editTab} onValueChange={(v) => setEditTab(v as "settings" | "users")}>
+          <TabsList className="mb-4">
+            <TabsTrigger value="settings">Settings</TabsTrigger>
+            <TabsTrigger value="users">
+              Users ({projectUsers.filter(u => u.assigned === "Yes").length}/{selectedProject?.max_editors ?? 0})
+            </TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="settings">
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <Input
+                  label="Mapping Rate ($)"
+                  type="number"
+                  step="0.01"
+                  value={formData.mapping_rate}
+                  onChange={(e) => handleInputChange("mapping_rate", e.target.value)}
+                />
+                <Input
+                  label="Validation Rate ($)"
+                  type="number"
+                  step="0.01"
+                  value={formData.validation_rate}
+                  onChange={(e) => handleInputChange("validation_rate", e.target.value)}
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <Input
+                  label="Max Editors"
+                  type="number"
+                  value={formData.max_editors}
+                  onChange={(e) => handleInputChange("max_editors", e.target.value)}
+                />
+                <Input
+                  label="Max Validators"
+                  type="number"
+                  value={formData.max_validators}
+                  onChange={(e) => handleInputChange("max_validators", e.target.value)}
+                />
+              </div>
+              <Select
+                label="Difficulty"
+                value={formData.difficulty}
+                onChange={(value) => handleInputChange("difficulty", value)}
+                options={[
+                  { value: "Easy", label: "Easy" },
+                  { value: "Medium", label: "Medium" },
+                  { value: "Hard", label: "Hard" },
+                ]}
               />
-              <label htmlFor="edit-visibility" className="text-sm">
-                Visible to users
-              </label>
+              <div className="flex items-center gap-4">
+                <div className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    id="edit-visibility"
+                    checked={formData.visibility}
+                    onChange={(e) => handleInputChange("visibility", e.target.checked)}
+                    className="rounded border-input"
+                  />
+                  <label htmlFor="edit-visibility" className="text-sm">
+                    Visible to users
+                  </label>
+                </div>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    id="edit-status"
+                    checked={formData.status}
+                    onChange={(e) => handleInputChange("status", e.target.checked)}
+                    className="rounded border-input"
+                  />
+                  <label htmlFor="edit-status" className="text-sm">
+                    Active
+                  </label>
+                </div>
+              </div>
             </div>
-            <div className="flex items-center gap-2">
-              <input
-                type="checkbox"
-                id="edit-status"
-                checked={formData.status}
-                onChange={(e) => handleInputChange("status", e.target.checked)}
-                className="rounded border-input"
-              />
-              <label htmlFor="edit-status" className="text-sm">
-                Active
-              </label>
-            </div>
-          </div>
-        </div>
+          </TabsContent>
+
+          <TabsContent value="users">
+            {loadingUsers ? (
+              <div className="space-y-2">
+                {[1, 2, 3].map((i) => (
+                  <Skeleton key={i} className="h-12 w-full" />
+                ))}
+              </div>
+            ) : projectUsers.length === 0 ? (
+              <p className="text-muted-foreground text-center py-8">No users in organization</p>
+            ) : (
+              <div className="max-h-80 overflow-y-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>User</TableHead>
+                      <TableHead>Email</TableHead>
+                      <TableHead className="text-center">Assigned</TableHead>
+                      <TableHead className="text-right">Action</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {projectUsers.map((user) => (
+                      <TableRow key={user.id}>
+                        <TableCell className="font-medium">{user.name}</TableCell>
+                        <TableCell className="text-muted-foreground">{user.email}</TableCell>
+                        <TableCell className="text-center">
+                          <Badge variant={user.assigned === "Yes" ? "success" : "secondary"}>
+                            {user.assigned}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <Button
+                            size="sm"
+                            variant={user.assigned === "Yes" ? "destructive" : "primary"}
+                            onClick={() => handleToggleUserAssignment(user.id)}
+                            disabled={assigning}
+                          >
+                            {user.assigned === "Yes" ? "Unassign" : "Assign"}
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            )}
+          </TabsContent>
+        </Tabs>
       </Modal>
 
       {/* Delete Confirmation */}
