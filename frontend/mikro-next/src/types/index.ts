@@ -236,6 +236,11 @@ export interface ChecklistsResponse {
   confirmed_and_completed?: Checklist[];
   stale_started_checklists?: Checklist[];
   pending_checklists?: Checklist[];
+  // User response format
+  user_started_checklists?: Checklist[];
+  user_completed_checklists?: Checklist[];
+  user_confirmed_checklists?: Checklist[];
+  user_available_checklists?: Checklist[];
   status: number;
 }
 

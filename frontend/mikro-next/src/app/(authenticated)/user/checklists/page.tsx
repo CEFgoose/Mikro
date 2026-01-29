@@ -47,8 +47,10 @@ export default function UserChecklistsPage() {
   const [selectedChecklist, setSelectedChecklist] = useState<Checklist | null>(null);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
 
-  const activeChecklists = checklists?.active_checklists ?? [];
-  const completedChecklists = checklists?.completed_checklists ?? [];
+  const activeChecklists = checklists?.user_started_checklists ?? [];
+  const completedChecklists = checklists?.user_completed_checklists ?? [];
+  const confirmedChecklists = checklists?.user_confirmed_checklists ?? [];
+  const availableChecklists = checklists?.user_available_checklists ?? [];
 
   // Calculate stats
   const stats = useMemo(() => {

@@ -28,8 +28,8 @@ export default function ValidatorChecklistsPage() {
       const response = await fetch("/backend/checklists/fetch_validator_checklists");
       if (response.ok) {
         const data = await response.json();
-        setCompletedChecklists(data.completed_checklists || []);
-        setConfirmedChecklists(data.confirmed_checklists || []);
+        setCompletedChecklists(data.ready_for_confirmation || []);
+        setConfirmedChecklists(data.confirmed_and_completed || []);
       }
     } catch (error) {
       console.error("Failed to fetch checklists:", error);
