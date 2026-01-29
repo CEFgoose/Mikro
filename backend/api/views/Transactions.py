@@ -9,7 +9,7 @@ from flask.views import MethodView
 from flask import g, request
 
 from ..utils import requires_admin
-from ..database import User, PayRequests, Payments, UserTasks, Task
+from ..database import User, PayRequests, Payments, UserTasks, Task, Project
 
 
 class TransactionAPI(MethodView):
@@ -30,6 +30,8 @@ class TransactionAPI(MethodView):
             return self.fetch_user_payable()
         elif path == "submit_payment_request":
             return self.submit_payment_request()
+        elif path == "fetch_payment_request_details":
+            return self.fetch_payment_request_details()
         return {
             "message": "Only /project/{fetch_users,fetch_user_projects} is permitted with GET",  # noqa: E501
         }, 405
@@ -356,5 +358,126 @@ class TransactionAPI(MethodView):
             "mapping_earnings": mapping_payable_total,
             "validation_earnings": validation_payable_total,
             "payable_total": payable_total,
+            "status": 200,
+        }
+
+    @requires_admin
+    def fetch_payment_request_details(self):
+        """
+        Fetch detailed breakdown of tasks for a payment request.
+
+        Returns tasks grouped by project with earnings breakdown.
+        Useful for admin review before approving payment.
+        """
+        if not g.user:
+            return {"message": "User not found", "status": 304}
+
+        request_id = request.json.get("request_id")
+        if not request_id:
+            return {"message": "request_id required", "status": 400}
+
+        # Get the payment request
+        pay_request = PayRequests.query.filter_by(
+            org_id=g.user.org_id, id=request_id
+        ).first()
+
+        if not pay_request:
+            return {"message": f"Payment request {request_id} not found", "status": 404}
+
+        task_ids = pay_request.task_ids or []
+        if not task_ids:
+            return {
+                "message": "No tasks found for this request",
+                "request_id": request_id,
+                "projects": [],
+                "summary": {
+                    "total_tasks": 0,
+                    "mapping_earnings": 0,
+                    "validation_earnings": 0,
+                    "total_earnings": 0,
+                },
+                "status": 200,
+            }
+
+        # Fetch all tasks for this request
+        tasks = Task.query.filter(Task.id.in_(task_ids)).all()
+
+        # Get the user who made the request
+        request_user = User.query.filter_by(id=pay_request.user_id).first()
+        request_osm_username = request_user.osm_username if request_user else None
+
+        # Group tasks by project
+        projects_map = {}
+        total_mapping = 0.0
+        total_validation = 0.0
+
+        for task in tasks:
+            project_id = task.project_id
+            if project_id not in projects_map:
+                project = Project.query.filter_by(id=project_id).first()
+                projects_map[project_id] = {
+                    "project_id": project_id,
+                    "project_name": project.name if project else f"Project {project_id}",
+                    "project_url": project.url if project else None,
+                    "tasks": [],
+                    "mapping_count": 0,
+                    "validation_count": 0,
+                    "mapping_earnings": 0.0,
+                    "validation_earnings": 0.0,
+                }
+
+            # Determine if this is a mapping or validation earning for the requester
+            is_mapper = task.mapped_by == request_osm_username
+            is_validator = task.validated_by == request_osm_username
+
+            task_info = {
+                "task_id": task.task_id,  # TM4 task ID
+                "internal_id": task.id,
+                "mapped_by": task.mapped_by,
+                "validated_by": task.validated_by,
+                "mapping_rate": task.mapping_rate or 0,
+                "validation_rate": task.validation_rate or 0,
+                "validated": task.validated,
+                "invalidated": task.invalidated,
+                "is_mapping_earning": is_mapper and task.validated,
+                "is_validation_earning": is_validator,
+            }
+
+            projects_map[project_id]["tasks"].append(task_info)
+
+            # Calculate earnings
+            if is_mapper and task.validated:
+                projects_map[project_id]["mapping_count"] += 1
+                projects_map[project_id]["mapping_earnings"] += task.mapping_rate or 0
+                total_mapping += task.mapping_rate or 0
+
+            if is_validator:
+                projects_map[project_id]["validation_count"] += 1
+                projects_map[project_id]["validation_earnings"] += task.validation_rate or 0
+                total_validation += task.validation_rate or 0
+
+        # Convert to list and sort by project name
+        projects_list = sorted(
+            projects_map.values(),
+            key=lambda x: x["project_name"]
+        )
+
+        return {
+            "message": "Payment request details fetched",
+            "request_id": request_id,
+            "user_name": pay_request.user_name,
+            "osm_username": pay_request.osm_username,
+            "amount_requested": pay_request.amount_requested,
+            "date_requested": pay_request.date_requested.isoformat() if pay_request.date_requested else None,
+            "payment_email": pay_request.payment_email,
+            "notes": pay_request.notes,
+            "projects": projects_list,
+            "summary": {
+                "total_tasks": len(tasks),
+                "total_projects": len(projects_list),
+                "mapping_earnings": total_mapping,
+                "validation_earnings": total_validation,
+                "total_earnings": total_mapping + total_validation,
+            },
             "status": 200,
         }

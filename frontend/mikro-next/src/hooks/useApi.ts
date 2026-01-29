@@ -206,6 +206,54 @@ export function useProcessPaymentRequest() {
   return useApiMutation("/transaction/process_payment_request");
 }
 
+export interface PaymentRequestTaskDetail {
+  task_id: number;
+  internal_id: number;
+  mapped_by: string;
+  validated_by: string;
+  mapping_rate: number;
+  validation_rate: number;
+  validated: boolean;
+  invalidated: boolean;
+  is_mapping_earning: boolean;
+  is_validation_earning: boolean;
+}
+
+export interface PaymentRequestProjectDetail {
+  project_id: number;
+  project_name: string;
+  project_url: string | null;
+  tasks: PaymentRequestTaskDetail[];
+  mapping_count: number;
+  validation_count: number;
+  mapping_earnings: number;
+  validation_earnings: number;
+}
+
+export interface PaymentRequestDetailsResponse {
+  message: string;
+  request_id: number;
+  user_name: string;
+  osm_username: string;
+  amount_requested: number;
+  date_requested: string;
+  payment_email: string;
+  notes: string | null;
+  projects: PaymentRequestProjectDetail[];
+  summary: {
+    total_tasks: number;
+    total_projects: number;
+    mapping_earnings: number;
+    validation_earnings: number;
+    total_earnings: number;
+  };
+  status: number;
+}
+
+export function useFetchPaymentRequestDetails() {
+  return useApiMutation<PaymentRequestDetailsResponse>("/transaction/fetch_payment_request_details");
+}
+
 export function useCompleteTraining() {
   return useApiMutation("/training/complete_training");
 }

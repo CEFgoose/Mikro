@@ -28,6 +28,9 @@ import { useToastActions } from "@/components/ui";
 import {
   useOrgTransactions,
   useProcessPaymentRequest,
+  useFetchPaymentRequestDetails,
+  PaymentRequestDetailsResponse,
+  PaymentRequestProjectDetail,
 } from "@/hooks";
 import type { PayRequest } from "@/types";
 
@@ -46,17 +49,69 @@ function formatDate(dateString: string): string {
   });
 }
 
+function generateCSV(details: PaymentRequestDetailsResponse): string {
+  const lines: string[] = [];
+
+  // Header info
+  lines.push(`Payment Request Details`);
+  lines.push(`User,${details.user_name}`);
+  lines.push(`OSM Username,${details.osm_username}`);
+  lines.push(`Date Requested,${details.date_requested}`);
+  lines.push(`Amount Requested,${formatCurrency(details.amount_requested)}`);
+  lines.push(`Payment Email,${details.payment_email || "N/A"}`);
+  lines.push(``);
+
+  // Summary
+  lines.push(`Summary`);
+  lines.push(`Total Tasks,${details.summary.total_tasks}`);
+  lines.push(`Total Projects,${details.summary.total_projects}`);
+  lines.push(`Mapping Earnings,${formatCurrency(details.summary.mapping_earnings)}`);
+  lines.push(`Validation Earnings,${formatCurrency(details.summary.validation_earnings)}`);
+  lines.push(`Total Earnings,${formatCurrency(details.summary.total_earnings)}`);
+  lines.push(``);
+
+  // Task details header
+  lines.push(`Project,Task ID,Type,Mapped By,Validated By,Rate`);
+
+  // Task details rows
+  for (const project of details.projects) {
+    for (const task of project.tasks) {
+      const taskType = task.is_mapping_earning ? "Mapping" : task.is_validation_earning ? "Validation" : "Other";
+      const rate = task.is_mapping_earning ? task.mapping_rate : task.validation_rate;
+      lines.push(`"${project.project_name}",${task.task_id},${taskType},${task.mapped_by},${task.validated_by},${formatCurrency(rate)}`);
+    }
+  }
+
+  return lines.join("\n");
+}
+
+function downloadFile(content: string, filename: string, mimeType: string) {
+  const blob = new Blob([content], { type: mimeType });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
 export default function AdminPaymentsPage() {
   const { data: transactions, loading, refetch } = useOrgTransactions();
   const { mutate: processPayment, loading: processing } = useProcessPaymentRequest();
+  const { mutate: fetchDetails, loading: loadingDetails } = useFetchPaymentRequestDetails();
   const toast = useToastActions();
 
   const [selectedRequest, setSelectedRequest] = useState<PayRequest | null>(null);
   const [showApproveModal, setShowApproveModal] = useState(false);
   const [showRejectModal, setShowRejectModal] = useState(false);
+  const [showDetailsModal, setShowDetailsModal] = useState(false);
+  const [requestDetails, setRequestDetails] = useState<PaymentRequestDetailsResponse | null>(null);
   const [paymentNotes, setPaymentNotes] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
   const [sortBy, setSortBy] = useState<"date" | "amount" | "user">("date");
+  const [expandedProjects, setExpandedProjects] = useState<Set<number>>(new Set());
 
   const requests = useMemo(() => transactions?.requests ?? [], [transactions?.requests]);
   const payments = useMemo(() => transactions?.payments ?? [], [transactions?.payments]);
@@ -115,13 +170,56 @@ export default function AdminPaymentsPage() {
     };
   }, [payments]);
 
+  const handleViewDetails = async (request: PayRequest) => {
+    setSelectedRequest(request);
+    setExpandedProjects(new Set());
+    try {
+      const details = await fetchDetails({ request_id: request.id });
+      setRequestDetails(details);
+      setShowDetailsModal(true);
+    } catch {
+      toast.error("Failed to fetch payment request details");
+    }
+  };
+
+  const handleExportCSV = () => {
+    if (!requestDetails) return;
+    const csv = generateCSV(requestDetails);
+    const filename = `payment-request-${requestDetails.request_id}-${requestDetails.osm_username}.csv`;
+    downloadFile(csv, filename, "text/csv");
+    toast.success("CSV exported successfully");
+  };
+
+  const handleExportJSON = () => {
+    if (!requestDetails) return;
+    const json = JSON.stringify(requestDetails, null, 2);
+    const filename = `payment-request-${requestDetails.request_id}-${requestDetails.osm_username}.json`;
+    downloadFile(json, filename, "application/json");
+    toast.success("JSON exported successfully");
+  };
+
+  const toggleProjectExpand = (projectId: number) => {
+    setExpandedProjects((prev) => {
+      const next = new Set(prev);
+      if (next.has(projectId)) {
+        next.delete(projectId);
+      } else {
+        next.add(projectId);
+      }
+      return next;
+    });
+  };
+
   const handleApprove = async () => {
     if (!selectedRequest) return;
 
     try {
       await processPayment({
         request_id: selectedRequest.id,
-        approved: true,
+        user_id: selectedRequest.user_id,
+        task_ids: selectedRequest.task_ids || [],
+        request_amount: selectedRequest.amount_requested,
+        payoneer_id: selectedRequest.payment_email || "",
         notes: paymentNotes,
       });
       toast.success(`Payment of ${formatCurrency(selectedRequest.amount_requested)} approved`);
@@ -290,7 +388,7 @@ export default function AdminPaymentsPage() {
                     <TableHead>OSM Username</TableHead>
                     <TableHead>Date Requested</TableHead>
                     <TableHead>Amount</TableHead>
-                    <TableHead>Notes</TableHead>
+                    <TableHead>Tasks</TableHead>
                     <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -303,11 +401,18 @@ export default function AdminPaymentsPage() {
                       <TableCell className="font-bold">
                         {formatCurrency(request.amount_requested)}
                       </TableCell>
-                      <TableCell className="max-w-xs truncate">
-                        {request.notes || "-"}
+                      <TableCell>
+                        <Badge variant="outline">{request.task_ids?.length || 0} tasks</Badge>
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex justify-end gap-2">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleViewDetails(request)}
+                          >
+                            Details
+                          </Button>
                           <Button
                             size="sm"
                             variant="primary"
@@ -384,6 +489,184 @@ export default function AdminPaymentsPage() {
         </TabsContent>
       </Tabs>
 
+      {/* Details Modal */}
+      <Modal
+        isOpen={showDetailsModal}
+        onClose={() => {
+          setShowDetailsModal(false);
+          setRequestDetails(null);
+        }}
+        title="Payment Request Details"
+        description={`Detailed breakdown for ${requestDetails?.user_name || selectedRequest?.user}`}
+        size="lg"
+        footer={
+          <>
+            <Button variant="outline" onClick={handleExportCSV} disabled={!requestDetails}>
+              Export CSV
+            </Button>
+            <Button variant="outline" onClick={handleExportJSON} disabled={!requestDetails}>
+              Export JSON
+            </Button>
+            <Button variant="outline" onClick={() => setShowDetailsModal(false)}>
+              Close
+            </Button>
+            <Button
+              variant="primary"
+              onClick={() => {
+                setShowDetailsModal(false);
+                if (selectedRequest) openApproveModal(selectedRequest);
+              }}
+            >
+              Approve Payment
+            </Button>
+          </>
+        }
+      >
+        {loadingDetails ? (
+          <div className="space-y-4">
+            <Skeleton className="h-20 w-full" />
+            <Skeleton className="h-40 w-full" />
+          </div>
+        ) : requestDetails ? (
+          <div className="space-y-6">
+            {/* Summary Card */}
+            <div className="rounded-lg bg-muted p-4">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div>
+                  <p className="text-xs text-muted-foreground">Total Tasks</p>
+                  <p className="text-lg font-bold">{requestDetails.summary.total_tasks}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">Projects</p>
+                  <p className="text-lg font-bold">{requestDetails.summary.total_projects}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">Mapping Earnings</p>
+                  <p className="text-lg font-bold text-green-600">
+                    {formatCurrency(requestDetails.summary.mapping_earnings)}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">Validation Earnings</p>
+                  <p className="text-lg font-bold text-blue-600">
+                    {formatCurrency(requestDetails.summary.validation_earnings)}
+                  </p>
+                </div>
+              </div>
+              <div className="mt-4 pt-4 border-t border-border">
+                <div className="flex justify-between items-center">
+                  <span className="font-medium">Total Requested</span>
+                  <span className="text-xl font-bold text-kaart-orange">
+                    {formatCurrency(requestDetails.amount_requested)}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* Projects Breakdown */}
+            <div className="space-y-3">
+              <h4 className="font-semibold">Projects Breakdown</h4>
+              {requestDetails.projects.map((project: PaymentRequestProjectDetail) => (
+                <div key={project.project_id} className="border rounded-lg">
+                  <button
+                    className="w-full p-4 flex items-center justify-between hover:bg-muted/50 transition-colors"
+                    onClick={() => toggleProjectExpand(project.project_id)}
+                  >
+                    <div className="flex items-center gap-3">
+                      <span className="font-medium">{project.project_name}</span>
+                      <Badge variant="outline">{project.tasks.length} tasks</Badge>
+                    </div>
+                    <div className="flex items-center gap-4">
+                      <span className="text-sm">
+                        <span className="text-green-600">{formatCurrency(project.mapping_earnings)}</span>
+                        {" + "}
+                        <span className="text-blue-600">{formatCurrency(project.validation_earnings)}</span>
+                      </span>
+                      <svg
+                        className={`w-5 h-5 transition-transform ${expandedProjects.has(project.project_id) ? "rotate-180" : ""}`}
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                      </svg>
+                    </div>
+                  </button>
+                  {expandedProjects.has(project.project_id) && (
+                    <div className="border-t p-4 bg-muted/30">
+                      <div className="grid grid-cols-2 gap-4 mb-4 text-sm">
+                        <div>
+                          <span className="text-muted-foreground">Mapping Tasks:</span>{" "}
+                          <span className="font-medium">{project.mapping_count}</span>
+                        </div>
+                        <div>
+                          <span className="text-muted-foreground">Validation Tasks:</span>{" "}
+                          <span className="font-medium">{project.validation_count}</span>
+                        </div>
+                      </div>
+                      {project.project_url && (
+                        <a
+                          href={project.project_url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-sm text-kaart-orange hover:underline mb-3 inline-block"
+                        >
+                          Open Project in TM4
+                        </a>
+                      )}
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead className="text-xs">Task ID</TableHead>
+                            <TableHead className="text-xs">Type</TableHead>
+                            <TableHead className="text-xs">Mapped By</TableHead>
+                            <TableHead className="text-xs">Validated By</TableHead>
+                            <TableHead className="text-xs text-right">Rate</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {project.tasks.map((task) => (
+                            <TableRow key={task.internal_id}>
+                              <TableCell className="text-sm">{task.task_id}</TableCell>
+                              <TableCell>
+                                {task.is_mapping_earning ? (
+                                  <Badge variant="success" className="text-xs">Mapping</Badge>
+                                ) : task.is_validation_earning ? (
+                                  <Badge variant="default" className="text-xs">Validation</Badge>
+                                ) : (
+                                  <Badge variant="outline" className="text-xs">Other</Badge>
+                                )}
+                              </TableCell>
+                              <TableCell className="text-sm">{task.mapped_by}</TableCell>
+                              <TableCell className="text-sm">{task.validated_by || "-"}</TableCell>
+                              <TableCell className="text-sm text-right font-medium">
+                                {task.is_mapping_earning
+                                  ? formatCurrency(task.mapping_rate)
+                                  : formatCurrency(task.validation_rate)}
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+
+            {/* User Notes */}
+            {requestDetails.notes && (
+              <div className="rounded-lg bg-yellow-50 dark:bg-yellow-950 p-4">
+                <p className="text-sm font-medium text-yellow-800 dark:text-yellow-200">User Notes:</p>
+                <p className="text-sm text-yellow-700 dark:text-yellow-300 mt-1">{requestDetails.notes}</p>
+              </div>
+            )}
+          </div>
+        ) : (
+          <p className="text-muted-foreground text-center py-8">No details available</p>
+        )}
+      </Modal>
+
       {/* Approve Modal */}
       <Modal
         isOpen={showApproveModal}
@@ -414,6 +697,9 @@ export default function AdminPaymentsPage() {
             </p>
             <p className="text-sm text-green-800 dark:text-green-200">
               <strong>Amount:</strong> {formatCurrency(selectedRequest?.amount_requested ?? 0)}
+            </p>
+            <p className="text-sm text-green-800 dark:text-green-200">
+              <strong>Tasks:</strong> {selectedRequest?.task_ids?.length || 0} tasks
             </p>
             <p className="text-sm text-green-800 dark:text-green-200">
               <strong>Date Requested:</strong> {selectedRequest ? formatDate(selectedRequest.date_requested) : "-"}
