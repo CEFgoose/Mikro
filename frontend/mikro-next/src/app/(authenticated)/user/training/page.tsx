@@ -41,19 +41,19 @@ export default function UserTrainingPage() {
   const mappingTrainings = (trainings?.mapping_trainings ?? []) as UserTraining[];
   const validationTrainings = (trainings?.validation_trainings ?? []) as UserTraining[];
   const projectTrainings = (trainings?.project_trainings ?? []) as UserTraining[];
+  const completedTrainings = (trainings?.user_completed_trainings ?? []) as UserTraining[];
 
   // Calculate stats
   const stats = useMemo(() => {
-    const all = [...mappingTrainings, ...validationTrainings, ...projectTrainings];
-    const completed = all.filter((t) => t.completed);
-    const totalPoints = completed.reduce((sum, t) => sum + t.point_value, 0);
+    const pending = [...mappingTrainings, ...validationTrainings, ...projectTrainings];
+    const totalPoints = completedTrainings.reduce((sum, t) => sum + t.point_value, 0);
     return {
-      total: all.length,
-      completed: completed.length,
-      pending: all.length - completed.length,
+      total: pending.length + completedTrainings.length,
+      completed: completedTrainings.length,
+      pending: pending.length,
       totalPoints,
     };
-  }, [mappingTrainings, validationTrainings, projectTrainings]);
+  }, [mappingTrainings, validationTrainings, projectTrainings, completedTrainings]);
 
   const handleStartQuiz = (training: UserTraining) => {
     setSelectedTraining(training);
@@ -249,7 +249,8 @@ export default function UserTrainingPage() {
         <TabsList>
           <TabsTrigger value="mapping">Mapping ({mappingTrainings.length})</TabsTrigger>
           <TabsTrigger value="validation">Validation ({validationTrainings.length})</TabsTrigger>
-          <TabsTrigger value="project">Project Specific ({projectTrainings.length})</TabsTrigger>
+          <TabsTrigger value="project">Project ({projectTrainings.length})</TabsTrigger>
+          <TabsTrigger value="completed">Completed ({completedTrainings.length})</TabsTrigger>
         </TabsList>
         <TabsContent value="mapping">
           {mappingTrainings.length > 0 ? (
@@ -292,6 +293,21 @@ export default function UserTrainingPage() {
             <Card>
               <CardContent style={{ padding: "48px 24px", textAlign: "center", color: "#6b7280" }}>
                 No project-specific trainings available
+              </CardContent>
+            </Card>
+          )}
+        </TabsContent>
+        <TabsContent value="completed">
+          {completedTrainings.length > 0 ? (
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+              {completedTrainings.map((training) => (
+                <TrainingCard key={training.id} training={{ ...training, completed: true }} />
+              ))}
+            </div>
+          ) : (
+            <Card>
+              <CardContent style={{ padding: "48px 24px", textAlign: "center", color: "#6b7280" }}>
+                No completed trainings yet
               </CardContent>
             </Card>
           )}

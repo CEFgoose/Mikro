@@ -20,6 +20,7 @@ import {
   useUserChecklists,
   useCompleteChecklistItem,
   useSubmitChecklist,
+  useStartChecklist,
 } from "@/hooks";
 import type { Checklist, ChecklistItem } from "@/types";
 
@@ -42,6 +43,7 @@ export default function UserChecklistsPage() {
   const { data: checklists, loading, refetch } = useUserChecklists();
   const { mutate: completeItem, loading: completing } = useCompleteChecklistItem();
   const { mutate: submitChecklist, loading: submitting } = useSubmitChecklist();
+  const { mutate: startChecklist, loading: starting } = useStartChecklist();
   const toast = useToastActions();
 
   const [selectedChecklistId, setSelectedChecklistId] = useState<number | null>(null);
@@ -75,8 +77,9 @@ export default function UserChecklistsPage() {
 
   // Calculate stats
   const stats = useMemo(() => {
-    const all = [...activeChecklists, ...completedChecklists];
-    const totalEarned = completedChecklists.reduce((sum, c) => sum + c.completion_rate, 0);
+    const all = [...activeChecklists, ...completedChecklists, ...confirmedChecklists];
+    // Only count confirmed checklists as "earned" since those have been approved
+    const totalEarned = confirmedChecklists.reduce((sum, c) => sum + c.completion_rate, 0);
     const totalItems = all.reduce((sum, c) => sum + (c.list_items?.length ?? 0), 0);
     const completedItems = all.reduce(
       (sum, c) => sum + (c.list_items?.filter((i) => i.completed).length ?? 0),
@@ -85,12 +88,13 @@ export default function UserChecklistsPage() {
     return {
       total: all.length,
       active: activeChecklists.length,
-      completed: completedChecklists.length,
+      pending: completedChecklists.length,
+      confirmed: confirmedChecklists.length,
       totalEarned,
       totalItems,
       completedItems,
     };
-  }, [activeChecklists, completedChecklists]);
+  }, [activeChecklists, completedChecklists, confirmedChecklists]);
 
   const handleCompleteItem = async (checklistId: number, itemNumber: number, userId?: string) => {
     // Optimistic update - immediately show as checked
@@ -123,6 +127,16 @@ export default function UserChecklistsPage() {
       refetch();
     } catch {
       toast.error("Failed to submit checklist");
+    }
+  };
+
+  const handleStartChecklist = async (checklist: Checklist) => {
+    try {
+      await startChecklist({ checklist_id: checklist.id });
+      toast.success("Checklist started!");
+      refetch();
+    } catch {
+      toast.error("Failed to start checklist");
     }
   };
 
@@ -259,33 +273,20 @@ export default function UserChecklistsPage() {
       <div style={{ display: "grid", gap: 16, gridTemplateColumns: "repeat(4, 1fr)" }} className="grid-stats">
         <Card style={{ padding: 0 }}>
           <div style={{ padding: "12px 16px" }}>
-            <p style={{ fontSize: 12, color: "#6b7280", marginBottom: 4 }}>Active Checklists</p>
+            <p style={{ fontSize: 12, color: "#6b7280", marginBottom: 4 }}>Active</p>
             <div style={{ fontSize: 20, fontWeight: 700, color: "#ff6b35" }}>{stats.active}</div>
           </div>
         </Card>
         <Card style={{ padding: 0 }}>
           <div style={{ padding: "12px 16px" }}>
-            <p style={{ fontSize: 12, color: "#6b7280", marginBottom: 4 }}>Completed</p>
-            <div style={{ fontSize: 20, fontWeight: 700, color: "#16a34a" }}>{stats.completed}</div>
+            <p style={{ fontSize: 12, color: "#6b7280", marginBottom: 4 }}>Pending Review</p>
+            <div style={{ fontSize: 20, fontWeight: 700, color: "#eab308" }}>{stats.pending}</div>
           </div>
         </Card>
         <Card style={{ padding: 0 }}>
           <div style={{ padding: "12px 16px" }}>
-            <p style={{ fontSize: 12, color: "#6b7280", marginBottom: 4 }}>Items Progress</p>
-            <div style={{ fontSize: 20, fontWeight: 700 }}>
-              {stats.completedItems}/{stats.totalItems}
-            </div>
-            <div style={{ width: "100%", backgroundColor: "#e5e7eb", borderRadius: 4, height: 4, marginTop: 8 }}>
-              <div
-                style={{
-                  backgroundColor: "#ff6b35",
-                  height: 4,
-                  borderRadius: 4,
-                  width: `${stats.totalItems > 0 ? (stats.completedItems / stats.totalItems) * 100 : 0}%`,
-                  transition: "width 0.3s"
-                }}
-              />
-            </div>
+            <p style={{ fontSize: 12, color: "#6b7280", marginBottom: 4 }}>Confirmed</p>
+            <div style={{ fontSize: 20, fontWeight: 700, color: "#16a34a" }}>{stats.confirmed}</div>
           </div>
         </Card>
         <Card style={{ padding: 0 }}>
@@ -299,8 +300,10 @@ export default function UserChecklistsPage() {
       {/* Tabs */}
       <Tabs defaultValue="active">
         <TabsList>
-          <TabsTrigger value="active">Active ({activeChecklists.length})</TabsTrigger>
-          <TabsTrigger value="completed">Completed ({completedChecklists.length})</TabsTrigger>
+          <TabsTrigger value="available">Available ({availableChecklists.length})</TabsTrigger>
+          <TabsTrigger value="active">In Progress ({activeChecklists.length})</TabsTrigger>
+          <TabsTrigger value="pending">Pending Review ({completedChecklists.length})</TabsTrigger>
+          <TabsTrigger value="confirmed">Confirmed ({confirmedChecklists.length})</TabsTrigger>
         </TabsList>
 
         <TabsContent value="active">
@@ -348,7 +351,7 @@ export default function UserChecklistsPage() {
           )}
         </TabsContent>
 
-        <TabsContent value="completed">
+        <TabsContent value="pending">
           {completedChecklists.length > 0 ? (
             <div className="grid gap-4 md:grid-cols-2">
               {completedChecklists.map((checklist) => (
@@ -358,7 +361,23 @@ export default function UserChecklistsPage() {
           ) : (
             <Card>
               <CardContent style={{ padding: "48px 24px", textAlign: "center", color: "#6b7280" }}>
-                No completed checklists yet
+                No checklists pending review
+              </CardContent>
+            </Card>
+          )}
+        </TabsContent>
+
+        <TabsContent value="confirmed">
+          {confirmedChecklists.length > 0 ? (
+            <div className="grid gap-4 md:grid-cols-2">
+              {confirmedChecklists.map((checklist) => (
+                <ChecklistCard key={checklist.id} checklist={checklist} isActive={false} />
+              ))}
+            </div>
+          ) : (
+            <Card>
+              <CardContent style={{ padding: "48px 24px", textAlign: "center", color: "#6b7280" }}>
+                No confirmed checklists yet
               </CardContent>
             </Card>
           )}

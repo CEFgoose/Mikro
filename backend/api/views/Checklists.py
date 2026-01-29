@@ -469,7 +469,7 @@ class ChecklistAPI(MethodView):
                     "link": item.item_link,
                 }
                 checklist_obj["list_items"].append(item_obj)
-            if checklist_obj["active_status"] is True:
+            if checklist_obj["active_status"]:
                 active_checklists.append(checklist_obj)
             else:
                 inactive_checklists.append(checklist_obj)
@@ -554,18 +554,18 @@ class ChecklistAPI(MethodView):
                     }
                     checklist_obj["comments"].append(comment_obj)
                 if (
-                    checklist_obj["completed"] is True
-                    and checklist_obj["confirmed"] is False
-                    and checklist_obj["stale"] is False
+                    checklist_obj["completed"]
+                    and not checklist_obj["confirmed"]
+                    and not checklist_obj["stale"]
                 ):
                     ready_for_confirmation.append(checklist_obj)
-                if (
-                    checklist_obj["completed"] is True
-                    and checklist_obj["confirmed"] is True
-                    and checklist_obj["stale"] is False
+                elif (
+                    checklist_obj["completed"]
+                    and checklist_obj["confirmed"]
+                    and not checklist_obj["stale"]
                 ):
                     confirmed_and_completed.append(checklist_obj)
-                if checklist_obj["stale"] is True:
+                elif checklist_obj["stale"]:
                     stale_started_checklists.append(checklist_obj)
         print(inactive_checklists)
         return {
@@ -664,27 +664,27 @@ class ChecklistAPI(MethodView):
                         }
                         checklist_obj["list_items"].append(item_obj)
                 if (
-                    checklist.completed is not True
-                    and checklist.confirmed is not True
+                    not checklist.completed
+                    and not checklist.confirmed
                     and checklist not in user_new_checklists
                 ):
                     user_started_checklists.append(checklist_obj)
-                if (
-                    checklist.completed is True
-                    and checklist.confirmed is not True
+                elif (
+                    checklist.completed
+                    and not checklist.confirmed
                     and checklist not in user_new_checklists
                 ):
                     user_completed_checklists.append(checklist_obj)
-                if (
-                    checklist.completed is True
-                    and checklist.confirmed is True
+                elif (
+                    checklist.completed
+                    and checklist.confirmed
                     and checklist not in user_new_checklists
                 ):
                     user_confirmed_checklists.append(checklist_obj)
                 elif (
                     checklist in user_new_checklists
-                    and checklist.completed is not True
-                    and checklist.confirmed is not True
+                    and not checklist.completed
+                    and not checklist.confirmed
                 ):
                     user_available_checklists.append(checklist_obj)
         return {
@@ -789,27 +789,27 @@ class ChecklistAPI(MethodView):
                         }
                         checklist_obj["list_items"].append(item_obj)
                 if (
-                    checklist.completed is not True
-                    and checklist.confirmed is not True
+                    not checklist.completed
+                    and not checklist.confirmed
                     and checklist not in user_new_checklists
                 ):
                     user_started_checklists.append(checklist_obj)
-                if (
-                    checklist.completed is True
-                    and checklist.confirmed is not True
+                elif (
+                    checklist.completed
+                    and not checklist.confirmed
                     and checklist not in user_new_checklists
                 ):
                     user_completed_checklists.append(checklist_obj)
-                if (
-                    checklist.completed is True
-                    and checklist.confirmed is True
+                elif (
+                    checklist.completed
+                    and checklist.confirmed
                     and checklist not in user_new_checklists
                 ):
                     user_confirmed_checklists.append(checklist_obj)
                 elif (
                     checklist in user_new_checklists
-                    and checklist.completed is not True
-                    and checklist.confirmed is not True
+                    and not checklist.completed
+                    and not checklist.confirmed
                 ):
                     user_available_checklists.append(checklist_obj)
 
@@ -868,15 +868,15 @@ class ChecklistAPI(MethodView):
                 checklist_obj["comments"].append(comment_obj)
 
             if (
-                checklist_obj["completed"] is True
-                and checklist_obj["confirmed"] is False
+                checklist_obj["completed"]
+                and not checklist_obj["confirmed"]
                 # and checklist_obj['id'] not in user_checklist_ids
             ):
                 ready_for_confirmation.append(checklist_obj)
 
             elif (
-                checklist_obj["completed"] is True
-                and checklist_obj["confirmed"] is True
+                checklist_obj["completed"]
+                and checklist_obj["confirmed"]
                 # and checklist_obj['id'] not in user_checklist_ids
             ):
                 confirmed_and_completed.append(checklist_obj)
