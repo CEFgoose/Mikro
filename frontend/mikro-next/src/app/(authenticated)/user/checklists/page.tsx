@@ -71,11 +71,12 @@ export default function UserChecklistsPage() {
     };
   }, [activeChecklists, completedChecklists]);
 
-  const handleCompleteItem = async (checklistId: number, itemNumber: number) => {
+  const handleCompleteItem = async (checklistId: number, itemNumber: number, userId?: string) => {
     try {
       await completeItem({
         checklist_id: checklistId,
         item_number: itemNumber,
+        user_id: userId,
       });
       toast.success("Item marked as complete");
       refetch();
@@ -417,7 +418,7 @@ export default function UserChecklistsPage() {
                   >
                     {isActive && !item.completed ? (
                       <button
-                        onClick={() => handleCompleteItem(selectedChecklist!.id, item.number)}
+                        onClick={() => handleCompleteItem(selectedChecklist!.id, item.number, selectedChecklist?.user_id)}
                         disabled={completing}
                         className="h-5 w-5 rounded border-2 border-muted-foreground flex items-center justify-center hover:border-kaart-orange hover:bg-kaart-orange/10 transition-colors"
                       >

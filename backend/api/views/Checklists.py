@@ -913,8 +913,9 @@ class ChecklistAPI(MethodView):
             return response
         checklist_id = request.json.get("checklist_id")
         item_number = request.json.get("item_number")
-        user_id = request.json.get("user_id")
-        required_args = ["checklist_id", "item_number", "user_id"]
+        # Use provided user_id or default to logged-in user
+        user_id = request.json.get("user_id") or g.user.id
+        required_args = ["checklist_id", "item_number"]
         for arg in required_args:
             if not request.json.get(arg):
                 return {"message": f"{arg} required", "status": 400}
@@ -927,6 +928,16 @@ class ChecklistAPI(MethodView):
             user_id=user_id,
             id=checklist_id,
         ).first()
+        if not target_user_checklist_item:
+            return {
+                "message": f"Checklist item not found (checklist={checklist_id}, item={item_number}, user={user_id})",
+                "status": 404,
+            }
+        if not target_user_checklist:
+            return {
+                "message": f"User checklist not found (id={checklist_id}, user={user_id})",
+                "status": 404,
+            }
         target_user_checklist_item.update(
             completed=True, completion_date=datetime.now()
         )
