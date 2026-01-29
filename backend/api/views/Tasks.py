@@ -175,15 +175,37 @@ class TaskAPI(MethodView):
         base_url = self._get_tm4_base_url()
         target_project = Project.query.filter_by(id=project_id).first()
 
+        current_app.logger.info(
+            f"get_invalidated_TM4_tasks: user={user.id}, project={project_id}, "
+            f"user_tasks_count={len(user_tasks)}, internal_task_ids={internal_task_ids}"
+        )
+
         if not target_project:
             return {"response": "project not found"}
 
+        tasks_checked = 0
+        tasks_in_project = 0
         for internal_task_id in internal_task_ids:
             target_user = User.query.filter_by(id=user.id).first()
             # Query by internal Task.id, not Task.task_id (TM4 ID)
             target_task = Task.query.filter_by(id=internal_task_id).first()
 
-            if target_task and target_task.project_id == project_id and not target_task.invalidated:
+            if not target_task:
+                current_app.logger.warning(f"Task with internal id {internal_task_id} not found in DB")
+                continue
+
+            if target_task.project_id != project_id:
+                continue  # Skip tasks from other projects
+
+            tasks_in_project += 1
+            current_app.logger.info(
+                f"Checking task: internal_id={internal_task_id}, tm4_id={target_task.task_id}, "
+                f"project={target_task.project_id}, validated={target_task.validated}, "
+                f"invalidated={target_task.invalidated}"
+            )
+
+            if not target_task.invalidated:
+                tasks_checked += 1
                 # Use Task.task_id (TM4 ID) for API call
                 tm4_task_id = target_task.task_id
                 invalid_tasks_url = f"{base_url}/projects/{project_id}/tasks/{tm4_task_id}/"
@@ -197,9 +219,11 @@ class TaskAPI(MethodView):
                         task_data = tasks_invalidated_call.json()
                         task_status = task_data.get("taskStatus")
                         current_app.logger.info(
-                            f"TM4 task {tm4_task_id} status: {task_status}"
+                            f"TM4 API response for task {tm4_task_id}: status={task_status}, "
+                            f"full_response_keys={list(task_data.keys())}"
                         )
 
+                        # Check for INVALIDATED status (TM4 uses this for "more mapping needed")
                         if task_status == "INVALIDATED":
                             # Get validator info
                             task_history = task_data.get("taskHistory", [])
@@ -230,6 +254,10 @@ class TaskAPI(MethodView):
                             target_project.update(
                                 tasks_invalidated=target_project.tasks_invalidated + 1
                             )
+                            current_app.logger.info(
+                                f"Marked task {tm4_task_id} as INVALIDATED. "
+                                f"User {target_user.id} total_tasks_invalidated now: {invalidated_count}"
+                            )
                     else:
                         current_app.logger.warning(
                             f"TM4 task status call failed for task {tm4_task_id}: {tasks_invalidated_call.status_code}"
@@ -237,6 +265,10 @@ class TaskAPI(MethodView):
                 except requests.RequestException as e:
                     current_app.logger.error(f"TM4 API error for task {tm4_task_id}: {e}")
 
+        current_app.logger.info(
+            f"get_invalidated_TM4_tasks complete: project={project_id}, "
+            f"tasks_in_project={tasks_in_project}, tasks_checked={tasks_checked}"
+        )
         return {"response": "complete"}
 
     def get_mapped_TM4_tasks(self, data, project_id):
