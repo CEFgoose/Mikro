@@ -112,6 +112,32 @@ export default function AdminUsersPage() {
     }
   };
 
+  const handleDeleteUser = async () => {
+    if (!selectedUser) return;
+    setIsSaving(true);
+    try {
+      const response = await fetch("/backend/user/remove_users", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ user_id: selectedUser }),
+      });
+      const data = await response.json();
+      if (response.ok && data.status === 200) {
+        alert("User removed successfully");
+        setShowDeleteModal(false);
+        setSelectedUser(null);
+        fetchUsers();
+      } else {
+        alert(data.message || "Failed to remove user");
+      }
+    } catch (error) {
+      console.error("Failed to remove user:", error);
+      alert("Failed to remove user");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   const handleImportClick = () => {
     fileInputRef.current?.click();
   };
@@ -381,13 +407,19 @@ export default function AdminUsersPage() {
             </CardHeader>
             <CardContent className="space-y-4">
               <p className="text-muted-foreground">
-                Are you sure you want to remove this user? This action cannot be undone.
+                Are you sure you want to remove{" "}
+                <span className="font-semibold text-foreground">
+                  {users.find((u) => u.id === selectedUser)?.name || users.find((u) => u.id === selectedUser)?.email || "this user"}
+                </span>
+                ? This action cannot be undone.
               </p>
               <div className="flex gap-2 justify-end">
-                <Button variant="outline" onClick={() => setShowDeleteModal(false)}>
+                <Button variant="outline" onClick={() => setShowDeleteModal(false)} disabled={isSaving}>
                   Cancel
                 </Button>
-                <Button variant="destructive">Delete</Button>
+                <Button variant="destructive" onClick={handleDeleteUser} disabled={isSaving}>
+                  {isSaving ? "Deleting..." : "Delete"}
+                </Button>
               </div>
             </CardContent>
           </Card>
