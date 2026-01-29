@@ -30,8 +30,9 @@ export default function UserDashboard() {
     if (!hasSynced.current) {
       hasSynced.current = true;
       syncTasks({}).then(() => {
-        // Refresh stats after sync
+        // Refresh stats and payable data after sync
         refetchStats();
+        refetchPayable();
       }).catch(() => {
         // Silently fail - sync errors shouldn't block the dashboard
         console.log("Task sync skipped or failed");
@@ -70,6 +71,7 @@ export default function UserDashboard() {
     try {
       await syncTasks({});
       refetchStats();
+      refetchPayable();
       toast.success("Tasks synced from TM4");
     } catch {
       toast.error("Failed to sync tasks");

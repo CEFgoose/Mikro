@@ -169,7 +169,8 @@ class TaskAPI(MethodView):
         Queries TM4 API for individual task status.
         """
         user_tasks = UserTasks.query.filter_by(user_id=user.id).all()
-        user_task_ids = [relation.task_id for relation in user_tasks]
+        # UserTasks.task_id is a FK to Task.id (internal DB ID)
+        internal_task_ids = [relation.task_id for relation in user_tasks]
         headers = self._get_tm4_headers()
         base_url = self._get_tm4_base_url()
         target_project = Project.query.filter_by(id=project_id).first()
@@ -177,12 +178,15 @@ class TaskAPI(MethodView):
         if not target_project:
             return {"response": "project not found"}
 
-        for task_id in user_task_ids:
+        for internal_task_id in internal_task_ids:
             target_user = User.query.filter_by(id=user.id).first()
-            target_task = Task.query.filter_by(task_id=task_id).first()
+            # Query by internal Task.id, not Task.task_id (TM4 ID)
+            target_task = Task.query.filter_by(id=internal_task_id).first()
 
-            if target_task and not target_task.invalidated:
-                invalid_tasks_url = f"{base_url}/projects/{project_id}/tasks/{task_id}/"
+            if target_task and target_task.project_id == project_id and not target_task.invalidated:
+                # Use Task.task_id (TM4 ID) for API call
+                tm4_task_id = target_task.task_id
+                invalid_tasks_url = f"{base_url}/projects/{project_id}/tasks/{tm4_task_id}/"
 
                 try:
                     tasks_invalidated_call = requests.get(
@@ -191,8 +195,12 @@ class TaskAPI(MethodView):
 
                     if tasks_invalidated_call.ok:
                         task_data = tasks_invalidated_call.json()
+                        task_status = task_data.get("taskStatus")
+                        current_app.logger.info(
+                            f"TM4 task {tm4_task_id} status: {task_status}"
+                        )
 
-                        if task_data.get("taskStatus") == "INVALIDATED":
+                        if task_status == "INVALIDATED":
                             # Get validator info
                             task_history = task_data.get("taskHistory", [])
                             if task_history:
@@ -224,10 +232,10 @@ class TaskAPI(MethodView):
                             )
                     else:
                         current_app.logger.warning(
-                            f"TM4 task status call failed for task {task_id}: {tasks_invalidated_call.status_code}"
+                            f"TM4 task status call failed for task {tm4_task_id}: {tasks_invalidated_call.status_code}"
                         )
                 except requests.RequestException as e:
-                    current_app.logger.error(f"TM4 API error for task {task_id}: {e}")
+                    current_app.logger.error(f"TM4 API error for task {tm4_task_id}: {e}")
 
         return {"response": "complete"}
 
