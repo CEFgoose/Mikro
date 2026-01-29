@@ -46,6 +46,8 @@ export default function UserChecklistsPage() {
 
   const [selectedChecklistId, setSelectedChecklistId] = useState<number | null>(null);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
+  // Track locally completed items for optimistic UI updates
+  const [localCompletedItems, setLocalCompletedItems] = useState<Set<string>>(new Set());
 
   const activeChecklists = checklists?.user_started_checklists ?? [];
   const completedChecklists = checklists?.user_completed_checklists ?? [];
@@ -57,6 +59,19 @@ export default function UserChecklistsPage() {
   const selectedChecklist = selectedChecklistId
     ? allChecklists.find(c => c.id === selectedChecklistId) ?? null
     : null;
+
+  // Helper to check if item is completed (from server OR local optimistic state)
+  const isItemCompleted = (checklistId: number, itemNumber: number, serverCompleted: boolean) => {
+    return serverCompleted || localCompletedItems.has(`${checklistId}-${itemNumber}`);
+  };
+
+  // Helper to check if all items in a checklist are completed
+  const areAllItemsCompleted = (checklist: Checklist | null) => {
+    if (!checklist?.list_items?.length) return false;
+    return checklist.list_items.every((item) =>
+      isItemCompleted(checklist.id, item.number, item.completed ?? false)
+    );
+  };
 
   // Calculate stats
   const stats = useMemo(() => {
@@ -78,6 +93,10 @@ export default function UserChecklistsPage() {
   }, [activeChecklists, completedChecklists]);
 
   const handleCompleteItem = async (checklistId: number, itemNumber: number, userId?: string) => {
+    // Optimistic update - immediately show as checked
+    const itemKey = `${checklistId}-${itemNumber}`;
+    setLocalCompletedItems(prev => new Set(prev).add(itemKey));
+
     try {
       await completeItem({
         checklist_id: checklistId,
@@ -87,6 +106,12 @@ export default function UserChecklistsPage() {
       toast.success("Item marked as complete");
       refetch();
     } catch {
+      // Revert optimistic update on failure
+      setLocalCompletedItems(prev => {
+        const next = new Set(prev);
+        next.delete(itemKey);
+        return next;
+      });
       toast.error("Failed to complete item");
     }
   };
@@ -356,7 +381,7 @@ export default function UserChecklistsPage() {
               Close
             </Button>
             {activeChecklists.some((c) => c.id === selectedChecklist?.id) &&
-              selectedChecklist?.list_items?.every((i) => i.completed) && (
+              areAllItemsCompleted(selectedChecklist) && (
                 <Button
                   variant="primary"
                   onClick={() => selectedChecklist && handleSubmitChecklist(selectedChecklist)}
@@ -412,38 +437,37 @@ export default function UserChecklistsPage() {
             <div className="space-y-2">
               {selectedChecklist?.list_items?.map((item, index) => {
                 const isActive = activeChecklists.some((c) => c.id === selectedChecklist?.id);
+                const completed = isItemCompleted(selectedChecklist!.id, item.number, item.completed ?? false);
 
                 return (
                   <div
                     key={item.id ?? index}
                     className={`flex items-center gap-3 p-3 rounded-lg transition-colors ${
-                      item.completed
+                      completed
                         ? "bg-green-50 dark:bg-green-950"
                         : "bg-muted hover:bg-muted/80"
                     }`}
                   >
-                    {isActive && !item.completed ? (
-                      <button
-                        onClick={() => handleCompleteItem(selectedChecklist!.id, item.number, selectedChecklist?.user_id)}
+                    {isActive && !completed ? (
+                      <input
+                        type="checkbox"
+                        checked={false}
+                        onChange={() => handleCompleteItem(selectedChecklist!.id, item.number, selectedChecklist?.user_id)}
                         disabled={completing}
-                        className="h-5 w-5 rounded border-2 border-muted-foreground flex items-center justify-center hover:border-kaart-orange hover:bg-kaart-orange/10 transition-colors"
-                      >
-                        {completing && (
-                          <div className="h-3 w-3 border-2 border-kaart-orange border-t-transparent rounded-full animate-spin" />
-                        )}
-                      </button>
+                        className="h-5 w-5 rounded border-2 border-muted-foreground cursor-pointer accent-kaart-orange"
+                      />
                     ) : (
                       <span
                         className={`h-5 w-5 rounded-full flex items-center justify-center text-xs ${
-                          item.completed
+                          completed
                             ? "bg-green-500 text-white"
                             : "bg-muted-foreground/20"
                         }`}
                       >
-                        {item.completed ? "✓" : item.number}
+                        {completed ? "✓" : item.number}
                       </span>
                     )}
-                    <span className={`flex-1 ${item.completed ? "line-through text-muted-foreground" : ""}`}>
+                    <span className={`flex-1 ${completed ? "line-through text-muted-foreground" : ""}`}>
                       {item.action}
                     </span>
                     {item.link && (
@@ -466,7 +490,7 @@ export default function UserChecklistsPage() {
           </div>
 
           {/* Completion message */}
-          {selectedChecklist?.list_items?.every((i) => i.completed) &&
+          {areAllItemsCompleted(selectedChecklist) &&
             activeChecklists.some((c) => c.id === selectedChecklist?.id) && (
               <div className="rounded-lg bg-green-50 dark:bg-green-950 border border-green-200 dark:border-green-800 p-4 text-center">
                 <p className="text-green-700 dark:text-green-300 font-medium">

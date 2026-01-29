@@ -60,6 +60,10 @@ class ChecklistAPI(MethodView):
             return self.delete_checklist_comment()
         elif path == "delete_checklist_item":
             return self.delete_checklist_item()
+        elif path == "submit_checklist":
+            return self.submit_checklist()
+        elif path == "confirm_checklist":
+            return self.confirm_checklist()
 
         return {
             "message": "Only /project/{fetch_users,fetch_user_projects} is permitted with GET",  # noqa: E501
@@ -1254,5 +1258,111 @@ class ChecklistAPI(MethodView):
             target_user.osm_username,
             target_checklist.name,
         )
+        response["status"] = 200
+        return response
+
+    def submit_checklist(self):
+        """Mark a user's checklist as completed/submitted for review."""
+        response = {}
+        if not g:
+            response["message"] = "User not found"
+            response["status"] = 304
+            return response
+
+        checklist_id = request.json.get("checklist_id")
+        if not checklist_id:
+            return {"message": "checklist_id required", "status": 400}
+
+        # Find the user's checklist
+        target_user_checklist = UserChecklist.query.filter_by(
+            id=checklist_id, user_id=g.user.id
+        ).first()
+
+        if not target_user_checklist:
+            return {"message": "Checklist not found", "status": 404}
+
+        # Check all items are completed
+        all_items = UserChecklistItem.query.filter_by(
+            checklist_id=checklist_id, user_id=g.user.id
+        ).all()
+
+        incomplete_items = [item for item in all_items if not item.completed]
+        if incomplete_items:
+            return {
+                "message": "All checklist items must be completed before submitting",
+                "status": 400,
+            }
+
+        # Mark as completed (submitted for review)
+        target_user_checklist.update(
+            completed=True, final_completion_date=datetime.now()
+        )
+
+        response["submitted"] = True
+        response["message"] = "Checklist submitted for review"
+        response["status"] = 200
+        return response
+
+    def confirm_checklist(self):
+        """Confirm/approve a completed checklist (admin/validator action)."""
+        response = {}
+        if not g:
+            response["message"] = "User not found"
+            response["status"] = 304
+            return response
+
+        checklist_id = request.json.get("checklist_id")
+        user_id = request.json.get("user_id")
+
+        if not checklist_id:
+            return {"message": "checklist_id required", "status": 400}
+
+        # Find the user's checklist - use id field not checklist_id
+        target_user_checklist = UserChecklist.query.filter_by(id=checklist_id).first()
+
+        if not target_user_checklist:
+            return {"message": "Checklist not found", "status": 404}
+
+        # If user_id is provided, verify it matches (for extra safety)
+        if user_id and target_user_checklist.user_id != user_id:
+            return {"message": "Checklist user mismatch", "status": 400}
+
+        # Check that checklist is completed before confirming
+        if not target_user_checklist.completed:
+            return {
+                "message": "Checklist must be completed before confirmation",
+                "status": 400,
+            }
+
+        # Mark all items as confirmed
+        all_items = UserChecklistItem.query.filter_by(
+            checklist_id=checklist_id, user_id=target_user_checklist.user_id
+        ).all()
+
+        for item in all_items:
+            item.update(confirmed=True, confirmed_date=datetime.now())
+
+        # Mark checklist as confirmed
+        target_user_checklist.update(
+            confirmed=True,
+            final_confirmation_date=datetime.now(),
+            last_confirmation_date=datetime.now(),
+        )
+
+        # Award earnings to the user
+        target_user = User.query.filter_by(id=target_user_checklist.user_id).first()
+        if target_user:
+            checklist_earnings = (
+                target_user.checklist_payable_total
+                + target_user_checklist.completion_rate
+            )
+            checklists_total = target_user.total_checklists_completed + 1
+            target_user.update(
+                checklist_payable_total=checklist_earnings,
+                total_checklists_complete=checklists_total,
+            )
+
+        response["confirmed"] = True
+        response["message"] = "Checklist %s confirmed!" % target_user_checklist.name
         response["status"] = 200
         return response
