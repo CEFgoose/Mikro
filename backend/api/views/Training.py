@@ -350,22 +350,23 @@ class TrainingAPI(MethodView):
             if training.id in trainings_completed_ids
         ]
         # Prepare response
-        org_mapping_trainings = [
+        formatted_mapping_trainings = [
             self.format_training(training) for training in mapping_trainings
         ]
-        org_validation_trainings = [
+        formatted_validation_trainings = [
             self.format_training(training) for training in validation_trainings
         ]
-        org_project_trainings = [
+        formatted_project_trainings = [
             self.format_training(training) for training in project_trainings
         ]
         user_completed_trainings = [
             self.format_training(training) for training in completed_trainings
         ]
         return {
-            "org_mapping_trainings": org_mapping_trainings,
-            "org_validation_trainings": org_validation_trainings,
-            "org_project_trainings": org_project_trainings,
+            # Keys match what frontend expects
+            "mapping_trainings": formatted_mapping_trainings,
+            "validation_trainings": formatted_validation_trainings,
+            "project_trainings": formatted_project_trainings,
             "user_completed_trainings": user_completed_trainings,
             "status": 200,
         }
