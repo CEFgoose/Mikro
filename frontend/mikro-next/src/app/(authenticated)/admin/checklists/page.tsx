@@ -117,7 +117,7 @@ export default function AdminChecklistsPage() {
     };
   }, [activeChecklists, inactiveChecklists, completedChecklists, confirmedChecklists, staleChecklists]);
 
-  const handleInputChange = (field: keyof ChecklistFormData, value: string) => {
+  const handleInputChange = (field: keyof ChecklistFormData, value: string | boolean) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
