@@ -44,13 +44,19 @@ export default function UserChecklistsPage() {
   const { mutate: submitChecklist, loading: submitting } = useSubmitChecklist();
   const toast = useToastActions();
 
-  const [selectedChecklist, setSelectedChecklist] = useState<Checklist | null>(null);
+  const [selectedChecklistId, setSelectedChecklistId] = useState<number | null>(null);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
 
   const activeChecklists = checklists?.user_started_checklists ?? [];
   const completedChecklists = checklists?.user_completed_checklists ?? [];
   const confirmedChecklists = checklists?.user_confirmed_checklists ?? [];
   const availableChecklists = checklists?.user_available_checklists ?? [];
+
+  // Derive selectedChecklist from current data so it updates on refetch
+  const allChecklists = [...activeChecklists, ...completedChecklists, ...confirmedChecklists];
+  const selectedChecklist = selectedChecklistId
+    ? allChecklists.find(c => c.id === selectedChecklistId) ?? null
+    : null;
 
   // Calculate stats
   const stats = useMemo(() => {
@@ -96,7 +102,7 @@ export default function UserChecklistsPage() {
   };
 
   const openDetailsModal = (checklist: Checklist) => {
-    setSelectedChecklist(checklist);
+    setSelectedChecklistId(checklist.id);
     setShowDetailsModal(true);
   };
 
@@ -339,7 +345,7 @@ export default function UserChecklistsPage() {
         isOpen={showDetailsModal}
         onClose={() => {
           setShowDetailsModal(false);
-          setSelectedChecklist(null);
+          setSelectedChecklistId(null);
         }}
         title={selectedChecklist?.name ?? "Checklist"}
         description={selectedChecklist?.description || "Complete all items to submit"}

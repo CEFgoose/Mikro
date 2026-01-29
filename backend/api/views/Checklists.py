@@ -76,12 +76,14 @@ class ChecklistAPI(MethodView):
         # Check if required data is provided
         checklist_name = request.json.get("checklistName")
         checklist_desc = request.json.get("checklistDescription")
-        completion_rate = float(request.json.get("completionRate"))
-        validation_rate = float(request.json.get("validationRate"))
+        completion_rate = float(request.json.get("completionRate", 0))
+        validation_rate = float(request.json.get("validationRate", 0))
         visibility = request.json.get("visibility")
         difficulty = request.json.get("checklistDifficulty")
         listItems = request.json.get("listItems")
         due_date = request.json.get("dueDate")
+        active_status = request.json.get("activeStatus", False)
+        assign_user_id = request.json.get("assignUserId")
         required_args = [
             "checklistName",
             "checklistDifficulty",
@@ -103,7 +105,7 @@ class ChecklistAPI(MethodView):
             validation_rate=validation_rate,
             visibility=visibility,
             difficulty=difficulty,
-            active_status=False,
+            active_status=active_status,
             due_date=due_date,
         )
         for item in listItems:
@@ -113,7 +115,43 @@ class ChecklistAPI(MethodView):
                 item_action=item["action"],
                 item_link=item["link"],
             )
+
+        # If a user was specified, assign them to this checklist
+        if assign_user_id:
+            target_user = User.query.filter_by(id=assign_user_id).first()
+            if target_user:
+                target_checklist_items = ChecklistItem.query.filter_by(
+                    checklist_id=new_checklist.id
+                ).all()
+                new_user_checklist = UserChecklist.create(
+                    checklist_id=new_checklist.id,
+                    user_id=assign_user_id,
+                    completed=False,
+                    confirmed=False,
+                    name=new_checklist.name,
+                    author=new_checklist.author,
+                    org_id=g.user.org_id,
+                    description=new_checklist.description,
+                    completion_rate=new_checklist.completion_rate,
+                    validation_rate=new_checklist.validation_rate,
+                    visibility=new_checklist.visibility,
+                    difficulty=new_checklist.difficulty,
+                    active_status=False,
+                    due_date=new_checklist.due_date,
+                )
+                for checklist_item in target_checklist_items:
+                    UserChecklistItem.create(
+                        checklist_id=new_user_checklist.id,
+                        user_id=assign_user_id,
+                        item_number=checklist_item.item_number,
+                        item_action=checklist_item.item_action,
+                        item_link=checklist_item.item_link,
+                        completed=False,
+                        confirmed=False,
+                    )
+
         response["message"] = "%s Created" % (checklist_name)
+        response["checklist_id"] = new_checklist.id
         response["status"] = 200
         return response
 

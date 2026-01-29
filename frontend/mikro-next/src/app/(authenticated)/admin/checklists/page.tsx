@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef, useEffect } from "react";
 import {
   Card,
   CardContent,
@@ -143,7 +143,7 @@ export default function AdminChecklistsPage() {
     }
 
     try {
-      const result = await createChecklist({
+      await createChecklist({
         checklistName: formData.name,
         checklistDescription: formData.description,
         completionRate: parseFloat(formData.completion_rate),
@@ -151,6 +151,8 @@ export default function AdminChecklistsPage() {
         checklistDifficulty: formData.difficulty,
         dueDate: formData.due_date || undefined,
         visibility: true,
+        activeStatus: formData.active_status,
+        assignUserId: formData.assigned_user_id || undefined,
         listItems: filteredItems.map((i, idx) => ({
           number: idx + 1,
           action: i.action,
@@ -158,20 +160,10 @@ export default function AdminChecklistsPage() {
         })),
       });
 
-      // If a user was selected to assign, assign them now
-      if (formData.assigned_user_id) {
-        try {
-          // Need to get the checklist ID from the response or refetch to get it
-          await refetch();
-          // Note: The backend create doesn't return the ID, so we need a different approach
-          // For now, just show a message that they need to assign manually
-          toast.success("Checklist created. Use 'Assign Users' to assign it.");
-        } catch {
-          toast.warning("Checklist created but failed to assign user");
-        }
-      } else {
-        toast.success("Checklist created successfully");
-      }
+      const messages = ["Checklist created successfully"];
+      if (formData.active_status) messages.push("(Active)");
+      if (formData.assigned_user_id) messages.push("and assigned to user");
+      toast.success(messages.join(" "));
 
       setShowAddModal(false);
       setFormData(defaultFormData);
@@ -296,9 +288,21 @@ export default function AdminChecklistsPage() {
     }
   };
 
+  const newItemRef = useRef<HTMLInputElement>(null);
+  const [focusNewItem, setFocusNewItem] = useState(false);
+
   const addItem = () => {
     setItems([...items, { action: "", link: "" }]);
+    setFocusNewItem(true);
   };
+
+  // Auto-focus new item input when added
+  useEffect(() => {
+    if (focusNewItem && newItemRef.current) {
+      newItemRef.current.focus();
+      setFocusNewItem(false);
+    }
+  }, [items.length, focusNewItem]);
 
   const updateItem = (index: number, field: keyof ItemFormData, value: string) => {
     const updated = [...items];
@@ -672,6 +676,27 @@ export default function AdminChecklistsPage() {
             ]}
           />
 
+          {/* Activate Toggle */}
+          <div className="flex items-center gap-3 py-2 px-3 bg-muted rounded-lg">
+            <label className="relative inline-flex items-center cursor-pointer">
+              <input
+                type="checkbox"
+                checked={formData.active_status}
+                onChange={(e) => handleInputChange("active_status", e.target.checked)}
+                className="sr-only peer"
+              />
+              <div className="w-11 h-6 bg-gray-300 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-ring rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-green-500"></div>
+              <span className="ml-3 text-sm font-medium">
+                {formData.active_status ? "Active (Published)" : "Inactive (Draft)"}
+              </span>
+            </label>
+            <span className="text-xs text-muted-foreground ml-auto">
+              {formData.active_status
+                ? "Users can see and start this checklist"
+                : "Only visible to admins until activated"}
+            </span>
+          </div>
+
           {/* Items Section */}
           <div className="border-t border-border pt-4">
             <div className="flex justify-between items-center mb-4">
@@ -682,17 +707,18 @@ export default function AdminChecklistsPage() {
             </div>
             {items.map((item, index) => (
               <div key={index} className="flex gap-2 mb-2">
-                <Input
+                <input
+                  ref={index === items.length - 1 ? newItemRef : undefined}
                   placeholder="Task description"
                   value={item.action}
                   onChange={(e) => updateItem(index, "action", e.target.value)}
-                  className="flex-1"
+                  className="flex-1 px-3 py-2 border border-input rounded-lg focus:outline-none focus:ring-2 focus:ring-ring bg-background"
                 />
-                <Input
+                <input
                   placeholder="Link (optional)"
                   value={item.link}
                   onChange={(e) => updateItem(index, "link", e.target.value)}
-                  className="w-40"
+                  className="w-40 px-3 py-2 border border-input rounded-lg focus:outline-none focus:ring-2 focus:ring-ring bg-background"
                 />
                 <Button
                   size="sm"
