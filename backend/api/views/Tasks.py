@@ -218,17 +218,40 @@ class TaskAPI(MethodView):
                     if tasks_invalidated_call.ok:
                         task_data = tasks_invalidated_call.json()
                         task_status = task_data.get("taskStatus")
+                        task_history = task_data.get("taskHistory", [])
+
+                        # Check task history for any invalidation actions
+                        # TM4 records STATE_CHANGE with actionText="INVALIDATED" when task is invalidated
+                        invalidation_actions = [
+                            h for h in task_history
+                            if h.get("action") == "STATE_CHANGE" and h.get("actionText") == "INVALIDATED"
+                        ]
+                        was_ever_invalidated = len(invalidation_actions) > 0
+
+                        # Log full history for debugging
+                        history_summary = [
+                            {"action": h.get("action"), "actionText": h.get("actionText"), "actionBy": h.get("actionBy")}
+                            for h in task_history[:5]  # First 5 entries
+                        ]
                         current_app.logger.info(
                             f"TM4 API response for task {tm4_task_id}: status={task_status}, "
-                            f"full_response_keys={list(task_data.keys())}"
+                            f"history_count={len(task_history)}, invalidation_actions={len(invalidation_actions)}, "
+                            f"was_ever_invalidated={was_ever_invalidated}, history_summary={history_summary}"
                         )
 
-                        # Check for INVALIDATED status (TM4 uses this for "more mapping needed")
-                        if task_status == "INVALIDATED":
-                            # Get validator info
-                            task_history = task_data.get("taskHistory", [])
-                            if task_history:
+                        # Check for INVALIDATED either by current status OR by history
+                        # A task may have been invalidated and then re-mapped/re-validated
+                        if task_status == "INVALIDATED" or was_ever_invalidated:
+                            # Get validator info from the invalidation action
+                            validator_username = None
+                            if invalidation_actions:
+                                # Use the most recent invalidation action
+                                validator_username = invalidation_actions[0].get("actionBy")
+                            elif task_history:
+                                # Fallback to first history entry
                                 validator_username = task_history[0].get("actionBy")
+
+                            if validator_username:
                                 validator_exists = User.query.filter_by(
                                     osm_username=validator_username
                                 ).first()
