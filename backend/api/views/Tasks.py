@@ -317,19 +317,24 @@ class TaskAPI(MethodView):
         Update tasks for the current user from TM4.
 
         Syncs mapped, validated, and invalidated tasks.
+        Includes both assigned projects AND public (visible) projects.
         """
         if not g.user:
             return {"message": "User not found", "status": 304}
 
-        # Get user's assigned projects
-        user_project_ids = [
+        # Get user's explicitly assigned projects
+        assigned_project_ids = [
             relation.project_id
             for relation in ProjectUser.query.filter_by(user_id=g.user.id).all()
         ]
 
+        # Get all active projects in org (assigned + public/visible)
         user_projects = Project.query.filter(
             Project.org_id == g.user.org_id,
-            Project.id.in_(user_project_ids)
+            Project.status == True,
+        ).filter(
+            # Include if assigned OR if visible to users
+            (Project.id.in_(assigned_project_ids)) | (Project.visibility == True)
         ).all()
 
         # Process all projects (TM4 only - TM3 support removed)
@@ -344,22 +349,35 @@ class TaskAPI(MethodView):
         Update tasks for all users in the organization from TM4.
 
         Admin-only endpoint to sync all user tasks.
+        Includes both assigned projects AND public (visible) projects.
         """
         if not g.user:
             return {"message": "User not found", "status": 304}
 
         org_users = User.query.filter_by(org_id=g.user.org_id).all()
 
+        # Get all active projects in org (for public/visible check)
+        all_visible_projects = Project.query.filter(
+            Project.org_id == g.user.org_id,
+            Project.status == True,
+            Project.visibility == True,
+        ).all()
+        visible_project_ids = [p.id for p in all_visible_projects]
+
         for user in org_users:
-            # Get user's assigned projects
-            user_project_ids = [
+            # Get user's explicitly assigned projects
+            assigned_project_ids = [
                 relation.project_id
                 for relation in ProjectUser.query.filter_by(user_id=user.id).all()
             ]
 
+            # Combine assigned + visible projects
+            all_project_ids = list(set(assigned_project_ids + visible_project_ids))
+
             user_projects = Project.query.filter(
                 Project.org_id == user.org_id,
-                Project.id.in_(user_project_ids)
+                Project.status == True,
+                Project.id.in_(all_project_ids)
             ).all()
 
             # Process all projects (TM4 only - TM3 support removed)
