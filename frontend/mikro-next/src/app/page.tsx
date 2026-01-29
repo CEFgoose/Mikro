@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import Image from "next/image";
 import { useUser } from "@auth0/nextjs-auth0/client";
 import { useRouter } from "next/navigation";
@@ -58,15 +57,15 @@ export default function LandingPage() {
 
             {/* Auth Buttons */}
             <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-              <Link href="/auth/login" style={{ fontSize: 14, fontWeight: 500, color: "#374151", textDecoration: "none" }}>
+              <a href="/auth/login" style={{ fontSize: 14, fontWeight: 500, color: "#374151", textDecoration: "none" }}>
                 Log in
-              </Link>
-              <Link
+              </a>
+              <a
                 href="/auth/login"
                 style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", borderRadius: 6, backgroundColor: "#004e89", padding: "8px 16px", fontSize: 14, fontWeight: 500, color: "white", textDecoration: "none" }}
               >
                 Sign up
-              </Link>
+              </a>
             </div>
           </div>
         </div>
@@ -101,12 +100,12 @@ export default function LandingPage() {
 
             {/* CTA Buttons */}
             <div style={{ display: "flex", flexWrap: "wrap", gap: 16, justifyContent: "center" }}>
-              <Link
+              <a
                 href="/auth/login"
                 style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", borderRadius: 6, backgroundColor: "#ff6b35", padding: "14px 32px", fontSize: 16, fontWeight: 500, color: "white", textDecoration: "none", boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1)" }}
               >
                 Get Started
-              </Link>
+              </a>
               <a
                 href="https://tasks.kaart.com"
                 target="_blank"
@@ -249,12 +248,12 @@ export default function LandingPage() {
           </div>
 
           <div style={{ marginTop: 64, textAlign: "center" }}>
-            <Link
+            <a
               href="/auth/login"
               style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", borderRadius: 6, backgroundColor: "#ff6b35", padding: "14px 32px", fontSize: 16, fontWeight: 500, color: "white", textDecoration: "none", boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1)" }}
             >
               Start Mapping Today
-            </Link>
+            </a>
           </div>
         </div>
       </section>

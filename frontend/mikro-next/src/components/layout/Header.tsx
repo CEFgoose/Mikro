@@ -60,7 +60,7 @@ export function Header() {
               >
                 Settings
               </Link>
-              <Link
+              <a
                 href="/auth/logout"
                 style={{
                   fontSize: 14,
@@ -73,10 +73,10 @@ export function Header() {
                 }}
               >
                 Logout
-              </Link>
+              </a>
             </div>
           ) : (
-            <Link
+            <a
               href="/auth/login"
               style={{
                 display: "inline-flex",
@@ -92,7 +92,7 @@ export function Header() {
               }}
             >
               Sign In
-            </Link>
+            </a>
           )}
         </div>
       </div>

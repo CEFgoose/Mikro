@@ -57,7 +57,8 @@ export default function UserDashboard() {
     try {
       await submitPayment({ notes: "" });
       toast.success("Payment request submitted successfully");
-      refetchPayable();
+      await refetchPayable();
+      await refetchStats();
     } catch {
       toast.error("Failed to submit payment request");
     } finally {
@@ -70,8 +71,8 @@ export default function UserDashboard() {
   const handleManualSync = async () => {
     try {
       await syncTasks({});
-      refetchStats();
-      refetchPayable();
+      await refetchStats();
+      await refetchPayable();
       toast.success("Tasks synced from TM4");
     } catch {
       toast.error("Failed to sync tasks");

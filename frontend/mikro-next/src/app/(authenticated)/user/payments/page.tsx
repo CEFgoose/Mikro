@@ -69,8 +69,8 @@ export default function UserPaymentsPage() {
       toast.success("Payment request submitted successfully");
       setShowRequestModal(false);
       setPaymentNotes("");
-      refetch();
-      refetchPayable();
+      await refetch();
+      await refetchPayable();
     } catch {
       toast.error("Failed to submit payment request");
     }
