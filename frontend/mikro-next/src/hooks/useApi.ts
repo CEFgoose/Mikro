@@ -242,6 +242,15 @@ export function useRemoveUser() {
   return useApiMutation("/user/remove_users");
 }
 
+// Task sync - pulls latest task data from TM4
+export function useSyncUserTasks() {
+  return useApiMutation("/task/update_user_tasks");
+}
+
+export function useAdminSyncAllTasks() {
+  return useApiMutation("/task/admin_update_all_user_tasks");
+}
+
 export function useCreateTraining() {
   return useApiMutation("/training/create_training");
 }

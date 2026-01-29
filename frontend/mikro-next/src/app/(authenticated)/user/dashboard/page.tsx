@@ -2,10 +2,10 @@
 
 import { useUser } from "@auth0/nextjs-auth0/client";
 import { Card, CardContent, CardHeader, CardTitle, Skeleton, Badge, Button } from "@/components/ui";
-import { useUserDashboardStats, useUserProjects, useUserPayable, useSubmitPaymentRequest } from "@/hooks";
+import { useUserDashboardStats, useUserProjects, useUserPayable, useSubmitPaymentRequest, useSyncUserTasks } from "@/hooks";
 import { useToastActions } from "@/components/ui";
 import Link from "next/link";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 
 function formatCurrency(amount: number): string {
   return new Intl.NumberFormat("en-US", {
@@ -16,12 +16,28 @@ function formatCurrency(amount: number): string {
 
 export default function UserDashboard() {
   const { user } = useUser();
-  const { data: stats, loading: statsLoading, error: statsError } = useUserDashboardStats();
+  const { data: stats, loading: statsLoading, error: statsError, refetch: refetchStats } = useUserDashboardStats();
   const { data: projects, loading: projectsLoading } = useUserProjects();
   const { data: payable, loading: payableLoading, refetch: refetchPayable } = useUserPayable();
   const { mutate: submitPayment, loading: submittingPayment } = useSubmitPaymentRequest();
+  const { mutate: syncTasks, loading: syncing } = useSyncUserTasks();
   const toast = useToastActions();
   const [isRequestingPayment, setIsRequestingPayment] = useState(false);
+  const hasSynced = useRef(false);
+
+  // Sync tasks from TM4 on first load
+  useEffect(() => {
+    if (!hasSynced.current) {
+      hasSynced.current = true;
+      syncTasks({}).then(() => {
+        // Refresh stats after sync
+        refetchStats();
+      }).catch(() => {
+        // Silently fail - sync errors shouldn't block the dashboard
+        console.log("Task sync skipped or failed");
+      });
+    }
+  }, []);
 
   // Show error as toast instead of inline
   useEffect(() => {
@@ -48,15 +64,35 @@ export default function UserDashboard() {
     }
   };
 
-  const activeProjects = projects?.org_active_projects?.length ?? 0;
+  const activeProjects = projects?.user_projects?.length ?? 0;
+
+  const handleManualSync = async () => {
+    try {
+      await syncTasks({});
+      refetchStats();
+      toast.success("Tasks synced from TM4");
+    } catch {
+      toast.error("Failed to sync tasks");
+    }
+  };
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 32 }}>
-      <div style={{ marginBottom: 8 }}>
-        <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
-        <p className="text-muted-foreground" style={{ marginTop: 8 }}>
-          Welcome back, {user?.name || user?.email}!
-        </p>
+      <div style={{ marginBottom: 8, display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
+          <p className="text-muted-foreground" style={{ marginTop: 8 }}>
+            Welcome back, {user?.name || user?.email}!
+          </p>
+        </div>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={handleManualSync}
+          disabled={syncing}
+        >
+          {syncing ? "Syncing..." : "Sync Tasks"}
+        </Button>
       </div>
 
 
