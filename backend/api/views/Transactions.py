@@ -224,15 +224,13 @@ class TransactionAPI(MethodView):
         # Get required fields from request payload
         request_id = request.json.get("request_id")
         user_id = request.json.get("user_id")
-        task_ids = request.json.get("task_ids")
+        task_ids = request.json.get("task_ids", [])
         request_amount = request.json.get("request_amount")
-        payoneer_id = request.json.get("payoneer_id")
+        payoneer_id = request.json.get("payoneer_id", "")
         notes = request.json.get("notes")
-        # Validate required fields
-        if not all(
-            [task_ids, user_id, request_amount, payoneer_id, request_id]
-        ):
-            return {"message": "All fields are required", "status": 400}
+        # Validate required fields (task_ids can be empty, payoneer_id optional)
+        if request_id is None or user_id is None or request_amount is None:
+            return {"message": "request_id, user_id, and request_amount are required", "status": 400}
         print(task_ids)
         # task_ids = str(task_ids).split()
         target_user = User.query.filter_by(

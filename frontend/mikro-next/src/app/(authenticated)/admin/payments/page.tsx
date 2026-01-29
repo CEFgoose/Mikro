@@ -28,6 +28,7 @@ import { useToastActions } from "@/components/ui";
 import {
   useOrgTransactions,
   useProcessPaymentRequest,
+  useRejectPaymentRequest,
   useFetchPaymentRequestDetails,
   PaymentRequestDetailsResponse,
   PaymentRequestProjectDetail,
@@ -100,6 +101,7 @@ function downloadFile(content: string, filename: string, mimeType: string) {
 export default function AdminPaymentsPage() {
   const { data: transactions, loading, refetch } = useOrgTransactions();
   const { mutate: processPayment, loading: processing } = useProcessPaymentRequest();
+  const { mutate: rejectPayment, loading: rejecting } = useRejectPaymentRequest();
   const { mutate: fetchDetails, loading: loadingDetails } = useFetchPaymentRequestDetails();
   const toast = useToastActions();
 
@@ -236,10 +238,9 @@ export default function AdminPaymentsPage() {
     if (!selectedRequest) return;
 
     try {
-      await processPayment({
-        request_id: selectedRequest.id,
-        approved: false,
-        notes: paymentNotes,
+      await rejectPayment({
+        transaction_id: selectedRequest.id,
+        transaction_type: "request",
       });
       toast.success("Payment request rejected");
       setShowRejectModal(false);
@@ -723,10 +724,10 @@ export default function AdminPaymentsPage() {
         }}
         onConfirm={handleReject}
         title="Reject Payment Request"
-        message={`Are you sure you want to reject the payment request of ${formatCurrency(selectedRequest?.amount_requested ?? 0)} from ${selectedRequest?.user}? This action will mark the request as rejected.`}
+        message={`Are you sure you want to reject the payment request of ${formatCurrency(selectedRequest?.amount_requested ?? 0)} from ${selectedRequest?.user}? This action will delete the request.`}
         confirmText="Reject"
         variant="destructive"
-        isLoading={processing}
+        isLoading={rejecting}
       />
     </div>
   );

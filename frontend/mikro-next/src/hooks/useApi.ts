@@ -206,6 +206,10 @@ export function useProcessPaymentRequest() {
   return useApiMutation("/transaction/process_payment_request");
 }
 
+export function useRejectPaymentRequest() {
+  return useApiMutation("/transaction/delete_transaction");
+}
+
 export interface PaymentRequestTaskDetail {
   task_id: number;
   internal_id: number;
