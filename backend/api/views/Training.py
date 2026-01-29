@@ -35,6 +35,8 @@ class TrainingAPI(MethodView):
             return self.delete_training()
         elif path == "complete_training":
             return self.complete_training()
+        elif path == "submit_quiz":
+            return self.submit_quiz()
         return {
             "message": "Only /project/{fetch_users,fetch_user_projects} is permitted with GET",  # noqa: E501
         }, 405
@@ -308,6 +310,91 @@ class TrainingAPI(MethodView):
             "training_type": target_training.training_type,
             "earned_points": earned_points,
             "message": "Training completed",
+            "status": 200,
+        }
+
+    def submit_quiz(self):
+        """
+        Submit quiz answers and calculate score.
+        Expects: { training_id: int, answers: [{ question_id: int, answer_id: int }] }
+        Returns: { score: int, passed: bool, status: int }
+        """
+        if not g:
+            return {"message": "User Not Found", "status": 304}
+
+        training_id = request.json.get("training_id")
+        answers = request.json.get("answers", [])
+
+        if not training_id:
+            return {"message": "training_id required", "status": 400}
+
+        target_training = Training.query.filter_by(id=training_id).first()
+        if not target_training:
+            return {"message": "Training not found", "status": 404}
+
+        # Check if already completed
+        completion_exists = TrainingCompleted.query.filter_by(
+            training_id=training_id, user_id=g.user.id
+        ).first()
+        if completion_exists:
+            return {
+                "message": "Training already completed",
+                "score": 100,
+                "passed": True,
+                "status": 200,
+            }
+
+        # Get all questions for this training
+        questions = TrainingQuestion.query.filter_by(training_id=training_id).all()
+        if not questions:
+            return {"message": "No questions found for this training", "status": 400}
+
+        # Calculate score
+        correct_count = 0
+        total_questions = len(questions)
+
+        for submitted in answers:
+            question_id = submitted.get("question_id")
+            answer_id = submitted.get("answer_id")
+
+            # Find the correct answer for this question
+            correct_answer = TrainingQuestionAnswer.query.filter_by(
+                training_id=training_id,
+                training_question_id=question_id,
+                value=True,
+            ).first()
+
+            if correct_answer and correct_answer.id == answer_id:
+                correct_count += 1
+
+        # Calculate percentage score
+        score = int((correct_count / total_questions) * 100) if total_questions > 0 else 0
+        passed = score >= 70
+
+        # If passed, mark training as complete and award points
+        if passed:
+            TrainingCompleted.create(training_id=training_id, user_id=g.user.id)
+
+            if target_training.training_type == "Mapping":
+                g.user.update(
+                    mapper_points=g.user.mapper_points + target_training.point_value
+                )
+            elif target_training.training_type == "Validation":
+                g.user.update(
+                    validator_points=g.user.validator_points + target_training.point_value
+                )
+            elif target_training.training_type == "Project":
+                g.user.update(
+                    special_project_points=g.user.special_project_points
+                    + target_training.point_value
+                )
+
+        return {
+            "score": score,
+            "passed": passed,
+            "correct": correct_count,
+            "total": total_questions,
+            "message": "Quiz passed!" if passed else "Quiz failed. You need 70% to pass.",
             "status": 200,
         }
 

@@ -356,3 +356,23 @@ export function useSubmitTrainingQuiz() {
 export function useAddChecklistComment() {
   return useApiMutation("/checklist/add_comment");
 }
+
+export function useAssignUserChecklist() {
+  return useApiMutation("/checklist/assign_user_checklist");
+}
+
+export function useUnassignUserChecklist() {
+  return useApiMutation("/checklist/unassign_user_checklist");
+}
+
+export function useFetchChecklistUsers() {
+  return useApiMutation<{
+    users: Array<{
+      id: string;
+      name: string;
+      role: string;
+      assigned: string;
+    }>;
+    status: number;
+  }>("/checklist/fetch_checklist_users");
+}

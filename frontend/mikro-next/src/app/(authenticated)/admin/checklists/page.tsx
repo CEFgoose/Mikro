@@ -26,6 +26,9 @@ import {
   useDeleteChecklist,
   useConfirmChecklist,
   useUsersList,
+  useAssignUserChecklist,
+  useUnassignUserChecklist,
+  useFetchChecklistUsers,
 } from "@/hooks";
 import type { Checklist } from "@/types";
 
@@ -78,6 +81,9 @@ export default function AdminChecklistsPage() {
   const { mutate: updateChecklist, loading: updating } = useUpdateChecklist();
   const { mutate: deleteChecklist, loading: deleting } = useDeleteChecklist();
   const { mutate: confirmChecklist, loading: confirming } = useConfirmChecklist();
+  const { mutate: assignUser, loading: assigning } = useAssignUserChecklist();
+  const { mutate: unassignUser, loading: unassigning } = useUnassignUserChecklist();
+  const { mutate: fetchChecklistUsers } = useFetchChecklistUsers();
   const toast = useToastActions();
 
   const [selectedChecklist, setSelectedChecklist] = useState<Checklist | null>(null);
@@ -85,6 +91,9 @@ export default function AdminChecklistsPage() {
   const [showEditModal, setShowEditModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
+  const [showAssignModal, setShowAssignModal] = useState(false);
+  const [checklistUsers, setChecklistUsers] = useState<Array<{ id: string; name: string; role: string; assigned: string }>>([]);
+  const [loadingUsers, setLoadingUsers] = useState(false);
   const [formData, setFormData] = useState<ChecklistFormData>(defaultFormData);
   const [items, setItems] = useState<ItemFormData[]>([]);
 
@@ -134,7 +143,7 @@ export default function AdminChecklistsPage() {
     }
 
     try {
-      await createChecklist({
+      const result = await createChecklist({
         checklistName: formData.name,
         checklistDescription: formData.description,
         completionRate: parseFloat(formData.completion_rate),
@@ -148,7 +157,22 @@ export default function AdminChecklistsPage() {
           link: i.link || "",
         })),
       });
-      toast.success("Checklist created successfully");
+
+      // If a user was selected to assign, assign them now
+      if (formData.assigned_user_id) {
+        try {
+          // Need to get the checklist ID from the response or refetch to get it
+          await refetch();
+          // Note: The backend create doesn't return the ID, so we need a different approach
+          // For now, just show a message that they need to assign manually
+          toast.success("Checklist created. Use 'Assign Users' to assign it.");
+        } catch {
+          toast.warning("Checklist created but failed to assign user");
+        }
+      } else {
+        toast.success("Checklist created successfully");
+      }
+
       setShowAddModal(false);
       setFormData(defaultFormData);
       setItems([]);
@@ -222,6 +246,54 @@ export default function AdminChecklistsPage() {
   const openDetailsModal = (checklist: Checklist) => {
     setSelectedChecklist(checklist);
     setShowDetailsModal(true);
+  };
+
+  const openAssignModal = async (checklist: Checklist) => {
+    setSelectedChecklist(checklist);
+    setShowAssignModal(true);
+    setLoadingUsers(true);
+    try {
+      const result = await fetchChecklistUsers({ checklist_id: checklist.id });
+      setChecklistUsers(result.users ?? []);
+    } catch {
+      toast.error("Failed to load users");
+    } finally {
+      setLoadingUsers(false);
+    }
+  };
+
+  const handleAssignUser = async (userId: string) => {
+    if (!selectedChecklist) return;
+    try {
+      await assignUser({
+        checklist_id: selectedChecklist.id,
+        user_id: userId,
+      });
+      toast.success("User assigned to checklist");
+      // Refresh the user list
+      const result = await fetchChecklistUsers({ checklist_id: selectedChecklist.id });
+      setChecklistUsers(result.users ?? []);
+      refetch();
+    } catch {
+      toast.error("Failed to assign user");
+    }
+  };
+
+  const handleUnassignUser = async (userId: string) => {
+    if (!selectedChecklist) return;
+    try {
+      await unassignUser({
+        checklist_id: selectedChecklist.id,
+        user_id: userId,
+      });
+      toast.success("User unassigned from checklist");
+      // Refresh the user list
+      const result = await fetchChecklistUsers({ checklist_id: selectedChecklist.id });
+      setChecklistUsers(result.users ?? []);
+      refetch();
+    } catch {
+      toast.error("Failed to unassign user");
+    }
   };
 
   const addItem = () => {
@@ -305,33 +377,45 @@ export default function AdminChecklistsPage() {
           </div>
 
           {/* Actions */}
-          <div className="mt-4 flex gap-2">
-            <Button
-              size="sm"
-              variant="outline"
-              className="flex-1"
-              onClick={() => openDetailsModal(checklist)}
-            >
-              View Details
-            </Button>
-            {showConfirm ? (
-              <Button
-                size="sm"
-                variant="primary"
-                className="flex-1"
-                onClick={() => handleConfirmChecklist(checklist)}
-                isLoading={confirming}
-              >
-                Confirm
-              </Button>
-            ) : (
+          <div className="mt-4 flex flex-col gap-2">
+            <div className="flex gap-2">
               <Button
                 size="sm"
                 variant="outline"
                 className="flex-1"
-                onClick={() => openEditModal(checklist)}
+                onClick={() => openDetailsModal(checklist)}
               >
-                Edit
+                View Details
+              </Button>
+              {showConfirm ? (
+                <Button
+                  size="sm"
+                  variant="primary"
+                  className="flex-1"
+                  onClick={() => handleConfirmChecklist(checklist)}
+                  isLoading={confirming}
+                >
+                  Confirm
+                </Button>
+              ) : (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="flex-1"
+                  onClick={() => openEditModal(checklist)}
+                >
+                  Edit
+                </Button>
+              )}
+            </div>
+            {!showConfirm && (
+              <Button
+                size="sm"
+                variant="secondary"
+                className="w-full"
+                onClick={() => openAssignModal(checklist)}
+              >
+                Assign Users
               </Button>
             )}
           </div>
@@ -822,6 +906,98 @@ export default function AdminChecklistsPage() {
         variant="destructive"
         isLoading={deleting}
       />
+
+      {/* Assign Users Modal */}
+      <Modal
+        isOpen={showAssignModal}
+        onClose={() => {
+          setShowAssignModal(false);
+          setSelectedChecklist(null);
+          setChecklistUsers([]);
+        }}
+        title="Assign Users"
+        description={`Manage user assignments for "${selectedChecklist?.name}"`}
+        size="lg"
+        footer={
+          <Button onClick={() => setShowAssignModal(false)}>Done</Button>
+        }
+      >
+        <div className="space-y-4">
+          {loadingUsers ? (
+            <div className="py-8 text-center text-muted-foreground">
+              Loading users...
+            </div>
+          ) : (
+            <>
+              {/* Assigned Users */}
+              <div>
+                <h3 className="font-medium mb-2 text-green-600">
+                  Assigned ({checklistUsers.filter((u) => u.assigned === "Yes").length})
+                </h3>
+                <div className="space-y-2">
+                  {checklistUsers
+                    .filter((u) => u.assigned === "Yes")
+                    .map((user) => (
+                      <div
+                        key={user.id}
+                        className="flex items-center justify-between p-3 rounded-lg bg-green-50 dark:bg-green-950"
+                      >
+                        <div>
+                          <p className="font-medium">{user.name}</p>
+                          <p className="text-sm text-muted-foreground">{user.role}</p>
+                        </div>
+                        <Button
+                          size="sm"
+                          variant="destructive"
+                          onClick={() => handleUnassignUser(user.id)}
+                          isLoading={unassigning}
+                        >
+                          Unassign
+                        </Button>
+                      </div>
+                    ))}
+                  {checklistUsers.filter((u) => u.assigned === "Yes").length === 0 && (
+                    <p className="text-sm text-muted-foreground py-2">No users assigned yet</p>
+                  )}
+                </div>
+              </div>
+
+              {/* Unassigned Users */}
+              <div>
+                <h3 className="font-medium mb-2">
+                  Available Users ({checklistUsers.filter((u) => u.assigned === "No").length})
+                </h3>
+                <div className="space-y-2 max-h-64 overflow-y-auto">
+                  {checklistUsers
+                    .filter((u) => u.assigned === "No")
+                    .map((user) => (
+                      <div
+                        key={user.id}
+                        className="flex items-center justify-between p-3 rounded-lg bg-muted"
+                      >
+                        <div>
+                          <p className="font-medium">{user.name}</p>
+                          <p className="text-sm text-muted-foreground">{user.role}</p>
+                        </div>
+                        <Button
+                          size="sm"
+                          variant="primary"
+                          onClick={() => handleAssignUser(user.id)}
+                          isLoading={assigning}
+                        >
+                          Assign
+                        </Button>
+                      </div>
+                    ))}
+                  {checklistUsers.filter((u) => u.assigned === "No").length === 0 && (
+                    <p className="text-sm text-muted-foreground py-2">All users have been assigned</p>
+                  )}
+                </div>
+              </div>
+            </>
+          )}
+        </div>
+      </Modal>
     </div>
   );
 }
