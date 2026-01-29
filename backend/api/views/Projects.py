@@ -131,8 +131,10 @@ class ProjectAPI(MethodView):
             current_app.logger.error(f"TM4 API returned non-JSON response: {tm_fetch.text[:500]}")
             return {"message": "TM4 API returned invalid response - check project URL", "status": 400}
 
-        project_name = project_data.get("projectInfo", {}).get("name", f"Project {project_id}")
-        total_tasks = len(project_data.get("tasks", {}).get("features", []))
+        project_info = project_data.get("projectInfo", {})
+        project_name = project_info.get("name", f"Project {project_id}")
+        # Use totalTasks from projectInfo if available (more accurate than counting features)
+        total_tasks = project_info.get("totalTasks") or len(project_data.get("tasks", {}).get("features", []))
 
         # Calculate budget
         if rate_type is True:
@@ -294,7 +296,16 @@ class ProjectAPI(MethodView):
             current_app.logger.error(f"TM4 API returned non-JSON response: {tm_fetch.text[:500]}")
             return {"message": "TM4 API returned invalid response", "status": 500}
 
-        total_tasks = len(json_data.get("tasks", {}).get("features", []))
+        # Debug logging for task count
+        project_info = json_data.get("projectInfo", {})
+        features_count = len(json_data.get("tasks", {}).get("features", []))
+        project_info_total = project_info.get("totalTasks")
+        current_app.logger.info(f"TM4 project {project_id} - projectInfo.totalTasks: {project_info_total}, features count: {features_count}")
+        current_app.logger.info(f"TM4 projectInfo keys: {list(project_info.keys())}")
+
+        # Use totalTasks from projectInfo if available (more accurate than counting features)
+        total_tasks = project_info_total or features_count
+        current_app.logger.info(f"Using total_tasks: {total_tasks}")
 
         if rate_type is True:
             mapping_rate = float(mapping_rate)
