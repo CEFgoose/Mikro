@@ -168,9 +168,11 @@ export default function UserDashboard() {
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Payable Total</CardTitle>
+            <CardTitle className="text-sm font-medium">
+              {(stats?.requests_total ?? 0) > 0 ? "Available Balance" : "Payable Total"}
+            </CardTitle>
             <svg
-              className="h-4 w-4 text-muted-foreground"
+              className={`h-4 w-4 ${(stats?.requests_total ?? 0) > 0 ? "text-yellow-500" : "text-muted-foreground"}`}
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -184,7 +186,7 @@ export default function UserDashboard() {
             </svg>
           </CardHeader>
           <CardContent>
-            {payableLoading ? (
+            {payableLoading || statsLoading ? (
               <Skeleton className="h-8 w-24" />
             ) : (
               <>
@@ -192,7 +194,9 @@ export default function UserDashboard() {
                   {formatCurrency(payable?.payable_total ?? 0)}
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  Available for payout
+                  {(stats?.requests_total ?? 0) > 0
+                    ? "Request pending"
+                    : "Available for payout"}
                 </p>
               </>
             )}
@@ -357,7 +361,27 @@ export default function UserDashboard() {
             <CardTitle>Quick Actions</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            {(payable?.payable_total ?? 0) > 0 ? (
+            {(stats?.requests_total ?? 0) > 0 ? (
+              <div className="rounded-lg bg-yellow-50 dark:bg-yellow-950 border border-yellow-200 dark:border-yellow-800 p-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <svg className="h-5 w-5 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  <p className="font-medium text-yellow-800 dark:text-yellow-200">
+                    Payment Request Pending
+                  </p>
+                </div>
+                <p className="text-sm text-yellow-700 dark:text-yellow-300">
+                  You have a pending request for {formatCurrency(stats?.requests_total ?? 0)}.
+                  You can submit a new request after this one is processed.
+                </p>
+                {(payable?.payable_total ?? 0) > 0 && (
+                  <p className="text-sm text-yellow-600 dark:text-yellow-400 mt-2">
+                    Additional earnings: {formatCurrency(payable?.payable_total ?? 0)}
+                  </p>
+                )}
+              </div>
+            ) : (payable?.payable_total ?? 0) > 0 ? (
               <div className="rounded-lg bg-green-50 dark:bg-green-950 p-4">
                 <p className="font-medium text-green-800 dark:text-green-200">
                   You have {formatCurrency(payable?.payable_total ?? 0)} available!

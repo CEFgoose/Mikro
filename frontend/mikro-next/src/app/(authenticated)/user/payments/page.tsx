@@ -105,20 +105,35 @@ export default function UserPaymentsPage() {
       {/* Stats Row */}
       <div style={{ display: "grid", gap: 16, gridTemplateColumns: "1.5fr 1fr 1fr 1fr" }} className="grid-stats">
         {/* Available Balance - larger with button */}
-        <Card style={{ padding: 0, border: "2px solid #ff6b35" }}>
+        <Card style={{ padding: 0, border: `2px solid ${requests.length > 0 ? "#ca8a04" : "#ff6b35"}` }}>
           <div style={{ padding: "16px 20px" }}>
             <p style={{ fontSize: 12, color: "#6b7280", marginBottom: 8 }}>Available Balance</p>
-            <div style={{ fontSize: 28, fontWeight: 700, color: "#ff6b35" }}>
+            <div style={{ fontSize: 28, fontWeight: 700, color: requests.length > 0 ? "#ca8a04" : "#ff6b35" }}>
               {formatCurrency(payable?.payable_total ?? 0)}
             </div>
-            <p style={{ fontSize: 11, color: "#6b7280", marginTop: 4 }}>Ready for payout</p>
-            <Button
-              style={{ marginTop: 12, width: "100%" }}
-              onClick={() => setShowRequestModal(true)}
-              disabled={(payable?.payable_total ?? 0) <= 0}
-            >
-              Request Payment
-            </Button>
+            <p style={{ fontSize: 11, color: "#6b7280", marginTop: 4 }}>
+              {requests.length > 0 ? "Request pending" : "Ready for payout"}
+            </p>
+            {requests.length > 0 ? (
+              <p style={{
+                marginTop: 12,
+                padding: "8px 12px",
+                backgroundColor: "rgba(202, 138, 4, 0.1)",
+                borderRadius: 6,
+                fontSize: 12,
+                color: "#a16207"
+              }}>
+                You have a pending request. New requests can be submitted after approval.
+              </p>
+            ) : (
+              <Button
+                style={{ marginTop: 12, width: "100%" }}
+                onClick={() => setShowRequestModal(true)}
+                disabled={(payable?.payable_total ?? 0) <= 0}
+              >
+                Request Payment
+              </Button>
+            )}
           </div>
         </Card>
 
