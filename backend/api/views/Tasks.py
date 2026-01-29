@@ -345,6 +345,195 @@ class TaskAPI(MethodView):
 
         return {"message": "complete"}
 
+    def get_invalidated_TM4_tasks_from_contributions(self, data, project_id):
+        """
+        Process invalidated tasks from TM4 contributions data.
+
+        TM4 now includes invalidatedTasks in the contributions response.
+        This creates task records for invalidated tasks and updates stats.
+        """
+        users = User.query.all()
+        usernames = [x.osm_username for x in users]
+        target_project = Project.query.filter_by(id=project_id).first()
+
+        if not target_project:
+            current_app.logger.error(f"Project {project_id} not found")
+            return {"message": "project not found"}
+
+        for contributor in data.get("userContributions", []):
+            if contributor["username"] not in usernames:
+                continue
+
+            mapper = User.query.filter_by(
+                osm_username=contributor["username"]
+            ).first()
+
+            if not mapper:
+                continue
+
+            invalidated_tasks = contributor.get("invalidatedTasks", [])
+            if not invalidated_tasks:
+                continue
+
+            current_app.logger.info(
+                f"Processing {len(invalidated_tasks)} invalidated tasks for user {mapper.osm_username}"
+            )
+
+            for task_id in invalidated_tasks:
+                # Check if task already exists in our system
+                task_exists = Task.query.filter_by(
+                    task_id=task_id,
+                    project_id=project_id,
+                ).first()
+
+                if task_exists:
+                    # Task exists - check if we need to mark it as invalidated
+                    if not task_exists.invalidated:
+                        current_app.logger.info(
+                            f"Marking existing task {task_id} as invalidated for user {mapper.osm_username}"
+                        )
+                        task_exists.update(
+                            invalidated=True,
+                            validated=False,
+                        )
+                        mapper.update(
+                            total_tasks_invalidated=mapper.total_tasks_invalidated + 1
+                        )
+                        target_project.update(
+                            tasks_invalidated=target_project.tasks_invalidated + 1
+                        )
+                else:
+                    # Task doesn't exist - create it as an invalidated task
+                    current_app.logger.info(
+                        f"Creating new invalidated task {task_id} for user {mapper.osm_username}"
+                    )
+                    new_task = Task.create(
+                        task_id=task_id,
+                        org_id=mapper.org_id,
+                        project_id=project_id,
+                        mapping_rate=target_project.mapping_rate_per_task,
+                        validation_rate=target_project.validation_rate_per_task,
+                        paid_out=False,
+                        mapped=True,
+                        mapped_by=mapper.osm_username,
+                        validated_by="",
+                        validated=False,
+                        invalidated=True,
+                    )
+                    UserTasks.create(user_id=mapper.id, task_id=new_task.id)
+                    mapper.update(
+                        total_tasks_mapped=mapper.total_tasks_mapped + 1,
+                        total_tasks_invalidated=mapper.total_tasks_invalidated + 1,
+                    )
+                    target_project.update(
+                        tasks_mapped=target_project.tasks_mapped + 1,
+                        tasks_invalidated=target_project.tasks_invalidated + 1,
+                    )
+
+        return {"message": "complete"}
+
+    def fetch_invalidated_tasks_from_tm4(self, project_id, user):
+        """
+        Fetch invalidated tasks from TM4's dedicated invalidation endpoint.
+
+        When TM4 invalidates a task, it clears mapped_by, so the task
+        disappears from the contributions endpoint. This method calls
+        the dedicated invalidation endpoint to get tasks that were invalidated.
+
+        Endpoint: /api/v2/projects/{project_id}/tasks/queries/own/invalidated/
+        """
+        headers = self._get_tm4_headers()
+        base_url = self._get_tm4_base_url()
+        target_project = Project.query.filter_by(id=project_id).first()
+
+        if not target_project:
+            current_app.logger.error(f"Project {project_id} not found")
+            return {"response": "project not found"}
+
+        # TM4 requires the user's OSM username for this endpoint
+        # The endpoint returns tasks where user was the original mapper that got invalidated
+        invalidated_url = f"{base_url}/projects/{project_id}/tasks/queries/own/invalidated/"
+
+        current_app.logger.info(
+            f"fetch_invalidated_tasks_from_tm4: user={user.osm_username}, project={project_id}, url={invalidated_url}"
+        )
+
+        try:
+            response = requests.get(invalidated_url, headers=headers, timeout=30)
+
+            if response.ok:
+                data = response.json()
+                invalidated_tasks = data.get("invalidatedTasks", [])
+
+                current_app.logger.info(
+                    f"TM4 invalidation endpoint returned {len(invalidated_tasks)} tasks for user {user.osm_username}"
+                )
+
+                for task_info in invalidated_tasks:
+                    task_id = task_info.get("taskId")
+                    if not task_id:
+                        continue
+
+                    # Check if task already exists
+                    existing_task = Task.query.filter_by(
+                        task_id=task_id,
+                        project_id=project_id,
+                    ).first()
+
+                    if existing_task:
+                        # Task exists - update invalidation status if needed
+                        if not existing_task.invalidated:
+                            current_app.logger.info(
+                                f"Updating existing task {task_id} to invalidated"
+                            )
+                            existing_task.update(
+                                invalidated=True,
+                                validated=False,
+                            )
+                            user.update(
+                                total_tasks_invalidated=user.total_tasks_invalidated + 1
+                            )
+                            target_project.update(
+                                tasks_invalidated=target_project.tasks_invalidated + 1
+                            )
+                    else:
+                        # Task doesn't exist - create it as invalidated
+                        current_app.logger.info(
+                            f"Creating new invalidated task {task_id} for user {user.osm_username}"
+                        )
+                        new_task = Task.create(
+                            task_id=task_id,
+                            org_id=user.org_id,
+                            project_id=project_id,
+                            mapping_rate=target_project.mapping_rate_per_task,
+                            validation_rate=target_project.validation_rate_per_task,
+                            paid_out=False,
+                            mapped=True,
+                            mapped_by=user.osm_username,
+                            validated_by=task_info.get("invalidatedBy", ""),
+                            validated=False,
+                            invalidated=True,
+                        )
+                        UserTasks.create(user_id=user.id, task_id=new_task.id)
+                        user.update(
+                            total_tasks_mapped=user.total_tasks_mapped + 1,
+                            total_tasks_invalidated=user.total_tasks_invalidated + 1,
+                        )
+                        target_project.update(
+                            tasks_mapped=target_project.tasks_mapped + 1,
+                            tasks_invalidated=target_project.tasks_invalidated + 1,
+                        )
+
+                return {"response": "complete", "count": len(invalidated_tasks)}
+            else:
+                current_app.logger.warning(
+                    f"TM4 invalidation endpoint failed: {response.status_code} - {response.text}"
+                )
+                return {"response": "failed", "status": response.status_code}
+        except requests.RequestException as e:
+            current_app.logger.error(f"TM4 invalidation API error: {e}")
+            return {"response": "error", "error": str(e)}
+
     def TM4_payment_call(self, project_id, user):
         """
         Fetch contributions from TM4 and update local task records.
@@ -364,6 +553,11 @@ class TaskAPI(MethodView):
                 data = response.json()
                 self.get_mapped_TM4_tasks(data, project_id)
                 self.get_validated_TM4_tasks(data, project_id)
+                # Process invalidated tasks from contributions response
+                # TM4 now includes invalidatedTasks in the contributions endpoint
+                self.get_invalidated_TM4_tasks_from_contributions(data, project_id)
+                # Also check existing tasks for invalidation via status/history
+                # This handles tasks created before the TM4 enhancement
                 self.get_invalidated_TM4_tasks(project_id, user)
                 return {"message": "updated!"}
             else:
