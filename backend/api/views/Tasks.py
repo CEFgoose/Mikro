@@ -103,13 +103,34 @@ class TaskAPI(MethodView):
                                     tasks_invalidated=target_project.tasks_invalidated - 1
                                 )
 
+                            # Detect self-validation (mapper validated their own work)
+                            is_self_validated = task_exists.mapped_by == c["username"]
+
                             # Update task status
                             task_exists.update(
                                 validated_by=c["username"],
                                 unknown_validator=False,
                                 validated=True,
                                 invalidated=False,
+                                self_validated=is_self_validated,
                             )
+
+                            # Create UserTasks entry for validator (for validator dashboard)
+                            validator_task_link = UserTasks.query.filter_by(
+                                user_id=validator_exists.id, task_id=task_exists.id
+                            ).first()
+                            if not validator_task_link:
+                                UserTasks.create(user_id=validator_exists.id, task_id=task_exists.id)
+
+                            # Skip payment updates for self-validated tasks
+                            if is_self_validated:
+                                current_app.logger.warning(
+                                    f"Self-validation detected: {c['username']} validated their own task {task}"
+                                )
+                                target_project.update(
+                                    tasks_validated=target_project.tasks_validated + 1
+                                )
+                                continue
 
                             # Update mapper payment totals
                             old_validated_total = int(mapper.total_tasks_validated)
@@ -220,6 +241,11 @@ class TaskAPI(MethodView):
                         task_status = task_data.get("taskStatus")
                         task_history = task_data.get("taskHistory", [])
 
+                        # Track parent_task_id for split tasks
+                        parent_task_id = task_data.get("parentTaskId")
+                        if parent_task_id and target_task.parent_task_id != parent_task_id:
+                            target_task.update(parent_task_id=parent_task_id)
+
                         # Check task history for any invalidation actions
                         # TM4 records STATE_CHANGE with actionText="INVALIDATED" when task is invalidated
                         invalidation_actions = [
@@ -325,6 +351,9 @@ class TaskAPI(MethodView):
                     ).first()
 
                     if task_exists is None:
+                        # Get parent_task_id from TM4 if available (for split tasks)
+                        # Note: TM4 contributions endpoint may not include parent_task_id
+                        # This will be populated when syncing individual task details
                         new_task = Task.create(
                             task_id=task,
                             org_id=g.user.org_id if g.user else None,
@@ -342,6 +371,10 @@ class TaskAPI(MethodView):
                         target_project.update(
                             tasks_mapped=target_project.tasks_mapped + 1
                         )
+                    else:
+                        # Update parent_task_id if we get it from TM4 later
+                        # This handles split task tracking for existing tasks
+                        pass
 
         return {"message": "complete"}
 

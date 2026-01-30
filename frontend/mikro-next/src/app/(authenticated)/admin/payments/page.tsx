@@ -571,6 +571,21 @@ export default function AdminPaymentsPage() {
           </div>
         ) : requestDetails ? (
           <div className="space-y-6">
+            {/* Self-Validation Warning */}
+            {requestDetails.summary.self_validated_count != null && requestDetails.summary.self_validated_count > 0 && (
+              <div className="rounded-lg bg-yellow-50 border border-yellow-200 p-4">
+                <div className="flex items-center gap-2">
+                  <svg className="h-5 w-5 text-yellow-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                  </svg>
+                  <span className="font-medium text-yellow-800">Self-Validation Alert</span>
+                </div>
+                <p className="text-sm text-yellow-700 mt-1">
+                  {requestDetails.summary.self_validated_count} task(s) in this request were self-validated and are excluded from payment.
+                </p>
+              </div>
+            )}
+
             {/* Summary Card */}
             <div className="rounded-lg bg-muted p-4">
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -617,6 +632,11 @@ export default function AdminPaymentsPage() {
                     <div className="flex items-center gap-3">
                       <span className="font-medium">{project.project_name}</span>
                       <Badge variant="outline">{project.tasks.length} tasks</Badge>
+                      {project.self_validated_count != null && project.self_validated_count > 0 && (
+                        <Badge variant="warning" className="text-xs">
+                          {project.self_validated_count} self-validated
+                        </Badge>
+                      )}
                     </div>
                     <div className="flex items-center gap-4">
                       <span className="text-sm">
@@ -668,23 +688,32 @@ export default function AdminPaymentsPage() {
                         </TableHeader>
                         <TableBody>
                           {project.tasks.map((task) => (
-                            <TableRow key={task.internal_id}>
+                            <TableRow key={task.internal_id} className={task.self_validated ? "bg-yellow-50" : ""}>
                               <TableCell className="text-sm">{task.task_id}</TableCell>
                               <TableCell>
-                                {task.is_mapping_earning ? (
-                                  <Badge variant="success" className="text-xs">Mapping</Badge>
-                                ) : task.is_validation_earning ? (
-                                  <Badge variant="default" className="text-xs">Validation</Badge>
-                                ) : (
-                                  <Badge variant="outline" className="text-xs">Other</Badge>
-                                )}
+                                <div className="flex items-center gap-1">
+                                  {task.is_mapping_earning ? (
+                                    <Badge variant="success" className="text-xs">Mapping</Badge>
+                                  ) : task.is_validation_earning ? (
+                                    <Badge variant="default" className="text-xs">Validation</Badge>
+                                  ) : (
+                                    <Badge variant="outline" className="text-xs">Other</Badge>
+                                  )}
+                                  {task.self_validated && (
+                                    <Badge variant="warning" className="text-xs">Self-validated</Badge>
+                                  )}
+                                </div>
                               </TableCell>
                               <TableCell className="text-sm">{task.mapped_by}</TableCell>
                               <TableCell className="text-sm">{task.validated_by || "-"}</TableCell>
                               <TableCell className="text-sm text-right font-medium">
-                                {task.is_mapping_earning
-                                  ? formatCurrency(task.mapping_rate)
-                                  : formatCurrency(task.validation_rate)}
+                                {task.self_validated ? (
+                                  <span className="text-yellow-600">(excluded)</span>
+                                ) : task.is_mapping_earning ? (
+                                  formatCurrency(task.mapping_rate)
+                                ) : (
+                                  formatCurrency(task.validation_rate)
+                                )}
                               </TableCell>
                             </TableRow>
                           ))}

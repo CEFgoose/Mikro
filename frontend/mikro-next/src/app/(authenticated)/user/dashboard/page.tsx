@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle, Skeleton, Badge, Button } fro
 import { useUserDashboardStats, useUserProjects, useUserPayable, useSubmitPaymentRequest, useSyncUserTasks } from "@/hooks";
 import { useToastActions } from "@/components/ui";
 import Link from "next/link";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 
 function formatCurrency(amount: number): string {
   return new Intl.NumberFormat("en-US", {
@@ -23,22 +23,6 @@ export default function UserDashboard() {
   const { mutate: syncTasks, loading: syncing } = useSyncUserTasks();
   const toast = useToastActions();
   const [isRequestingPayment, setIsRequestingPayment] = useState(false);
-  const hasSynced = useRef(false);
-
-  // Sync tasks from TM4 on first load
-  useEffect(() => {
-    if (!hasSynced.current) {
-      hasSynced.current = true;
-      syncTasks({}).then(() => {
-        // Refresh stats and payable data after sync
-        refetchStats();
-        refetchPayable();
-      }).catch(() => {
-        // Silently fail - sync errors shouldn't block the dashboard
-        console.log("Task sync skipped or failed");
-      });
-    }
-  }, []);
 
   // Show error as toast instead of inline
   useEffect(() => {

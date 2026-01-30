@@ -225,6 +225,7 @@ export interface PaymentRequestTaskDetail {
   invalidated: boolean;
   is_mapping_earning: boolean;
   is_validation_earning: boolean;
+  self_validated?: boolean;
 }
 
 export interface PaymentRequestProjectDetail {
@@ -236,6 +237,7 @@ export interface PaymentRequestProjectDetail {
   validation_count: number;
   mapping_earnings: number;
   validation_earnings: number;
+  self_validated_count?: number;
 }
 
 export interface PaymentRequestDetailsResponse {
@@ -254,6 +256,7 @@ export interface PaymentRequestDetailsResponse {
     mapping_earnings: number;
     validation_earnings: number;
     total_earnings: number;
+    self_validated_count?: number;
   };
   status: number;
 }

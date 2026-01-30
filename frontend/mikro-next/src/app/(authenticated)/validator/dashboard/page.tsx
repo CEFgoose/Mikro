@@ -2,7 +2,9 @@
 
 import { useState, useEffect } from "react";
 import { useUser } from "@auth0/nextjs-auth0/client";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui";
+import { Card, CardContent, CardHeader, CardTitle, Button } from "@/components/ui";
+import { useToastActions } from "@/components/ui";
+import { useSyncUserTasks } from "@/hooks";
 import { Project, ValidatorDashboardStats } from "@/types";
 
 export default function ValidatorDashboard() {
@@ -11,6 +13,8 @@ export default function ValidatorDashboard() {
   const [stats, setStats] = useState<ValidatorDashboardStats | null>(null);
   const [selectedProject, setSelectedProject] = useState<number | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const { mutate: syncTasks, loading: syncing } = useSyncUserTasks();
+  const toast = useToastActions();
 
   useEffect(() => {
     fetchDashboardData();
@@ -43,6 +47,16 @@ export default function ValidatorDashboard() {
     window.open(url, "_blank", "noopener,noreferrer");
   };
 
+  const handleManualSync = async () => {
+    try {
+      await syncTasks({});
+      await fetchDashboardData();
+      toast.success("Tasks synced from TM4");
+    } catch {
+      toast.error("Failed to sync tasks");
+    }
+  };
+
   if (userLoading || isLoading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -53,7 +67,26 @@ export default function ValidatorDashboard() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold">Validator Dashboard</h1>
+      <div className="flex justify-between items-center">
+        <h1 className="text-2xl font-bold">Validator Dashboard</h1>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={handleManualSync}
+          disabled={syncing}
+        >
+          {syncing ? "Syncing..." : "Sync Tasks"}
+        </Button>
+      </div>
+
+      {/* Self-Validation Warning */}
+      {stats?.self_validated_count != null && stats.self_validated_count > 0 && (
+        <div className="bg-yellow-50 border border-yellow-200 text-yellow-800 px-4 py-3 rounded-md">
+          <p className="text-sm">
+            <strong>Note:</strong> {stats.self_validated_count} task(s) you validated were mapped by you and are not eligible for payment.
+          </p>
+        </div>
+      )}
 
       {/* Stats Cards */}
       <div className="grid gap-4 md:grid-cols-3">

@@ -261,6 +261,7 @@ export interface AdminDashboardStats {
   payable_total: number;
   requests_total: number;
   payouts_total: number;
+  self_validated_count?: number;
   message: string;
   status: number;
 }
@@ -290,6 +291,7 @@ export interface ValidatorDashboardStats {
   tasks_invalidated: number;
   payable_total: number;
   paid_total: number;
+  self_validated_count?: number;
 }
 
 // API Response types

@@ -33,6 +33,43 @@ class ProjectAPI(MethodView):
         """Get TM4 API base URL from config."""
         return current_app.config.get("TM4_API_URL", "https://tasks.kaart.com/api/v2")
 
+    def _calculate_task_payment(self, task, is_mapping=True):
+        """
+        Calculate payment for a task, handling split tasks.
+
+        For split tasks (those with parent_task_id), payment is divided among siblings
+        and only paid out when all siblings are validated.
+
+        Args:
+            task: Task object
+            is_mapping: True for mapping rate, False for validation rate
+
+        Returns:
+            float: Payment amount for this task
+        """
+        project = Project.query.filter_by(id=task.project_id).first()
+        if not project:
+            return 0
+
+        rate = project.mapping_rate_per_task if is_mapping else project.validation_rate_per_task
+
+        # Check for split task
+        if task.parent_task_id:
+            # Count siblings with same parent
+            siblings = Task.query.filter_by(
+                project_id=task.project_id,
+                parent_task_id=task.parent_task_id
+            ).all()
+            sibling_count = len(siblings)
+
+            if sibling_count > 1:
+                # Check if all siblings are validated
+                if not all(s.validated for s in siblings):
+                    return 0  # Not payable until all siblings done
+                return rate / sibling_count
+
+        return rate
+
     def post(self, path: str):
         if path == "create_project":
             return self.create_project()
@@ -666,26 +703,45 @@ class ProjectAPI(MethodView):
             ]
         )
 
-        validator_validated_tasks = len(
+        # Query validated tasks directly by validated_by (not just through UserTasks)
+        # This ensures validators see ALL tasks they validated, not just ones linked via UserTasks
+        validator_validated_tasks_list = [
+            task
+            for task in all_tasks
+            if task.validated is True
+            and task.validated_by == g.user.osm_username
+            and not task.self_validated  # Exclude self-validated from payment counts
+        ]
+        validator_validated_tasks = len(validator_validated_tasks_list)
+
+        validator_invalidated_tasks_list = [
+            task
+            for task in all_tasks
+            if task.invalidated is True
+            and task.validated_by == g.user.osm_username
+        ]
+        validator_invalidated_tasks = len(validator_invalidated_tasks_list)
+
+        # Count self-validated tasks separately for display/warning
+        self_validated_tasks_count = len(
             [
                 task
                 for task in all_tasks
-                if task.id in all_user_task_ids
-                and task.mapped is True
-                and task.validated is True
+                if task.validated is True
                 and task.validated_by == g.user.osm_username
+                and task.self_validated is True
             ]
         )
 
-        validator_invalidated_tasks = len(
-            [
-                task
-                for task in all_tasks
-                if task.id in all_user_task_ids
-                and task.mapped is True
-                and task.invalidated is True
-                and task.validated_by == g.user.osm_username
-            ]
+        # Calculate validation earnings excluding self-validated tasks
+        validation_earnings = sum(
+            self._calculate_task_payment(task, is_mapping=False)
+            for task in validator_validated_tasks_list
+        )
+        # Include invalidation earnings
+        invalidation_earnings = sum(
+            self._calculate_task_payment(task, is_mapping=False)
+            for task in validator_invalidated_tasks_list
         )
 
         all_user_requests = PayRequests.query.filter_by(
@@ -719,8 +775,10 @@ class ProjectAPI(MethodView):
             "invalidated_tasks": user_invalidated_tasks_count,
             "validator_validated": validator_validated_tasks,
             "validator_invalidated": validator_invalidated_tasks,
+            "self_validated_count": self_validated_tasks_count,  # For frontend warning display
             "mapping_payable_total": g.user.mapping_payable_total,
             "validation_payable_total": g.user.validation_payable_total,
+            "calculated_validation_earnings": validation_earnings + invalidation_earnings,
             "payable_total": payable_total,
             "requests_total": all_requests_total,
             "payouts_total": payouts_total,
@@ -941,10 +999,22 @@ class ProjectAPI(MethodView):
         # Get all projects for the validator
         org_active_projects = []
         org_inactive_projects = []
+        unassigned_projects_with_validations = []
+
         all_user_project_ids = [
             relation.project_id
             for relation in ProjectUser.query.filter_by(user_id=g.user.id).all()
         ]
+
+        # Find projects where user has validated tasks but is not assigned
+        all_org_tasks = Task.query.filter_by(org_id=g.user.org_id).all()
+        validated_project_ids = set(
+            task.project_id
+            for task in all_org_tasks
+            if task.validated_by == g.user.osm_username
+        )
+        unassigned_validation_project_ids = validated_project_ids - set(all_user_project_ids)
+
         user_joined_projects = [
             project
             for project in Project.query.filter_by(
@@ -952,12 +1022,23 @@ class ProjectAPI(MethodView):
             ).all()
             if project.id in all_user_project_ids
         ]
+
+        # Projects where user validated tasks but is not assigned
+        unassigned_validation_projects = [
+            project
+            for project in Project.query.filter_by(
+                org_id=g.user.org_id, status=True
+            ).all()
+            if project.id in unassigned_validation_project_ids
+        ]
+
         user_available_projects = [
             project
             for project in Project.query.filter_by(
                 org_id=g.user.org_id, status=True
             ).all()
             if project.id not in all_user_project_ids
+            and project.id not in unassigned_validation_project_ids
             and project.total_editors < project.max_editors
         ]
 
@@ -1001,41 +1082,59 @@ class ProjectAPI(MethodView):
                     and task.invalidated is True
                 ]
             )
-            user_project_validated_tasks = len(
+            # Exclude self-validated tasks from payment counts
+            user_project_validated_tasks_list = [
+                task
+                for task in all_project_tasks
+                if task.mapped is True
+                and task.validated is True
+                and task.invalidated is False
+                and task.validated_by == g.user.osm_username
+                and not task.self_validated
+            ]
+            user_project_validated_tasks = len(user_project_validated_tasks_list)
+
+            user_project_invalidated_tasks_list = [
+                task
+                for task in all_project_tasks
+                if task.mapped is True
+                and task.validated is False
+                and task.invalidated is True
+                and task.validated_by == g.user.osm_username
+            ]
+            user_project_invalidated_tasks = len(user_project_invalidated_tasks_list)
+
+            # Count self-validated tasks for warning display
+            self_validated_count = len(
                 [
                     task
                     for task in all_project_tasks
-                    if task.mapped is True
-                    and task.validated is True
-                    and task.invalidated is False
+                    if task.validated is True
                     and task.validated_by == g.user.osm_username
+                    and task.self_validated is True
                 ]
             )
-            user_project_invalidated_tasks = len(
-                [
-                    task
-                    for task in all_project_tasks
-                    if task.mapped is True
-                    and task.validated is False
-                    and task.invalidated is True
-                    and task.validated_by == g.user.osm_username
-                ]
+
+            # Calculate earnings using split-aware payment calculation
+            user_mapping_earnings = sum(
+                self._calculate_task_payment(task, is_mapping=True)
+                for task in user_project_tasks
+                if task.validated is True and not task.self_validated
             )
-            user_mapping_earnings = (
-                project.mapping_rate_per_task * user_project_approved_tasks
+            user_validator_earnings = sum(
+                self._calculate_task_payment(task, is_mapping=False)
+                for task in user_project_validated_tasks_list
             )
-            user_validator_earnings = (
-                project.validation_rate_per_task * user_project_validated_tasks
-            )
-            user_invalidator_earnings = (
-                project.validation_rate_per_task * user_project_invalidated_tasks
+            user_invalidator_earnings = sum(
+                self._calculate_task_payment(task, is_mapping=False)
+                for task in user_project_invalidated_tasks_list
             )
             user_project_earnings = (
                 user_mapping_earnings
                 + user_validator_earnings
                 + user_invalidator_earnings
             )
-            print(user_project_earnings)
+
             org_active_projects.append(
                 {
                     "id": project.id,
@@ -1058,6 +1157,7 @@ class ProjectAPI(MethodView):
                     "tasks unapproved": user_project_unapproved_tasks,
                     "tasks_validated": user_project_validated_tasks,
                     "tasks_invalidated": user_project_invalidated_tasks,
+                    "self_validated_count": self_validated_count,
                     "user_earnings": user_project_earnings,
                     "status": project.status,
                 }
@@ -1089,9 +1189,88 @@ class ProjectAPI(MethodView):
                     "status": project.status,
                 }
             )
+
+        # Projects where user validated tasks but is not assigned
+        for project in unassigned_validation_projects:
+            all_project_tasks = Task.query.filter_by(project_id=project.id).all()
+
+            # Only count tasks validated by this user (no mapping stats since unassigned)
+            user_project_validated_tasks = len(
+                [
+                    task
+                    for task in all_project_tasks
+                    if task.validated is True
+                    and task.validated_by == g.user.osm_username
+                    and not task.self_validated
+                ]
+            )
+            user_project_invalidated_tasks = len(
+                [
+                    task
+                    for task in all_project_tasks
+                    if task.invalidated is True
+                    and task.validated_by == g.user.osm_username
+                ]
+            )
+            # Count self-validated tasks for warning
+            self_validated_count = len(
+                [
+                    task
+                    for task in all_project_tasks
+                    if task.validated is True
+                    and task.validated_by == g.user.osm_username
+                    and task.self_validated is True
+                ]
+            )
+
+            user_validator_earnings = sum(
+                self._calculate_task_payment(task, is_mapping=False)
+                for task in all_project_tasks
+                if task.validated is True
+                and task.validated_by == g.user.osm_username
+                and not task.self_validated
+            )
+            user_invalidator_earnings = sum(
+                self._calculate_task_payment(task, is_mapping=False)
+                for task in all_project_tasks
+                if task.invalidated is True
+                and task.validated_by == g.user.osm_username
+            )
+            user_project_earnings = user_validator_earnings + user_invalidator_earnings
+
+            unassigned_projects_with_validations.append(
+                {
+                    "id": project.id,
+                    "name": project.name,
+                    "visibility": project.visibility,
+                    "max_payment": project.max_payment,
+                    "payment_due": project.payment_due,
+                    "total_payout": project.total_payout,
+                    "validation_rate_per_task": project.validation_rate_per_task,
+                    "mapping_rate_per_task": project.mapping_rate_per_task,
+                    "max_editors": project.max_editors,
+                    "total_editors": project.total_editors,
+                    "max_validators": project.max_validators,
+                    "total_validators": project.total_validators,
+                    "total_tasks": project.total_tasks,
+                    "url": project.url,
+                    "difficulty": project.difficulty,
+                    "tasks_mapped": 0,  # Not assigned, so no mapping
+                    "tasks approved": 0,
+                    "tasks unapproved": 0,
+                    "tasks_validated": user_project_validated_tasks,
+                    "tasks_invalidated": user_project_invalidated_tasks,
+                    "self_validated_count": self_validated_count,
+                    "user_earnings": user_project_earnings,
+                    "status": project.status,
+                    "unassigned": True,  # Flag for frontend
+                }
+            )
+
         return {
             "org_active_projects": org_active_projects,
             "org_inactive_projects": org_inactive_projects,
+            "unassigned_validation_projects": unassigned_projects_with_validations,
             "message": "Projects found",
             "status": 200,
         }

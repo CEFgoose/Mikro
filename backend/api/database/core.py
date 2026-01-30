@@ -8,8 +8,6 @@ Updated for Auth0 authentication (string-based user IDs).
 
 from __future__ import annotations
 
-from datetime import datetime
-
 from sqlalchemy import (
     BigInteger,
     Column,
@@ -18,7 +16,6 @@ from sqlalchemy import (
     func,
     Integer,
     Boolean,
-    Float,
 )
 from sqlalchemy.dialects.postgresql import ARRAY
 from sqlalchemy.ext.mutable import MutableList
@@ -188,6 +185,10 @@ class Task(ModelWithSoftDeleteAndCRUD, SurrogatePK):
     mapped = db.Column(db.Boolean, nullable=True, default=False)
     validated = db.Column(db.Boolean, nullable=True, default=False)
     invalidated = db.Column(db.Boolean, nullable=True, default=False)
+    self_validated = db.Column(db.Boolean, default=False)  # Flags tasks where mapper validated their own work
+
+    # TM4 split tracking
+    parent_task_id = db.Column(db.Integer, nullable=True)  # From TM4 for split tracking
 
     # Attribution
     mapped_by = db.Column(db.String(100), nullable=False)
@@ -196,6 +197,48 @@ class Task(ModelWithSoftDeleteAndCRUD, SurrogatePK):
 
     def __repr__(self):
         return f"<Task {self.task_id} in Project {self.project_id}>"
+
+
+class ValidatorTaskAction(CRUDMixin, db.Model):
+    """
+    Tracks multiple validation actions for a task.
+
+    Used to record invalidation cycles - when a validator invalidates a task,
+    the mapper fixes it, and a validator validates again, each action is recorded.
+    """
+
+    __tablename__ = "validator_task_actions"
+
+    id = db.Column(db.BigInteger, primary_key=True, autoincrement=True)
+    validator_id = db.Column(
+        db.String(255),
+        db.ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    task_id = db.Column(
+        db.BigInteger,
+        db.ForeignKey("tasks.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    project_id = db.Column(
+        db.Integer,
+        db.ForeignKey("projects.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    action_type = db.Column(db.String(20), nullable=False)  # 'invalidate' or 'validate'
+    action_date = db.Column(db.DateTime, nullable=False)
+    paid = db.Column(db.Boolean, default=False)
+
+    # Relationships
+    validator = db.relationship("User", backref="validation_actions")
+    task = db.relationship("Task", backref="validation_actions")
+    project = db.relationship("Project", backref="validation_actions")
+
+    def __repr__(self):
+        return f"<ValidatorTaskAction {self.action_type} by {self.validator_id} on Task {self.task_id}>"
 
 
 class Checklist(ModelWithSoftDeleteAndCRUD, SurrogatePK, db.Model):

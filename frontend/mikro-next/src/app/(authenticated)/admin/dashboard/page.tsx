@@ -218,6 +218,25 @@ export default function AdminDashboard() {
         </Card>
       </div>
 
+      {/* Self-Validation Alert */}
+      {stats?.self_validated_count != null && stats.self_validated_count > 0 && (
+        <Card className="border-yellow-200 bg-yellow-50">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium text-yellow-800">
+              Self-Validation Alerts
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-yellow-700">
+              {stats.self_validated_count}
+            </div>
+            <p className="text-xs text-yellow-600 mt-1">
+              Tasks flagged as self-validated (not payable)
+            </p>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Payment Overview */}
       <div className="grid gap-4 md:grid-cols-3">
         <Card>
