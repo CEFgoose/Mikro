@@ -231,7 +231,14 @@ class TransactionAPI(MethodView):
         # Validate required fields (task_ids can be empty, payoneer_id optional)
         if request_id is None or user_id is None or request_amount is None:
             return {"message": "request_id, user_id, and request_amount are required", "status": 400}
-        print(task_ids)
+        # Ensure request_amount is a float and greater than 0
+        try:
+            request_amount = float(request_amount)
+        except (TypeError, ValueError):
+            return {"message": f"Invalid request_amount: {request_amount}", "status": 400}
+        if request_amount <= 0:
+            return {"message": f"request_amount must be greater than 0, got: {request_amount}", "status": 400}
+        print(f"Processing payment: request_id={request_id}, user_id={user_id}, amount={request_amount}")
         # task_ids = str(task_ids).split()
         target_user = User.query.filter_by(
             org_id=g.user.org_id, id=user_id
@@ -246,10 +253,12 @@ class TransactionAPI(MethodView):
         ).first()
         if not target_request:
             return {"message": "Payment Request %s not found", "status": 400}
+        # Store the requesting user's osm_username before deleting the request
+        requester_osm_username = target_request.osm_username
         target_request.delete(soft=False)
         new_payment = Payments.create(
             user_name=user_name,
-            osm_username=g.user.osm_username,
+            osm_username=requester_osm_username,
             user_id=user_id,
             org_id=g.user.org_id,
             amount_paid=request_amount,

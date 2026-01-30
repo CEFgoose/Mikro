@@ -29,11 +29,12 @@ import {
   useOrgTransactions,
   useProcessPaymentRequest,
   useRejectPaymentRequest,
+  useDeletePayment,
   useFetchPaymentRequestDetails,
   PaymentRequestDetailsResponse,
   PaymentRequestProjectDetail,
 } from "@/hooks";
-import type { PayRequest } from "@/types";
+import type { PayRequest, Payment } from "@/types";
 
 function formatCurrency(amount: number): string {
   return new Intl.NumberFormat("en-US", {
@@ -102,12 +103,15 @@ export default function AdminPaymentsPage() {
   const { data: transactions, loading, refetch } = useOrgTransactions();
   const { mutate: processPayment, loading: processing } = useProcessPaymentRequest();
   const { mutate: rejectPayment, loading: rejecting } = useRejectPaymentRequest();
+  const { mutate: deletePayment, loading: deleting } = useDeletePayment();
   const { mutate: fetchDetails, loading: loadingDetails } = useFetchPaymentRequestDetails();
   const toast = useToastActions();
 
   const [selectedRequest, setSelectedRequest] = useState<PayRequest | null>(null);
+  const [selectedPayment, setSelectedPayment] = useState<Payment | null>(null);
   const [showApproveModal, setShowApproveModal] = useState(false);
   const [showRejectModal, setShowRejectModal] = useState(false);
+  const [showDeletePaymentModal, setShowDeletePaymentModal] = useState(false);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
   const [requestDetails, setRequestDetails] = useState<PaymentRequestDetailsResponse | null>(null);
   const [paymentNotes, setPaymentNotes] = useState("");
@@ -215,15 +219,20 @@ export default function AdminPaymentsPage() {
   const handleApprove = async () => {
     if (!selectedRequest) return;
 
+    const paymentData = {
+      request_id: selectedRequest.id,
+      user_id: selectedRequest.user_id,
+      task_ids: selectedRequest.task_ids || [],
+      request_amount: selectedRequest.amount_requested,
+      payoneer_id: selectedRequest.payment_email || "",
+      notes: paymentNotes,
+    };
+
+    // Debug: log payment data before sending
+    console.log("Approving payment with data:", paymentData);
+
     try {
-      await processPayment({
-        request_id: selectedRequest.id,
-        user_id: selectedRequest.user_id,
-        task_ids: selectedRequest.task_ids || [],
-        request_amount: selectedRequest.amount_requested,
-        payoneer_id: selectedRequest.payment_email || "",
-        notes: paymentNotes,
-      });
+      await processPayment(paymentData);
       toast.success(`Payment of ${formatCurrency(selectedRequest.amount_requested)} approved`);
       setShowApproveModal(false);
       setSelectedRequest(null);
@@ -262,6 +271,28 @@ export default function AdminPaymentsPage() {
     setSelectedRequest(request);
     setPaymentNotes("");
     setShowRejectModal(true);
+  };
+
+  const openDeletePaymentModal = (payment: Payment) => {
+    setSelectedPayment(payment);
+    setShowDeletePaymentModal(true);
+  };
+
+  const handleDeletePayment = async () => {
+    if (!selectedPayment) return;
+
+    try {
+      await deletePayment({
+        transaction_id: selectedPayment.id,
+        transaction_type: "payment",
+      });
+      toast.success("Payment record deleted");
+      setShowDeletePaymentModal(false);
+      setSelectedPayment(null);
+      refetch();
+    } catch {
+      toast.error("Failed to delete payment");
+    }
   };
 
   if (loading) {
@@ -457,6 +488,7 @@ export default function AdminPaymentsPage() {
                     <TableHead>Amount</TableHead>
                     <TableHead>Notes</TableHead>
                     <TableHead>Status</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -474,11 +506,20 @@ export default function AdminPaymentsPage() {
                       <TableCell>
                         <Badge variant="success">Paid</Badge>
                       </TableCell>
+                      <TableCell className="text-right">
+                        <Button
+                          size="sm"
+                          variant="destructive"
+                          onClick={() => openDeletePaymentModal(payment)}
+                        >
+                          Delete
+                        </Button>
+                      </TableCell>
                     </TableRow>
                   ))}
                   {filteredPayments.length === 0 && (
                     <TableRow>
-                      <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                      <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
                         {searchTerm ? "No matching payments found" : "No payment history"}
                       </TableCell>
                     </TableRow>
@@ -728,6 +769,21 @@ export default function AdminPaymentsPage() {
         confirmText="Reject"
         variant="destructive"
         isLoading={rejecting}
+      />
+
+      {/* Delete Payment Confirmation */}
+      <ConfirmDialog
+        isOpen={showDeletePaymentModal}
+        onClose={() => {
+          setShowDeletePaymentModal(false);
+          setSelectedPayment(null);
+        }}
+        onConfirm={handleDeletePayment}
+        title="Delete Payment Record"
+        message={`Are you sure you want to permanently delete the payment record of ${formatCurrency(selectedPayment?.amount_paid ?? 0)} for ${selectedPayment?.user}? This action cannot be undone.`}
+        confirmText="Delete"
+        variant="destructive"
+        isLoading={deleting}
       />
     </div>
   );

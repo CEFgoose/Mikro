@@ -210,6 +210,10 @@ export function useRejectPaymentRequest() {
   return useApiMutation("/transaction/delete_transaction");
 }
 
+export function useDeletePayment() {
+  return useApiMutation("/transaction/delete_transaction");
+}
+
 export interface PaymentRequestTaskDetail {
   task_id: number;
   internal_id: number;
