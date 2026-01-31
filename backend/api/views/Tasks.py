@@ -410,8 +410,9 @@ class TaskAPI(MethodView):
                     if target_task and not target_task.parent_task_id:
                         try:
                             tm4_base_url = self._get_tm4_base_url()
+                            headers = self._get_tm4_headers()
                             task_detail_url = f"{tm4_base_url}/projects/{project_id}/tasks/{task}/"
-                            task_detail_call = requests.get(task_detail_url, timeout=10)
+                            task_detail_call = requests.get(task_detail_url, headers=headers, timeout=10)
                             if task_detail_call.ok:
                                 task_data = task_detail_call.json()
                                 parent_task_id = task_data.get("parentTaskId")
@@ -420,6 +421,11 @@ class TaskAPI(MethodView):
                                     current_app.logger.info(
                                         f"Task {task} is a split child of parent task {parent_task_id}"
                                     )
+                            else:
+                                current_app.logger.warning(
+                                    f"TM4 task detail call failed for task {task}: "
+                                    f"status={task_detail_call.status_code}"
+                                )
                         except requests.RequestException as e:
                             current_app.logger.warning(f"Could not fetch task details for {task}: {e}")
 
