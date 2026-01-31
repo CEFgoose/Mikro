@@ -63,9 +63,11 @@ export interface Project {
 }
 
 export interface ProjectsResponse {
-  // Admin response format
+  // Admin/Validator response format
   org_active_projects?: Project[];
   org_inactive_projects?: Project[];
+  // Validator response: projects where user validated tasks but isn't assigned
+  unassigned_validation_projects?: Project[];
   // User response format
   user_projects?: Project[];
   message: string;

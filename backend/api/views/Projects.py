@@ -766,20 +766,29 @@ class ProjectAPI(MethodView):
             float(g.user.mapping_payable_total) + float(g.user.validation_payable_total)
         )
         # Construct response dictionary
+        # Use snake_case field names to match frontend types
         response = {
             "active_projects": all_user_assignments_count,
             "inactive_projects": active_projects_count - all_user_assignments_count,
             "completed_projects": completed_projects_count,
-            "mapped_tasks": user_mapped_tasks_count,
-            "validated_tasks": user_validated_tasks_count,
-            "invalidated_tasks": user_invalidated_tasks_count,
+            # Mapped tasks (as mapper)
+            "tasks_mapped": user_mapped_tasks_count,
+            "mapped_tasks": user_mapped_tasks_count,  # Legacy alias
+            # Tasks validated by others (where user was mapper)
+            "tasks_validated": user_validated_tasks_count,
+            "validated_tasks": user_validated_tasks_count,  # Legacy alias
+            "tasks_invalidated": user_invalidated_tasks_count,
+            "invalidated_tasks": user_invalidated_tasks_count,  # Legacy alias
+            # Validation work done BY this user (as validator)
             "validator_validated": validator_validated_tasks,
             "validator_invalidated": validator_invalidated_tasks,
             "self_validated_count": self_validated_tasks_count,  # For frontend warning display
+            # Payment totals
             "mapping_payable_total": g.user.mapping_payable_total,
             "validation_payable_total": g.user.validation_payable_total,
             "calculated_validation_earnings": validation_earnings + invalidation_earnings,
             "payable_total": payable_total,
+            "paid_total": payouts_total,  # Alias for frontend
             "requests_total": all_requests_total,
             "payouts_total": payouts_total,
             "message": "Stats Fetched",

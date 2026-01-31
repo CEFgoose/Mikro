@@ -334,16 +334,35 @@ class TaskAPI(MethodView):
             current_app.logger.error(f"Project {project_id} not found")
             return {"message": "project not found"}
 
-        for contributor in data.get("userContributions", []):
-            if contributor["username"] in usernames:
+        contributions = data.get("userContributions", [])
+        current_app.logger.info(
+            f"get_mapped_TM4_tasks: project={project_id}, "
+            f"contributors={len(contributions)}, mikro_users={len(usernames)}"
+        )
+
+        tasks_created = 0
+        tasks_skipped = 0
+
+        for contributor in contributions:
+            contrib_username = contributor.get("username", "")
+            mapped_tasks = contributor.get("mappedTasks", [])
+
+            if contrib_username in usernames:
                 mapper = User.query.filter_by(
-                    osm_username=contributor["username"]
+                    osm_username=contrib_username
                 ).first()
 
                 if not mapper:
+                    current_app.logger.warning(
+                        f"User {contrib_username} in usernames but not found in DB"
+                    )
                     continue
 
-                for task in contributor.get("mappedTasks", []):
+                current_app.logger.info(
+                    f"Processing {len(mapped_tasks)} mapped tasks for user {contrib_username} (id={mapper.id})"
+                )
+
+                for task in mapped_tasks:
                     task_exists = Task.query.filter_by(
                         task_id=task,
                         project_id=project_id,
@@ -362,7 +381,7 @@ class TaskAPI(MethodView):
                             validation_rate=target_project.validation_rate_per_task,
                             paid_out=False,
                             mapped=True,
-                            mapped_by=contributor["username"],
+                            mapped_by=contrib_username,
                             validated_by="",
                             validated=False,
                         )
@@ -371,11 +390,27 @@ class TaskAPI(MethodView):
                         target_project.update(
                             tasks_mapped=target_project.tasks_mapped + 1
                         )
+                        tasks_created += 1
+                        current_app.logger.info(
+                            f"Created task {task} for mapper {contrib_username}, "
+                            f"internal_id={new_task.id}"
+                        )
                     else:
-                        # Update parent_task_id if we get it from TM4 later
-                        # This handles split task tracking for existing tasks
-                        pass
+                        tasks_skipped += 1
+                        # Ensure UserTasks link exists (may have been missing)
+                        user_task_link = UserTasks.query.filter_by(
+                            user_id=mapper.id, task_id=task_exists.id
+                        ).first()
+                        if not user_task_link:
+                            UserTasks.create(user_id=mapper.id, task_id=task_exists.id)
+                            current_app.logger.info(
+                                f"Created missing UserTasks link for existing task {task}"
+                            )
 
+        current_app.logger.info(
+            f"get_mapped_TM4_tasks complete: project={project_id}, "
+            f"created={tasks_created}, skipped={tasks_skipped}"
+        )
         return {"message": "complete"}
 
     def get_invalidated_TM4_tasks_from_contributions(self, data, project_id):

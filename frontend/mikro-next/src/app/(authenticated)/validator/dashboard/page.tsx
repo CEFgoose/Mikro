@@ -4,42 +4,44 @@ import { useState, useEffect } from "react";
 import { useUser } from "@auth0/nextjs-auth0/client";
 import { Card, CardContent, CardHeader, CardTitle, Button } from "@/components/ui";
 import { useToastActions } from "@/components/ui";
-import { useSyncUserTasks } from "@/hooks";
-import { Project, ValidatorDashboardStats } from "@/types";
+import { useSyncUserTasks, useValidatorProjects } from "@/hooks";
+import { ValidatorDashboardStats, Project } from "@/types";
 
 export default function ValidatorDashboard() {
   const { isLoading: userLoading } = useUser();
-  const [projects, setProjects] = useState<Project[]>([]);
+  const { data: projectsData, loading: projectsLoading, refetch: refetchProjects } = useValidatorProjects();
   const [stats, setStats] = useState<ValidatorDashboardStats | null>(null);
   const [selectedProject, setSelectedProject] = useState<number | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [statsLoading, setStatsLoading] = useState(true);
   const { mutate: syncTasks, loading: syncing } = useSyncUserTasks();
   const toast = useToastActions();
 
+  // Combine assigned projects with unassigned projects where user has validations
+  const projects: Project[] = [
+    ...(projectsData?.org_active_projects || []),
+    ...(projectsData?.unassigned_validation_projects || []),
+  ];
+
   useEffect(() => {
-    fetchDashboardData();
+    fetchStats();
   }, []);
 
-  const fetchDashboardData = async () => {
+  const fetchStats = async () => {
     try {
-      const [projectsRes, statsRes] = await Promise.all([
-        fetch("/backend/project/fetch_validator_projects"),
-        fetch("/backend/user/fetch_validator_stats"),
-      ]);
-
-      if (projectsRes.ok) {
-        const projectsData = await projectsRes.json();
-        setProjects(projectsData.projects || []);
-      }
+      const statsRes = await fetch("/backend/project/fetch_validator_dash_stats", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({}),
+      });
 
       if (statsRes.ok) {
         const statsData = await statsRes.json();
         setStats(statsData);
       }
     } catch (error) {
-      console.error("Failed to fetch dashboard data:", error);
+      console.error("Failed to fetch dashboard stats:", error);
     } finally {
-      setIsLoading(false);
+      setStatsLoading(false);
     }
   };
 
@@ -50,14 +52,14 @@ export default function ValidatorDashboard() {
   const handleManualSync = async () => {
     try {
       await syncTasks({});
-      await fetchDashboardData();
+      await Promise.all([fetchStats(), refetchProjects()]);
       toast.success("Tasks synced from TM4");
     } catch {
       toast.error("Failed to sync tasks");
     }
   };
 
-  if (userLoading || isLoading) {
+  if (userLoading || statsLoading || projectsLoading) {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-kaart-orange" />
