@@ -370,9 +370,6 @@ class TaskAPI(MethodView):
                     ).first()
 
                     if task_exists is None:
-                        # Get parent_task_id from TM4 if available (for split tasks)
-                        # Note: TM4 contributions endpoint may not include parent_task_id
-                        # This will be populated when syncing individual task details
                         new_task = Task.create(
                             task_id=task,
                             org_id=g.user.org_id if g.user else None,
@@ -395,6 +392,7 @@ class TaskAPI(MethodView):
                             f"Created task {task} for mapper {contrib_username}, "
                             f"internal_id={new_task.id}"
                         )
+                        target_task = new_task
                     else:
                         tasks_skipped += 1
                         # Ensure UserTasks link exists (may have been missing)
@@ -406,6 +404,24 @@ class TaskAPI(MethodView):
                             current_app.logger.info(
                                 f"Created missing UserTasks link for existing task {task}"
                             )
+                        target_task = task_exists
+
+                    # Fetch individual task details from TM4 to get parent_task_id (for split tasks)
+                    if target_task and not target_task.parent_task_id:
+                        try:
+                            tm4_base_url = self._get_tm4_base_url()
+                            task_detail_url = f"{tm4_base_url}/projects/{project_id}/tasks/{task}/"
+                            task_detail_call = requests.get(task_detail_url, timeout=10)
+                            if task_detail_call.ok:
+                                task_data = task_detail_call.json()
+                                parent_task_id = task_data.get("parentTaskId")
+                                if parent_task_id:
+                                    target_task.update(parent_task_id=parent_task_id)
+                                    current_app.logger.info(
+                                        f"Task {task} is a split child of parent task {parent_task_id}"
+                                    )
+                        except requests.RequestException as e:
+                            current_app.logger.warning(f"Could not fetch task details for {task}: {e}")
 
         current_app.logger.info(
             f"get_mapped_TM4_tasks complete: project={project_id}, "
