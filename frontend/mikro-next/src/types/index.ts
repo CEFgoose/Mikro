@@ -288,12 +288,33 @@ export interface UserDashboardStats {
 
 // Validator Dashboard Stats (snake_case to match backend API response)
 export interface ValidatorDashboardStats {
+  // Project counts
+  active_projects: number;
+  inactive_projects: number;
+  completed_projects: number;
+  // Mapped tasks (as mapper)
   tasks_mapped: number;
+  mapped_tasks: number; // Legacy alias
+  // Tasks validated by others (where user was mapper)
   tasks_validated: number;
+  validated_tasks: number; // Legacy alias
   tasks_invalidated: number;
+  invalidated_tasks: number; // Legacy alias
+  // Validation work done BY this user (as validator)
+  validator_validated: number;
+  validator_invalidated: number;
+  self_validated_count?: number;
+  // Payment totals
+  mapping_payable_total: number;
+  validation_payable_total: number;
+  calculated_validation_earnings: number;
   payable_total: number;
   paid_total: number;
-  self_validated_count?: number;
+  requests_total: number;
+  payouts_total: number;
+  // API response
+  message: string;
+  status: number;
 }
 
 // API Response types

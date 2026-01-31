@@ -361,6 +361,71 @@ class ProjectAPI(MethodView):
 
         return {"message": "rate_type must be true", "status": 400}
 
+    def _get_effective_task_counts(self, project_id):
+        """
+        Calculate effective task counts that properly handle split tasks.
+
+        Split tasks (those with parent_task_id) are grouped together and counted
+        as fractions. For example, if a task was split into 4, each split task
+        contributes 0.25 to the count instead of 1.
+
+        Returns:
+            dict with effective_mapped, effective_validated, effective_invalidated,
+            plus raw counts and split task info
+        """
+        project_tasks = Task.query.filter_by(project_id=project_id).all()
+
+        # Separate normal tasks from split tasks
+        normal_tasks = [t for t in project_tasks if not t.parent_task_id]
+        split_tasks = [t for t in project_tasks if t.parent_task_id]
+
+        # Count normal tasks directly
+        normal_mapped = len([t for t in normal_tasks if t.mapped])
+        normal_validated = len([t for t in normal_tasks if t.validated])
+        normal_invalidated = len([t for t in normal_tasks if t.invalidated])
+
+        # Group split tasks by parent_task_id and count each group as 1 task
+        split_groups = {}
+        for task in split_tasks:
+            if task.parent_task_id not in split_groups:
+                split_groups[task.parent_task_id] = {
+                    "tasks": [],
+                    "mapped": 0,
+                    "validated": 0,
+                    "invalidated": 0,
+                }
+            split_groups[task.parent_task_id]["tasks"].append(task)
+            if task.mapped:
+                split_groups[task.parent_task_id]["mapped"] += 1
+            if task.validated:
+                split_groups[task.parent_task_id]["validated"] += 1
+            if task.invalidated:
+                split_groups[task.parent_task_id]["invalidated"] += 1
+
+        # For split groups, count fractionally based on completion
+        # A split group counts as 1 "effective task" when ALL siblings are done
+        split_mapped = 0.0
+        split_validated = 0.0
+        split_invalidated = 0.0
+
+        for parent_id, group in split_groups.items():
+            sibling_count = len(group["tasks"])
+            # Each completed sibling contributes 1/sibling_count to the effective count
+            split_mapped += group["mapped"] / sibling_count
+            split_validated += group["validated"] / sibling_count
+            split_invalidated += group["invalidated"] / sibling_count
+
+        return {
+            "effective_mapped": round(normal_mapped + split_mapped, 2),
+            "effective_validated": round(normal_validated + split_validated, 2),
+            "effective_invalidated": round(normal_invalidated + split_invalidated, 2),
+            "raw_mapped": normal_mapped + len([t for t in split_tasks if t.mapped]),
+            "raw_validated": normal_validated + len([t for t in split_tasks if t.validated]),
+            "raw_invalidated": normal_invalidated + len([t for t in split_tasks if t.invalidated]),
+            "split_task_groups": len(split_groups),
+            "split_task_count": len(split_tasks),
+        }
+
     @requires_admin
     def fetch_org_projects(self):
         # Check if user is authenticated
@@ -377,6 +442,8 @@ class ProjectAPI(MethodView):
         ).all()
         # Add each project to the list
         for project in active_projects:
+            # Get effective task counts that handle split tasks properly
+            task_counts = self._get_effective_task_counts(project.id)
             org_active_projects.append(
                 {
                     "id": project.id,
@@ -394,13 +461,20 @@ class ProjectAPI(MethodView):
                     "total_tasks": project.total_tasks,
                     "url": project.url,
                     "difficulty": project.difficulty,
-                    "total_mapped": project.tasks_mapped,
-                    "total_validated": project.tasks_validated,
-                    "total_invalidated": project.tasks_invalidated,
+                    # Use effective counts that handle split tasks
+                    "total_mapped": task_counts["effective_mapped"],
+                    "total_validated": task_counts["effective_validated"],
+                    "total_invalidated": task_counts["effective_invalidated"],
+                    # Also include raw counts for reference
+                    "raw_mapped": task_counts["raw_mapped"],
+                    "raw_validated": task_counts["raw_validated"],
+                    "raw_invalidated": task_counts["raw_invalidated"],
+                    "split_task_groups": task_counts["split_task_groups"],
                     "status": project.status,
                 }
             )
         for project in inactive_projects:
+            task_counts = self._get_effective_task_counts(project.id)
             org_inactive_projects.append(
                 {
                     "id": project.id,
@@ -418,9 +492,15 @@ class ProjectAPI(MethodView):
                     "total_tasks": project.total_tasks,
                     "url": project.url,
                     "difficulty": project.difficulty,
-                    "total_mapped": project.tasks_mapped,
-                    "total_validated": project.tasks_validated,
-                    "total_invalidated": project.tasks_invalidated,
+                    # Use effective counts that handle split tasks
+                    "total_mapped": task_counts["effective_mapped"],
+                    "total_validated": task_counts["effective_validated"],
+                    "total_invalidated": task_counts["effective_invalidated"],
+                    # Also include raw counts for reference
+                    "raw_mapped": task_counts["raw_mapped"],
+                    "raw_validated": task_counts["raw_validated"],
+                    "raw_invalidated": task_counts["raw_invalidated"],
+                    "split_task_groups": task_counts["split_task_groups"],
                     "status": project.status,
                 }
             )
