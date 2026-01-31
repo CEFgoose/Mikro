@@ -402,23 +402,30 @@ class ProjectAPI(MethodView):
             if task.invalidated:
                 split_groups[task.parent_task_id]["invalidated"] += 1
 
-        # For split groups, count fractionally based on completion
-        # A split group counts as 1 "effective task" when ALL siblings are done
-        split_mapped = 0.0
-        split_validated = 0.0
-        split_invalidated = 0.0
+        # For split groups, only count as 1 when ALL siblings are complete
+        # If not all siblings are complete, the group counts as 0
+        split_mapped = 0
+        split_validated = 0
+        split_invalidated = 0
 
         for parent_id, group in split_groups.items():
             sibling_count = len(group["tasks"])
-            # Each completed sibling contributes 1/sibling_count to the effective count
-            split_mapped += group["mapped"] / sibling_count
-            split_validated += group["validated"] / sibling_count
-            split_invalidated += group["invalidated"] / sibling_count
+            # Only count as 1 mapped task if ALL siblings are mapped
+            if group["mapped"] == sibling_count:
+                split_mapped += 1
+            # Only count as 1 validated task if ALL siblings are validated
+            if group["validated"] == sibling_count:
+                split_validated += 1
+            # Only count as 1 invalidated task if ALL siblings are invalidated
+            if group["invalidated"] == sibling_count:
+                split_invalidated += 1
 
         return {
-            "effective_mapped": round(normal_mapped + split_mapped, 2),
-            "effective_validated": round(normal_validated + split_validated, 2),
-            "effective_invalidated": round(normal_invalidated + split_invalidated, 2),
+            # Effective counts: normal tasks + completed split groups (all siblings done = 1)
+            "effective_mapped": normal_mapped + split_mapped,
+            "effective_validated": normal_validated + split_validated,
+            "effective_invalidated": normal_invalidated + split_invalidated,
+            # Raw counts: actual number of task records (includes each split segment)
             "raw_mapped": normal_mapped + len([t for t in split_tasks if t.mapped]),
             "raw_validated": normal_validated + len([t for t in split_tasks if t.validated]),
             "raw_invalidated": normal_invalidated + len([t for t in split_tasks if t.invalidated]),
