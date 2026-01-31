@@ -361,6 +361,47 @@ class ProjectAPI(MethodView):
 
         return {"message": "rate_type must be true", "status": 400}
 
+    def _count_tasks_split_aware(self, tasks, condition_fn=None):
+        """
+        Count tasks with split-awareness.
+
+        Split task groups (siblings with same parent_task_id) only count as 1
+        when ALL siblings meet the condition.
+
+        Args:
+            tasks: List of Task objects to count
+            condition_fn: Optional function that takes a task and returns True
+                         if it should be counted. If None, counts all tasks.
+
+        Returns:
+            Effective count where split groups count as 1 only when ALL siblings
+            meet condition
+        """
+        if condition_fn is None:
+            condition_fn = lambda t: True
+
+        # Separate normal tasks from split tasks
+        normal_tasks = [t for t in tasks if not t.parent_task_id]
+        split_tasks = [t for t in tasks if t.parent_task_id]
+
+        # Count normal tasks that meet condition
+        normal_count = len([t for t in normal_tasks if condition_fn(t)])
+
+        # Group split tasks by parent_task_id
+        split_groups = {}
+        for task in split_tasks:
+            if task.parent_task_id not in split_groups:
+                split_groups[task.parent_task_id] = []
+            split_groups[task.parent_task_id].append(task)
+
+        # Count split groups where ALL siblings meet condition
+        split_count = 0
+        for parent_id, siblings in split_groups.items():
+            if all(condition_fn(t) for t in siblings):
+                split_count += 1
+
+        return normal_count + split_count
+
     def _get_effective_task_counts(self, project_id):
         """
         Calculate effective task counts that properly handle split tasks.
@@ -580,14 +621,20 @@ class ProjectAPI(MethodView):
         active_projects_count = sum(project.status for project in all_projects)
         inactive_projects_count = sum(not project.status for project in all_projects)
         completed_projects_count = sum(project.completed for project in all_projects)
-        mapped_tasks_count = sum(
-            task.mapped and not task.validated and not task.invalidated
-            for task in all_tasks
+
+        # Use split-aware counting for org-wide task stats
+        mapped_tasks_count = self._count_tasks_split_aware(
+            all_tasks,
+            lambda t: t.mapped and not t.validated and not t.invalidated
         )
-        validated_tasks_count = sum(
-            task.mapped and task.validated for task in all_tasks
+        validated_tasks_count = self._count_tasks_split_aware(
+            all_tasks,
+            lambda t: t.mapped and t.validated
         )
-        invalidated_tasks_count = sum(task.invalidated for task in all_tasks)
+        invalidated_tasks_count = self._count_tasks_split_aware(
+            all_tasks,
+            lambda t: t.invalidated
+        )
         all_requests_total = sum(request.amount_requested for request in all_requests)
         payouts_total = sum(payment.amount_paid for payment in all_payments)
         # Construct response dictionary
@@ -628,31 +675,21 @@ class ProjectAPI(MethodView):
             relation.task_id
             for relation in UserTasks.query.filter_by(user_id=g.user.id).all()
         ]
-        user_mapped_tasks = [
-            task
-            for task in all_tasks
-            if task.id in all_user_task_ids
-            and task.mapped is True
-            and task.validated is False
-            and task.invalidated is False
-        ]
-        user_mapped_tasks_count = len(user_mapped_tasks)
-        user_validated_tasks = [
-            task
-            for task in all_tasks
-            if task.id in all_user_task_ids
-            and task.mapped is True
-            and task.validated is True
-        ]
-        user_validated_tasks_count = len(user_validated_tasks)
-        user_invalidated_tasks_count = len(
-            [
-                task
-                for task in all_tasks
-                if task.id in all_user_task_ids
-                and task.mapped is True
-                and task.invalidated is True
-            ]
+        # Get user's tasks
+        user_tasks = [task for task in all_tasks if task.id in all_user_task_ids]
+
+        # Use split-aware counting - only counts as 1 when ALL siblings complete
+        user_mapped_tasks_count = self._count_tasks_split_aware(
+            user_tasks,
+            lambda t: t.mapped is True and t.validated is False and t.invalidated is False
+        )
+        user_validated_tasks_count = self._count_tasks_split_aware(
+            user_tasks,
+            lambda t: t.mapped is True and t.validated is True
+        )
+        user_invalidated_tasks_count = self._count_tasks_split_aware(
+            user_tasks,
+            lambda t: t.mapped is True and t.invalidated is True
         )
 
         end_date = datetime.now()
@@ -763,31 +800,25 @@ class ProjectAPI(MethodView):
             for relation in UserTasks.query.filter_by(user_id=g.user.id).all()
         ]
 
-        user_mapped_tasks = [
-            task
-            for task in all_tasks
-            if task.id in all_user_task_ids
-            and task.mapped is True
-            and task.validated is False
-            and task.invalidated is False
-        ]
-        user_mapped_tasks_count = len(user_mapped_tasks)
+        # Get user's tasks (where they are mapper)
+        user_tasks = [task for task in all_tasks if task.id in all_user_task_ids]
 
-        user_validated_tasks = [
-            task
-            for task in all_tasks
-            if task.id in all_user_task_ids
-            and task.mapped is True
-            and task.validated is True
-        ]
-        user_validated_tasks_count = len(user_validated_tasks)
-        user_invalidated_tasks_count = len(
-            [
-                task
-                for task in all_tasks
-                if task.id in all_user_task_ids
-                if task.mapped is True and task.invalidated is True
-            ]
+        # Use split-aware counting for user's mapped tasks
+        user_mapped_tasks_count = self._count_tasks_split_aware(
+            user_tasks,
+            lambda t: t.mapped is True and t.validated is False and t.invalidated is False
+        )
+
+        # Use split-aware counting for user's validated tasks (validated by others)
+        user_validated_tasks_count = self._count_tasks_split_aware(
+            user_tasks,
+            lambda t: t.mapped is True and t.validated is True
+        )
+
+        # Use split-aware counting for user's invalidated tasks
+        user_invalidated_tasks_count = self._count_tasks_split_aware(
+            user_tasks,
+            lambda t: t.mapped is True and t.invalidated is True
         )
 
         # Query validated tasks directly by validated_by (not just through UserTasks)
@@ -799,7 +830,13 @@ class ProjectAPI(MethodView):
             and task.validated_by == g.user.osm_username
             and not task.self_validated  # Exclude self-validated from payment counts
         ]
-        validator_validated_tasks = len(validator_validated_tasks_list)
+        # Use split-aware counting for validator's validated tasks
+        validator_validated_tasks = self._count_tasks_split_aware(
+            all_tasks,
+            lambda t: t.validated is True
+            and t.validated_by == g.user.osm_username
+            and not t.self_validated
+        )
 
         validator_invalidated_tasks_list = [
             task
@@ -807,17 +844,18 @@ class ProjectAPI(MethodView):
             if task.invalidated is True
             and task.validated_by == g.user.osm_username
         ]
-        validator_invalidated_tasks = len(validator_invalidated_tasks_list)
+        # Use split-aware counting for validator's invalidated tasks
+        validator_invalidated_tasks = self._count_tasks_split_aware(
+            all_tasks,
+            lambda t: t.invalidated is True and t.validated_by == g.user.osm_username
+        )
 
-        # Count self-validated tasks separately for display/warning
-        self_validated_tasks_count = len(
-            [
-                task
-                for task in all_tasks
-                if task.validated is True
-                and task.validated_by == g.user.osm_username
-                and task.self_validated is True
-            ]
+        # Count self-validated tasks separately for display/warning (split-aware)
+        self_validated_tasks_count = self._count_tasks_split_aware(
+            all_tasks,
+            lambda t: t.validated is True
+            and t.validated_by == g.user.osm_username
+            and t.self_validated is True
         )
 
         # Calculate validation earnings excluding self-validated tasks
@@ -908,35 +946,26 @@ class ProjectAPI(MethodView):
             user_project_tasks = [
                 task for task in all_project_tasks if task.id in user_project_task_ids
             ]
-            user_project_mapped_tasks = len(
-                [
-                    task
-                    for task in user_project_tasks
-                    if task.mapped is True
-                    and task.validated is False
-                    and task.invalidated is False
-                ]
+
+            # Use split-aware counting - only counts as 1 when ALL siblings complete
+            user_project_mapped_tasks = self._count_tasks_split_aware(
+                user_project_tasks,
+                lambda t: t.mapped is True and t.validated is False and t.invalidated is False
             )
-            user_project_approved_tasks = len(
-                [
-                    task
-                    for task in user_project_tasks
-                    if task.mapped is True
-                    and task.validated is True
-                    and task.invalidated is False
-                ]
+            user_project_approved_tasks = self._count_tasks_split_aware(
+                user_project_tasks,
+                lambda t: t.mapped is True and t.validated is True and t.invalidated is False
             )
-            user_project_unapproved_tasks = len(
-                [
-                    task
-                    for task in user_project_tasks
-                    if task.mapped is True
-                    and task.validated is False
-                    and task.invalidated is True
-                ]
+            user_project_unapproved_tasks = self._count_tasks_split_aware(
+                user_project_tasks,
+                lambda t: t.mapped is True and t.validated is False and t.invalidated is True
             )
-            user_mapping_earnings = (
-                project.mapping_rate_per_task * user_project_approved_tasks
+
+            # Calculate earnings using split-aware payment calculation
+            user_mapping_earnings = sum(
+                self._calculate_task_payment(task, is_mapping=True)
+                for task in user_project_tasks
+                if task.validated is True and not getattr(task, 'self_validated', False)
             )
             user_project_earnings = user_mapping_earnings
             user_projects.append(
@@ -1151,34 +1180,22 @@ class ProjectAPI(MethodView):
             user_project_tasks = [
                 task for task in all_project_tasks if task.id in user_project_task_ids
             ]
-            user_project_mapped_tasks = len(
-                [
-                    task
-                    for task in user_project_tasks
-                    if task.mapped is True
-                    and task.validated is False
-                    and task.invalidated is False
-                ]
+
+            # Use split-aware counting - only counts as 1 when ALL siblings complete
+            user_project_mapped_tasks = self._count_tasks_split_aware(
+                user_project_tasks,
+                lambda t: t.mapped is True and t.validated is False and t.invalidated is False
             )
-            user_project_approved_tasks = len(
-                [
-                    task
-                    for task in user_project_tasks
-                    if task.mapped is True
-                    and task.validated is True
-                    and task.invalidated is False
-                ]
+            user_project_approved_tasks = self._count_tasks_split_aware(
+                user_project_tasks,
+                lambda t: t.mapped is True and t.validated is True and t.invalidated is False
             )
-            user_project_unapproved_tasks = len(
-                [
-                    task
-                    for task in user_project_tasks
-                    if task.mapped is True
-                    and task.validated is False
-                    and task.invalidated is True
-                ]
+            user_project_unapproved_tasks = self._count_tasks_split_aware(
+                user_project_tasks,
+                lambda t: t.mapped is True and t.validated is False and t.invalidated is True
             )
-            # Exclude self-validated tasks from payment counts
+
+            # Exclude self-validated tasks from payment counts (keep list for earnings calc)
             user_project_validated_tasks_list = [
                 task
                 for task in all_project_tasks
@@ -1188,7 +1205,15 @@ class ProjectAPI(MethodView):
                 and task.validated_by == g.user.osm_username
                 and not task.self_validated
             ]
-            user_project_validated_tasks = len(user_project_validated_tasks_list)
+            # Split-aware count for display
+            user_project_validated_tasks = self._count_tasks_split_aware(
+                all_project_tasks,
+                lambda t: t.mapped is True
+                and t.validated is True
+                and t.invalidated is False
+                and t.validated_by == g.user.osm_username
+                and not t.self_validated
+            )
 
             user_project_invalidated_tasks_list = [
                 task
@@ -1198,17 +1223,21 @@ class ProjectAPI(MethodView):
                 and task.invalidated is True
                 and task.validated_by == g.user.osm_username
             ]
-            user_project_invalidated_tasks = len(user_project_invalidated_tasks_list)
+            # Split-aware count for display
+            user_project_invalidated_tasks = self._count_tasks_split_aware(
+                all_project_tasks,
+                lambda t: t.mapped is True
+                and t.validated is False
+                and t.invalidated is True
+                and t.validated_by == g.user.osm_username
+            )
 
-            # Count self-validated tasks for warning display
-            self_validated_count = len(
-                [
-                    task
-                    for task in all_project_tasks
-                    if task.validated is True
-                    and task.validated_by == g.user.osm_username
-                    and task.self_validated is True
-                ]
+            # Count self-validated tasks for warning display (split-aware)
+            self_validated_count = self._count_tasks_split_aware(
+                all_project_tasks,
+                lambda t: t.validated is True
+                and t.validated_by == g.user.osm_username
+                and t.self_validated is True
             )
 
             # Calculate earnings using split-aware payment calculation
