@@ -383,3 +383,13 @@ export function useFetchChecklistUsers() {
     status: number;
   }>("/checklist/fetch_checklist_users");
 }
+
+// DEV ONLY: Purge all task stats
+export function usePurgeTaskStats() {
+  return useApiMutation<{
+    message: string;
+    users_reset: number;
+    projects_reset: number;
+    status: number;
+  }>("/task/purge_all_task_stats");
+}

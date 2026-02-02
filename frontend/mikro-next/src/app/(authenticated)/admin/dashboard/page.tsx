@@ -1,7 +1,8 @@
 "use client";
 
+import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle, Skeleton, Badge } from "@/components/ui";
-import { useAdminDashboardStats, useOrgTransactions, useUsersList } from "@/hooks";
+import { useAdminDashboardStats, useOrgTransactions, useUsersList, usePurgeTaskStats } from "@/hooks";
 import Link from "next/link";
 
 function formatCurrency(amount: number): string {
@@ -20,9 +21,26 @@ function formatDate(dateString: string): string {
 }
 
 export default function AdminDashboard() {
-  const { data: stats, loading: statsLoading, error: statsError } = useAdminDashboardStats();
+  const { data: stats, loading: statsLoading, error: statsError, refetch: refetchStats } = useAdminDashboardStats();
   const { data: transactions, loading: transactionsLoading } = useOrgTransactions();
   const { data: users, loading: usersLoading } = useUsersList();
+  const { mutate: purgeTaskStats, loading: purging } = usePurgeTaskStats();
+  const [purgeConfirm, setPurgeConfirm] = useState(false);
+
+  const handlePurgeTaskStats = async () => {
+    if (!purgeConfirm) {
+      setPurgeConfirm(true);
+      return;
+    }
+    try {
+      await purgeTaskStats({});
+      setPurgeConfirm(false);
+      refetchStats();
+      alert("All task stats purged successfully");
+    } catch (err) {
+      alert("Failed to purge task stats: " + (err instanceof Error ? err.message : "Unknown error"));
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -420,6 +438,45 @@ export default function AdminDashboard() {
               Checklists
             </Link>
           </div>
+        </CardContent>
+      </Card>
+
+      {/* DEV ONLY: Danger Zone */}
+      <Card className="border-red-200 bg-red-50/50 mt-8">
+        <CardHeader className="pb-2">
+          <CardTitle className="text-sm font-medium text-red-800">
+            Dev Tools (Remove Before Production)
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center gap-4">
+            <button
+              onClick={handlePurgeTaskStats}
+              disabled={purging}
+              className={`inline-flex items-center rounded-lg px-4 py-2 text-sm font-medium transition-colors ${
+                purgeConfirm
+                  ? "bg-red-600 text-white hover:bg-red-700"
+                  : "bg-red-100 text-red-700 hover:bg-red-200"
+              } disabled:opacity-50`}
+            >
+              {purging
+                ? "Purging..."
+                : purgeConfirm
+                ? "Click Again to Confirm Purge"
+                : "Purge All Task Stats"}
+            </button>
+            {purgeConfirm && (
+              <button
+                onClick={() => setPurgeConfirm(false)}
+                className="text-sm text-gray-500 hover:text-gray-700"
+              >
+                Cancel
+              </button>
+            )}
+          </div>
+          <p className="text-xs text-red-600 mt-2">
+            Deletes all tasks, user_tasks, validator_task_actions and resets all user/project task counts to 0.
+          </p>
         </CardContent>
       </Card>
     </div>

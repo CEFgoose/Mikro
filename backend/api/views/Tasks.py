@@ -18,6 +18,8 @@ from ..database import (
     ProjectUser,
     UserTasks,
     User,
+    ValidatorTaskAction,
+    db,
 )
 
 
@@ -34,6 +36,8 @@ class TaskAPI(MethodView):
             return self.admin_fetch_external_validations()
         elif path == "update_task":
             return self.update_task()
+        elif path == "purge_all_task_stats":
+            return self.purge_all_task_stats()
         return {
             "message": "Invalid path",
             "status": 405,
@@ -836,3 +840,80 @@ class TaskAPI(MethodView):
             return {"message": f"Invalid task_action: {task_action}", "status": 400}
 
         return {"message": "Task updated", "status": 200}
+
+    @requires_admin
+    def purge_all_task_stats(self):
+        """
+        DEV ONLY: Purge all task-related data from the database.
+
+        This removes:
+        - All task records
+        - All user_tasks records
+        - All validator_task_actions records
+        - Resets all user task stats to 0
+        - Resets all project task stats to 0
+
+        Admin-only endpoint for development/testing.
+        """
+        if not g.user:
+            return {"message": "User not found", "status": 401}, 401
+
+        try:
+            org_id = g.user.org_id
+
+            # Delete all validator task actions for org
+            ValidatorTaskAction.query.filter(
+                ValidatorTaskAction.project_id.in_(
+                    db.session.query(Project.id).filter(Project.org_id == org_id)
+                )
+            ).delete(synchronize_session=False)
+
+            # Delete all user_tasks for org users
+            org_user_ids = [u.id for u in User.query.filter_by(org_id=org_id).all()]
+            UserTasks.query.filter(UserTasks.user_id.in_(org_user_ids)).delete(
+                synchronize_session=False
+            )
+
+            # Delete all tasks for org
+            Task.query.filter_by(org_id=org_id).delete(synchronize_session=False)
+
+            # Reset user task stats
+            users = User.query.filter_by(org_id=org_id).all()
+            for user in users:
+                user.update(
+                    total_tasks_mapped=0,
+                    total_tasks_validated=0,
+                    total_tasks_invalidated=0,
+                    validator_tasks_invalidated=0,
+                    validator_tasks_validated=0,
+                    mapping_payable_total=0,
+                    validation_payable_total=0,
+                    payable_total=0,
+                )
+
+            # Reset project task stats
+            projects = Project.query.filter_by(org_id=org_id).all()
+            for project in projects:
+                project.update(
+                    tasks_mapped=0,
+                    tasks_validated=0,
+                    tasks_invalidated=0,
+                )
+
+            db.session.commit()
+
+            current_app.logger.warning(
+                f"PURGE: All task stats purged by admin {g.user.email} for org {org_id}"
+            )
+
+            return {
+                "message": "All task stats purged successfully",
+                "users_reset": len(users),
+                "projects_reset": len(projects),
+                "status": 200,
+            }
+
+        except Exception as e:
+            db.session.rollback()
+            current_app.logger.error(f"Purge task stats failed: {e}")
+            return {"message": f"Purge failed: {str(e)}", "status": 500}, 500
