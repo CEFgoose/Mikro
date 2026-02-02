@@ -64,6 +64,8 @@ class ChecklistAPI(MethodView):
             return self.submit_checklist()
         elif path == "confirm_checklist":
             return self.confirm_checklist()
+        elif path == "purge_all_checklists":
+            return self.purge_all_checklists()
 
         return {
             "message": "Only /project/{fetch_users,fetch_user_projects} is permitted with GET",  # noqa: E501
@@ -1364,5 +1366,66 @@ class ChecklistAPI(MethodView):
 
         response["confirmed"] = True
         response["message"] = "Checklist %s confirmed!" % target_user_checklist.name
+        response["status"] = 200
+        return response
+
+    @requires_admin
+    def purge_all_checklists(self):
+        """DEV ONLY: Purge all checklists and reset related user stats."""
+        response = {}
+        if not g:
+            response["message"] = "User not found"
+            response["status"] = 304
+            return response
+
+        org_id = g.user.org_id
+
+        # Delete all user checklist items
+        user_checklist_items = UserChecklistItem.query.filter(
+            UserChecklistItem.checklist_id.in_(
+                [uc.id for uc in UserChecklist.query.filter_by(org_id=org_id).all()]
+            )
+        ).all()
+        for item in user_checklist_items:
+            item.delete(soft=False)
+
+        # Delete all user checklists
+        user_checklists = UserChecklist.query.filter_by(org_id=org_id).all()
+        for uc in user_checklists:
+            uc.delete(soft=False)
+
+        # Delete all checklist comments
+        checklist_ids = [c.id for c in Checklist.query.filter_by(org_id=org_id).all()]
+        comments = ChecklistComment.query.filter(
+            ChecklistComment.checklist_id.in_(checklist_ids)
+        ).all()
+        for comment in comments:
+            comment.delete(soft=False)
+
+        # Delete all checklist items
+        for cid in checklist_ids:
+            items = ChecklistItem.query.filter_by(checklist_id=cid).all()
+            for item in items:
+                item.delete(soft=False)
+
+        # Delete all checklists
+        checklists = Checklist.query.filter_by(org_id=org_id).all()
+        checklists_deleted = len(checklists)
+        for checklist in checklists:
+            checklist.delete(soft=False)
+
+        # Reset user checklist stats
+        users = User.query.filter_by(org_id=org_id).all()
+        users_reset = 0
+        for user in users:
+            user.update(
+                checklist_payable_total=0,
+                total_checklists_completed=0,
+            )
+            users_reset += 1
+
+        response["message"] = "All checklists purged"
+        response["checklists_deleted"] = checklists_deleted
+        response["users_reset"] = users_reset
         response["status"] = 200
         return response

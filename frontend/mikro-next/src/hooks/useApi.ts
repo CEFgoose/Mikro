@@ -393,3 +393,23 @@ export function usePurgeTaskStats() {
     status: number;
   }>("/task/purge_all_task_stats");
 }
+
+// DEV ONLY: Purge all checklists
+export function usePurgeChecklists() {
+  return useApiMutation<{
+    message: string;
+    checklists_deleted: number;
+    users_reset: number;
+    status: number;
+  }>("/checklist/purge_all_checklists");
+}
+
+// DEV ONLY: Purge all trainings
+export function usePurgeTrainings() {
+  return useApiMutation<{
+    message: string;
+    trainings_deleted: number;
+    users_reset: number;
+    status: number;
+  }>("/training/purge_all_trainings");
+}

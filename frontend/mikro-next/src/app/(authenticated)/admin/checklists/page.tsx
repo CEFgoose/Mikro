@@ -29,6 +29,7 @@ import {
   useAssignUserChecklist,
   useUnassignUserChecklist,
   useFetchChecklistUsers,
+  usePurgeChecklists,
 } from "@/hooks";
 import type { Checklist } from "@/types";
 
@@ -84,6 +85,7 @@ export default function AdminChecklistsPage() {
   const { mutate: assignUser, loading: assigning } = useAssignUserChecklist();
   const { mutate: unassignUser, loading: unassigning } = useUnassignUserChecklist();
   const { mutate: fetchChecklistUsers } = useFetchChecklistUsers();
+  const { mutate: purgeChecklists, loading: purging } = usePurgeChecklists();
   const toast = useToastActions();
 
   const [selectedChecklist, setSelectedChecklist] = useState<Checklist | null>(null);
@@ -92,6 +94,7 @@ export default function AdminChecklistsPage() {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
   const [showAssignModal, setShowAssignModal] = useState(false);
+  const [showPurgeModal, setShowPurgeModal] = useState(false);
   const [checklistUsers, setChecklistUsers] = useState<Array<{ id: string; name: string; role: string; assigned: string }>>([]);
   const [loadingUsers, setLoadingUsers] = useState(false);
   const [formData, setFormData] = useState<ChecklistFormData>(defaultFormData);
@@ -285,6 +288,17 @@ export default function AdminChecklistsPage() {
       refetch();
     } catch {
       toast.error("Failed to unassign user");
+    }
+  };
+
+  const handlePurgeChecklists = async () => {
+    try {
+      const result = await purgeChecklists({});
+      toast.success(`Purged ${result.checklists_deleted} checklists, reset ${result.users_reset} users`);
+      setShowPurgeModal(false);
+      refetch();
+    } catch {
+      toast.error("Failed to purge checklists");
     }
   };
 
@@ -1024,6 +1038,34 @@ export default function AdminChecklistsPage() {
           )}
         </div>
       </Modal>
+
+      {/* Purge Confirmation */}
+      <ConfirmDialog
+        isOpen={showPurgeModal}
+        onClose={() => setShowPurgeModal(false)}
+        onConfirm={handlePurgeChecklists}
+        title="Purge All Checklists"
+        message="This will DELETE all checklists, user checklists, and reset all user checklist stats. This action cannot be undone!"
+        confirmText="Purge All"
+        variant="destructive"
+        isLoading={purging}
+      />
+
+      {/* Dev Tools Section */}
+      <Card className="mt-8 border-dashed border-yellow-500">
+        <CardHeader className="pb-2">
+          <CardTitle className="text-sm font-medium text-yellow-600">Dev Tools (Remove before production)</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <Button
+            variant="destructive"
+            onClick={() => setShowPurgeModal(true)}
+            isLoading={purging}
+          >
+            Purge All Checklists
+          </Button>
+        </CardContent>
+      </Card>
     </div>
   );
 }

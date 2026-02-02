@@ -17,9 +17,6 @@ interface UserProfile {
   city: string;
   country: string;
   role: string;
-  total_tasks_mapped: number;
-  total_tasks_validated: number;
-  total_payout: number;
 }
 
 export default function AccountPage() {
@@ -173,34 +170,6 @@ export default function AccountPage() {
         <p className="text-muted-foreground" style={{ marginTop: 8 }}>
           Manage your profile and preferences
         </p>
-      </div>
-
-      {/* Stats Row - Compact */}
-      <div style={{ display: "grid", gap: 16, gridTemplateColumns: "repeat(3, 1fr)" }}>
-        <Card style={{ padding: 0 }}>
-          <div style={{ padding: "12px 16px", textAlign: "center" }}>
-            <p style={{ fontSize: 12, color: "#6b7280", marginBottom: 4 }}>Tasks Mapped</p>
-            <div style={{ fontSize: 24, fontWeight: 700, color: "#ff6b35" }}>
-              {profile?.total_tasks_mapped ?? 0}
-            </div>
-          </div>
-        </Card>
-        <Card style={{ padding: 0 }}>
-          <div style={{ padding: "12px 16px", textAlign: "center" }}>
-            <p style={{ fontSize: 12, color: "#6b7280", marginBottom: 4 }}>Tasks Validated</p>
-            <div style={{ fontSize: 24, fontWeight: 700, color: "#2563eb" }}>
-              {profile?.total_tasks_validated ?? 0}
-            </div>
-          </div>
-        </Card>
-        <Card style={{ padding: 0 }}>
-          <div style={{ padding: "12px 16px", textAlign: "center" }}>
-            <p style={{ fontSize: 12, color: "#6b7280", marginBottom: 4 }}>Total Earned</p>
-            <div style={{ fontSize: 24, fontWeight: 700, color: "#16a34a" }}>
-              ${profile?.total_payout?.toFixed(2) ?? "0.00"}
-            </div>
-          </div>
-        </Card>
       </div>
 
       {/* OSM Account Linking Card */}
