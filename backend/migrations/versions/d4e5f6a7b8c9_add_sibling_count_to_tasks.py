@@ -17,12 +17,6 @@ depends_on = None
 
 
 def upgrade():
-    # Add parent_task_id column for split task tracking
-    op.add_column(
-        "tasks",
-        sa.Column("parent_task_id", sa.Integer(), nullable=True),
-    )
-
     # Add sibling_count column to tasks table
     # For TM4 split tasks, this will be 4 (always splits into 4 children)
     # NULL for non-split tasks
@@ -34,4 +28,3 @@ def upgrade():
 
 def downgrade():
     op.drop_column("tasks", "sibling_count")
-    op.drop_column("tasks", "parent_task_id")
