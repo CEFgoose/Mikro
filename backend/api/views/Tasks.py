@@ -248,7 +248,8 @@ class TaskAPI(MethodView):
                         # Track parent_task_id for split tasks
                         parent_task_id = task_data.get("parentTaskId")
                         if parent_task_id and target_task.parent_task_id != parent_task_id:
-                            target_task.update(parent_task_id=parent_task_id)
+                            # TM4 always splits into exactly 4 children
+                            target_task.update(parent_task_id=parent_task_id, sibling_count=4)
 
                         # Check task history for any invalidation actions
                         # TM4 records STATE_CHANGE with actionText="INVALIDATED" when task is invalidated
@@ -421,9 +422,13 @@ class TaskAPI(MethodView):
                                 task_data = task_detail_call.json()
                                 parent_task_id = task_data.get("parentTaskId")
                                 if parent_task_id:
-                                    target_task.update(parent_task_id=parent_task_id)
+                                    # TM4 always splits into exactly 4 children
+                                    target_task.update(
+                                        parent_task_id=parent_task_id,
+                                        sibling_count=4
+                                    )
                                     current_app.logger.info(
-                                        f"Task {task} is a split child of parent task {parent_task_id}"
+                                        f"Task {task} is a split child of parent task {parent_task_id} (sibling_count=4)"
                                     )
                             else:
                                 current_app.logger.warning(

@@ -189,6 +189,7 @@ class Task(ModelWithSoftDeleteAndCRUD, SurrogatePK):
 
     # TM4 split tracking
     parent_task_id = db.Column(db.Integer, nullable=True)  # From TM4 for split tracking
+    sibling_count = db.Column(db.Integer, nullable=True)  # Total siblings in split group (4 for TM4)
 
     # Attribution
     mapped_by = db.Column(db.String(100), nullable=False)

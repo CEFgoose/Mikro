@@ -366,7 +366,10 @@ class ProjectAPI(MethodView):
         Count tasks with split-awareness.
 
         Split task groups (siblings with same parent_task_id) only count as 1
-        when ALL siblings meet the condition.
+        when ALL siblings are present AND ALL meet the condition.
+
+        For TM4 splits, there are always exactly 4 siblings. A split group
+        only counts as 1 when we have all 4 siblings and all meet the condition.
 
         Args:
             tasks: List of Task objects to count
@@ -375,7 +378,7 @@ class ProjectAPI(MethodView):
 
         Returns:
             Effective count where split groups count as 1 only when ALL siblings
-            meet condition
+            are present and meet condition
         """
         if condition_fn is None:
             condition_fn = lambda t: True
@@ -394,10 +397,16 @@ class ProjectAPI(MethodView):
                 split_groups[task.parent_task_id] = []
             split_groups[task.parent_task_id].append(task)
 
-        # Count split groups where ALL siblings meet condition
+        # Count split groups where:
+        # 1. We have ALL expected siblings (sibling_count, default 4 for TM4)
+        # 2. ALL siblings meet the condition
         split_count = 0
         for parent_id, siblings in split_groups.items():
-            if all(condition_fn(t) for t in siblings):
+            # Get expected sibling count (default to 4 for TM4 splits)
+            expected_count = siblings[0].sibling_count if siblings[0].sibling_count else 4
+
+            # Only count if we have ALL siblings AND all meet condition
+            if len(siblings) == expected_count and all(condition_fn(t) for t in siblings):
                 split_count += 1
 
         return normal_count + split_count
@@ -443,22 +452,29 @@ class ProjectAPI(MethodView):
             if task.invalidated:
                 split_groups[task.parent_task_id]["invalidated"] += 1
 
-        # For split groups, only count as 1 when ALL siblings are complete
-        # If not all siblings are complete, the group counts as 0
+        # For split groups, only count as 1 when ALL siblings are present AND complete
+        # If not all siblings are present or complete, the group counts as 0
         split_mapped = 0
         split_validated = 0
         split_invalidated = 0
 
         for parent_id, group in split_groups.items():
-            sibling_count = len(group["tasks"])
+            actual_sibling_count = len(group["tasks"])
+            # Get expected sibling count (default to 4 for TM4 splits)
+            expected_sibling_count = group["tasks"][0].sibling_count if group["tasks"][0].sibling_count else 4
+
+            # Only count if we have ALL expected siblings
+            if actual_sibling_count != expected_sibling_count:
+                continue  # Missing siblings, don't count this group
+
             # Only count as 1 mapped task if ALL siblings are mapped
-            if group["mapped"] == sibling_count:
+            if group["mapped"] == actual_sibling_count:
                 split_mapped += 1
             # Only count as 1 validated task if ALL siblings are validated
-            if group["validated"] == sibling_count:
+            if group["validated"] == actual_sibling_count:
                 split_validated += 1
             # Only count as 1 invalidated task if ALL siblings are invalidated
-            if group["invalidated"] == sibling_count:
+            if group["invalidated"] == actual_sibling_count:
                 split_invalidated += 1
 
         return {
