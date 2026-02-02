@@ -99,6 +99,8 @@ class ProjectAPI(MethodView):
             return self.assign_user_project()
         elif path == "unassign_user_project":
             return self.unassign_user_project()
+        elif path == "purge_all_projects":
+            return self.purge_all_projects()
 
         return {
             "message": "Only /project/{fetch_users,fetch_user_projects} is permitted with GET",  # noqa: E501
@@ -1413,5 +1415,65 @@ class ProjectAPI(MethodView):
             "org_inactive_projects": org_inactive_projects,
             "unassigned_validation_projects": unassigned_projects_with_validations,
             "message": "Projects found",
+            "status": 200,
+        }
+
+    @requires_admin
+    def purge_all_projects(self):
+        """DEV ONLY: Purge all projects and related data."""
+        if not g.user:
+            return {"message": "User not found", "status": 304}
+
+        org_id = g.user.org_id
+
+        # Get all project IDs for this org
+        projects = Project.query.filter_by(org_id=org_id).all()
+        project_ids = [p.id for p in projects]
+
+        # Delete all user-task relations for these projects
+        for pid in project_ids:
+            tasks = Task.query.filter_by(project_id=pid).all()
+            task_ids = [t.id for t in tasks]
+            for tid in task_ids:
+                user_tasks = UserTasks.query.filter_by(task_id=tid).all()
+                for ut in user_tasks:
+                    ut.delete(soft=False)
+
+        # Delete all tasks for these projects
+        tasks_deleted = 0
+        for pid in project_ids:
+            tasks = Task.query.filter_by(project_id=pid).all()
+            tasks_deleted += len(tasks)
+            for task in tasks:
+                task.delete(soft=False)
+
+        # Delete all project-user relations
+        for pid in project_ids:
+            project_users = ProjectUser.query.filter_by(project_id=pid).all()
+            for pu in project_users:
+                pu.delete(soft=False)
+
+        # Delete all projects
+        projects_deleted = len(projects)
+        for project in projects:
+            project.delete(soft=False)
+
+        # Reset user project-related stats
+        users = User.query.filter_by(org_id=org_id).all()
+        users_reset = 0
+        for user in users:
+            user.update(
+                total_tasks_mapped=0,
+                total_tasks_validated=0,
+                mapping_payable_total=0,
+                validation_payable_total=0,
+            )
+            users_reset += 1
+
+        return {
+            "message": "All projects purged",
+            "projects_deleted": projects_deleted,
+            "tasks_deleted": tasks_deleted,
+            "users_reset": users_reset,
             "status": 200,
         }

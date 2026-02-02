@@ -462,3 +462,24 @@ export function usePurgeTransactions() {
     status: number;
   }>("/transaction/purge_all_transactions");
 }
+
+// DEV ONLY: Purge all projects
+export function usePurgeProjects() {
+  return useApiMutation<{
+    message: string;
+    projects_deleted: number;
+    tasks_deleted: number;
+    users_reset: number;
+    status: number;
+  }>("/project/purge_all_projects");
+}
+
+// DEV ONLY: Purge all users (except initiating admin)
+export function usePurgeUsers() {
+  return useApiMutation<{
+    message: string;
+    users_deleted: number;
+    admin_preserved: number;
+    status: number;
+  }>("/user/purge_all_users");
+}

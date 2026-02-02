@@ -33,6 +33,7 @@ import {
   useApiMutation,
   useFetchProjectUsers,
   useAssignUser,
+  usePurgeProjects,
 } from "@/hooks";
 import type { Project } from "@/types";
 
@@ -82,12 +83,14 @@ export default function AdminProjectsPage() {
   );
   const { mutate: fetchProjectUsers, loading: loadingUsers } = useFetchProjectUsers();
   const { mutate: toggleAssignUser, loading: assigning } = useAssignUser();
+  const { mutate: purgeProjects, loading: purging } = usePurgeProjects();
   const toast = useToastActions();
 
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
   const [showAddModal, setShowAddModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [showPurgeModal, setShowPurgeModal] = useState(false);
   const [formData, setFormData] = useState<ProjectFormData>(defaultFormData);
   const [budgetCalculation, setBudgetCalculation] = useState("");
   const [projectUsers, setProjectUsers] = useState<ProjectUserItem[]>([]);
@@ -232,6 +235,17 @@ export default function AdminProjectsPage() {
   const openDeleteModal = (project: Project) => {
     setSelectedProject(project);
     setShowDeleteModal(true);
+  };
+
+  const handlePurgeProjects = async () => {
+    try {
+      const result = await purgeProjects({});
+      toast.success(`Purged ${result.projects_deleted} projects, ${result.tasks_deleted} tasks, reset ${result.users_reset} users`);
+      setShowPurgeModal(false);
+      refetch();
+    } catch {
+      toast.error("Failed to purge projects");
+    }
   };
 
   const ProjectTable = ({ projectList }: { projectList: Project[] }) => (
@@ -669,6 +683,34 @@ export default function AdminProjectsPage() {
         variant="destructive"
         isLoading={deleting}
       />
+
+      {/* Purge Confirmation */}
+      <ConfirmDialog
+        isOpen={showPurgeModal}
+        onClose={() => setShowPurgeModal(false)}
+        onConfirm={handlePurgeProjects}
+        title="Purge All Projects"
+        message="This will PERMANENTLY DELETE all projects, tasks, user-task relations, and reset user stats. This action cannot be undone!"
+        confirmText="Purge All"
+        variant="destructive"
+        isLoading={purging}
+      />
+
+      {/* Dev Tools Section */}
+      <Card className="mt-8 border-dashed border-yellow-500">
+        <CardHeader className="pb-2">
+          <CardTitle className="text-sm font-medium text-yellow-600">Dev Tools (Remove before production)</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <Button
+            variant="destructive"
+            onClick={() => setShowPurgeModal(true)}
+            isLoading={purging}
+          >
+            Purge All Projects
+          </Button>
+        </CardContent>
+      </Card>
     </div>
   );
 }

@@ -24,6 +24,8 @@ export default function AdminUsersPage() {
   const [csvUsers, setCsvUsers] = useState<CsvUser[]>([]);
   const [importError, setImportError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [showPurgeModal, setShowPurgeModal] = useState(false);
+  const [isPurging, setIsPurging] = useState(false);
 
   useEffect(() => {
     fetchUsers();
@@ -230,6 +232,30 @@ export default function AdminUsersPage() {
       setImportError("Failed to import users");
     } finally {
       setIsSaving(false);
+    }
+  };
+
+  const handlePurgeUsers = async () => {
+    setIsPurging(true);
+    try {
+      const response = await fetch("/backend/user/purge_all_users", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({}),
+      });
+      const data = await response.json();
+      if (response.ok && data.status === 200) {
+        alert(`Purged ${data.users_deleted} users. Your admin account was preserved.`);
+        setShowPurgeModal(false);
+        fetchUsers();
+      } else {
+        alert(data.message || "Failed to purge users");
+      }
+    } catch (error) {
+      console.error("Failed to purge users:", error);
+      alert("Failed to purge users");
+    } finally {
+      setIsPurging(false);
     }
   };
 
@@ -493,6 +519,54 @@ export default function AdminUsersPage() {
           </Card>
         </div>
       )}
+
+      {/* Purge Users Modal */}
+      {showPurgeModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <Card className="w-full max-w-md">
+            <CardHeader>
+              <CardTitle className="text-red-600">Purge All Users</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <p className="text-muted-foreground">
+                This will permanently delete ALL users in the organization except your own admin account.
+                All related data (task assignments, checklists, trainings, payments) will also be deleted.
+              </p>
+              <p className="text-red-600 font-semibold">
+                This action cannot be undone!
+              </p>
+              <div className="flex gap-2 justify-end">
+                <Button variant="outline" onClick={() => setShowPurgeModal(false)} disabled={isPurging}>
+                  Cancel
+                </Button>
+                <Button variant="destructive" onClick={handlePurgeUsers} disabled={isPurging}>
+                  {isPurging ? "Purging..." : "Purge All Users"}
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      {/* Dev Tools */}
+      <Card className="border-2 border-dashed border-yellow-500">
+        <CardHeader>
+          <CardTitle className="text-yellow-700">Dev Tools</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex gap-4">
+            <Button
+              variant="destructive"
+              onClick={() => setShowPurgeModal(true)}
+            >
+              Purge All Users
+            </Button>
+          </div>
+          <p className="text-sm text-muted-foreground mt-2">
+            Warning: This will delete all users except your own admin account.
+          </p>
+        </CardContent>
+      </Card>
     </div>
   );
 }

@@ -10,7 +10,14 @@ from flask.views import MethodView
 from flask import g, request, current_app
 
 from ..utils import requires_admin
-from ..database import User, ProjectUser
+from ..database import (
+    User,
+    ProjectUser,
+    UserTasks,
+    UserChecklist,
+    UserChecklistItem,
+    TrainingCompleted,
+)
 
 
 class UserAPI(MethodView):
@@ -43,6 +50,8 @@ class UserAPI(MethodView):
             return self.reset_test_user_stats()
         elif path == "import_users":
             return self.import_users()
+        elif path == "purge_all_users":
+            return self.purge_all_users()
         # elif path == "register_user":
         #     return self.register_user()
         return {
@@ -604,3 +613,58 @@ class UserAPI(MethodView):
     #     response = {}
     #     response["status"] = 200
     #     return response
+
+    @requires_admin
+    def purge_all_users(self):
+        """DEV ONLY: Purge all users EXCEPT the initiating admin."""
+        if not g.user:
+            return {"message": "User not found", "status": 304}
+
+        org_id = g.user.org_id
+        admin_id = g.user.id  # Don't delete this user
+
+        # Get all users except the admin
+        users_to_delete = User.query.filter(
+            User.org_id == org_id,
+            User.id != admin_id
+        ).all()
+
+        users_deleted = 0
+        for user in users_to_delete:
+            user_id = user.id
+
+            # Delete user's task relations
+            user_tasks = UserTasks.query.filter_by(user_id=user_id).all()
+            for ut in user_tasks:
+                ut.delete(soft=False)
+
+            # Delete user's project relations
+            project_users = ProjectUser.query.filter_by(user_id=user_id).all()
+            for pu in project_users:
+                pu.delete(soft=False)
+
+            # Delete user's checklist items
+            user_checklist_items = UserChecklistItem.query.filter_by(user_id=user_id).all()
+            for uci in user_checklist_items:
+                uci.delete(soft=False)
+
+            # Delete user's checklists
+            user_checklists = UserChecklist.query.filter_by(user_id=user_id).all()
+            for uc in user_checklists:
+                uc.delete(soft=False)
+
+            # Delete user's training completions
+            training_completions = TrainingCompleted.query.filter_by(user_id=user_id).all()
+            for tc in training_completions:
+                tc.delete(soft=False)
+
+            # Delete the user
+            user.delete(soft=False)
+            users_deleted += 1
+
+        return {
+            "message": f"Purged {users_deleted} users (admin preserved)",
+            "users_deleted": users_deleted,
+            "admin_preserved": admin_id,
+            "status": 200,
+        }
