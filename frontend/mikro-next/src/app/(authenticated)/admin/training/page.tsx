@@ -30,6 +30,7 @@ import {
   useCreateTraining,
   useUpdateTraining,
   useDeleteTraining,
+  usePurgeTrainings,
 } from "@/hooks";
 import type { Training, TrainingQuestion } from "@/types";
 
@@ -61,6 +62,7 @@ export default function AdminTrainingPage() {
   const { mutate: createTraining, loading: creating } = useCreateTraining();
   const { mutate: updateTraining, loading: updating } = useUpdateTraining();
   const { mutate: deleteTraining, loading: deleting } = useDeleteTraining();
+  const { mutate: purgeTrainings, loading: purging } = usePurgeTrainings();
   const toast = useToastActions();
 
   const [selectedTraining, setSelectedTraining] = useState<Training | null>(null);
@@ -68,6 +70,7 @@ export default function AdminTrainingPage() {
   const [showEditModal, setShowEditModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [showQuestionsModal, setShowQuestionsModal] = useState(false);
+  const [showPurgeModal, setShowPurgeModal] = useState(false);
   const [formData, setFormData] = useState<TrainingFormData>(defaultFormData);
   const [questions, setQuestions] = useState<QuestionFormData[]>([]);
 
@@ -148,6 +151,17 @@ export default function AdminTrainingPage() {
       refetch();
     } catch {
       toast.error("Failed to delete training");
+    }
+  };
+
+  const handlePurgeTrainings = async () => {
+    try {
+      const result = await purgeTrainings({});
+      toast.success(`Purged ${result.trainings_deleted} trainings, reset ${result.users_reset} users`);
+      setShowPurgeModal(false);
+      refetch();
+    } catch {
+      toast.error("Failed to purge trainings");
     }
   };
 
@@ -617,6 +631,34 @@ export default function AdminTrainingPage() {
         variant="destructive"
         isLoading={deleting}
       />
+
+      {/* Purge Confirmation */}
+      <ConfirmDialog
+        isOpen={showPurgeModal}
+        onClose={() => setShowPurgeModal(false)}
+        onConfirm={handlePurgeTrainings}
+        title="Purge All Trainings"
+        message="This will DELETE all trainings, training completions, and reset all user training points. This action cannot be undone!"
+        confirmText="Purge All"
+        variant="destructive"
+        isLoading={purging}
+      />
+
+      {/* Dev Tools Section */}
+      <Card className="mt-8 border-dashed border-yellow-500">
+        <CardHeader className="pb-2">
+          <CardTitle className="text-sm font-medium text-yellow-600">Dev Tools (Remove before production)</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <Button
+            variant="destructive"
+            onClick={() => setShowPurgeModal(true)}
+            isLoading={purging}
+          >
+            Purge All Trainings
+          </Button>
+        </CardContent>
+      </Card>
     </div>
   );
 }
