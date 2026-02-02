@@ -31,6 +31,9 @@ import {
   useRejectPaymentRequest,
   useDeletePayment,
   useFetchPaymentRequestDetails,
+  useArchiveTransaction,
+  useFetchArchivedTransactions,
+  usePurgeTransactions,
   PaymentRequestDetailsResponse,
   PaymentRequestProjectDetail,
 } from "@/hooks";
@@ -105,6 +108,9 @@ export default function AdminPaymentsPage() {
   const { mutate: rejectPayment, loading: rejecting } = useRejectPaymentRequest();
   const { mutate: deletePayment, loading: deleting } = useDeletePayment();
   const { mutate: fetchDetails, loading: loadingDetails } = useFetchPaymentRequestDetails();
+  const { mutate: archiveTransaction, loading: archiving } = useArchiveTransaction();
+  const { mutate: fetchArchivedTransactions, loading: loadingArchived } = useFetchArchivedTransactions();
+  const { mutate: purgeTransactions, loading: purging } = usePurgeTransactions();
   const toast = useToastActions();
 
   const [selectedRequest, setSelectedRequest] = useState<PayRequest | null>(null);
@@ -112,7 +118,19 @@ export default function AdminPaymentsPage() {
   const [showApproveModal, setShowApproveModal] = useState(false);
   const [showRejectModal, setShowRejectModal] = useState(false);
   const [showDeletePaymentModal, setShowDeletePaymentModal] = useState(false);
+  const [showArchiveModal, setShowArchiveModal] = useState(false);
+  const [showPurgeModal, setShowPurgeModal] = useState(false);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
+  const [archivedPayments, setArchivedPayments] = useState<Array<{
+    id: number;
+    amount_paid: number;
+    user: string;
+    osm_username: string;
+    date_paid: string;
+    notes: string | null;
+    archived_date: string | null;
+  }>>([]);
+  const [archivedLoaded, setArchivedLoaded] = useState(false);
   const [requestDetails, setRequestDetails] = useState<PaymentRequestDetailsResponse | null>(null);
   const [paymentNotes, setPaymentNotes] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
@@ -295,6 +313,52 @@ export default function AdminPaymentsPage() {
     }
   };
 
+  const handleArchivePayment = async () => {
+    if (!selectedPayment) return;
+
+    try {
+      await archiveTransaction({
+        transaction_id: selectedPayment.id,
+        transaction_type: "payment",
+      });
+      toast.success("Payment archived");
+      setShowArchiveModal(false);
+      setSelectedPayment(null);
+      refetch();
+    } catch {
+      toast.error("Failed to archive payment");
+    }
+  };
+
+  const handleLoadArchived = async () => {
+    try {
+      const result = await fetchArchivedTransactions({});
+      setArchivedPayments(result.archived_payments || []);
+      setArchivedLoaded(true);
+      toast.success(`Loaded ${result.archived_payments?.length || 0} archived payments`);
+    } catch {
+      toast.error("Failed to load archived transactions");
+    }
+  };
+
+  const handlePurgeTransactions = async () => {
+    try {
+      const result = await purgeTransactions({});
+      toast.success(`Purged ${result.requests_deleted} requests, ${result.payments_deleted} payments, reset ${result.users_reset} users`);
+      setShowPurgeModal(false);
+      setArchivedPayments([]);
+      setArchivedLoaded(false);
+      refetch();
+    } catch {
+      toast.error("Failed to purge transactions");
+    }
+  };
+
+  const openArchiveModal = (payment: Payment) => {
+    setSelectedPayment(payment);
+    setShowArchiveModal(true);
+  };
+
   if (loading) {
     return (
       <div className="space-y-6">
@@ -408,6 +472,7 @@ export default function AdminPaymentsPage() {
         <TabsList>
           <TabsTrigger value="requests">Pending Requests ({filteredRequests.length})</TabsTrigger>
           <TabsTrigger value="history">Payment History ({filteredPayments.length})</TabsTrigger>
+          <TabsTrigger value="archived">Archived {archivedLoaded ? `(${archivedPayments.length})` : ""}</TabsTrigger>
         </TabsList>
 
         <TabsContent value="requests">
@@ -509,10 +574,10 @@ export default function AdminPaymentsPage() {
                       <TableCell className="text-right">
                         <Button
                           size="sm"
-                          variant="destructive"
-                          onClick={() => openDeletePaymentModal(payment)}
+                          variant="outline"
+                          onClick={() => openArchiveModal(payment)}
                         >
-                          Delete
+                          Archive
                         </Button>
                       </TableCell>
                     </TableRow>
@@ -526,6 +591,58 @@ export default function AdminPaymentsPage() {
                   )}
                 </TableBody>
               </Table>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="archived">
+          <Card>
+            <CardContent className="p-4">
+              {!archivedLoaded ? (
+                <div className="text-center py-8">
+                  <p className="text-muted-foreground mb-4">
+                    Archived payments are not loaded by default. Click the button below to load them.
+                  </p>
+                  <Button onClick={handleLoadArchived} isLoading={loadingArchived}>
+                    Load Archived Payments
+                  </Button>
+                </div>
+              ) : archivedPayments.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  No archived payments found
+                </div>
+              ) : (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>User</TableHead>
+                      <TableHead>OSM Username</TableHead>
+                      <TableHead>Date Paid</TableHead>
+                      <TableHead>Amount</TableHead>
+                      <TableHead>Archived</TableHead>
+                      <TableHead>Notes</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {archivedPayments.map((payment) => (
+                      <TableRow key={payment.id} className="opacity-60">
+                        <TableCell className="font-medium">{payment.user}</TableCell>
+                        <TableCell>{payment.osm_username}</TableCell>
+                        <TableCell>{formatDate(payment.date_paid)}</TableCell>
+                        <TableCell className="font-bold">
+                          {formatCurrency(payment.amount_paid)}
+                        </TableCell>
+                        <TableCell>
+                          {payment.archived_date ? formatDate(payment.archived_date) : "-"}
+                        </TableCell>
+                        <TableCell className="max-w-xs truncate">
+                          {payment.notes || "-"}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
@@ -814,6 +931,49 @@ export default function AdminPaymentsPage() {
         variant="destructive"
         isLoading={deleting}
       />
+
+      {/* Archive Payment Confirmation */}
+      <ConfirmDialog
+        isOpen={showArchiveModal}
+        onClose={() => {
+          setShowArchiveModal(false);
+          setSelectedPayment(null);
+        }}
+        onConfirm={handleArchivePayment}
+        title="Archive Payment Record"
+        message={`Archive the payment record of ${formatCurrency(selectedPayment?.amount_paid ?? 0)} for ${selectedPayment?.user}? The record will be moved to the Archive tab and can be accessed later if needed.`}
+        confirmText="Archive"
+        variant="default"
+        isLoading={archiving}
+      />
+
+      {/* Purge Confirmation */}
+      <ConfirmDialog
+        isOpen={showPurgeModal}
+        onClose={() => setShowPurgeModal(false)}
+        onConfirm={handlePurgeTransactions}
+        title="Purge All Transactions"
+        message="This will PERMANENTLY DELETE all payment requests, payments (including archived), and reset all user payment stats. This action cannot be undone!"
+        confirmText="Purge All"
+        variant="destructive"
+        isLoading={purging}
+      />
+
+      {/* Dev Tools Section */}
+      <Card className="mt-8 border-dashed border-yellow-500">
+        <CardHeader className="pb-2">
+          <CardTitle className="text-sm font-medium text-yellow-600">Dev Tools (Remove before production)</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <Button
+            variant="destructive"
+            onClick={() => setShowPurgeModal(true)}
+            isLoading={purging}
+          >
+            Purge All Transactions
+          </Button>
+        </CardContent>
+      </Card>
     </div>
   );
 }

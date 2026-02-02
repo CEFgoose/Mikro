@@ -413,3 +413,52 @@ export function usePurgeTrainings() {
     status: number;
   }>("/training/purge_all_trainings");
 }
+
+// Archive a transaction (soft delete)
+export function useArchiveTransaction() {
+  return useApiMutation("/transaction/archive_transaction");
+}
+
+// Fetch archived transactions
+export function useFetchArchivedTransactions() {
+  return useApiMutation<{
+    message: string;
+    archived_requests: Array<{
+      id: number;
+      amount_requested: number;
+      user: string;
+      osm_username: string;
+      user_id: number;
+      payment_email: string;
+      task_ids: number[];
+      date_requested: string;
+      notes: string | null;
+      archived_date: string | null;
+    }>;
+    archived_payments: Array<{
+      id: number;
+      payoneer_id: string;
+      amount_paid: number;
+      user: string;
+      osm_username: string;
+      user_id: number;
+      payment_email: string;
+      task_ids: number[];
+      date_paid: string;
+      notes: string | null;
+      archived_date: string | null;
+    }>;
+    status: number;
+  }>("/transaction/fetch_archived_transactions");
+}
+
+// DEV ONLY: Purge all transactions
+export function usePurgeTransactions() {
+  return useApiMutation<{
+    message: string;
+    requests_deleted: number;
+    payments_deleted: number;
+    users_reset: number;
+    status: number;
+  }>("/transaction/purge_all_transactions");
+}

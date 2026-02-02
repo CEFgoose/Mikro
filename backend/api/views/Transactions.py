@@ -32,6 +32,12 @@ class TransactionAPI(MethodView):
             return self.submit_payment_request()
         elif path == "fetch_payment_request_details":
             return self.fetch_payment_request_details()
+        elif path == "archive_transaction":
+            return self.archive_transaction()
+        elif path == "fetch_archived_transactions":
+            return self.fetch_archived_transactions()
+        elif path == "purge_all_transactions":
+            return self.purge_all_transactions()
         return {
             "message": "Only /project/{fetch_users,fetch_user_projects} is permitted with GET",  # noqa: E501
         }, 405
@@ -486,5 +492,132 @@ class TransactionAPI(MethodView):
                 "validation_earnings": total_validation,
                 "total_earnings": total_mapping + total_validation,
             },
+            "status": 200,
+        }
+
+    @requires_admin
+    def archive_transaction(self):
+        """Archive a payment record (soft delete) so it can be retrieved later."""
+        if not g.user:
+            return {"message": "User not found", "status": 304}
+
+        transaction_id = request.json.get("transaction_id")
+        transaction_type = request.json.get("transaction_type")
+
+        if not transaction_id:
+            return {"message": "transaction_id required", "status": 400}
+        if not transaction_type:
+            return {"message": "transaction_type required", "status": 400}
+
+        if transaction_type == "request":
+            target = PayRequests.query.filter_by(id=transaction_id).first()
+        else:
+            target = Payments.query.filter_by(id=transaction_id).first()
+
+        if not target:
+            return {"message": f"{transaction_type} {transaction_id} not found", "status": 400}
+
+        # Soft delete (sets deleted_date)
+        target.delete(soft=True)
+
+        return {
+            "message": f"{transaction_type.capitalize()} {transaction_id} archived",
+            "status": 200,
+        }
+
+    @requires_admin
+    def fetch_archived_transactions(self):
+        """Fetch archived (soft-deleted) transactions."""
+        if not g.user:
+            return {"message": "User not found", "status": 304}
+
+        # Use with_deleted() to include soft-deleted records, then filter
+        archived_requests = [
+            req for req in PayRequests.query.with_deleted().filter_by(org_id=g.user.org_id).all()
+            if req.deleted_date is not None
+        ]
+        archived_payments = [
+            pay for pay in Payments.query.with_deleted().filter_by(org_id=g.user.org_id).all()
+            if pay.deleted_date is not None
+        ]
+
+        requests_list = [
+            {
+                "id": req.id,
+                "amount_requested": req.amount_requested,
+                "user": req.user_name,
+                "osm_username": req.osm_username,
+                "user_id": req.user_id,
+                "payment_email": req.payment_email,
+                "task_ids": req.task_ids,
+                "date_requested": req.date_requested,
+                "notes": req.notes,
+                "archived_date": req.deleted_date.isoformat() if req.deleted_date else None,
+            }
+            for req in archived_requests
+        ]
+
+        payments_list = [
+            {
+                "id": pay.id,
+                "payoneer_id": pay.payoneer_id,
+                "amount_paid": pay.amount_paid,
+                "user": pay.user_name,
+                "osm_username": pay.osm_username,
+                "user_id": pay.user_id,
+                "payment_email": pay.payment_email,
+                "task_ids": pay.task_ids,
+                "date_paid": pay.date_paid,
+                "notes": pay.notes,
+                "archived_date": pay.deleted_date.isoformat() if pay.deleted_date else None,
+            }
+            for pay in archived_payments
+        ]
+
+        return {
+            "message": "Archived transactions found",
+            "archived_requests": requests_list,
+            "archived_payments": payments_list,
+            "status": 200,
+        }
+
+    @requires_admin
+    def purge_all_transactions(self):
+        """DEV ONLY: Purge all transactions and reset related user stats."""
+        if not g.user:
+            return {"message": "User not found", "status": 304}
+
+        org_id = g.user.org_id
+
+        # Hard delete all pay requests (including archived)
+        all_requests = PayRequests.query.with_deleted().filter_by(org_id=org_id).all()
+        requests_deleted = len(all_requests)
+        for req in all_requests:
+            req.delete(soft=False)
+
+        # Hard delete all payments (including archived)
+        all_payments = Payments.query.with_deleted().filter_by(org_id=org_id).all()
+        payments_deleted = len(all_payments)
+        for pay in all_payments:
+            pay.delete(soft=False)
+
+        # Reset user payment stats
+        users = User.query.filter_by(org_id=org_id).all()
+        users_reset = 0
+        for user in users:
+            user.update(
+                mapping_payable_total=0,
+                validation_payable_total=0,
+                checklist_payable_total=0,
+                requested_total=0,
+                total_payout=0,
+            )
+            users_reset += 1
+
+        return {
+            "message": "All transactions purged",
+            "requests_deleted": requests_deleted,
+            "payments_deleted": payments_deleted,
+            "users_reset": users_reset,
             "status": 200,
         }
