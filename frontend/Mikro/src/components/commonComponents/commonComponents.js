@@ -1313,8 +1313,43 @@ export const ProjectCard = (props) => {
           gap: ".5vw",
         }}
       >
-        <p>{`${props.difficulty}`}</p>
-        <h3>{props.name}</h3>
+        {/* Difficulty badge above project name, right-aligned */}
+        <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: "0.5vh" }}>
+          <span
+            style={{
+              padding: "2px 8px",
+              borderRadius: "4px",
+              fontSize: "0.75rem",
+              fontWeight: 600,
+              backgroundColor:
+                props.difficulty === "Easy"
+                  ? "#dcfce7"
+                  : props.difficulty === "Intermediate"
+                  ? "#fef3c7"
+                  : "#fee2e2",
+              color:
+                props.difficulty === "Easy"
+                  ? "#166534"
+                  : props.difficulty === "Intermediate"
+                  ? "#92400e"
+                  : "#dc2626",
+            }}
+          >
+            {props.difficulty}
+          </span>
+        </div>
+        <h3
+          style={{
+            overflow: "hidden",
+            textOverflow: "ellipsis",
+            whiteSpace: "nowrap",
+            maxWidth: "100%",
+            height: "1.5em",
+          }}
+          title={props.name}
+        >
+          {props.name}
+        </h3>
 
         <p>Mapping Rate: {`$${props.mapping_rate_per_task.toFixed(2)}`}</p>
 

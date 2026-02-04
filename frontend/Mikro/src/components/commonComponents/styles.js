@@ -103,6 +103,7 @@ export const TextArea = styled.textarea`
 export const ProjectCardContainer = styled(Card)(() => ({
   boxShadow: "1px 1px 6px gray",
   width: "20vw",
+  minHeight: "220px",
   marginLeft: "2vw",
   marginTop: "2vh",
   transition: "box-shadow 0.3s ease",

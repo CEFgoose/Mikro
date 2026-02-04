@@ -28,18 +28,8 @@ function ProjectCard({ project }: { project: Project }) {
   return (
     <Card className="hover:shadow-md transition-shadow">
       <CardHeader>
-        <div className="flex items-start justify-between">
-          <div>
-            <CardTitle className="text-lg">{project.name}</CardTitle>
-            <a
-              href={project.url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-sm text-kaart-orange hover:underline"
-            >
-              #{project.id} - Open in TM4
-            </a>
-          </div>
+        {/* Difficulty badge above project name, right-aligned */}
+        <div className="flex justify-end mb-2">
           <Badge
             variant={
               project.difficulty === "Easy"
@@ -51,6 +41,30 @@ function ProjectCard({ project }: { project: Project }) {
           >
             {project.difficulty || "Unknown"}
           </Badge>
+        </div>
+        <div>
+          <div className="group relative">
+            <CardTitle
+              className="text-lg truncate cursor-default"
+              style={{ maxHeight: "3.5rem", overflow: "hidden" }}
+            >
+              {project.name}
+            </CardTitle>
+            {/* Tooltip on hover */}
+            <div className="absolute left-0 top-full mt-1 z-50 hidden group-hover:block max-w-xs">
+              <div className="bg-gray-900 text-white text-sm rounded-md px-3 py-2 shadow-lg">
+                {project.name}
+              </div>
+            </div>
+          </div>
+          <a
+            href={project.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-sm text-kaart-orange hover:underline"
+          >
+            #{project.id} - Open in TM4
+          </a>
         </div>
       </CardHeader>
       <CardContent className="space-y-4">

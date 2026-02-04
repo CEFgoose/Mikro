@@ -149,30 +149,13 @@ const Sidebar = (props) => {
           </MenuItem>
         </NavLink>
 
-        {role === "admin" ? (
-          <NavLink to={"/AdminTasksPage"} style={{ textDecoration: "none" }}>
-            <MenuItem style={{ width: "100%" }}>
-              <ProjectIcon src={tasks_icon} />
-
-              <Header>{sidebarOpen ? "Tasks" : ""}</Header>
-            </MenuItem>
-          </NavLink>
-        ) : (
-          <></>
-        )}
         <NavLink
-          to={
-            role === "admin"
-              ? "/AdminChecklistsPage"
-              : role === "validator"
-              ? "/ValidatorChecklistsPage"
-              : "/UserChecklistsPage"
-          }
+          to={role === "admin" ? "/AdminTrainingPage" : "/UserTrainingPage"}
           style={{ textDecoration: "none" }}
         >
-          <MenuItem>
-            <ProjectIcon src={checklist_icon} />
-            <Header>{sidebarOpen ? "Activites" : ""}</Header>
+          <MenuItem style={{ width: "100%" }}>
+            <ProjectIcon src={training_icon} />
+            <Header>{sidebarOpen ? "Training" : ""}</Header>
           </MenuItem>
         </NavLink>
 
@@ -187,10 +170,36 @@ const Sidebar = (props) => {
         </NavLink>
 
         {role === "admin" ? (
+          <NavLink to={"/AdminTasksPage"} style={{ textDecoration: "none" }}>
+            <MenuItem style={{ width: "100%" }}>
+              <ProjectIcon src={tasks_icon} />
+              <Header>{sidebarOpen ? "Tasks" : ""}</Header>
+            </MenuItem>
+          </NavLink>
+        ) : (
+          <></>
+        )}
+
+        <NavLink
+          to={
+            role === "admin"
+              ? "/AdminChecklistsPage"
+              : role === "validator"
+              ? "/ValidatorChecklistsPage"
+              : "/UserChecklistsPage"
+          }
+          style={{ textDecoration: "none" }}
+        >
+          <MenuItem>
+            <ProjectIcon src={checklist_icon} />
+            <Header>{sidebarOpen ? "Checklists" : ""}</Header>
+          </MenuItem>
+        </NavLink>
+
+        {role === "admin" ? (
           <NavLink to={"/AdminUsersPage"} style={{ textDecoration: "none" }}>
             <MenuItem style={{ width: "100%" }}>
               <ProjectIcon src={users_icon} />
-
               <Header>{sidebarOpen ? "Users" : ""}</Header>
             </MenuItem>
           </NavLink>
@@ -199,23 +208,11 @@ const Sidebar = (props) => {
         )}
 
         <NavLink
-          to={role === "admin" ? "/AdminTrainingPage" : "/UserTrainingPage"}
-          style={{ textDecoration: "none" }}
-        >
-          <MenuItem style={{ width: "100%" }}>
-            <ProjectIcon src={training_icon} />
-
-            <Header>{sidebarOpen ? "Training" : ""}</Header>
-          </MenuItem>
-        </NavLink>
-
-        <NavLink
           to={role === "admin" ? "/AdminPaymentsPage" : "/UserPaymentsPage"}
           style={{ textDecoration: "none" }}
         >
           <MenuItem style={{ width: "100%" }}>
             <ProjectIcon src={payments_icon} />
-
             <Header>{sidebarOpen ? "Payments" : ""}</Header>
           </MenuItem>
         </NavLink>

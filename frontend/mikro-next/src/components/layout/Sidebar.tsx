@@ -15,27 +15,28 @@ interface NavItem {
 
 const userNavItems: NavItem[] = [
   { label: "Dashboard", href: "/user/dashboard", icon: "home" },
-  { label: "Projects", href: "/user/projects", icon: "folder" },
-  { label: "Payments", href: "/user/payments", icon: "dollar" },
   { label: "Training", href: "/user/training", icon: "book" },
+  { label: "Projects", href: "/user/projects", icon: "folder" },
   { label: "Checklists", href: "/user/checklists", icon: "list" },
-  { label: "Tasking Manager", href: "https://tasks.kaart.com", icon: "external" },
+  { label: "Payments", href: "/user/payments", icon: "dollar" },
 ];
 
 const validatorNavItems: NavItem[] = [
   { label: "Dashboard", href: "/validator/dashboard", icon: "home" },
+  { label: "Training", href: "/user/training", icon: "book" },
+  { label: "Projects", href: "/user/projects", icon: "folder" },
   { label: "Checklists", href: "/validator/checklists", icon: "list" },
-  ...userNavItems.slice(1),
+  { label: "Payments", href: "/user/payments", icon: "dollar" },
 ];
 
 const adminNavItems: NavItem[] = [
   { label: "Dashboard", href: "/admin/dashboard", icon: "home" },
-  { label: "Users", href: "/admin/users", icon: "users" },
-  { label: "Projects", href: "/admin/projects", icon: "folder" },
-  { label: "Payments", href: "/admin/payments", icon: "dollar" },
-  { label: "Tasks", href: "/admin/tasks", icon: "tasks" },
   { label: "Training", href: "/admin/training", icon: "book" },
+  { label: "Projects", href: "/admin/projects", icon: "folder" },
+  { label: "Tasks", href: "/admin/tasks", icon: "tasks" },
   { label: "Checklists", href: "/admin/checklists", icon: "list" },
+  { label: "Users", href: "/admin/users", icon: "users" },
+  { label: "Payments", href: "/admin/payments", icon: "dollar" },
 ];
 
 const iconMap: Record<string, React.ReactNode> = {
