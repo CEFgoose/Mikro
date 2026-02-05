@@ -102,12 +102,12 @@ export default function ValidatorDashboard() {
   };
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 32 }}>
+    <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
       {/* Header */}
-      <div style={{ marginBottom: 8, display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Validator Dashboard</h1>
-          <p className="text-muted-foreground" style={{ marginTop: 8 }}>
+          <p className="text-muted-foreground" style={{ marginTop: 4 }}>
             Welcome back, {user?.name || user?.email}!
           </p>
         </div>
@@ -139,7 +139,7 @@ export default function ValidatorDashboard() {
       )}
 
       {/* Main Stats Cards - Mapping Work */}
-      <div style={{ display: "grid", gap: 24, gridTemplateColumns: "repeat(4, 1fr)" }} className="grid-stats">
+      <div style={{ display: "grid", gap: 16, gridTemplateColumns: "repeat(4, 1fr)" }} className="grid-stats">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Tasks Mapped</CardTitle>
@@ -235,8 +235,8 @@ export default function ValidatorDashboard() {
 
       {/* Validation Work Stats - Unique to Validator Dashboard */}
       <div>
-        <h2 className="text-lg font-semibold mb-4">Your Validation Work</h2>
-        <div style={{ display: "grid", gap: 24, gridTemplateColumns: "repeat(3, 1fr)" }} className="grid-stats">
+        <h2 className="text-base font-semibold mb-3">Your Validation Work</h2>
+        <div style={{ display: "grid", gap: 16, gridTemplateColumns: "repeat(3, 1fr)" }} className="grid-stats">
           <Card className="border-blue-200 bg-blue-50/50 dark:bg-blue-950/20">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Tasks You Validated</CardTitle>
@@ -309,10 +309,10 @@ export default function ValidatorDashboard() {
       </div>
 
       {/* Earnings & Payments Row */}
-      <div style={{ display: "grid", gap: 16, gridTemplateColumns: "repeat(4, 1fr)" }} className="grid-earnings">
+      <div style={{ display: "grid", gap: 12, gridTemplateColumns: "repeat(4, 1fr)" }} className="grid-earnings">
         <Card style={{ padding: 0 }}>
-          <div style={{ padding: "12px 16px" }}>
-            <p style={{ fontSize: 12, color: "#6b7280", marginBottom: 4 }}>Mapping Earnings</p>
+          <div style={{ padding: "10px 14px" }}>
+            <p style={{ fontSize: 11, color: "#6b7280", marginBottom: 2 }}>Mapping Earnings</p>
             {payableLoading ? (
               <Skeleton className="h-6 w-20" />
             ) : (
@@ -324,8 +324,8 @@ export default function ValidatorDashboard() {
         </Card>
 
         <Card style={{ padding: 0 }}>
-          <div style={{ padding: "12px 16px" }}>
-            <p style={{ fontSize: 12, color: "#6b7280", marginBottom: 4 }}>Validation Earnings</p>
+          <div style={{ padding: "10px 14px" }}>
+            <p style={{ fontSize: 11, color: "#6b7280", marginBottom: 2 }}>Validation Earnings</p>
             {payableLoading ? (
               <Skeleton className="h-6 w-20" />
             ) : (
@@ -337,8 +337,8 @@ export default function ValidatorDashboard() {
         </Card>
 
         <Card style={{ padding: 0 }}>
-          <div style={{ padding: "12px 16px" }}>
-            <p style={{ fontSize: 12, color: "#6b7280", marginBottom: 4 }}>Pending Requests</p>
+          <div style={{ padding: "10px 14px" }}>
+            <p style={{ fontSize: 11, color: "#6b7280", marginBottom: 2 }}>Pending Requests</p>
             {statsLoading ? (
               <Skeleton className="h-6 w-20" />
             ) : (
@@ -350,8 +350,8 @@ export default function ValidatorDashboard() {
         </Card>
 
         <Card style={{ padding: 0 }}>
-          <div style={{ padding: "12px 16px" }}>
-            <p style={{ fontSize: 12, color: "#6b7280", marginBottom: 4 }}>Total Received</p>
+          <div style={{ padding: "10px 14px" }}>
+            <p style={{ fontSize: 11, color: "#6b7280", marginBottom: 2 }}>Total Received</p>
             {statsLoading ? (
               <Skeleton className="h-6 w-20" />
             ) : (
@@ -364,7 +364,7 @@ export default function ValidatorDashboard() {
       </div>
 
       {/* Projects and Quick Actions */}
-      <div style={{ display: "grid", gap: 24, gridTemplateColumns: "repeat(2, 1fr)" }} className="grid-projects">
+      <div style={{ display: "grid", gap: 16, gridTemplateColumns: "repeat(2, 1fr)" }} className="grid-projects">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle>Your Projects</CardTitle>

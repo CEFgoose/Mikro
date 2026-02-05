@@ -64,11 +64,11 @@ export default function UserDashboard() {
   };
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 32 }}>
-      <div style={{ marginBottom: 8, display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+    <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
-          <p className="text-muted-foreground" style={{ marginTop: 8 }}>
+          <p className="text-muted-foreground" style={{ marginTop: 4 }}>
             Welcome back, {user?.name || user?.email}!
           </p>
         </div>
@@ -82,9 +82,8 @@ export default function UserDashboard() {
         </Button>
       </div>
 
-
       {/* Main Stats Cards */}
-      <div style={{ display: "grid", gap: 24, gridTemplateColumns: "repeat(4, 1fr)" }} className="grid-stats">
+      <div style={{ display: "grid", gap: 16, gridTemplateColumns: "repeat(4, 1fr)" }} className="grid-stats">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Tasks Mapped</CardTitle>
@@ -221,14 +220,14 @@ export default function UserDashboard() {
       </div>
 
       {/* Earnings & Payments - Compact Row */}
-      <div style={{ display: "grid", gap: 16, gridTemplateColumns: "repeat(5, 1fr)" }} className="grid-earnings">
+      <div style={{ display: "grid", gap: 12, gridTemplateColumns: "repeat(5, 1fr)" }} className="grid-earnings">
         <Card style={{ padding: 0 }}>
-          <div style={{ padding: "12px 16px" }}>
-            <p style={{ fontSize: 12, color: "#6b7280", marginBottom: 4 }}>Mapping Earnings</p>
+          <div style={{ padding: "10px 14px" }}>
+            <p style={{ fontSize: 11, color: "#6b7280", marginBottom: 2 }}>Mapping Earnings</p>
             {payableLoading ? (
               <Skeleton className="h-6 w-20" />
             ) : (
-              <div style={{ fontSize: 20, fontWeight: 700, color: "#ff6b35" }}>
+              <div style={{ fontSize: 18, fontWeight: 700, color: "#ff6b35" }}>
                 {formatCurrency(payable?.mapping_earnings ?? 0)}
               </div>
             )}
@@ -236,12 +235,12 @@ export default function UserDashboard() {
         </Card>
 
         <Card style={{ padding: 0 }}>
-          <div style={{ padding: "12px 16px" }}>
-            <p style={{ fontSize: 12, color: "#6b7280", marginBottom: 4 }}>Validation Earnings</p>
+          <div style={{ padding: "10px 14px" }}>
+            <p style={{ fontSize: 11, color: "#6b7280", marginBottom: 2 }}>Validation Earnings</p>
             {payableLoading ? (
               <Skeleton className="h-6 w-20" />
             ) : (
-              <div style={{ fontSize: 20, fontWeight: 700, color: "#2563eb" }}>
+              <div style={{ fontSize: 18, fontWeight: 700, color: "#2563eb" }}>
                 {formatCurrency(payable?.validation_earnings ?? 0)}
               </div>
             )}
@@ -249,12 +248,12 @@ export default function UserDashboard() {
         </Card>
 
         <Card style={{ padding: 0 }}>
-          <div style={{ padding: "12px 16px" }}>
-            <p style={{ fontSize: 12, color: "#6b7280", marginBottom: 4 }}>Checklist Earnings</p>
+          <div style={{ padding: "10px 14px" }}>
+            <p style={{ fontSize: 11, color: "#6b7280", marginBottom: 2 }}>Checklist Earnings</p>
             {payableLoading ? (
               <Skeleton className="h-6 w-20" />
             ) : (
-              <div style={{ fontSize: 20, fontWeight: 700, color: "#9333ea" }}>
+              <div style={{ fontSize: 18, fontWeight: 700, color: "#9333ea" }}>
                 {formatCurrency(payable?.checklist_earnings ?? 0)}
               </div>
             )}
@@ -262,12 +261,12 @@ export default function UserDashboard() {
         </Card>
 
         <Card style={{ padding: 0 }}>
-          <div style={{ padding: "12px 16px" }}>
-            <p style={{ fontSize: 12, color: "#6b7280", marginBottom: 4 }}>Pending Requests</p>
+          <div style={{ padding: "10px 14px" }}>
+            <p style={{ fontSize: 11, color: "#6b7280", marginBottom: 2 }}>Pending Requests</p>
             {statsLoading ? (
               <Skeleton className="h-6 w-20" />
             ) : (
-              <div style={{ fontSize: 20, fontWeight: 700, color: "#ca8a04" }}>
+              <div style={{ fontSize: 18, fontWeight: 700, color: "#ca8a04" }}>
                 {formatCurrency(stats?.requests_total ?? 0)}
               </div>
             )}
@@ -275,12 +274,12 @@ export default function UserDashboard() {
         </Card>
 
         <Card style={{ padding: 0 }}>
-          <div style={{ padding: "12px 16px" }}>
-            <p style={{ fontSize: 12, color: "#6b7280", marginBottom: 4 }}>Total Received</p>
+          <div style={{ padding: "10px 14px" }}>
+            <p style={{ fontSize: 11, color: "#6b7280", marginBottom: 2 }}>Total Received</p>
             {statsLoading ? (
               <Skeleton className="h-6 w-20" />
             ) : (
-              <div style={{ fontSize: 20, fontWeight: 700, color: "#16a34a" }}>
+              <div style={{ fontSize: 18, fontWeight: 700, color: "#16a34a" }}>
                 {formatCurrency(stats?.payouts_total ?? 0)}
               </div>
             )}
@@ -289,10 +288,10 @@ export default function UserDashboard() {
       </div>
 
       {/* Recent Projects */}
-      <div style={{ display: "grid", gap: 24, gridTemplateColumns: "repeat(2, 1fr)" }} className="grid-projects">
+      <div style={{ display: "grid", gap: 16, gridTemplateColumns: "repeat(2, 1fr)" }} className="grid-projects">
         <Card>
-          <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle>Your Projects</CardTitle>
+          <CardHeader className="flex flex-row items-center justify-between" style={{ padding: "16px 20px 8px" }}>
+            <CardTitle style={{ fontSize: 18 }}>Your Projects</CardTitle>
             <Link
               href="/user/projects"
               className="text-sm text-kaart-orange hover:underline"
@@ -300,22 +299,22 @@ export default function UserDashboard() {
               View all
             </Link>
           </CardHeader>
-          <CardContent>
+          <CardContent style={{ padding: "8px 20px 16px" }}>
             {projectsLoading ? (
               <div className="space-y-3">
                 <Skeleton className="h-12 w-full" />
                 <Skeleton className="h-12 w-full" />
               </div>
             ) : projects?.org_active_projects && projects.org_active_projects.length > 0 ? (
-              <div className="space-y-4">
+              <div className="space-y-3">
                 {projects.org_active_projects.slice(0, 3).map((project) => (
                   <div
                     key={project.id}
-                    className="flex items-center justify-between border-b border-border pb-3 last:border-0 last:pb-0"
+                    className="flex items-center justify-between border-b border-border pb-2 last:border-0 last:pb-0"
                   >
                     <div>
-                      <p className="font-medium">{project.name}</p>
-                      <p className="text-sm text-muted-foreground">
+                      <p className="font-medium text-sm">{project.name}</p>
+                      <p className="text-xs text-muted-foreground">
                         #{project.id} • {project.total_tasks} tasks
                       </p>
                     </div>
@@ -342,38 +341,33 @@ export default function UserDashboard() {
         </Card>
 
         <Card>
-          <CardHeader>
-            <CardTitle>Quick Actions</CardTitle>
+          <CardHeader style={{ padding: "16px 20px 8px" }}>
+            <CardTitle style={{ fontSize: 18 }}>Quick Actions</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4">
+          <CardContent className="space-y-3" style={{ padding: "8px 20px 16px" }}>
             {(stats?.requests_total ?? 0) > 0 ? (
-              <div className="rounded-lg bg-yellow-50 dark:bg-yellow-950 border border-yellow-200 dark:border-yellow-800 p-4">
-                <div className="flex items-center gap-2 mb-2">
-                  <svg className="h-5 w-5 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div className="rounded-lg bg-yellow-50 dark:bg-yellow-950 border border-yellow-200 dark:border-yellow-800 p-3">
+                <div className="flex items-center gap-2 mb-1">
+                  <svg className="h-4 w-4 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
-                  <p className="font-medium text-yellow-800 dark:text-yellow-200">
+                  <p className="font-medium text-sm text-yellow-800 dark:text-yellow-200">
                     Payment Request Pending
                   </p>
                 </div>
-                <p className="text-sm text-yellow-700 dark:text-yellow-300">
-                  You have a pending request for {formatCurrency(stats?.requests_total ?? 0)}.
-                  You can submit a new request after this one is processed.
+                <p className="text-xs text-yellow-700 dark:text-yellow-300">
+                  Pending: {formatCurrency(stats?.requests_total ?? 0)}
                 </p>
-                {(payable?.payable_total ?? 0) > 0 && (
-                  <p className="text-sm text-yellow-600 dark:text-yellow-400 mt-2">
-                    Additional earnings: {formatCurrency(payable?.payable_total ?? 0)}
-                  </p>
-                )}
               </div>
             ) : (payable?.payable_total ?? 0) > 0 ? (
-              <div className="rounded-lg bg-green-50 dark:bg-green-950 p-4">
-                <p className="font-medium text-green-800 dark:text-green-200">
-                  You have {formatCurrency(payable?.payable_total ?? 0)} available!
+              <div className="rounded-lg bg-green-50 dark:bg-green-950 p-3">
+                <p className="font-medium text-sm text-green-800 dark:text-green-200">
+                  {formatCurrency(payable?.payable_total ?? 0)} available!
                 </p>
                 <Button
                   variant="primary"
-                  className="mt-3"
+                  size="sm"
+                  className="mt-2"
                   onClick={handleRequestPayment}
                   isLoading={isRequestingPayment || submittingPayment}
                   disabled={(payable?.payable_total ?? 0) <= 0}
@@ -382,35 +376,35 @@ export default function UserDashboard() {
                 </Button>
               </div>
             ) : (
-              <p className="text-sm text-muted-foreground">
-                Complete tasks to earn money. Your validated tasks will appear here.
+              <p className="text-xs text-muted-foreground">
+                Complete tasks to earn money.
               </p>
             )}
 
-            <div className="flex flex-wrap gap-2 pt-2">
+            <div className="flex flex-wrap gap-2">
               <Link
                 href="/user/projects"
-                className="inline-flex items-center rounded-lg bg-secondary px-4 py-2 text-sm font-medium hover:bg-secondary/80 transition-colors"
+                className="inline-flex items-center rounded-lg bg-secondary px-3 py-1.5 text-xs font-medium hover:bg-secondary/80 transition-colors"
               >
                 View Projects
               </Link>
               <Link
                 href="/user/payments"
-                className="inline-flex items-center rounded-lg bg-secondary px-4 py-2 text-sm font-medium hover:bg-secondary/80 transition-colors"
+                className="inline-flex items-center rounded-lg bg-secondary px-3 py-1.5 text-xs font-medium hover:bg-secondary/80 transition-colors"
               >
                 Payment History
               </Link>
               <Link
                 href="/user/training"
-                className="inline-flex items-center rounded-lg bg-secondary px-4 py-2 text-sm font-medium hover:bg-secondary/80 transition-colors"
+                className="inline-flex items-center rounded-lg bg-secondary px-3 py-1.5 text-xs font-medium hover:bg-secondary/80 transition-colors"
               >
                 Training
               </Link>
               <Link
                 href="/account"
-                className="inline-flex items-center rounded-lg bg-secondary px-4 py-2 text-sm font-medium hover:bg-secondary/80 transition-colors"
+                className="inline-flex items-center rounded-lg bg-secondary px-3 py-1.5 text-xs font-medium hover:bg-secondary/80 transition-colors"
               >
-                Account Settings
+                Account
               </Link>
             </div>
           </CardContent>
@@ -419,22 +413,22 @@ export default function UserDashboard() {
 
       {/* Monthly Progress */}
       <Card>
-        <CardHeader>
-          <CardTitle>Monthly Progress</CardTitle>
+        <CardHeader style={{ padding: "16px 20px 8px" }}>
+          <CardTitle style={{ fontSize: 18 }}>Monthly Progress</CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent style={{ padding: "8px 20px 16px" }}>
           {statsLoading ? (
-            <Skeleton className="h-20 w-full" />
+            <Skeleton className="h-16 w-full" />
           ) : (
             <div className="flex items-center gap-4">
               <div className="flex-1">
-                <p className="text-sm text-muted-foreground mb-2">
+                <p className="text-xs text-muted-foreground mb-1">
                   Contributions this month
                 </p>
-                <div className="text-4xl font-bold">
+                <div className="text-3xl font-bold">
                   {stats?.total_contributions_for_month ?? 0}
                 </div>
-                <p className="text-sm mt-1">
+                <p className="text-xs mt-1">
                   {stats?.month_contribution_change !== undefined && stats.month_contribution_change >= 0 ? (
                     <span className="text-green-600">
                       +{stats.month_contribution_change} from last month
@@ -447,11 +441,11 @@ export default function UserDashboard() {
                 </p>
               </div>
               {stats?.weekly_contributions_array && stats.weekly_contributions_array.length > 0 && (
-                <div className="flex items-end gap-1 h-16">
+                <div className="flex items-end gap-1 h-12">
                   {stats.weekly_contributions_array.map((count, i) => (
                     <div
                       key={i}
-                      className="w-8 bg-kaart-orange rounded-t"
+                      className="w-6 bg-kaart-orange rounded-t"
                       style={{
                         height: `${Math.max(
                           10,
