@@ -38,7 +38,7 @@ export default function LandingPage() {
           <div style={{ display: "flex", height: 64, alignItems: "center", justifyContent: "space-between" }}>
             {/* Logo */}
             <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-              <Image src="/mikro-logo.png" alt="Mikro" width={40} height={40} />
+              <Image src="/mikro-logo.png" alt="Mikro" width={60} height={60} />
               <span style={{ fontSize: 20, fontWeight: 600, color: "#111827" }}>Mikro</span>
             </div>
 
@@ -77,7 +77,7 @@ export default function LandingPage() {
           <div style={{ textAlign: "center", maxWidth: 768, margin: "0 auto" }}>
             {/* Logo Icon */}
             <div style={{ marginBottom: 24, display: "flex", justifyContent: "center" }}>
-              <Image src="/mikro-logo.png" alt="Mikro" width={112} height={112} style={{ filter: "drop-shadow(0 10px 25px rgba(255, 107, 53, 0.4))" }} />
+              <Image src="/mikro-logo.png" alt="Mikro" width={168} height={168} style={{ filter: "drop-shadow(0 10px 25px rgba(255, 107, 53, 0.4))" }} />
             </div>
 
             {/* Mikro Title */}
@@ -265,7 +265,7 @@ export default function LandingPage() {
             {/* Brand */}
             <div>
               <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 16 }}>
-                <Image src="/mikro-logo.png" alt="Mikro" width={32} height={32} />
+                <Image src="/mikro-logo.png" alt="Mikro" width={48} height={48} />
                 <span style={{ fontSize: 18, fontWeight: 600 }}>Mikro</span>
               </div>
               <p style={{ color: "#9ca3af", fontSize: 14, lineHeight: 1.6 }}>
