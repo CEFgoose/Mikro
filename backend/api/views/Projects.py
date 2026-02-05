@@ -753,7 +753,7 @@ class ProjectAPI(MethodView):
             total_contributions_last_month += total_contributions
 
         month_contribution_change = (
-            total_contributions_last_month - total_contributions_this_month
+            total_contributions_this_month - total_contributions_last_month
         )
 
         all_user_requests = PayRequests.query.filter_by(
