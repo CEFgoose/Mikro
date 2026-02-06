@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useUser } from "@auth0/nextjs-auth0/client";
 import { Card, CardContent, CardHeader, CardTitle, Skeleton, Badge, Button } from "@/components/ui";
 import { useToastActions } from "@/components/ui";
+import { TimeTrackingWidget } from "@/components/widgets/TimeTrackingWidget";
 import { useSyncUserTasks, useValidatorProjects, useUserPayable, useSubmitPaymentRequest } from "@/hooks";
 import { ValidatorDashboardStats, Project } from "@/types";
 import Link from "next/link";
@@ -119,6 +120,29 @@ export default function ValidatorDashboard() {
         >
           {syncing ? "Syncing..." : "Sync Tasks"}
         </Button>
+      </div>
+
+      {/* Time Tracking Widget */}
+      <div style={{ display: "grid", gap: 16, gridTemplateColumns: "1fr 3fr" }} className="grid-time-tracking">
+        <TimeTrackingWidget
+          projects={projects.map((p) => ({ id: p.id, name: p.name }))}
+          onClockIn={(projectId, category) => {
+            console.log("Clocked in:", projectId, category);
+            // TODO: API integration
+          }}
+          onClockOut={() => {
+            console.log("Clocked out");
+            // TODO: API integration
+          }}
+        />
+        <Card>
+          <CardContent style={{ padding: "16px 24px" }}>
+            <p className="text-sm text-muted-foreground">
+              Track your work time by clocking in when you start a task and clocking out when you finish.
+              Your time will be correlated with your OSM changesets for accurate reporting.
+            </p>
+          </CardContent>
+        </Card>
       </div>
 
       {/* Self-Validation Warning */}
