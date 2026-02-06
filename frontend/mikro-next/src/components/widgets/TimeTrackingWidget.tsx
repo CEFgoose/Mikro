@@ -152,14 +152,14 @@ export function TimeTrackingWidget({
   // Confirmation state
   if (showConfirmation) {
     return (
-      <Card className="border-blue-500 bg-blue-50 dark:bg-blue-950">
+      <Card className="border-blue-500 bg-blue-50 dark:bg-blue-900">
         <CardHeader className="pb-2">
-          <CardTitle className="text-lg">Time Tracking</CardTitle>
+          <CardTitle className="text-lg text-blue-900 dark:text-blue-100">Time Tracking</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="text-center py-4">
             <svg
-              className="w-12 h-12 mx-auto text-blue-500 mb-2"
+              className="w-12 h-12 mx-auto text-blue-600 dark:text-blue-400 mb-2"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -171,10 +171,10 @@ export function TimeTrackingWidget({
                 d="M5 13l4 4L19 7"
               />
             </svg>
-            <p className="font-medium text-blue-700 dark:text-blue-300">
+            <p className="font-medium text-blue-800 dark:text-blue-100">
               Time logged successfully!
             </p>
-            <p className="text-sm text-muted-foreground mt-1">
+            <p className="text-sm text-blue-600 dark:text-blue-300 mt-1">
               Total: {formatElapsedTime(elapsedSeconds)}
             </p>
           </div>
