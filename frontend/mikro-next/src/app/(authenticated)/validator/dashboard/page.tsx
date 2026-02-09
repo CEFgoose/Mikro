@@ -126,14 +126,6 @@ export default function ValidatorDashboard() {
       <div style={{ display: "grid", gap: 16, gridTemplateColumns: "1fr 3fr" }} className="grid-time-tracking">
         <TimeTrackingWidget
           projects={projects.map((p) => ({ id: p.id, name: p.name }))}
-          onClockIn={(projectId, category) => {
-            console.log("Clocked in:", projectId, category);
-            // TODO: API integration
-          }}
-          onClockOut={() => {
-            console.log("Clocked out");
-            // TODO: API integration
-          }}
         />
         <Card>
           <CardContent style={{ padding: "16px 24px" }}>

@@ -11,6 +11,9 @@ import type {
   ChecklistsResponse,
   UserPayableResponse,
   UserDetailsResponse,
+  TimeTrackingSessionResponse,
+  TimeTrackingHistoryResponse,
+  TimeTrackingActiveSessionsResponse,
 } from "@/types";
 
 /**
@@ -482,4 +485,51 @@ export function usePurgeUsers() {
     admin_preserved: number;
     status: number;
   }>("/user/purge_all_users");
+}
+
+// ─── Time Tracking ───────────────────────────────────────────
+
+// User: clock in
+export function useClockIn() {
+  return useApiMutation<TimeTrackingSessionResponse>("/timetracking/clock_in");
+}
+
+// User: clock out
+export function useClockOut() {
+  return useApiMutation<TimeTrackingSessionResponse>("/timetracking/clock_out");
+}
+
+// User: get active session (fires on mount)
+export function useActiveTimeSession() {
+  return useApiCall<TimeTrackingSessionResponse>("/timetracking/my_active_session");
+}
+
+// User: get history
+export function useMyTimeHistory() {
+  return useApiCall<TimeTrackingHistoryResponse>("/timetracking/my_history");
+}
+
+// Admin: get all active sessions
+export function useAdminActiveSessions() {
+  return useApiCall<TimeTrackingActiveSessionsResponse>("/timetracking/active_sessions");
+}
+
+// Admin: get history for org
+export function useAdminTimeHistory() {
+  return useApiCall<TimeTrackingHistoryResponse>("/timetracking/history");
+}
+
+// Admin: force clock out
+export function useForceClockOut() {
+  return useApiMutation<TimeTrackingSessionResponse>("/timetracking/force_clock_out");
+}
+
+// Admin: void entry
+export function useVoidTimeEntry() {
+  return useApiMutation<{ message: string; status: number; entry: TimeTrackingSessionResponse }>("/timetracking/void_entry");
+}
+
+// Admin: edit entry
+export function useEditTimeEntry() {
+  return useApiMutation<{ message: string; status: number; entry: TimeTrackingSessionResponse }>("/timetracking/edit_entry");
 }
