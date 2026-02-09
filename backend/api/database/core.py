@@ -118,6 +118,11 @@ class User(ModelWithSoftDeleteAndCRUD, SurrogatePK):
         server_default="False",
     )
 
+    # Time tracking
+    time_tracking_required = db.Column(
+        db.Boolean, nullable=False, default=False, server_default="False"
+    )
+
     def __repr__(self):
         return f"<User {self.email}>"
 
@@ -503,3 +508,51 @@ class Payments(CRUDMixin, SurrogatePK, db.Model):
     task_ids = Column(MutableList.as_mutable(ARRAY(Integer)))
     date_paid = Column(DateTime, default=func.now())
     notes = db.Column(db.Text, nullable=True)
+
+
+class TimeEntry(CRUDMixin, db.Model):
+    """Time tracking entry for contractor clock in/out."""
+
+    __tablename__ = "time_entries"
+
+    id = db.Column(db.BigInteger, primary_key=True, autoincrement=True)
+    user_id = db.Column(
+        db.String(255),
+        db.ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    project_id = db.Column(
+        db.Integer,
+        db.ForeignKey("projects.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
+    org_id = db.Column(db.String(255), nullable=True, index=True)
+    category = db.Column(db.String(50), nullable=False)  # mapping|validation|review|training|other
+    clock_in = db.Column(DateTime, nullable=False, default=func.now())
+    clock_out = db.Column(DateTime, nullable=True)
+    duration_seconds = db.Column(db.Integer, nullable=True)
+    status = db.Column(
+        db.String(20), nullable=False, default="active", server_default="active"
+    )  # active|completed|voided
+    changeset_count = db.Column(db.Integer, nullable=True, default=0)
+    changes_count = db.Column(db.Integer, nullable=True, default=0)
+    voided_by = db.Column(db.String(255), nullable=True)
+    voided_at = db.Column(DateTime, nullable=True)
+    edited_by = db.Column(db.String(255), nullable=True)
+    edited_at = db.Column(DateTime, nullable=True)
+    force_clocked_out_by = db.Column(db.String(255), nullable=True)
+    notes = db.Column(db.Text, nullable=True)
+
+    # Relationships
+    user = db.relationship("User", backref="time_entries")
+    project = db.relationship("Project", backref="time_entries")
+
+    __table_args__ = (
+        db.Index("ix_time_entries_user_status", "user_id", "status"),
+        db.Index("ix_time_entries_org_status", "org_id", "status"),
+    )
+
+    def __repr__(self):
+        return f"<TimeEntry {self.id} user={self.user_id} status={self.status}>"

@@ -2,7 +2,9 @@
 
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle, Skeleton, Badge } from "@/components/ui";
-import { useAdminDashboardStats, useOrgTransactions, useUsersList, usePurgeTaskStats } from "@/hooks";
+import { useAdminDashboardStats, useOrgTransactions, useUsersList, useOrgProjects, usePurgeTaskStats } from "@/hooks";
+import { TimeTrackingWidget } from "@/components/widgets/TimeTrackingWidget";
+import { AdminTimeManagement } from "@/components/widgets/AdminTimeManagement";
 import Link from "next/link";
 
 function formatCurrency(amount: number): string {
@@ -24,6 +26,7 @@ export default function AdminDashboard() {
   const { data: stats, loading: statsLoading, error: statsError, refetch: refetchStats } = useAdminDashboardStats();
   const { data: transactions, loading: transactionsLoading } = useOrgTransactions();
   const { data: users, loading: usersLoading } = useUsersList();
+  const { data: projects } = useOrgProjects();
   const { mutate: purgeTaskStats, loading: purging } = usePurgeTaskStats();
   const [purgeConfirm, setPurgeConfirm] = useState(false);
 
@@ -49,6 +52,14 @@ export default function AdminDashboard() {
         <p className="text-muted-foreground">
           Organization overview and management
         </p>
+      </div>
+
+      {/* Time Tracking Widget */}
+      <div style={{ display: "grid", gap: 16, gridTemplateColumns: "1fr 3fr" }}>
+        <TimeTrackingWidget
+          projects={projects?.org_active_projects?.map((p: { id: number; name: string }) => ({ id: p.id, name: p.name })) ?? []}
+        />
+        <AdminTimeManagement />
       </div>
 
       {statsError && (

@@ -117,6 +117,7 @@ def _register_views(app):
         TrainingAPI,
         ChecklistAPI,
         OSMAuthAPI,
+        TimeTrackingAPI,
     )
 
     # Authentication
@@ -146,6 +147,12 @@ def _register_views(app):
 
     # OSM OAuth management
     app.add_url_rule("/api/osm/<path>", view_func=OSMAuthAPI.as_view("osm"))
+
+    # Time tracking
+    app.add_url_rule(
+        "/api/timetracking/<path>",
+        view_func=TimeTrackingAPI.as_view("timetracking"),
+    )
 
 
 # Create application instance for gunicorn

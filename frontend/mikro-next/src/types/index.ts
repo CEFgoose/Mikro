@@ -317,6 +317,47 @@ export interface ValidatorDashboardStats {
   status: number;
 }
 
+// Time Tracking types
+export interface TimeEntry {
+  id: number;
+  userId: string;
+  userName: string;
+  projectId: number | null;
+  projectName: string;
+  category: string;
+  clockIn: string | null;
+  clockOut: string | null;
+  duration: string | null;
+  durationSeconds: number | null;
+  status: "active" | "completed" | "voided";
+  changesetCount: number;
+  changesCount: number;
+  notes: string | null;
+  voidedBy: string | null;
+  voidedAt: string | null;
+  editedBy: string | null;
+  editedAt: string | null;
+  forceClockedOutBy: string | null;
+}
+
+export interface TimeTrackingSessionResponse {
+  status: number;
+  session: TimeEntry | null;
+  message?: string;
+  session_id?: number;
+  duration_seconds?: number;
+}
+
+export interface TimeTrackingHistoryResponse {
+  status: number;
+  entries: TimeEntry[];
+}
+
+export interface TimeTrackingActiveSessionsResponse {
+  status: number;
+  sessions: TimeEntry[];
+}
+
 // API Response types
 export interface ApiResponse<T = unknown> {
   data?: T;
