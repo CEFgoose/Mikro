@@ -233,7 +233,7 @@ export function AdminTimeManagement() {
             <div className="flex items-center gap-2">
               <button
                 onClick={() => setShowPurgeConfirm(true)}
-                className="px-2 py-1 text-xs text-yellow-700 dark:text-yellow-400 border border-dashed border-yellow-400 rounded-md hover:bg-yellow-50 dark:hover:bg-yellow-950/30 transition-colors"
+                className="px-2 py-1 text-xs text-red-600 dark:text-red-400 border border-dashed border-red-400 rounded-md hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors"
               >
                 Purge All
               </button>
