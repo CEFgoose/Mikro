@@ -45,6 +45,8 @@ class TimeTrackingAPI(MethodView):
             return self.admin_void_entry()
         elif path == "edit_entry":
             return self.admin_edit_entry()
+        elif path == "request_adjustment":
+            return self.request_adjustment()
 
         return jsonify({"message": "Endpoint not found", "status": 404}), 404
 
@@ -264,6 +266,51 @@ class TimeTrackingAPI(MethodView):
         return jsonify({
             "status": 200,
             "entries": [self._format_entry(e) for e in entries],
+        }), 200
+
+    def request_adjustment(self):
+        """Request an adjustment to a time entry."""
+        if not hasattr(g, "user") or not g.user:
+            return jsonify({"message": "Unauthorized", "status": 401}), 401
+
+        data = request.get_json() or {}
+        entry_id = data.get("entry_id")
+        reason = data.get("reason", "").strip()
+
+        if not entry_id:
+            return jsonify({
+                "message": "entry_id is required",
+                "status": 400,
+            }), 400
+
+        if not reason:
+            return jsonify({
+                "message": "reason is required",
+                "status": 400,
+            }), 400
+
+        entry = TimeEntry.query.filter_by(
+            id=entry_id, user_id=g.user.id
+        ).first()
+
+        if not entry:
+            return jsonify({
+                "message": "Entry not found",
+                "status": 404,
+            }), 404
+
+        if entry.status == "voided":
+            return jsonify({
+                "message": "Cannot request adjustment for a voided entry",
+                "status": 400,
+            }), 400
+
+        entry.notes = f"[ADJUSTMENT REQUESTED] {reason}"
+        entry.save()
+
+        return jsonify({
+            "message": "Adjustment request submitted",
+            "status": 200,
         }), 200
 
     # ─── Admin Endpoints ──────────────────────────────────────

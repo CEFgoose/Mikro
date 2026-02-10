@@ -55,11 +55,15 @@ export default function AdminDashboard() {
       </div>
 
       {/* Time Tracking Widget */}
-      <div style={{ display: "grid", gap: 16, gridTemplateColumns: "1fr 3fr" }}>
-        <TimeTrackingWidget
-          projects={projects?.org_active_projects?.map((p: { id: number; name: string }) => ({ id: p.id, name: p.name })) ?? []}
-        />
-        <AdminTimeManagement />
+      <div className="grid gap-4 lg:grid-cols-4">
+        <div className="lg:col-span-1">
+          <TimeTrackingWidget
+            projects={projects?.org_active_projects?.map((p: { id: number; name: string }) => ({ id: p.id, name: p.name })) ?? []}
+          />
+        </div>
+        <div className="lg:col-span-3">
+          <AdminTimeManagement />
+        </div>
       </div>
 
       {statsError && (

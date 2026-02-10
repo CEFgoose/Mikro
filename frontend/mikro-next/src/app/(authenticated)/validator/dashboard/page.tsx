@@ -5,8 +5,10 @@ import { useUser } from "@auth0/nextjs-auth0/client";
 import { Card, CardContent, CardHeader, CardTitle, Skeleton, Badge, Button } from "@/components/ui";
 import { useToastActions } from "@/components/ui";
 import { TimeTrackingWidget } from "@/components/widgets/TimeTrackingWidget";
+import { UserTimeHistory } from "@/components/widgets/UserTimeHistory";
 import { useSyncUserTasks, useValidatorProjects, useUserPayable, useSubmitPaymentRequest } from "@/hooks";
 import { ValidatorDashboardStats, Project } from "@/types";
+import { getTM4ProjectUrl } from "@/lib/utils";
 import Link from "next/link";
 
 function formatCurrency(amount: number): string {
@@ -123,18 +125,15 @@ export default function ValidatorDashboard() {
       </div>
 
       {/* Time Tracking Widget */}
-      <div style={{ display: "grid", gap: 16, gridTemplateColumns: "1fr 3fr" }} className="grid-time-tracking">
-        <TimeTrackingWidget
-          projects={projects.map((p) => ({ id: p.id, name: p.name }))}
-        />
-        <Card>
-          <CardContent style={{ padding: "16px 24px" }}>
-            <p className="text-sm text-muted-foreground">
-              Track your work time by clocking in when you start a task and clocking out when you finish.
-              Your time will be correlated with your OSM changesets for accurate reporting.
-            </p>
-          </CardContent>
-        </Card>
+      <div style={{ display: "grid", gap: 16, gridTemplateColumns: "repeat(4, 1fr)" }}>
+        <div style={{ gridColumn: "span 1" }}>
+          <TimeTrackingWidget
+            projects={projects.map((p) => ({ id: p.id, name: p.name }))}
+          />
+        </div>
+        <div style={{ gridColumn: "span 3" }}>
+          <UserTimeHistory />
+        </div>
       </div>
 
       {/* Self-Validation Warning */}
@@ -400,7 +399,7 @@ export default function ValidatorDashboard() {
                   <div
                     key={project.id}
                     className="flex items-center justify-between border-b border-border pb-3 last:border-0 last:pb-0 cursor-pointer hover:bg-muted/50 -mx-2 px-2 rounded"
-                    onClick={() => goToSource(project.url)}
+                    onClick={() => goToSource(getTM4ProjectUrl(project.id))}
                   >
                     <div>
                       <p className="font-medium">{project.name}</p>
@@ -536,7 +535,7 @@ export default function ValidatorDashboard() {
                   <tr
                     key={project.id}
                     className="cursor-pointer hover:bg-muted/50 transition-colors"
-                    onDoubleClick={() => goToSource(project.url)}
+                    onDoubleClick={() => goToSource(getTM4ProjectUrl(project.id))}
                   >
                     <td className="px-4 py-3 font-medium">{project.name}</td>
                     <td className="px-4 py-3">{formatCurrency(project.mapping_rate_per_task)}</td>

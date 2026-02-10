@@ -9,3 +9,12 @@ import { twMerge } from "tailwind-merge";
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
+
+/**
+ * Build the canonical TM4 project URL from a project ID.
+ * Always returns `https://tasks.kaart.com/projects/{id}` regardless
+ * of whatever URL string might be stored in the database.
+ */
+export function getTM4ProjectUrl(projectId: number | string): string {
+  return `https://tasks.kaart.com/projects/${projectId}`;
+}

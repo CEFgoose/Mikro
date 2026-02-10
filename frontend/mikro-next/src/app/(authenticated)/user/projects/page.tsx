@@ -11,6 +11,7 @@ import {
   useToastActions,
 } from "@/components/ui";
 import { useUserProjects } from "@/hooks";
+import { getTM4ProjectUrl } from "@/lib/utils";
 import type { Project } from "@/types";
 
 function formatCurrency(amount: number): string {
@@ -58,7 +59,7 @@ function ProjectCard({ project }: { project: Project }) {
             </div>
           </div>
           <a
-            href={project.url}
+            href={getTM4ProjectUrl(project.id)}
             target="_blank"
             rel="noopener noreferrer"
             className="text-sm text-kaart-orange hover:underline"
@@ -129,7 +130,7 @@ function ProjectCard({ project }: { project: Project }) {
 
         {/* Action */}
         <a
-          href={project.url}
+          href={getTM4ProjectUrl(project.id)}
           target="_blank"
           rel="noopener noreferrer"
           className="block w-full text-center py-2 px-4 bg-kaart-orange text-white rounded-lg hover:bg-kaart-orange-dark transition-colors font-medium"

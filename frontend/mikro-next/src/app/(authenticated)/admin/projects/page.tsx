@@ -35,6 +35,7 @@ import {
   useAssignUser,
   usePurgeProjects,
 } from "@/hooks";
+import { getTM4ProjectUrl } from "@/lib/utils";
 import type { Project } from "@/types";
 
 interface ProjectUserItem {
@@ -268,7 +269,7 @@ export default function AdminProjectsPage() {
               <div>
                 <p className="font-medium">{project.name}</p>
                 <a
-                  href={project.url}
+                  href={getTM4ProjectUrl(project.id)}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="text-sm text-kaart-orange hover:underline"

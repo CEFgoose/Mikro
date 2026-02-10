@@ -533,3 +533,8 @@ export function useVoidTimeEntry() {
 export function useEditTimeEntry() {
   return useApiMutation<{ message: string; status: number; entry: TimeTrackingSessionResponse }>("/timetracking/edit_entry");
 }
+
+// User: request adjustment to a time entry
+export function useRequestTimeAdjustment() {
+  return useApiMutation<{ message: string; status: number }>("/timetracking/request_adjustment");
+}

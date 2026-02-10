@@ -4,6 +4,7 @@ import { useUser } from "@auth0/nextjs-auth0/client";
 import { Card, CardContent, CardHeader, CardTitle, Skeleton, Badge, Button } from "@/components/ui";
 import { useUserDashboardStats, useUserProjects, useUserPayable, useSubmitPaymentRequest, useSyncUserTasks } from "@/hooks";
 import { TimeTrackingWidget } from "@/components/widgets/TimeTrackingWidget";
+import { UserTimeHistory } from "@/components/widgets/UserTimeHistory";
 import { useToastActions } from "@/components/ui";
 import Link from "next/link";
 import { useState, useEffect } from "react";
@@ -85,18 +86,15 @@ export default function UserDashboard() {
 
 
       {/* Time Tracking Widget */}
-      <div style={{ display: "grid", gap: 16, gridTemplateColumns: "1fr 3fr" }} className="grid-time-tracking">
-        <TimeTrackingWidget
-          projects={projects?.user_projects?.map((p: { id: number; name: string }) => ({ id: p.id, name: p.name })) ?? []}
-        />
-        <Card>
-          <CardContent style={{ padding: "16px 24px" }}>
-            <p className="text-sm text-muted-foreground">
-              Track your work time by clocking in when you start a task and clocking out when you finish.
-              Your time will be correlated with your OSM changesets for accurate reporting.
-            </p>
-          </CardContent>
-        </Card>
+      <div style={{ display: "grid", gap: 16, gridTemplateColumns: "repeat(4, 1fr)" }}>
+        <div style={{ gridColumn: "span 1" }}>
+          <TimeTrackingWidget
+            projects={projects?.user_projects?.map((p: { id: number; name: string }) => ({ id: p.id, name: p.name })) ?? []}
+          />
+        </div>
+        <div style={{ gridColumn: "span 3" }}>
+          <UserTimeHistory />
+        </div>
       </div>
 
       {/* Main Stats Cards */}

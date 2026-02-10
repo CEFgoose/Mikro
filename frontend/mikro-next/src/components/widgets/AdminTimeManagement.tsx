@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
+import { Modal } from "@/components/ui/Modal";
 import {
   useAdminActiveSessions,
   useAdminTimeHistory,
@@ -11,6 +12,7 @@ import {
   useVoidTimeEntry,
   useEditTimeEntry,
 } from "@/hooks";
+import type { TimeEntry } from "@/types";
 
 function formatDateTime(iso: string): string {
   return new Date(iso).toLocaleString("en-US", {
@@ -32,9 +34,29 @@ function formatLiveDuration(clockIn: string): string {
   return `${hours.toString().padStart(2, "0")}:${minutes.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
 }
 
+/** Convert ISO string to datetime-local input value (local timezone) */
+function toDatetimeLocal(iso: string): string {
+  const d = new Date(iso);
+  const offset = d.getTimezoneOffset();
+  const local = new Date(d.getTime() - offset * 60000);
+  return local.toISOString().slice(0, 16);
+}
+
+/** Convert datetime-local input value back to ISO string */
+function fromDatetimeLocal(value: string): string {
+  return new Date(value).toISOString();
+}
+
+const CATEGORY_OPTIONS = ["mapping", "validation", "review", "training", "other"];
+
 export function AdminTimeManagement() {
   const [activeTab, setActiveTab] = useState<"active" | "history">("active");
   const [liveDurations, setLiveDurations] = useState<Record<number, string>>({});
+  const [editingEntry, setEditingEntry] = useState<TimeEntry | null>(null);
+  const [editClockIn, setEditClockIn] = useState("");
+  const [editClockOut, setEditClockOut] = useState("");
+  const [editCategory, setEditCategory] = useState("");
+  const [editError, setEditError] = useState<string | null>(null);
 
   const { data: activeSessions, loading: sessionsLoading, refetch: refetchSessions } = useAdminActiveSessions();
   const { data: historyData, loading: historyLoading, refetch: refetchHistory } = useAdminTimeHistory();
@@ -81,14 +103,40 @@ export function AdminTimeManagement() {
     }
   };
 
-  const handleEditEntry = (id: number) => {
-    // TODO: open edit modal - for now just log
-    console.log("Edit time entry:", id);
+  const handleOpenEdit = (entry: TimeEntry) => {
+    setEditingEntry(entry);
+    setEditClockIn(entry.clockIn ? toDatetimeLocal(entry.clockIn) : "");
+    setEditClockOut(entry.clockOut ? toDatetimeLocal(entry.clockOut) : "");
+    setEditCategory(entry.category.toLowerCase());
+    setEditError(null);
+  };
+
+  const handleSaveEdit = async () => {
+    if (!editingEntry) return;
+    setEditError(null);
+
+    if (!editClockIn) {
+      setEditError("Clock in time is required");
+      return;
+    }
+
+    try {
+      await editEntry({
+        entry_id: editingEntry.id,
+        clockIn: fromDatetimeLocal(editClockIn),
+        clockOut: editClockOut ? fromDatetimeLocal(editClockOut) : undefined,
+        category: editCategory,
+      });
+      setEditingEntry(null);
+      await refetchHistory();
+    } catch (err) {
+      setEditError(err instanceof Error ? err.message : "Failed to update entry");
+    }
   };
 
   return (
-    <div className="space-y-4">
-      <Card>
+    <div className="h-full">
+      <Card className="h-full">
         <CardHeader className="pb-3">
           <div className="flex items-center justify-between">
             <CardTitle className="text-lg flex items-center gap-2">
@@ -112,7 +160,7 @@ export function AdminTimeManagement() {
                 onClick={() => setActiveTab("active")}
                 className={`px-3 py-1 text-sm rounded-md transition-colors ${
                   activeTab === "active"
-                    ? "bg-white dark:bg-gray-800 shadow font-medium"
+                    ? "bg-background text-foreground shadow font-medium"
                     : "text-muted-foreground hover:text-foreground"
                 }`}
               >
@@ -122,7 +170,7 @@ export function AdminTimeManagement() {
                 onClick={() => setActiveTab("history")}
                 className={`px-3 py-1 text-sm rounded-md transition-colors ${
                   activeTab === "history"
-                    ? "bg-white dark:bg-gray-800 shadow font-medium"
+                    ? "bg-background text-foreground shadow font-medium"
                     : "text-muted-foreground hover:text-foreground"
                 }`}
               >
@@ -138,9 +186,9 @@ export function AdminTimeManagement() {
                 Loading active sessions...
               </p>
             ) : sessions.length > 0 ? (
-              <div className="overflow-x-auto">
+              <div className="overflow-auto max-h-[384px]">
                 <table className="w-full text-sm">
-                  <thead>
+                  <thead className="sticky top-0 bg-background z-10">
                     <tr className="border-b border-border">
                       <th className="text-left py-2 px-3 font-medium text-muted-foreground">User</th>
                       <th className="text-left py-2 px-3 font-medium text-muted-foreground">Project</th>
@@ -200,9 +248,9 @@ export function AdminTimeManagement() {
                 Loading history...
               </p>
             ) : historyEntries.length > 0 ? (
-              <div className="overflow-x-auto">
+              <div className="overflow-auto max-h-[384px]">
                 <table className="w-full text-sm">
-                  <thead>
+                  <thead className="sticky top-0 bg-background z-10">
                     <tr className="border-b border-border">
                       <th className="text-left py-2 px-3 font-medium text-muted-foreground">User</th>
                       <th className="text-left py-2 px-3 font-medium text-muted-foreground">Project</th>
@@ -248,6 +296,9 @@ export function AdminTimeManagement() {
                           >
                             {entry.status}
                           </Badge>
+                          {entry.notes?.startsWith("[ADJUSTMENT REQUESTED]") && (
+                            <Badge variant="warning" className="ml-1 text-xs">adjust</Badge>
+                          )}
                         </td>
                         <td className="py-3 px-3">
                           {entry.status !== "voided" && (
@@ -255,7 +306,7 @@ export function AdminTimeManagement() {
                               <Button
                                 variant="outline"
                                 size="sm"
-                                onClick={() => handleEditEntry(entry.id)}
+                                onClick={() => handleOpenEdit(entry)}
                                 disabled={editing}
                               >
                                 Edit
@@ -285,6 +336,83 @@ export function AdminTimeManagement() {
           )}
         </CardContent>
       </Card>
+
+      {/* Edit Entry Modal */}
+      <Modal
+        isOpen={!!editingEntry}
+        onClose={() => setEditingEntry(null)}
+        title="Edit Time Entry"
+        description={editingEntry ? `${editingEntry.userName} — ${editingEntry.projectName}` : ""}
+        size="sm"
+        footer={
+          <>
+            <Button variant="outline" onClick={() => setEditingEntry(null)}>
+              Cancel
+            </Button>
+            <Button
+              variant="primary"
+              onClick={handleSaveEdit}
+              isLoading={editing}
+            >
+              Save Changes
+            </Button>
+          </>
+        }
+      >
+        {editingEntry && (
+          <div className="space-y-4">
+            {editError && (
+              <p className="text-sm text-red-600">{editError}</p>
+            )}
+
+            {editingEntry.notes?.startsWith("[ADJUSTMENT REQUESTED]") && (
+              <div className="rounded-lg bg-yellow-50 dark:bg-yellow-950 border border-yellow-200 dark:border-yellow-800 p-3">
+                <p className="text-xs font-medium text-yellow-800 dark:text-yellow-200 mb-1">
+                  User Requested Adjustment
+                </p>
+                <p className="text-xs text-yellow-700 dark:text-yellow-300">
+                  {editingEntry.notes.replace("[ADJUSTMENT REQUESTED] ", "")}
+                </p>
+              </div>
+            )}
+
+            <div>
+              <label className="block text-sm font-medium mb-1">Clock In</label>
+              <input
+                type="datetime-local"
+                className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                value={editClockIn}
+                onChange={(e) => setEditClockIn(e.target.value)}
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium mb-1">Clock Out</label>
+              <input
+                type="datetime-local"
+                className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                value={editClockOut}
+                onChange={(e) => setEditClockOut(e.target.value)}
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium mb-1">Category</label>
+              <select
+                className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                value={editCategory}
+                onChange={(e) => setEditCategory(e.target.value)}
+              >
+                {CATEGORY_OPTIONS.map((cat) => (
+                  <option key={cat} value={cat}>
+                    {cat.charAt(0).toUpperCase() + cat.slice(1)}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+        )}
+      </Modal>
     </div>
   );
 }

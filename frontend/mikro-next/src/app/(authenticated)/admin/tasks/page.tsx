@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle, Button } from "@/components/ui";
 import { Task } from "@/types";
+import { getTM4ProjectUrl } from "@/lib/utils";
 
 export default function AdminTasksPage() {
   const [externalValidations, setExternalValidations] = useState<Task[]>([]);
@@ -139,7 +140,7 @@ export default function AdminTasksPage() {
                   <tr
                     key={task.id}
                     onClick={() => handleSelectTask(task.id)}
-                    onDoubleClick={() => task.project_url && goToSource(task.project_url)}
+                    onDoubleClick={() => task.project_id && goToSource(getTM4ProjectUrl(task.project_id))}
                     className={`cursor-pointer hover:bg-muted/50 transition-colors ${
                       selectedTask === task.id ? "bg-kaart-orange/10" : ""
                     }`}
