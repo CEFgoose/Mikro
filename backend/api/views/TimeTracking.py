@@ -7,7 +7,7 @@ for contractor time tracking with OSM changeset correlation.
 """
 
 import logging
-from datetime import datetime
+from datetime import datetime, timedelta
 
 import requests as http_requests
 from flask.views import MethodView
@@ -45,6 +45,10 @@ class TimeTrackingAPI(MethodView):
             return self.admin_void_entry()
         elif path == "edit_entry":
             return self.admin_edit_entry()
+        elif path == "admin_add_entry":
+            return self.admin_add_entry()
+        elif path == "admin_add_test_entry":
+            return self.admin_add_test_entry()
         elif path == "request_adjustment":
             return self.request_adjustment()
 
@@ -499,6 +503,139 @@ class TimeTrackingAPI(MethodView):
 
         return jsonify({
             "message": "Entry updated",
+            "status": 200,
+            "entry": self._format_entry(entry),
+        }), 200
+
+    @requires_admin
+    def admin_add_entry(self):
+        """Manually create a time entry for a user."""
+        data = request.get_json() or {}
+        user_id = data.get("userId")
+        clock_in_str = data.get("clockIn")
+        clock_out_str = data.get("clockOut")
+        category = (data.get("category") or "").lower()
+        project_id = data.get("projectId")
+        notes = data.get("notes", "")
+
+        if not user_id or not clock_in_str or not clock_out_str or not category:
+            return jsonify({
+                "message": "userId, clockIn, clockOut, and category are required",
+                "status": 400,
+            }), 400
+
+        if category not in VALID_CATEGORIES:
+            return jsonify({
+                "message": f"Invalid category. Must be one of: {', '.join(VALID_CATEGORIES)}",
+                "status": 400,
+            }), 400
+
+        # Validate user exists in same org
+        user = User.query.get(user_id)
+        if not user or user.org_id != g.user.org_id:
+            return jsonify({
+                "message": "User not found in your organization",
+                "status": 404,
+            }), 404
+
+        # Parse times
+        try:
+            clock_in = datetime.fromisoformat(
+                clock_in_str.replace("Z", "+00:00")
+            ).replace(tzinfo=None)
+        except (ValueError, AttributeError):
+            return jsonify({
+                "message": "Invalid clockIn format. Use ISO 8601.",
+                "status": 400,
+            }), 400
+
+        try:
+            clock_out = datetime.fromisoformat(
+                clock_out_str.replace("Z", "+00:00")
+            ).replace(tzinfo=None)
+        except (ValueError, AttributeError):
+            return jsonify({
+                "message": "Invalid clockOut format. Use ISO 8601.",
+                "status": 400,
+            }), 400
+
+        if clock_out <= clock_in:
+            return jsonify({
+                "message": "Clock out must be after clock in",
+                "status": 400,
+            }), 400
+
+        # Validate project if provided
+        if project_id:
+            project = Project.query.get(project_id)
+            if not project:
+                return jsonify({
+                    "message": "Project not found",
+                    "status": 404,
+                }), 404
+
+        entry = TimeEntry()
+        entry.user_id = user_id
+        entry.org_id = g.user.org_id
+        entry.project_id = project_id
+        entry.category = category
+        entry.clock_in = clock_in
+        entry.clock_out = clock_out
+        entry.duration_seconds = int((clock_out - clock_in).total_seconds())
+        entry.status = "completed"
+        entry.notes = f"[ADMIN CREATED] {notes}".strip()
+        entry.edited_by = g.user.id
+        entry.edited_at = datetime.utcnow()
+        entry.save()
+
+        return jsonify({
+            "message": "Entry created",
+            "status": 200,
+            "entry": self._format_entry(entry),
+        }), 200
+
+    @requires_admin
+    def admin_add_test_entry(self):
+        """Create an 8-hour test entry for a user (dev tool)."""
+        data = request.get_json() or {}
+        user_id = data.get("userId")
+        project_id = data.get("projectId")
+        category = (data.get("category") or "mapping").lower()
+
+        if not user_id:
+            return jsonify({
+                "message": "userId is required",
+                "status": 400,
+            }), 400
+
+        if category not in VALID_CATEGORIES:
+            category = "mapping"
+
+        # Validate user exists in same org
+        user = User.query.get(user_id)
+        if not user or user.org_id != g.user.org_id:
+            return jsonify({
+                "message": "User not found in your organization",
+                "status": 404,
+            }), 404
+
+        now = datetime.utcnow()
+        entry = TimeEntry()
+        entry.user_id = user_id
+        entry.org_id = g.user.org_id
+        entry.project_id = project_id
+        entry.category = category
+        entry.clock_in = now - timedelta(hours=8)
+        entry.clock_out = now
+        entry.duration_seconds = 28800
+        entry.status = "completed"
+        entry.notes = "[DEV TEST ENTRY]"
+        entry.edited_by = g.user.id
+        entry.edited_at = now
+        entry.save()
+
+        return jsonify({
+            "message": "Test entry created",
             "status": 200,
             "entry": self._format_entry(entry),
         }), 200

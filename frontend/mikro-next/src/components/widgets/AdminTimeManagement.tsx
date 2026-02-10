@@ -11,6 +11,10 @@ import {
   useForceClockOut,
   useVoidTimeEntry,
   useEditTimeEntry,
+  useAdminAddTimeEntry,
+  useAdminAddTestEntry,
+  useUsersList,
+  useOrgProjects,
 } from "@/hooks";
 import type { TimeEntry } from "@/types";
 
@@ -58,11 +62,31 @@ export function AdminTimeManagement() {
   const [editCategory, setEditCategory] = useState("");
   const [editError, setEditError] = useState<string | null>(null);
 
+  // Add Entry modal state
+  const [showAddEntry, setShowAddEntry] = useState(false);
+  const [addUserId, setAddUserId] = useState("");
+  const [addProjectId, setAddProjectId] = useState("");
+  const [addCategory, setAddCategory] = useState("mapping");
+  const [addClockIn, setAddClockIn] = useState("");
+  const [addClockOut, setAddClockOut] = useState("");
+  const [addNotes, setAddNotes] = useState("");
+  const [addError, setAddError] = useState<string | null>(null);
+
+  // Dev test entry state
+  const [testUserId, setTestUserId] = useState("");
+
   const { data: activeSessions, loading: sessionsLoading, refetch: refetchSessions } = useAdminActiveSessions();
   const { data: historyData, loading: historyLoading, refetch: refetchHistory } = useAdminTimeHistory();
   const { mutate: forceClockOut, loading: forcingClockOut } = useForceClockOut();
   const { mutate: voidEntry, loading: voiding } = useVoidTimeEntry();
   const { mutate: editEntry, loading: editing } = useEditTimeEntry();
+  const { mutate: addTimeEntry, loading: addingEntry } = useAdminAddTimeEntry();
+  const { mutate: addTestEntry, loading: addingTestEntry } = useAdminAddTestEntry();
+  const { data: usersData } = useUsersList();
+  const { data: projectsData } = useOrgProjects();
+
+  const users = usersData?.users || [];
+  const projects = projectsData?.org_active_projects || [];
 
   const sessions = activeSessions?.sessions || [];
   const historyEntries = historyData?.entries || [];
@@ -134,6 +158,49 @@ export function AdminTimeManagement() {
     }
   };
 
+  const handleOpenAddEntry = () => {
+    setAddUserId("");
+    setAddProjectId("");
+    setAddCategory("mapping");
+    setAddClockIn("");
+    setAddClockOut("");
+    setAddNotes("");
+    setAddError(null);
+    setShowAddEntry(true);
+  };
+
+  const handleSaveAddEntry = async () => {
+    setAddError(null);
+    if (!addUserId) { setAddError("User is required"); return; }
+    if (!addClockIn) { setAddError("Clock in time is required"); return; }
+    if (!addClockOut) { setAddError("Clock out time is required"); return; }
+
+    try {
+      await addTimeEntry({
+        userId: addUserId,
+        projectId: addProjectId ? Number(addProjectId) : undefined,
+        category: addCategory,
+        clockIn: fromDatetimeLocal(addClockIn),
+        clockOut: fromDatetimeLocal(addClockOut),
+        notes: addNotes,
+      });
+      setShowAddEntry(false);
+      await refetchHistory();
+    } catch (err) {
+      setAddError(err instanceof Error ? err.message : "Failed to create entry");
+    }
+  };
+
+  const handleAddTestEntry = async () => {
+    if (!testUserId) return;
+    try {
+      await addTestEntry({ userId: testUserId });
+      await refetchHistory();
+    } catch (err) {
+      console.error("Failed to create test entry:", err);
+    }
+  };
+
   return (
     <div className="h-full">
       <Card className="h-full">
@@ -155,27 +222,32 @@ export function AdminTimeManagement() {
               </svg>
               Time Management
             </CardTitle>
-            <div className="flex gap-1 rounded-lg bg-secondary p-1">
-              <button
-                onClick={() => setActiveTab("active")}
-                className={`px-3 py-1 text-sm rounded-md transition-colors ${
-                  activeTab === "active"
-                    ? "bg-background text-foreground shadow font-medium"
-                    : "text-muted-foreground hover:text-foreground"
-                }`}
-              >
-                Active Sessions ({sessions.length})
-              </button>
-              <button
-                onClick={() => setActiveTab("history")}
-                className={`px-3 py-1 text-sm rounded-md transition-colors ${
-                  activeTab === "history"
-                    ? "bg-background text-foreground shadow font-medium"
-                    : "text-muted-foreground hover:text-foreground"
-                }`}
-              >
-                History
-              </button>
+            <div className="flex items-center gap-2">
+              <div className="flex gap-1 rounded-lg bg-secondary p-1">
+                <button
+                  onClick={() => setActiveTab("active")}
+                  className={`px-3 py-1 text-sm rounded-md transition-colors ${
+                    activeTab === "active"
+                      ? "bg-background text-foreground shadow font-medium"
+                      : "text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  Active Sessions ({sessions.length})
+                </button>
+                <button
+                  onClick={() => setActiveTab("history")}
+                  className={`px-3 py-1 text-sm rounded-md transition-colors ${
+                    activeTab === "history"
+                      ? "bg-background text-foreground shadow font-medium"
+                      : "text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  History
+                </button>
+              </div>
+              <Button variant="outline" size="sm" onClick={handleOpenAddEntry}>
+                + Add Entry
+              </Button>
             </div>
           </div>
         </CardHeader>
@@ -413,6 +485,142 @@ export function AdminTimeManagement() {
           </div>
         )}
       </Modal>
+
+      {/* Add Entry Modal */}
+      <Modal
+        isOpen={showAddEntry}
+        onClose={() => setShowAddEntry(false)}
+        title="Add Time Entry"
+        description="Manually create a time entry for a user"
+        size="sm"
+        footer={
+          <>
+            <Button variant="outline" onClick={() => setShowAddEntry(false)}>
+              Cancel
+            </Button>
+            <Button
+              variant="primary"
+              onClick={handleSaveAddEntry}
+              isLoading={addingEntry}
+            >
+              Create Entry
+            </Button>
+          </>
+        }
+      >
+        <div className="space-y-4">
+          {addError && (
+            <p className="text-sm text-red-600">{addError}</p>
+          )}
+
+          <div>
+            <label className="block text-sm font-medium mb-1">User</label>
+            <select
+              className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+              value={addUserId}
+              onChange={(e) => setAddUserId(e.target.value)}
+            >
+              <option value="">Select a user...</option>
+              {users.map((u) => (
+                <option key={u.id} value={u.id}>{u.name}</option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium mb-1">Project (optional)</label>
+            <select
+              className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+              value={addProjectId}
+              onChange={(e) => setAddProjectId(e.target.value)}
+            >
+              <option value="">No project</option>
+              {projects.map((p) => (
+                <option key={p.id} value={p.id}>{p.name}</option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium mb-1">Category</label>
+            <select
+              className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+              value={addCategory}
+              onChange={(e) => setAddCategory(e.target.value)}
+            >
+              {CATEGORY_OPTIONS.map((cat) => (
+                <option key={cat} value={cat}>
+                  {cat.charAt(0).toUpperCase() + cat.slice(1)}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium mb-1">Clock In</label>
+            <input
+              type="datetime-local"
+              className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+              value={addClockIn}
+              onChange={(e) => setAddClockIn(e.target.value)}
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium mb-1">Clock Out</label>
+            <input
+              type="datetime-local"
+              className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+              value={addClockOut}
+              onChange={(e) => setAddClockOut(e.target.value)}
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium mb-1">Notes (optional)</label>
+            <textarea
+              className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring resize-none"
+              rows={2}
+              value={addNotes}
+              onChange={(e) => setAddNotes(e.target.value)}
+              placeholder="Reason for manual entry..."
+            />
+          </div>
+        </div>
+      </Modal>
+
+      {/* Dev Tools — Test Entry Generator */}
+      <div className="mt-4 rounded-lg border-2 border-dashed border-yellow-400 bg-yellow-50 dark:bg-yellow-950/30 p-4">
+        <p className="text-xs font-semibold text-yellow-700 dark:text-yellow-400 mb-3 uppercase tracking-wide">
+          Dev Tools — Test Entry Generator
+        </p>
+        <div className="flex items-end gap-3">
+          <div className="flex-1">
+            <label className="block text-xs font-medium text-yellow-800 dark:text-yellow-300 mb-1">
+              User
+            </label>
+            <select
+              className="w-full rounded-md border border-yellow-300 dark:border-yellow-700 bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-yellow-400"
+              value={testUserId}
+              onChange={(e) => setTestUserId(e.target.value)}
+            >
+              <option value="">Select a user...</option>
+              {users.map((u) => (
+                <option key={u.id} value={u.id}>{u.name}</option>
+              ))}
+            </select>
+          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleAddTestEntry}
+            disabled={!testUserId || addingTestEntry}
+            className="border-yellow-400 text-yellow-700 dark:text-yellow-400 hover:bg-yellow-100 dark:hover:bg-yellow-950"
+          >
+            {addingTestEntry ? "Creating..." : "Add 8-Hour Test Entry"}
+          </Button>
+        </div>
+      </div>
     </div>
   );
 }

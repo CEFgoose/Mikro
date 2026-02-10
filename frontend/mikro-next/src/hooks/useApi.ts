@@ -538,3 +538,13 @@ export function useEditTimeEntry() {
 export function useRequestTimeAdjustment() {
   return useApiMutation<{ message: string; status: number }>("/timetracking/request_adjustment");
 }
+
+// Admin: add new time entry
+export function useAdminAddTimeEntry() {
+  return useApiMutation<{ message: string; status: number; entry: TimeTrackingSessionResponse }>("/timetracking/admin_add_entry");
+}
+
+// Admin: add 8-hour test entry (dev only)
+export function useAdminAddTestEntry() {
+  return useApiMutation<{ message: string; status: number; entry: TimeTrackingSessionResponse }>("/timetracking/admin_add_test_entry");
+}
