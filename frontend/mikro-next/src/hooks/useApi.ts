@@ -548,3 +548,12 @@ export function useAdminAddTimeEntry() {
 export function useAdminAddTestEntry() {
   return useApiMutation<{ message: string; status: number; entry: TimeTrackingSessionResponse }>("/timetracking/admin_add_test_entry");
 }
+
+// DEV ONLY: Purge all time entries
+export function usePurgeTimeEntries() {
+  return useApiMutation<{
+    message: string;
+    entries_deleted: number;
+    status: number;
+  }>("/timetracking/purge_all_time_entries");
+}

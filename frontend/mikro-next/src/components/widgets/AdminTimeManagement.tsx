@@ -12,6 +12,7 @@ import {
   useVoidTimeEntry,
   useEditTimeEntry,
   useAdminAddTimeEntry,
+  usePurgeTimeEntries,
   useUsersList,
   useOrgProjects,
 } from "@/hooks";
@@ -76,7 +77,10 @@ export function AdminTimeManagement() {
   const { mutate: forceClockOut, loading: forcingClockOut } = useForceClockOut();
   const { mutate: voidEntry, loading: voiding } = useVoidTimeEntry();
   const { mutate: editEntry, loading: editing } = useEditTimeEntry();
+  const [showPurgeConfirm, setShowPurgeConfirm] = useState(false);
+
   const { mutate: addTimeEntry, loading: addingEntry } = useAdminAddTimeEntry();
+  const { mutate: purgeEntries, loading: purging } = usePurgeTimeEntries();
   const { data: usersData } = useUsersList();
   const { data: projectsData } = useOrgProjects();
 
@@ -186,6 +190,17 @@ export function AdminTimeManagement() {
     }
   };
 
+  const handlePurgeEntries = async () => {
+    try {
+      await purgeEntries({});
+      setShowPurgeConfirm(false);
+      await refetchSessions();
+      await refetchHistory();
+    } catch (err) {
+      console.error("Purge failed:", err);
+    }
+  };
+
   const handleFillTestEntry = () => {
     const now = new Date();
     const eightHoursAgo = new Date(now.getTime() - 8 * 60 * 60 * 1000);
@@ -216,6 +231,12 @@ export function AdminTimeManagement() {
               Time Management
             </CardTitle>
             <div className="flex items-center gap-2">
+              <button
+                onClick={() => setShowPurgeConfirm(true)}
+                className="px-2 py-1 text-xs text-yellow-700 dark:text-yellow-400 border border-dashed border-yellow-400 rounded-md hover:bg-yellow-50 dark:hover:bg-yellow-950/30 transition-colors"
+              >
+                Purge All
+              </button>
               <div className="flex gap-1 rounded-lg bg-secondary p-1">
                 <button
                   onClick={() => setActiveTab("active")}
@@ -587,6 +608,45 @@ export function AdminTimeManagement() {
               placeholder="Reason for manual entry..."
             />
           </div>
+        </div>
+      </Modal>
+
+      {/* Purge Confirmation Modal */}
+      <Modal
+        isOpen={showPurgeConfirm}
+        onClose={() => setShowPurgeConfirm(false)}
+        title="Purge All Time Entries"
+        description="This action cannot be undone"
+        size="sm"
+        footer={
+          <>
+            <Button variant="outline" onClick={() => setShowPurgeConfirm(false)}>
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handlePurgeEntries}
+              isLoading={purging}
+            >
+              Yes, Purge Everything
+            </Button>
+          </>
+        }
+      >
+        <div className="space-y-3">
+          <div className="rounded-lg bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 p-3">
+            <p className="text-sm font-medium text-red-800 dark:text-red-200">
+              This will permanently delete ALL time tracking entries for your organization:
+            </p>
+            <ul className="mt-2 text-sm text-red-700 dark:text-red-300 list-disc list-inside space-y-1">
+              <li>All active sessions will be removed</li>
+              <li>All completed entries will be deleted</li>
+              <li>All voided entries will be deleted</li>
+            </ul>
+          </div>
+          <p className="text-sm text-muted-foreground">
+            Are you sure you want to proceed?
+          </p>
         </div>
       </Modal>
     </div>
