@@ -634,11 +634,11 @@ export function AdminTimeManagement() {
         }
       >
         <div className="space-y-3">
-          <div className="rounded-lg bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 p-3">
-            <p className="text-sm font-medium text-red-800 dark:text-red-200">
+          <div className="rounded-lg bg-secondary border border-border p-3">
+            <p className="text-sm font-medium text-foreground">
               This will permanently delete ALL time tracking entries for your organization:
             </p>
-            <ul className="mt-2 text-sm text-red-700 dark:text-red-300 list-disc list-inside space-y-1">
+            <ul className="mt-2 text-sm text-foreground list-disc list-inside space-y-1">
               <li>All active sessions will be removed</li>
               <li>All completed entries will be deleted</li>
               <li>All voided entries will be deleted</li>
