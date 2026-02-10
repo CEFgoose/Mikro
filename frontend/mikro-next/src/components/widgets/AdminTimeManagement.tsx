@@ -406,6 +406,39 @@ export function AdminTimeManagement() {
               </p>
             )
           )}
+
+          {/* Dev Tools — Test Entry Generator */}
+          <div className="mt-4 rounded-lg border-2 border-dashed border-yellow-400 bg-yellow-50 dark:bg-yellow-950/30 p-4">
+            <p className="text-xs font-semibold text-yellow-700 dark:text-yellow-400 mb-3 uppercase tracking-wide">
+              Dev Tools — Test Entry Generator
+            </p>
+            <div className="flex items-end gap-3">
+              <div className="flex-1">
+                <label className="block text-xs font-medium text-yellow-800 dark:text-yellow-300 mb-1">
+                  User
+                </label>
+                <select
+                  className="w-full rounded-md border border-yellow-300 dark:border-yellow-700 bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-yellow-400"
+                  value={testUserId}
+                  onChange={(e) => setTestUserId(e.target.value)}
+                >
+                  <option value="">Select a user...</option>
+                  {users.map((u) => (
+                    <option key={u.id} value={u.id}>{u.name}</option>
+                  ))}
+                </select>
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleAddTestEntry}
+                disabled={!testUserId || addingTestEntry}
+                className="border-yellow-400 text-yellow-700 dark:text-yellow-400 hover:bg-yellow-100 dark:hover:bg-yellow-950"
+              >
+                {addingTestEntry ? "Creating..." : "Add 8-Hour Test Entry"}
+              </Button>
+            </div>
+          </div>
         </CardContent>
       </Card>
 
@@ -588,39 +621,6 @@ export function AdminTimeManagement() {
           </div>
         </div>
       </Modal>
-
-      {/* Dev Tools — Test Entry Generator */}
-      <div className="mt-4 rounded-lg border-2 border-dashed border-yellow-400 bg-yellow-50 dark:bg-yellow-950/30 p-4">
-        <p className="text-xs font-semibold text-yellow-700 dark:text-yellow-400 mb-3 uppercase tracking-wide">
-          Dev Tools — Test Entry Generator
-        </p>
-        <div className="flex items-end gap-3">
-          <div className="flex-1">
-            <label className="block text-xs font-medium text-yellow-800 dark:text-yellow-300 mb-1">
-              User
-            </label>
-            <select
-              className="w-full rounded-md border border-yellow-300 dark:border-yellow-700 bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-yellow-400"
-              value={testUserId}
-              onChange={(e) => setTestUserId(e.target.value)}
-            >
-              <option value="">Select a user...</option>
-              {users.map((u) => (
-                <option key={u.id} value={u.id}>{u.name}</option>
-              ))}
-            </select>
-          </div>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleAddTestEntry}
-            disabled={!testUserId || addingTestEntry}
-            className="border-yellow-400 text-yellow-700 dark:text-yellow-400 hover:bg-yellow-100 dark:hover:bg-yellow-950"
-          >
-            {addingTestEntry ? "Creating..." : "Add 8-Hour Test Entry"}
-          </Button>
-        </div>
-      </div>
     </div>
   );
 }
