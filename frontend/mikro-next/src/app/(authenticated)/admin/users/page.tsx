@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle, Button } from "@/components/ui";
 import { User } from "@/types";
 
@@ -318,7 +319,15 @@ export default function AdminUsersPage() {
                       selectedUser === user.id ? "bg-kaart-orange/10" : ""
                     }`}
                   >
-                    <td className="px-6 py-5 font-medium text-gray-900">{user.name?.trim() || user.email || "Unknown"}</td>
+                    <td className="px-6 py-5">
+                      <Link
+                        href={`/admin/users/${user.id}`}
+                        onClick={(e) => e.stopPropagation()}
+                        className="font-medium text-kaart-orange hover:underline"
+                      >
+                        {user.name?.trim() || user.email || "Unknown"}
+                      </Link>
+                    </td>
                     <td className="px-6 py-5">
                       <span
                         className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${

@@ -358,6 +358,74 @@ export interface TimeTrackingActiveSessionsResponse {
   sessions: TimeEntry[];
 }
 
+// User Profile types
+export interface UserProjectBreakdown {
+  id: number;
+  name: string;
+  url: string;
+  tasks_mapped: number;
+  tasks_validated: number;
+  tasks_invalidated: number;
+  mapping_earnings: number;
+  validation_earnings: number;
+}
+
+export interface UserProfileData {
+  id: string;
+  first_name: string;
+  last_name: string;
+  full_name: string;
+  email: string;
+  payment_email: string;
+  osm_username: string;
+  role: string;
+  city: string;
+  country: string;
+  joined: string;
+  total_tasks_mapped: number;
+  total_tasks_validated: number;
+  total_tasks_invalidated: number;
+  validator_tasks_validated: number;
+  validator_tasks_invalidated: number;
+  mapping_payable_total: number;
+  validation_payable_total: number;
+  checklist_payable_total: number;
+  payable_total: number;
+  requested_total: number;
+  paid_total: number;
+  total_checklists_completed: number;
+  validator_total_checklists_confirmed: number;
+  mapper_level: number;
+  mapper_points: number;
+  validator_points: number;
+  projects: UserProjectBreakdown[];
+  time_entries: TimeEntry[];
+}
+
+export interface UserProfileResponse {
+  user: UserProfileData;
+  status: number;
+}
+
+export interface UserStatsDateProjectBreakdown {
+  id: number;
+  name: string;
+  total_hours: number;
+  entries_count: number;
+}
+
+export interface UserStatsDateResponse {
+  stats: {
+    startDate: string;
+    endDate: string;
+    total_hours: number;
+    entries_count: number;
+    time_entries: TimeEntry[];
+    projects: UserStatsDateProjectBreakdown[];
+  };
+  status: number;
+}
+
 // API Response types
 export interface ApiResponse<T = unknown> {
   data?: T;

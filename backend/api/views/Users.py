@@ -6,17 +6,23 @@ Handles user management operations.
 """
 
 import requests
+from datetime import datetime, timedelta
 from flask.views import MethodView
 from flask import g, request, current_app
+from sqlalchemy import func
 
 from ..utils import requires_admin
 from ..database import (
     User,
+    Project,
     ProjectUser,
+    Task,
+    TimeEntry,
     UserTasks,
     UserChecklist,
     UserChecklistItem,
     TrainingCompleted,
+    db,
 )
 
 
@@ -52,6 +58,10 @@ class UserAPI(MethodView):
             return self.import_users()
         elif path == "purge_all_users":
             return self.purge_all_users()
+        elif path == "fetch_user_profile_by_id":
+            return self.fetch_user_profile_by_id()
+        elif path == "fetch_user_stats_by_date":
+            return self.fetch_user_stats_by_date()
         # elif path == "register_user":
         #     return self.register_user()
         return {
@@ -667,4 +677,204 @@ class UserAPI(MethodView):
             "users_deleted": users_deleted,
             "admin_preserved": admin_id,
             "status": 200,
+        }
+
+    # ─── User Profile ─────────────────────────────────────
+
+    @staticmethod
+    def _format_time_entry(entry):
+        """Format a TimeEntry for the profile response."""
+        project = Project.query.get(entry.project_id) if entry.project_id else None
+        duration = None
+        if entry.duration_seconds is not None:
+            hours = entry.duration_seconds // 3600
+            minutes = (entry.duration_seconds % 3600) // 60
+            seconds = entry.duration_seconds % 60
+            duration = f"{hours:02d}:{minutes:02d}:{seconds:02d}"
+        return {
+            "id": entry.id,
+            "clockIn": entry.clock_in.isoformat() + "Z" if entry.clock_in else None,
+            "clockOut": entry.clock_out.isoformat() + "Z" if entry.clock_out else None,
+            "duration": duration,
+            "durationSeconds": entry.duration_seconds,
+            "category": entry.category.capitalize() if entry.category else "",
+            "projectId": entry.project_id,
+            "projectName": project.name if project else "No Project",
+            "status": entry.status,
+            "notes": entry.notes,
+        }
+
+    @requires_admin
+    def fetch_user_profile_by_id(self):
+        """Fetch comprehensive profile data for a specific user."""
+        data = request.get_json() or {}
+        user_id = data.get("userId")
+
+        if not user_id:
+            return {"message": "userId is required", "status": 400}
+
+        user = User.query.get(user_id)
+        if not user or user.org_id != g.user.org_id:
+            return {"message": "User not found in your organization", "status": 404}
+
+        # Build per-project breakdown from Task table
+        projects_data = []
+        osm_username = user.osm_username
+        if osm_username:
+            # Get all projects in org
+            org_projects = Project.query.filter_by(org_id=g.user.org_id).all()
+            for proj in org_projects:
+                tasks = Task.query.filter_by(project_id=proj.id).all()
+                mapped = 0
+                validated = 0
+                invalidated = 0
+                mapping_earnings = 0.0
+                validation_earnings = 0.0
+                for t in tasks:
+                    if t.mapped_by == osm_username and t.mapped:
+                        mapped += 1
+                        mapping_earnings += (t.mapping_rate or 0)
+                    if t.validated_by == osm_username and t.validated:
+                        validated += 1
+                        validation_earnings += (t.validation_rate or 0)
+                    if t.validated_by == osm_username and t.invalidated:
+                        invalidated += 1
+
+                if mapped > 0 or validated > 0 or invalidated > 0:
+                    projects_data.append({
+                        "id": proj.id,
+                        "name": proj.name,
+                        "url": proj.url,
+                        "tasks_mapped": mapped,
+                        "tasks_validated": validated,
+                        "tasks_invalidated": invalidated,
+                        "mapping_earnings": round(mapping_earnings, 2),
+                        "validation_earnings": round(validation_earnings, 2),
+                    })
+
+        # Get recent time entries
+        time_entries = (
+            TimeEntry.query
+            .filter_by(user_id=user_id)
+            .filter(TimeEntry.status.in_(["completed", "voided"]))
+            .order_by(TimeEntry.clock_in.desc())
+            .limit(50)
+            .all()
+        )
+
+        first_name = (user.first_name or "").title()
+        last_name = (user.last_name or "").title()
+        full_name = f"{first_name} {last_name}".strip() or user.email or "Unknown"
+
+        return {
+            "status": 200,
+            "user": {
+                "id": user.id,
+                "first_name": first_name,
+                "last_name": last_name,
+                "full_name": full_name,
+                "email": user.email,
+                "payment_email": user.payment_email,
+                "osm_username": user.osm_username,
+                "role": user.role,
+                "city": user.city,
+                "country": user.country,
+                "joined": user.create_time.isoformat() if user.create_time else None,
+                # Task stats
+                "total_tasks_mapped": user.total_tasks_mapped or 0,
+                "total_tasks_validated": user.total_tasks_validated or 0,
+                "total_tasks_invalidated": user.total_tasks_invalidated or 0,
+                "validator_tasks_validated": user.validator_tasks_validated or 0,
+                "validator_tasks_invalidated": user.validator_tasks_invalidated or 0,
+                # Payment stats
+                "mapping_payable_total": round(user.mapping_payable_total or 0, 2),
+                "validation_payable_total": round(user.validation_payable_total or 0, 2),
+                "checklist_payable_total": round(user.checklist_payable_total or 0, 2),
+                "payable_total": round(user.payable_total or 0, 2),
+                "requested_total": round(user.requested_total or 0, 2),
+                "paid_total": round(user.paid_total or 0, 2),
+                # Other
+                "total_checklists_completed": user.total_checklists_completed or 0,
+                "validator_total_checklists_confirmed": user.validator_total_checklists_confirmed or 0,
+                "mapper_level": user.mapper_level or 0,
+                "mapper_points": user.mapper_points or 0,
+                "validator_points": user.validator_points or 0,
+                # Nested
+                "projects": projects_data,
+                "time_entries": [self._format_time_entry(e) for e in time_entries],
+            },
+        }
+
+    @requires_admin
+    def fetch_user_stats_by_date(self):
+        """Fetch date-filtered time tracking stats for a user."""
+        data = request.get_json() or {}
+        user_id = data.get("userId")
+        start_date_str = data.get("startDate")
+        end_date_str = data.get("endDate")
+
+        if not user_id or not start_date_str or not end_date_str:
+            return {"message": "userId, startDate, and endDate are required", "status": 400}
+
+        user = User.query.get(user_id)
+        if not user or user.org_id != g.user.org_id:
+            return {"message": "User not found in your organization", "status": 404}
+
+        try:
+            start_date = datetime.strptime(start_date_str, "%Y-%m-%d")
+            end_date = datetime.strptime(end_date_str, "%Y-%m-%d") + timedelta(days=1)
+        except ValueError:
+            return {"message": "Invalid date format. Use YYYY-MM-DD.", "status": 400}
+
+        # Query time entries in date range
+        entries = (
+            TimeEntry.query
+            .filter(
+                TimeEntry.user_id == user_id,
+                TimeEntry.status == "completed",
+                TimeEntry.clock_in >= start_date,
+                TimeEntry.clock_in < end_date,
+            )
+            .order_by(TimeEntry.clock_in.desc())
+            .all()
+        )
+
+        total_seconds = sum(e.duration_seconds or 0 for e in entries)
+        total_hours = round(total_seconds / 3600, 1)
+
+        # Per-project breakdown
+        project_hours = {}
+        for e in entries:
+            pid = e.project_id or 0
+            if pid not in project_hours:
+                proj = Project.query.get(pid) if pid else None
+                project_hours[pid] = {
+                    "id": pid,
+                    "name": proj.name if proj else "No Project",
+                    "total_seconds": 0,
+                    "entries_count": 0,
+                }
+            project_hours[pid]["total_seconds"] += (e.duration_seconds or 0)
+            project_hours[pid]["entries_count"] += 1
+
+        projects_list = [
+            {
+                "id": v["id"],
+                "name": v["name"],
+                "total_hours": round(v["total_seconds"] / 3600, 1),
+                "entries_count": v["entries_count"],
+            }
+            for v in sorted(project_hours.values(), key=lambda x: x["total_seconds"], reverse=True)
+        ]
+
+        return {
+            "status": 200,
+            "stats": {
+                "startDate": start_date_str,
+                "endDate": end_date_str,
+                "total_hours": total_hours,
+                "entries_count": len(entries),
+                "time_entries": [self._format_time_entry(e) for e in entries],
+                "projects": projects_list,
+            },
         }

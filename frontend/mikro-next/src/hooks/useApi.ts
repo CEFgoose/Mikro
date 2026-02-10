@@ -14,6 +14,8 @@ import type {
   TimeTrackingSessionResponse,
   TimeTrackingHistoryResponse,
   TimeTrackingActiveSessionsResponse,
+  UserProfileResponse,
+  UserStatsDateResponse,
 } from "@/types";
 
 /**
@@ -547,6 +549,16 @@ export function useAdminAddTimeEntry() {
 // Admin: add 8-hour test entry (dev only)
 export function useAdminAddTestEntry() {
   return useApiMutation<{ message: string; status: number; entry: TimeTrackingSessionResponse }>("/timetracking/admin_add_test_entry");
+}
+
+// Admin: fetch full user profile by ID
+export function useFetchUserProfile() {
+  return useApiMutation<UserProfileResponse>("/user/fetch_user_profile_by_id");
+}
+
+// Admin: fetch date-filtered user stats
+export function useFetchUserStatsByDate() {
+  return useApiMutation<UserStatsDateResponse>("/user/fetch_user_stats_by_date");
 }
 
 // DEV ONLY: Purge all time entries
