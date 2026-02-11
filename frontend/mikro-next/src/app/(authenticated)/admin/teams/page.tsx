@@ -273,7 +273,10 @@ export default function AdminTeamsPage() {
               {filteredTeams.map((team) => (
                 <TableRow key={team.id}>
                   <TableCell className="font-medium">{team.name}</TableCell>
-                  <TableCell className="text-muted-foreground max-w-xs truncate">
+                  <TableCell
+                    className="text-muted-foreground max-w-xs truncate"
+                    title={team.description || ""}
+                  >
                     {team.description || "—"}
                   </TableCell>
                   <TableCell>
@@ -439,7 +442,7 @@ export default function AdminTeamsPage() {
         }}
         title={`Team Members — ${membersTeam?.name}`}
         description="Assign or remove users from this team"
-        size="lg"
+        size="3xl"
         footer={
           <Button
             variant="outline"
