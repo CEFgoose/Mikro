@@ -23,6 +23,7 @@ import type {
   TeamMembersResponse,
   ProjectTeamsResponse,
   TeamTrainingsResponse,
+  TeamChecklistsResponse,
 } from "@/types";
 
 /**
@@ -648,4 +649,16 @@ export function useAssignTrainingToTeam() {
 
 export function useUnassignTrainingFromTeam() {
   return useApiMutation<{ message: string; status: number }>("/team/unassign_training_from_team");
+}
+
+export function useFetchTeamChecklists() {
+  return useApiMutation<TeamChecklistsResponse>("/team/fetch_team_checklists");
+}
+
+export function useAssignChecklistToTeam() {
+  return useApiMutation<{ message: string; status: number }>("/team/assign_checklist_to_team");
+}
+
+export function useUnassignChecklistFromTeam() {
+  return useApiMutation<{ message: string; status: number }>("/team/unassign_checklist_from_team");
 }

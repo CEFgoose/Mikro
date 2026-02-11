@@ -582,6 +582,25 @@ class TeamTraining(CRUDMixin, SurrogatePK, db.Model):
     )
 
 
+class TeamChecklist(CRUDMixin, SurrogatePK, db.Model):
+    """Association between teams and checklists."""
+
+    __tablename__ = "team_checklists"
+
+    team_id = db.Column(
+        db.Integer,
+        db.ForeignKey("teams.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    checklist_id = db.Column(
+        db.BigInteger,
+        db.ForeignKey("checklists.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+
+
 class TimeEntry(CRUDMixin, db.Model):
     """Time tracking entry for contractor clock in/out."""
 

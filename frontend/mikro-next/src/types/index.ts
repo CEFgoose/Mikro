@@ -488,6 +488,20 @@ export interface TeamTrainingsResponse {
   status: number;
 }
 
+export interface TeamChecklistItem {
+  id: number;
+  name: string;
+  description: string | null;
+  difficulty: string;
+  active_status: boolean;
+  assigned: string;
+}
+
+export interface TeamChecklistsResponse {
+  checklists: TeamChecklistItem[];
+  status: number;
+}
+
 // API Response types
 export interface ApiResponse<T = unknown> {
   data?: T;

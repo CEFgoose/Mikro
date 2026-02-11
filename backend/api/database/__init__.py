@@ -23,6 +23,7 @@ from .core import (
     TeamUser,
     ProjectTeam,
     TeamTraining,
+    TeamChecklist,
     TimeEntry,
 )
 
@@ -51,5 +52,6 @@ __all__ = [
     "TeamUser",
     "ProjectTeam",
     "TeamTraining",
+    "TeamChecklist",
     "TimeEntry",
 ]

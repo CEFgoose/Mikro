@@ -9,7 +9,7 @@ from flask.views import MethodView
 from flask import g, request
 
 from ..utils import requires_admin
-from ..database import Team, TeamUser, User, ProjectTeam, ProjectUser, Project, TeamTraining, Training
+from ..database import Team, TeamUser, User, ProjectTeam, ProjectUser, Project, TeamTraining, Training, TeamChecklist, Checklist
 
 
 class TeamAPI(MethodView):
@@ -42,6 +42,12 @@ class TeamAPI(MethodView):
             return self.assign_training_to_team()
         elif path == "unassign_training_from_team":
             return self.unassign_training_from_team()
+        elif path == "fetch_team_checklists":
+            return self.fetch_team_checklists()
+        elif path == "assign_checklist_to_team":
+            return self.assign_checklist_to_team()
+        elif path == "unassign_checklist_from_team":
+            return self.unassign_checklist_from_team()
         return {"message": "Unknown path", "status": 404}
 
     @requires_admin
@@ -449,3 +455,83 @@ class TeamAPI(MethodView):
             relation.delete(soft=False)
 
         return {"message": "Training removed from team", "status": 200}
+
+    @requires_admin
+    def fetch_team_checklists(self):
+        """Get all org checklists with their assignment status for a team."""
+        if not g.user:
+            return {"message": "Missing user info", "status": 304}
+
+        team_id = request.json.get("teamId")
+        if not team_id:
+            return {"message": "teamId required", "status": 400}
+
+        team = Team.query.filter_by(id=team_id, org_id=g.user.org_id).first()
+        if not team:
+            return {"message": f"Team {team_id} not found", "status": 400}
+
+        assigned_ids = {
+            tc.checklist_id
+            for tc in TeamChecklist.query.filter_by(team_id=team_id).all()
+        }
+
+        org_checklists = Checklist.query.filter_by(org_id=g.user.org_id).all()
+
+        checklists = []
+        for c in org_checklists:
+            checklists.append({
+                "id": c.id,
+                "name": c.name,
+                "description": c.description,
+                "difficulty": c.difficulty,
+                "active_status": c.active_status,
+                "assigned": "Assigned" if c.id in assigned_ids else "Not Assigned",
+            })
+
+        return {"checklists": checklists, "status": 200}
+
+    @requires_admin
+    def assign_checklist_to_team(self):
+        """Assign a checklist to a team (idempotent)."""
+        if not g.user:
+            return {"message": "Missing user info", "status": 304}
+
+        team_id = request.json.get("teamId")
+        checklist_id = request.json.get("checklistId")
+        if not team_id:
+            return {"message": "teamId required", "status": 400}
+        if not checklist_id:
+            return {"message": "checklistId required", "status": 400}
+
+        team = Team.query.filter_by(id=team_id, org_id=g.user.org_id).first()
+        if not team:
+            return {"message": f"Team {team_id} not found", "status": 400}
+
+        existing = TeamChecklist.query.filter_by(
+            team_id=team_id, checklist_id=checklist_id
+        ).first()
+        if not existing:
+            TeamChecklist.create(team_id=team_id, checklist_id=checklist_id)
+
+        return {"message": "Checklist assigned to team", "status": 200}
+
+    @requires_admin
+    def unassign_checklist_from_team(self):
+        """Remove a checklist from a team."""
+        if not g.user:
+            return {"message": "Missing user info", "status": 304}
+
+        team_id = request.json.get("teamId")
+        checklist_id = request.json.get("checklistId")
+        if not team_id:
+            return {"message": "teamId required", "status": 400}
+        if not checklist_id:
+            return {"message": "checklistId required", "status": 400}
+
+        relation = TeamChecklist.query.filter_by(
+            team_id=team_id, checklist_id=checklist_id
+        ).first()
+        if relation:
+            relation.delete(soft=False)
+
+        return {"message": "Checklist removed from team", "status": 200}
