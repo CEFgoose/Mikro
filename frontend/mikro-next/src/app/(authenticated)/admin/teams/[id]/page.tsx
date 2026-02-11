@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui";
 import { useFetchTeamProfile } from "@/hooks/useApi";
@@ -38,6 +38,7 @@ function formatDate(iso: string | null): string {
 
 export default function AdminTeamProfilePage() {
   const params = useParams();
+  const router = useRouter();
   const teamId = Number(params.id);
 
   const { mutate: fetchProfile, loading: profileLoading, error: profileError } =
@@ -202,14 +203,15 @@ export default function AdminTeamProfilePage() {
                 </thead>
                 <tbody className="divide-y divide-border bg-white">
                   {members.map((member) => (
-                    <tr key={member.id}>
+                    <tr
+                      key={member.id}
+                      className="cursor-pointer hover:bg-muted/50 transition-colors"
+                      onClick={() => router.push(`/admin/users/${encodeURIComponent(member.id)}`)}
+                    >
                       <td className="px-6 py-4">
-                        <Link
-                          href={`/admin/users/${encodeURIComponent(member.id)}`}
-                          className="font-medium text-kaart-orange hover:underline"
-                        >
+                        <span className="font-medium text-kaart-orange">
                           {member.name}
-                        </Link>
+                        </span>
                       </td>
                       <td className="px-6 py-4">
                         <span
@@ -261,20 +263,13 @@ export default function AdminTeamProfilePage() {
                 </thead>
                 <tbody className="divide-y divide-border bg-white">
                   {projects.map((proj) => (
-                    <tr key={proj.id}>
+                    <tr
+                      key={proj.id}
+                      className="cursor-pointer hover:bg-muted/50 transition-colors"
+                      onClick={() => router.push("/admin/projects")}
+                    >
                       <td className="px-6 py-4">
-                        {proj.url ? (
-                          <a
-                            href={proj.url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="font-medium text-kaart-orange hover:underline"
-                          >
-                            {proj.name}
-                          </a>
-                        ) : (
-                          <span className="font-medium text-gray-900">{proj.name}</span>
-                        )}
+                        <span className="font-medium text-kaart-orange">{proj.name}</span>
                       </td>
                       <td className="px-6 py-4 text-gray-700">{proj.team_tasks_mapped}</td>
                       <td className="px-6 py-4 text-gray-700">{proj.team_tasks_validated}</td>
@@ -309,8 +304,12 @@ export default function AdminTeamProfilePage() {
                 </thead>
                 <tbody className="divide-y divide-border bg-white">
                   {assigned_trainings.map((training) => (
-                    <tr key={training.id}>
-                      <td className="px-6 py-4 font-medium text-gray-900">{training.title}</td>
+                    <tr
+                      key={training.id}
+                      className="cursor-pointer hover:bg-muted/50 transition-colors"
+                      onClick={() => router.push("/admin/training")}
+                    >
+                      <td className="px-6 py-4 font-medium text-kaart-orange">{training.title}</td>
                       <td className="px-6 py-4">
                         <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
                           {training.training_type || "-"}
@@ -357,8 +356,12 @@ export default function AdminTeamProfilePage() {
                 </thead>
                 <tbody className="divide-y divide-border bg-white">
                   {assigned_checklists.map((checklist) => (
-                    <tr key={checklist.id}>
-                      <td className="px-6 py-4 font-medium text-gray-900">{checklist.name}</td>
+                    <tr
+                      key={checklist.id}
+                      className="cursor-pointer hover:bg-muted/50 transition-colors"
+                      onClick={() => router.push("/admin/checklists")}
+                    >
+                      <td className="px-6 py-4 font-medium text-kaart-orange">{checklist.name}</td>
                       <td className="px-6 py-4">
                         <span
                           className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
