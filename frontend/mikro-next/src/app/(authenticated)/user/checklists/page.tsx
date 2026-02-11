@@ -306,6 +306,63 @@ export default function UserChecklistsPage() {
           <TabsTrigger value="confirmed">Confirmed ({confirmedChecklists.length})</TabsTrigger>
         </TabsList>
 
+        <TabsContent value="available">
+          {availableChecklists.length > 0 ? (
+            <div className="grid gap-4 md:grid-cols-2">
+              {availableChecklists.map((checklist) => (
+                <Card key={checklist.id} className="hover:shadow-md transition-shadow">
+                  <CardHeader className="pb-2">
+                    <div className="flex justify-between items-start">
+                      <CardTitle className="text-lg">{checklist.name}</CardTitle>
+                      <Badge
+                        variant={
+                          checklist.difficulty === "Easy"
+                            ? "success"
+                            : checklist.difficulty === "Medium"
+                            ? "warning"
+                            : "destructive"
+                        }
+                      >
+                        {checklist.difficulty}
+                      </Badge>
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-sm text-muted-foreground mb-4 line-clamp-2">
+                      {checklist.description || "No description"}
+                    </p>
+                    <div className="space-y-2 text-sm mb-4">
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Reward:</span>
+                        <span className="font-bold text-kaart-orange">{formatCurrency(checklist.completion_rate)}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Items:</span>
+                        <span>{checklist.list_items?.length ?? 0} tasks</span>
+                      </div>
+                    </div>
+                    <Button
+                      size="sm"
+                      variant="primary"
+                      className="w-full"
+                      onClick={() => handleStartChecklist(checklist)}
+                      isLoading={starting}
+                    >
+                      Start Checklist
+                    </Button>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          ) : (
+            <Card>
+              <CardContent style={{ padding: "48px 24px", textAlign: "center", color: "#6b7280" }}>
+                No checklists available to start right now
+              </CardContent>
+            </Card>
+          )}
+        </TabsContent>
+
         <TabsContent value="active">
           {activeChecklists.length > 0 ? (
             <div className="grid gap-4 md:grid-cols-2">
