@@ -24,6 +24,8 @@ import type {
   ProjectTeamsResponse,
   TeamTrainingsResponse,
   TeamChecklistsResponse,
+  TeamProfileData,
+  UserTeamsResponse,
 } from "@/types";
 
 /**
@@ -661,4 +663,16 @@ export function useAssignChecklistToTeam() {
 
 export function useUnassignChecklistFromTeam() {
   return useApiMutation<{ message: string; status: number }>("/team/unassign_checklist_from_team");
+}
+
+export function useFetchTeamProfile() {
+  return useApiMutation<TeamProfileData>("/team/fetch_team_profile");
+}
+
+export function useFetchUserTeams() {
+  return useApiCall<UserTeamsResponse>("/team/fetch_user_teams");
+}
+
+export function useFetchUserTeamProfile() {
+  return useApiMutation<TeamProfileData>("/team/fetch_user_team_profile");
 }

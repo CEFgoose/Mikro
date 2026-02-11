@@ -3,6 +3,7 @@
 from .decorators import (
     profile,
     requires_admin,
+    requires_auth,
     verify_access_to_resources,
     jwt_verification,
     TeamRole,
@@ -12,6 +13,7 @@ from .decorators import (
 __all__ = {
     "profile",
     "requires_admin",
+    "requires_auth",
     "verify_access_to_resources",
     "TeamRole",
     "TeamMemberFunction",

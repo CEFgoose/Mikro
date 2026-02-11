@@ -19,6 +19,7 @@ const userNavItems: NavItem[] = [
   { label: "Projects", href: "/user/projects", icon: "folder" },
   { label: "Checklists", href: "/user/checklists", icon: "list" },
   { label: "Payments", href: "/user/payments", icon: "dollar" },
+  { label: "Teams", href: "/user/teams", icon: "team" },
 ];
 
 const validatorNavItems: NavItem[] = [
@@ -27,6 +28,7 @@ const validatorNavItems: NavItem[] = [
   { label: "Projects", href: "/user/projects", icon: "folder" },
   { label: "Checklists", href: "/validator/checklists", icon: "list" },
   { label: "Payments", href: "/user/payments", icon: "dollar" },
+  { label: "Teams", href: "/user/teams", icon: "team" },
 ];
 
 const adminNavItems: NavItem[] = [

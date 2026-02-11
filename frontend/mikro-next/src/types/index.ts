@@ -502,6 +502,83 @@ export interface TeamChecklistsResponse {
   status: number;
 }
 
+// Team Profile types
+export interface TeamProfileMember {
+  id: string;
+  name: string;
+  email?: string;
+  role: string;
+  osm_username: string | null;
+  total_tasks_mapped: number;
+  total_tasks_validated: number;
+  total_tasks_invalidated?: number;
+  payable_total?: number;
+}
+
+export interface TeamProfileProject {
+  id: number;
+  name: string;
+  url: string;
+  team_tasks_mapped: number;
+  team_tasks_validated: number;
+  team_earnings?: number;
+}
+
+export interface TeamProfileTraining {
+  id: number;
+  title: string;
+  training_type: string;
+  difficulty: string;
+  point_value: number;
+}
+
+export interface TeamProfileChecklist {
+  id: number;
+  name: string;
+  difficulty: string;
+  active_status: boolean;
+}
+
+export interface TeamProfileData {
+  team: {
+    id: number;
+    name: string;
+    description: string | null;
+    lead_id: string | null;
+    lead_name: string | null;
+    member_count: number;
+    created_at: string;
+  };
+  members: TeamProfileMember[];
+  aggregated_stats: {
+    total_tasks_mapped: number;
+    total_tasks_validated: number;
+    total_tasks_invalidated: number;
+    total_checklists_completed: number;
+    mapping_payable_total?: number;
+    validation_payable_total?: number;
+    checklist_payable_total?: number;
+    payable_total?: number;
+    requested_total?: number;
+    paid_total?: number;
+  };
+  projects: TeamProfileProject[];
+  assigned_trainings: TeamProfileTraining[];
+  assigned_checklists: TeamProfileChecklist[];
+  status: number;
+}
+
+export interface UserTeamsResponse {
+  teams: Array<{
+    id: number;
+    name: string;
+    description: string | null;
+    lead_name: string | null;
+    member_count: number;
+  }>;
+  status: number;
+}
+
 // API Response types
 export interface ApiResponse<T = unknown> {
   data?: T;

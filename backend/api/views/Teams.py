@@ -8,8 +8,8 @@ Handles team management operations: CRUD and membership.
 from flask.views import MethodView
 from flask import g, request
 
-from ..utils import requires_admin
-from ..database import Team, TeamUser, User, ProjectTeam, ProjectUser, Project, TeamTraining, Training, TeamChecklist, Checklist
+from ..utils import requires_admin, requires_auth
+from ..database import Team, TeamUser, User, ProjectTeam, ProjectUser, Project, TeamTraining, Training, TeamChecklist, Checklist, Task
 
 
 class TeamAPI(MethodView):
@@ -48,6 +48,12 @@ class TeamAPI(MethodView):
             return self.assign_checklist_to_team()
         elif path == "unassign_checklist_from_team":
             return self.unassign_checklist_from_team()
+        elif path == "fetch_team_profile":
+            return self.fetch_team_profile()
+        elif path == "fetch_user_teams":
+            return self.fetch_user_teams()
+        elif path == "fetch_user_team_profile":
+            return self.fetch_user_team_profile()
         return {"message": "Unknown path", "status": 404}
 
     @requires_admin
@@ -535,3 +541,315 @@ class TeamAPI(MethodView):
             relation.delete(soft=False)
 
         return {"message": "Checklist removed from team", "status": 200}
+
+    @requires_admin
+    def fetch_team_profile(self):
+        """Fetch aggregated profile data for a team (admin only)."""
+        if not g.user:
+            return {"message": "Missing user info", "status": 304}
+
+        team_id = request.json.get("teamId")
+        if not team_id:
+            return {"message": "teamId required", "status": 400}
+
+        team = Team.query.filter_by(id=team_id, org_id=g.user.org_id).first()
+        if not team:
+            return {"message": f"Team {team_id} not found", "status": 400}
+
+        # Get lead name
+        lead_name = None
+        if team.lead_id:
+            lead_user = User.query.get(team.lead_id)
+            if lead_user:
+                lead_name = f"{lead_user.first_name or ''} {lead_user.last_name or ''}".strip() or lead_user.email
+
+        # Get all team members
+        team_user_rows = TeamUser.query.filter_by(team_id=team_id).all()
+        member_ids = [tu.user_id for tu in team_user_rows]
+        members_data = []
+        osm_usernames = set()
+
+        # Aggregated stats
+        agg = {
+            "total_tasks_mapped": 0,
+            "total_tasks_validated": 0,
+            "total_tasks_invalidated": 0,
+            "total_checklists_completed": 0,
+            "mapping_payable_total": 0.0,
+            "validation_payable_total": 0.0,
+            "checklist_payable_total": 0.0,
+            "payable_total": 0.0,
+            "requested_total": 0.0,
+            "paid_total": 0.0,
+        }
+
+        for uid in member_ids:
+            u = User.query.get(uid)
+            if not u:
+                continue
+            name = f"{u.first_name or ''} {u.last_name or ''}".strip() or u.email
+            if u.osm_username:
+                osm_usernames.add(u.osm_username)
+
+            agg["total_tasks_mapped"] += u.total_tasks_mapped or 0
+            agg["total_tasks_validated"] += u.total_tasks_validated or 0
+            agg["total_tasks_invalidated"] += u.total_tasks_invalidated or 0
+            agg["total_checklists_completed"] += u.total_checklists_completed or 0
+            agg["mapping_payable_total"] += u.mapping_payable_total or 0
+            agg["validation_payable_total"] += u.validation_payable_total or 0
+            agg["checklist_payable_total"] += u.checklist_payable_total or 0
+            agg["payable_total"] += u.payable_total or 0
+            agg["requested_total"] += u.requested_total or 0
+            agg["paid_total"] += u.paid_total or 0
+
+            members_data.append({
+                "id": u.id,
+                "name": name,
+                "email": u.email,
+                "role": u.role,
+                "osm_username": u.osm_username,
+                "total_tasks_mapped": u.total_tasks_mapped or 0,
+                "total_tasks_validated": u.total_tasks_validated or 0,
+                "total_tasks_invalidated": u.total_tasks_invalidated or 0,
+                "payable_total": round(u.payable_total or 0, 2),
+            })
+
+        # Round aggregated financial values
+        for key in ["mapping_payable_total", "validation_payable_total",
+                     "checklist_payable_total", "payable_total",
+                     "requested_total", "paid_total"]:
+            agg[key] = round(agg[key], 2)
+
+        # Get projects via ProjectTeam
+        project_teams = ProjectTeam.query.filter_by(team_id=team_id).all()
+        projects_data = []
+        for pt in project_teams:
+            proj = Project.query.get(pt.project_id)
+            if not proj:
+                continue
+            # Count tasks by team members in this project
+            team_mapped = 0
+            team_validated = 0
+            team_earnings = 0.0
+            if osm_usernames:
+                tasks = Task.query.filter_by(project_id=proj.id).all()
+                for t in tasks:
+                    if t.mapped_by in osm_usernames and t.mapped:
+                        team_mapped += 1
+                        team_earnings += (t.mapping_rate or 0)
+                    if t.validated_by in osm_usernames and t.validated:
+                        team_validated += 1
+                        team_earnings += (t.validation_rate or 0)
+            projects_data.append({
+                "id": proj.id,
+                "name": proj.name,
+                "url": proj.url,
+                "team_tasks_mapped": team_mapped,
+                "team_tasks_validated": team_validated,
+                "team_earnings": round(team_earnings, 2),
+            })
+
+        # Get assigned trainings
+        team_trainings = TeamTraining.query.filter_by(team_id=team_id).all()
+        trainings_data = []
+        for tt in team_trainings:
+            t = Training.query.get(tt.training_id)
+            if t:
+                trainings_data.append({
+                    "id": t.id,
+                    "title": t.title,
+                    "training_type": t.training_type,
+                    "difficulty": t.difficulty,
+                    "point_value": t.point_value,
+                })
+
+        # Get assigned checklists
+        team_checklists = TeamChecklist.query.filter_by(team_id=team_id).all()
+        checklists_data = []
+        for tc in team_checklists:
+            c = Checklist.query.get(tc.checklist_id)
+            if c:
+                checklists_data.append({
+                    "id": c.id,
+                    "name": c.name,
+                    "difficulty": c.difficulty,
+                    "active_status": c.active_status,
+                })
+
+        return {
+            "team": {
+                "id": team.id,
+                "name": team.name,
+                "description": team.description,
+                "lead_id": team.lead_id,
+                "lead_name": lead_name,
+                "member_count": len(member_ids),
+                "created_at": team.created_at.isoformat() if team.created_at else None,
+            },
+            "members": members_data,
+            "aggregated_stats": agg,
+            "projects": projects_data,
+            "assigned_trainings": trainings_data,
+            "assigned_checklists": checklists_data,
+            "status": 200,
+        }
+
+    @requires_auth
+    def fetch_user_teams(self):
+        """Fetch teams that the current user belongs to."""
+        if not g.user:
+            return {"message": "Missing user info", "status": 304}
+
+        team_user_rows = TeamUser.query.filter_by(user_id=g.user.id).all()
+        teams = []
+        for tu in team_user_rows:
+            team = Team.query.get(tu.team_id)
+            if not team or team.org_id != g.user.org_id:
+                continue
+            member_count = TeamUser.query.filter_by(team_id=team.id).count()
+            lead_name = None
+            if team.lead_id:
+                lead_user = User.query.get(team.lead_id)
+                if lead_user:
+                    lead_name = f"{lead_user.first_name or ''} {lead_user.last_name or ''}".strip() or lead_user.email
+            teams.append({
+                "id": team.id,
+                "name": team.name,
+                "description": team.description,
+                "lead_name": lead_name,
+                "member_count": member_count,
+            })
+
+        return {"teams": teams, "status": 200}
+
+    @requires_auth
+    def fetch_user_team_profile(self):
+        """Fetch team profile scoped for a regular user (no financial data)."""
+        if not g.user:
+            return {"message": "Missing user info", "status": 304}
+
+        team_id = request.json.get("teamId")
+        if not team_id:
+            return {"message": "teamId required", "status": 400}
+
+        team = Team.query.filter_by(id=team_id, org_id=g.user.org_id).first()
+        if not team:
+            return {"message": f"Team {team_id} not found", "status": 400}
+
+        # Verify user is a member of this team
+        membership = TeamUser.query.filter_by(
+            team_id=team_id, user_id=g.user.id
+        ).first()
+        if not membership:
+            return {"message": "You are not a member of this team", "status": 403}
+
+        # Get lead name
+        lead_name = None
+        if team.lead_id:
+            lead_user = User.query.get(team.lead_id)
+            if lead_user:
+                lead_name = f"{lead_user.first_name or ''} {lead_user.last_name or ''}".strip() or lead_user.email
+
+        # Get all team members
+        team_user_rows = TeamUser.query.filter_by(team_id=team_id).all()
+        member_ids = [tu.user_id for tu in team_user_rows]
+        members_data = []
+        osm_usernames = set()
+
+        agg = {
+            "total_tasks_mapped": 0,
+            "total_tasks_validated": 0,
+            "total_tasks_invalidated": 0,
+            "total_checklists_completed": 0,
+        }
+
+        for uid in member_ids:
+            u = User.query.get(uid)
+            if not u:
+                continue
+            name = f"{u.first_name or ''} {u.last_name or ''}".strip() or u.email
+            if u.osm_username:
+                osm_usernames.add(u.osm_username)
+
+            agg["total_tasks_mapped"] += u.total_tasks_mapped or 0
+            agg["total_tasks_validated"] += u.total_tasks_validated or 0
+            agg["total_tasks_invalidated"] += u.total_tasks_invalidated or 0
+            agg["total_checklists_completed"] += u.total_checklists_completed or 0
+
+            members_data.append({
+                "id": u.id,
+                "name": name,
+                "role": u.role,
+                "osm_username": u.osm_username,
+                "total_tasks_mapped": u.total_tasks_mapped or 0,
+                "total_tasks_validated": u.total_tasks_validated or 0,
+            })
+
+        # Get projects via ProjectTeam (no earnings)
+        project_teams = ProjectTeam.query.filter_by(team_id=team_id).all()
+        projects_data = []
+        for pt in project_teams:
+            proj = Project.query.get(pt.project_id)
+            if not proj:
+                continue
+            team_mapped = 0
+            team_validated = 0
+            if osm_usernames:
+                tasks = Task.query.filter_by(project_id=proj.id).all()
+                for t in tasks:
+                    if t.mapped_by in osm_usernames and t.mapped:
+                        team_mapped += 1
+                    if t.validated_by in osm_usernames and t.validated:
+                        team_validated += 1
+            projects_data.append({
+                "id": proj.id,
+                "name": proj.name,
+                "url": proj.url,
+                "team_tasks_mapped": team_mapped,
+                "team_tasks_validated": team_validated,
+            })
+
+        # Get assigned trainings
+        team_trainings = TeamTraining.query.filter_by(team_id=team_id).all()
+        trainings_data = []
+        for tt in team_trainings:
+            t = Training.query.get(tt.training_id)
+            if t:
+                trainings_data.append({
+                    "id": t.id,
+                    "title": t.title,
+                    "training_type": t.training_type,
+                    "difficulty": t.difficulty,
+                    "point_value": t.point_value,
+                })
+
+        # Get assigned checklists
+        team_checklists = TeamChecklist.query.filter_by(team_id=team_id).all()
+        checklists_data = []
+        for tc in team_checklists:
+            c = Checklist.query.get(tc.checklist_id)
+            if c:
+                checklists_data.append({
+                    "id": c.id,
+                    "name": c.name,
+                    "difficulty": c.difficulty,
+                    "active_status": c.active_status,
+                })
+
+        return {
+            "team": {
+                "id": team.id,
+                "name": team.name,
+                "description": team.description,
+                "lead_id": team.lead_id,
+                "lead_name": lead_name,
+                "member_count": len(member_ids),
+                "created_at": team.created_at.isoformat() if team.created_at else None,
+            },
+            "members": members_data,
+            "aggregated_stats": agg,
+            "projects": projects_data,
+            "assigned_trainings": trainings_data,
+            "assigned_checklists": checklists_data,
+            "status": 200,
+        }

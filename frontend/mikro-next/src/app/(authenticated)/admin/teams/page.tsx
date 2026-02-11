@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import {
   Card,
   CardContent,
@@ -366,7 +367,14 @@ export default function AdminTeamsPage() {
             <TableBody>
               {filteredTeams.map((team) => (
                 <TableRow key={team.id}>
-                  <TableCell className="font-medium">{team.name}</TableCell>
+                  <TableCell>
+                    <Link
+                      href={`/admin/teams/${team.id}`}
+                      className="font-medium text-kaart-orange hover:underline"
+                    >
+                      {team.name}
+                    </Link>
+                  </TableCell>
                   <TableCell
                     className="text-muted-foreground max-w-xs truncate"
                     title={team.description || ""}
