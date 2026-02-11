@@ -514,6 +514,36 @@ class Payments(CRUDMixin, SurrogatePK, db.Model):
     notes = db.Column(db.Text, nullable=True)
 
 
+class Team(ModelWithSoftDeleteAndCRUD, SurrogatePK):
+    """Team model for grouping users."""
+
+    __tablename__ = "teams"
+
+    name = db.Column(db.String(255), nullable=False)
+    description = db.Column(db.Text, nullable=True)
+    org_id = db.Column(db.String(255), nullable=True)
+    lead_id = db.Column(db.String(255), nullable=True)
+    created_at = db.Column(db.DateTime, default=func.now())
+    updated_at = db.Column(db.DateTime, default=func.now(), onupdate=func.now())
+
+    def __repr__(self):
+        return f"<Team {self.id}: {self.name}>"
+
+
+class TeamUser(CRUDMixin, SurrogatePK, db.Model):
+    """Association between users and teams."""
+
+    __tablename__ = "team_users"
+
+    user_id = db.Column(db.String(255), nullable=False, index=True)
+    team_id = db.Column(
+        db.Integer,
+        db.ForeignKey("teams.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+
+
 class TimeEntry(CRUDMixin, db.Model):
     """Time tracking entry for contractor clock in/out."""
 

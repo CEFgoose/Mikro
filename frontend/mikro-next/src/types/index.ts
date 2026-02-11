@@ -432,6 +432,35 @@ export interface UserStatsDateResponse {
   status: number;
 }
 
+// Team types
+export interface Team {
+  id: number;
+  name: string;
+  description: string | null;
+  lead_id: string | null;
+  lead_name: string | null;
+  member_count: number;
+  created_at: string;
+}
+
+export interface TeamsResponse {
+  teams: Team[];
+  status: number;
+}
+
+export interface TeamMemberItem {
+  id: string;
+  name: string;
+  email: string;
+  role: string;
+  assigned: string;
+}
+
+export interface TeamMembersResponse {
+  users: TeamMemberItem[];
+  status: number;
+}
+
 // API Response types
 export interface ApiResponse<T = unknown> {
   data?: T;

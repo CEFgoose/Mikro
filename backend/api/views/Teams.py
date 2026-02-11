@@ -1,0 +1,228 @@
+#!/usr/bin/env python3
+"""
+Team API endpoints for Mikro.
+
+Handles team management operations: CRUD and membership.
+"""
+
+from flask.views import MethodView
+from flask import g, request
+
+from ..utils import requires_admin
+from ..database import Team, TeamUser, User
+
+
+class TeamAPI(MethodView):
+    """Team management API endpoints."""
+
+    def post(self, path: str):
+        if path == "fetch_teams":
+            return self.fetch_teams()
+        elif path == "create_team":
+            return self.create_team()
+        elif path == "update_team":
+            return self.update_team()
+        elif path == "delete_team":
+            return self.delete_team()
+        elif path == "fetch_team_members":
+            return self.fetch_team_members()
+        elif path == "assign_team_member":
+            return self.assign_team_member()
+        elif path == "unassign_team_member":
+            return self.unassign_team_member()
+        return {"message": "Unknown path", "status": 404}
+
+    @requires_admin
+    def fetch_teams(self):
+        """List all teams for the org with member counts."""
+        if not g.user:
+            return {"message": "Missing user info", "status": 304}
+
+        org_teams = Team.query.filter_by(org_id=g.user.org_id).all()
+
+        teams = []
+        for team in org_teams:
+            member_count = TeamUser.query.filter_by(team_id=team.id).count()
+
+            lead_name = None
+            if team.lead_id:
+                lead_user = User.query.get(team.lead_id)
+                if lead_user:
+                    lead_name = f"{lead_user.first_name or ''} {lead_user.last_name or ''}".strip() or lead_user.email
+
+            teams.append({
+                "id": team.id,
+                "name": team.name,
+                "description": team.description,
+                "lead_id": team.lead_id,
+                "lead_name": lead_name,
+                "member_count": member_count,
+                "created_at": team.created_at.isoformat() if team.created_at else None,
+            })
+
+        return {"teams": teams, "status": 200}
+
+    @requires_admin
+    def create_team(self):
+        """Create a new team."""
+        if not g.user:
+            return {"message": "Missing user info", "status": 304}
+
+        team_name = request.json.get("teamName")
+        if not team_name:
+            return {"message": "teamName required", "status": 400}
+
+        team_description = request.json.get("teamDescription")
+        lead_id = request.json.get("leadId")
+
+        team = Team.create(
+            name=team_name,
+            description=team_description,
+            org_id=g.user.org_id,
+            lead_id=lead_id,
+        )
+
+        return {
+            "message": "Team created",
+            "team": {
+                "id": team.id,
+                "name": team.name,
+                "description": team.description,
+                "lead_id": team.lead_id,
+            },
+            "status": 200,
+        }
+
+    @requires_admin
+    def update_team(self):
+        """Update team name, description, or lead."""
+        if not g.user:
+            return {"message": "Missing user info", "status": 304}
+
+        team_id = request.json.get("teamId")
+        if not team_id:
+            return {"message": "teamId required", "status": 400}
+
+        team = Team.query.filter_by(id=team_id, org_id=g.user.org_id).first()
+        if not team:
+            return {"message": f"Team {team_id} not found", "status": 400}
+
+        updates = {}
+        if "teamName" in request.json:
+            updates["name"] = request.json["teamName"]
+        if "teamDescription" in request.json:
+            updates["description"] = request.json["teamDescription"]
+        if "leadId" in request.json:
+            updates["lead_id"] = request.json["leadId"]
+
+        if updates:
+            team.update(**updates)
+
+        return {"message": "Team updated", "status": 200}
+
+    @requires_admin
+    def delete_team(self):
+        """Soft-delete a team and remove all member associations."""
+        if not g.user:
+            return {"message": "Missing user info", "status": 304}
+
+        team_id = request.json.get("teamId")
+        if not team_id:
+            return {"message": "teamId required", "status": 400}
+
+        team = Team.query.filter_by(id=team_id, org_id=g.user.org_id).first()
+        if not team:
+            return {"message": f"Team {team_id} not found", "status": 400}
+
+        # Remove all team member associations
+        team_users = TeamUser.query.filter_by(team_id=team_id).all()
+        for tu in team_users:
+            tu.delete(soft=False)
+
+        # Soft-delete the team
+        team.delete(soft=True)
+
+        return {"message": "Team deleted", "status": 200}
+
+    @requires_admin
+    def fetch_team_members(self):
+        """Get all org users with their assignment status for a team."""
+        if not g.user:
+            return {"message": "Missing user info", "status": 304}
+
+        team_id = request.json.get("teamId")
+        if not team_id:
+            return {"message": "teamId required", "status": 400}
+
+        team = Team.query.filter_by(id=team_id, org_id=g.user.org_id).first()
+        if not team:
+            return {"message": f"Team {team_id} not found", "status": 400}
+
+        # Get all assigned user IDs for this team
+        assigned_ids = {
+            tu.user_id
+            for tu in TeamUser.query.filter_by(team_id=team_id).all()
+        }
+
+        # Get all org users
+        org_users = User.query.filter_by(org_id=g.user.org_id).all()
+
+        users = []
+        for user in org_users:
+            name = f"{user.first_name or ''} {user.last_name or ''}".strip() or user.email
+            users.append({
+                "id": user.id,
+                "name": name,
+                "email": user.email,
+                "role": user.role,
+                "assigned": "Assigned" if user.id in assigned_ids else "Not Assigned",
+            })
+
+        return {"users": users, "status": 200}
+
+    @requires_admin
+    def assign_team_member(self):
+        """Add a user to a team (idempotent)."""
+        if not g.user:
+            return {"message": "Missing user info", "status": 304}
+
+        team_id = request.json.get("teamId")
+        user_id = request.json.get("userId")
+        if not team_id:
+            return {"message": "teamId required", "status": 400}
+        if not user_id:
+            return {"message": "userId required", "status": 400}
+
+        team = Team.query.filter_by(id=team_id, org_id=g.user.org_id).first()
+        if not team:
+            return {"message": f"Team {team_id} not found", "status": 400}
+
+        # Check if already assigned
+        existing = TeamUser.query.filter_by(
+            team_id=team_id, user_id=user_id
+        ).first()
+        if not existing:
+            TeamUser.create(team_id=team_id, user_id=user_id)
+
+        return {"message": "User assigned to team", "status": 200}
+
+    @requires_admin
+    def unassign_team_member(self):
+        """Remove a user from a team."""
+        if not g.user:
+            return {"message": "Missing user info", "status": 304}
+
+        team_id = request.json.get("teamId")
+        user_id = request.json.get("userId")
+        if not team_id:
+            return {"message": "teamId required", "status": 400}
+        if not user_id:
+            return {"message": "userId required", "status": 400}
+
+        relation = TeamUser.query.filter_by(
+            team_id=team_id, user_id=user_id
+        ).first()
+        if relation:
+            relation.delete(soft=False)
+
+        return {"message": "User removed from team", "status": 200}

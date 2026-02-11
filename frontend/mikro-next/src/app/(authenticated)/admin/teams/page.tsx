@@ -1,0 +1,546 @@
+"use client";
+
+import { useState } from "react";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  Button,
+  Badge,
+  Modal,
+  ConfirmDialog,
+  Input,
+  Select,
+  Table,
+  TableHeader,
+  TableBody,
+  TableHead,
+  TableRow,
+  TableCell,
+  Skeleton,
+} from "@/components/ui";
+import { useToastActions } from "@/components/ui";
+import {
+  useFetchTeams,
+  useCreateTeam,
+  useUpdateTeam,
+  useDeleteTeam,
+  useFetchTeamMembers,
+  useAssignTeamMember,
+  useUnassignTeamMember,
+  useUsersList,
+} from "@/hooks";
+import type { Team, TeamMemberItem } from "@/types";
+
+export default function AdminTeamsPage() {
+  const { data: teamsData, loading, refetch } = useFetchTeams();
+  const { mutate: createTeam, loading: creating } = useCreateTeam();
+  const { mutate: updateTeam, loading: updating } = useUpdateTeam();
+  const { mutate: deleteTeam } = useDeleteTeam();
+  const { mutate: fetchMembers } = useFetchTeamMembers();
+  const { mutate: assignMember } = useAssignTeamMember();
+  const { mutate: unassignMember } = useUnassignTeamMember();
+  const { data: usersData } = useUsersList();
+  const toast = useToastActions();
+
+  const [search, setSearch] = useState("");
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [editingTeam, setEditingTeam] = useState<Team | null>(null);
+  const [membersTeam, setMembersTeam] = useState<Team | null>(null);
+  const [members, setMembers] = useState<TeamMemberItem[]>([]);
+  const [membersLoading, setMembersLoading] = useState(false);
+  const [membersSearch, setMembersSearch] = useState("");
+  const [deleteTarget, setDeleteTarget] = useState<Team | null>(null);
+
+  // Form state
+  const [formName, setFormName] = useState("");
+  const [formDescription, setFormDescription] = useState("");
+  const [formLeadId, setFormLeadId] = useState("");
+
+  const teams = teamsData?.teams ?? [];
+  const filteredTeams = teams.filter((t) =>
+    t.name.toLowerCase().includes(search.toLowerCase())
+  );
+
+  const orgUsers = usersData?.users ?? [];
+  const leadOptions = [
+    { value: "", label: "No Lead" },
+    ...orgUsers.map((u) => ({
+      value: u.id,
+      label: `${u.name || u.email}`,
+    })),
+  ];
+
+  // Create handlers
+  const openCreateModal = () => {
+    setFormName("");
+    setFormDescription("");
+    setFormLeadId("");
+    setShowCreateModal(true);
+  };
+
+  const handleCreate = async () => {
+    if (!formName.trim()) {
+      toast.error("Team name is required");
+      return;
+    }
+    try {
+      await createTeam({
+        teamName: formName.trim(),
+        teamDescription: formDescription.trim() || null,
+        leadId: formLeadId || null,
+      });
+      toast.success("Team created");
+      setShowCreateModal(false);
+      refetch();
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Failed to create team";
+      toast.error(msg);
+    }
+  };
+
+  // Edit handlers
+  const openEditModal = (team: Team) => {
+    setEditingTeam(team);
+    setFormName(team.name);
+    setFormDescription(team.description ?? "");
+    setFormLeadId(team.lead_id ?? "");
+  };
+
+  const handleUpdate = async () => {
+    if (!editingTeam) return;
+    if (!formName.trim()) {
+      toast.error("Team name is required");
+      return;
+    }
+    try {
+      await updateTeam({
+        teamId: editingTeam.id,
+        teamName: formName.trim(),
+        teamDescription: formDescription.trim() || null,
+        leadId: formLeadId || null,
+      });
+      toast.success("Team updated");
+      setEditingTeam(null);
+      refetch();
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Failed to update team";
+      toast.error(msg);
+    }
+  };
+
+  // Delete handlers
+  const handleDelete = async () => {
+    if (!deleteTarget) return;
+    try {
+      await deleteTeam({ teamId: deleteTarget.id });
+      toast.success("Team deleted");
+      setDeleteTarget(null);
+      refetch();
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Failed to delete team";
+      toast.error(msg);
+    }
+  };
+
+  // Members handlers
+  const openMembersModal = async (team: Team) => {
+    setMembersTeam(team);
+    setMembersSearch("");
+    setMembersLoading(true);
+    try {
+      const res = await fetchMembers({ teamId: team.id });
+      setMembers(res?.users ?? []);
+    } catch {
+      toast.error("Failed to fetch team members");
+      setMembers([]);
+    } finally {
+      setMembersLoading(false);
+    }
+  };
+
+  const handleToggleMember = async (userId: string, currentStatus: string) => {
+    if (!membersTeam) return;
+    try {
+      if (currentStatus === "Assigned") {
+        await unassignMember({ teamId: membersTeam.id, userId });
+      } else {
+        await assignMember({ teamId: membersTeam.id, userId });
+      }
+      // Refresh members list
+      const res = await fetchMembers({ teamId: membersTeam.id });
+      setMembers(res?.users ?? []);
+      refetch(); // Refresh team list for member count
+    } catch {
+      toast.error("Failed to update member assignment");
+    }
+  };
+
+  const filteredMembers = members.filter(
+    (m) =>
+      m.name.toLowerCase().includes(membersSearch.toLowerCase()) ||
+      m.email.toLowerCase().includes(membersSearch.toLowerCase())
+  );
+
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        <div className="flex justify-between items-center">
+          <Skeleton className="h-8 w-32" />
+          <Skeleton className="h-10 w-32" />
+        </div>
+        <Skeleton className="h-10 w-64" />
+        <Skeleton className="h-64 w-full" />
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex justify-between items-center">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">Teams</h1>
+          <p className="text-muted-foreground">
+            Manage teams and member assignments
+          </p>
+        </div>
+        <Button onClick={openCreateModal}>Create Team</Button>
+      </div>
+
+      {/* Stats */}
+      <div className="grid gap-4 md:grid-cols-3">
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium">Total Teams</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{teams.length}</div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium">
+              Total Members Assigned
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">
+              {teams.reduce((sum, t) => sum + t.member_count, 0)}
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium">
+              Teams with Lead
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">
+              {teams.filter((t) => t.lead_id).length}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Search + Table */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center gap-4">
+            <Input
+              placeholder="Search teams..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="max-w-sm"
+            />
+          </div>
+        </CardHeader>
+        <CardContent className="p-0">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Name</TableHead>
+                <TableHead>Description</TableHead>
+                <TableHead>Lead</TableHead>
+                <TableHead className="text-center">Members</TableHead>
+                <TableHead>Created</TableHead>
+                <TableHead className="text-right">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {filteredTeams.map((team) => (
+                <TableRow key={team.id}>
+                  <TableCell className="font-medium">{team.name}</TableCell>
+                  <TableCell className="text-muted-foreground max-w-xs truncate">
+                    {team.description || "—"}
+                  </TableCell>
+                  <TableCell>
+                    {team.lead_name || (
+                      <span className="text-muted-foreground">None</span>
+                    )}
+                  </TableCell>
+                  <TableCell className="text-center">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => openMembersModal(team)}
+                    >
+                      <Badge variant="secondary">{team.member_count}</Badge>
+                    </Button>
+                  </TableCell>
+                  <TableCell className="text-muted-foreground">
+                    {team.created_at
+                      ? new Date(team.created_at).toLocaleDateString()
+                      : "—"}
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <div className="flex justify-end gap-2">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => openEditModal(team)}
+                      >
+                        Edit
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => openMembersModal(team)}
+                      >
+                        Members
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="destructive"
+                        onClick={() => setDeleteTarget(team)}
+                      >
+                        Delete
+                      </Button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))}
+              {filteredTeams.length === 0 && (
+                <TableRow>
+                  <TableCell
+                    colSpan={6}
+                    className="text-center py-8 text-muted-foreground"
+                  >
+                    {search
+                      ? "No teams match your search"
+                      : "No teams yet. Create one to get started."}
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
+
+      {/* Create Team Modal */}
+      <Modal
+        isOpen={showCreateModal}
+        onClose={() => setShowCreateModal(false)}
+        title="Create Team"
+        description="Create a new team to group users"
+        footer={
+          <>
+            <Button
+              variant="outline"
+              onClick={() => setShowCreateModal(false)}
+            >
+              Cancel
+            </Button>
+            <Button onClick={handleCreate} isLoading={creating}>
+              Create Team
+            </Button>
+          </>
+        }
+      >
+        <div className="space-y-4">
+          <Input
+            label="Team Name"
+            placeholder="e.g. East Africa Mappers"
+            value={formName}
+            onChange={(e) => setFormName(e.target.value)}
+          />
+          <div>
+            <label className="block text-sm font-medium mb-1">
+              Description
+            </label>
+            <textarea
+              className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+              rows={3}
+              placeholder="Optional team description..."
+              value={formDescription}
+              onChange={(e) => setFormDescription(e.target.value)}
+            />
+          </div>
+          <Select
+            label="Team Lead"
+            value={formLeadId}
+            onChange={(value) => setFormLeadId(value)}
+            options={leadOptions}
+          />
+        </div>
+      </Modal>
+
+      {/* Edit Team Modal */}
+      <Modal
+        isOpen={!!editingTeam}
+        onClose={() => setEditingTeam(null)}
+        title="Edit Team"
+        description={`Editing "${editingTeam?.name}"`}
+        footer={
+          <>
+            <Button variant="outline" onClick={() => setEditingTeam(null)}>
+              Cancel
+            </Button>
+            <Button onClick={handleUpdate} isLoading={updating}>
+              Save Changes
+            </Button>
+          </>
+        }
+      >
+        <div className="space-y-4">
+          <Input
+            label="Team Name"
+            value={formName}
+            onChange={(e) => setFormName(e.target.value)}
+          />
+          <div>
+            <label className="block text-sm font-medium mb-1">
+              Description
+            </label>
+            <textarea
+              className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+              rows={3}
+              value={formDescription}
+              onChange={(e) => setFormDescription(e.target.value)}
+            />
+          </div>
+          <Select
+            label="Team Lead"
+            value={formLeadId}
+            onChange={(value) => setFormLeadId(value)}
+            options={leadOptions}
+          />
+        </div>
+      </Modal>
+
+      {/* Members Modal */}
+      <Modal
+        isOpen={!!membersTeam}
+        onClose={() => {
+          setMembersTeam(null);
+          setMembers([]);
+        }}
+        title={`Team Members — ${membersTeam?.name}`}
+        description="Assign or remove users from this team"
+        size="lg"
+        footer={
+          <Button
+            variant="outline"
+            onClick={() => {
+              setMembersTeam(null);
+              setMembers([]);
+            }}
+          >
+            Close
+          </Button>
+        }
+      >
+        <div className="space-y-4">
+          <Input
+            placeholder="Search users..."
+            value={membersSearch}
+            onChange={(e) => setMembersSearch(e.target.value)}
+          />
+          {membersLoading ? (
+            <div className="space-y-2">
+              {[1, 2, 3].map((i) => (
+                <Skeleton key={i} className="h-12 w-full" />
+              ))}
+            </div>
+          ) : filteredMembers.length === 0 ? (
+            <p className="text-muted-foreground text-center py-8">
+              {membersSearch
+                ? "No users match your search"
+                : "No users in organization"}
+            </p>
+          ) : (
+            <div className="max-h-96 overflow-y-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>User</TableHead>
+                    <TableHead>Email</TableHead>
+                    <TableHead>Role</TableHead>
+                    <TableHead className="text-center">Status</TableHead>
+                    <TableHead className="text-right">Action</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filteredMembers.map((user) => (
+                    <TableRow key={user.id}>
+                      <TableCell className="font-medium">
+                        {user.name}
+                      </TableCell>
+                      <TableCell className="text-muted-foreground">
+                        {user.email}
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant="secondary">{user.role}</Badge>
+                      </TableCell>
+                      <TableCell className="text-center">
+                        <Badge
+                          variant={
+                            user.assigned === "Assigned"
+                              ? "success"
+                              : "secondary"
+                          }
+                        >
+                          {user.assigned}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <Button
+                          size="sm"
+                          variant={
+                            user.assigned === "Assigned"
+                              ? "destructive"
+                              : "primary"
+                          }
+                          onClick={() =>
+                            handleToggleMember(user.id, user.assigned)
+                          }
+                        >
+                          {user.assigned === "Assigned"
+                            ? "Remove"
+                            : "Assign"}
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          )}
+        </div>
+      </Modal>
+
+      {/* Delete Confirmation */}
+      <ConfirmDialog
+        isOpen={!!deleteTarget}
+        onClose={() => setDeleteTarget(null)}
+        onConfirm={handleDelete}
+        title="Delete Team"
+        message={`Are you sure you want to delete "${deleteTarget?.name}"? All member assignments will be removed.`}
+        confirmText="Delete"
+        variant="destructive"
+      />
+    </div>
+  );
+}

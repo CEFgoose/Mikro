@@ -19,6 +19,8 @@ import type {
   ChangesetsResponse,
   ActivityChartResponse,
   TaskHistoryResponse,
+  TeamsResponse,
+  TeamMembersResponse,
 } from "@/types";
 
 /**
@@ -586,4 +588,34 @@ export function useFetchUserActivityChart() {
 // Admin: fetch task-level history for a user
 export function useFetchUserTaskHistory() {
   return useApiMutation<TaskHistoryResponse>("/user/fetch_user_task_history");
+}
+
+// ─── Teams ─────────────────────────────────────────────────
+
+export function useFetchTeams() {
+  return useApiCall<TeamsResponse>("/team/fetch_teams");
+}
+
+export function useCreateTeam() {
+  return useApiMutation("/team/create_team");
+}
+
+export function useUpdateTeam() {
+  return useApiMutation("/team/update_team");
+}
+
+export function useDeleteTeam() {
+  return useApiMutation("/team/delete_team");
+}
+
+export function useFetchTeamMembers() {
+  return useApiMutation<TeamMembersResponse>("/team/fetch_team_members");
+}
+
+export function useAssignTeamMember() {
+  return useApiMutation("/team/assign_team_member");
+}
+
+export function useUnassignTeamMember() {
+  return useApiMutation("/team/unassign_team_member");
 }

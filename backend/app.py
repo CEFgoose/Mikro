@@ -118,6 +118,7 @@ def _register_views(app):
         ChecklistAPI,
         OSMAuthAPI,
         TimeTrackingAPI,
+        TeamAPI,
     )
 
     # Authentication
@@ -153,6 +154,9 @@ def _register_views(app):
         "/api/timetracking/<path>",
         view_func=TimeTrackingAPI.as_view("timetracking"),
     )
+
+    # Team management
+    app.add_url_rule("/api/team/<path>", view_func=TeamAPI.as_view("team"))
 
 
 # Create application instance for gunicorn
