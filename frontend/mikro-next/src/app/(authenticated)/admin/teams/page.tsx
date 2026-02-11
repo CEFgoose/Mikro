@@ -29,9 +29,12 @@ import {
   useFetchTeamMembers,
   useAssignTeamMember,
   useUnassignTeamMember,
+  useFetchTeamTrainings,
+  useAssignTrainingToTeam,
+  useUnassignTrainingFromTeam,
   useUsersList,
 } from "@/hooks";
-import type { Team, TeamMemberItem } from "@/types";
+import type { Team, TeamMemberItem, TeamTrainingItem } from "@/types";
 
 export default function AdminTeamsPage() {
   const { data: teamsData, loading, refetch } = useFetchTeams();
@@ -52,6 +55,15 @@ export default function AdminTeamsPage() {
   const [membersLoading, setMembersLoading] = useState(false);
   const [membersSearch, setMembersSearch] = useState("");
   const [deleteTarget, setDeleteTarget] = useState<Team | null>(null);
+
+  // Trainings modal state
+  const { mutate: fetchTeamTrainings } = useFetchTeamTrainings();
+  const { mutate: assignTrainingToTeam } = useAssignTrainingToTeam();
+  const { mutate: unassignTrainingFromTeam } = useUnassignTrainingFromTeam();
+  const [trainingsTeam, setTrainingsTeam] = useState<Team | null>(null);
+  const [teamTrainings, setTeamTrainings] = useState<TeamTrainingItem[]>([]);
+  const [trainingsLoading, setTrainingsLoading] = useState(false);
+  const [trainingsSearch, setTrainingsSearch] = useState("");
 
   // Form state
   const [formName, setFormName] = useState("");
@@ -181,6 +193,41 @@ export default function AdminTeamsPage() {
     (m) =>
       m.name.toLowerCase().includes(membersSearch.toLowerCase()) ||
       m.email.toLowerCase().includes(membersSearch.toLowerCase())
+  );
+
+  // Trainings handlers
+  const openTrainingsModal = async (team: Team) => {
+    setTrainingsTeam(team);
+    setTrainingsSearch("");
+    setTrainingsLoading(true);
+    try {
+      const res = await fetchTeamTrainings({ teamId: team.id });
+      setTeamTrainings(res?.trainings ?? []);
+    } catch {
+      toast.error("Failed to fetch team trainings");
+      setTeamTrainings([]);
+    } finally {
+      setTrainingsLoading(false);
+    }
+  };
+
+  const handleToggleTraining = async (trainingId: number, currentStatus: string) => {
+    if (!trainingsTeam) return;
+    try {
+      if (currentStatus === "Assigned") {
+        await unassignTrainingFromTeam({ teamId: trainingsTeam.id, trainingId });
+      } else {
+        await assignTrainingToTeam({ teamId: trainingsTeam.id, trainingId });
+      }
+      const res = await fetchTeamTrainings({ teamId: trainingsTeam.id });
+      setTeamTrainings(res?.trainings ?? []);
+    } catch {
+      toast.error("Failed to update training assignment");
+    }
+  };
+
+  const filteredTrainings = teamTrainings.filter((t) =>
+    t.title?.toLowerCase().includes(trainingsSearch.toLowerCase())
   );
 
   if (loading) {
@@ -313,6 +360,13 @@ export default function AdminTeamsPage() {
                         onClick={() => openMembersModal(team)}
                       >
                         Members
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => openTrainingsModal(team)}
+                      >
+                        Trainings
                       </Button>
                       <Button
                         size="sm"
@@ -521,6 +575,115 @@ export default function AdminTeamsPage() {
                           }
                         >
                           {user.assigned === "Assigned"
+                            ? "Remove"
+                            : "Assign"}
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          )}
+        </div>
+      </Modal>
+
+      {/* Trainings Modal */}
+      <Modal
+        isOpen={!!trainingsTeam}
+        onClose={() => {
+          setTrainingsTeam(null);
+          setTeamTrainings([]);
+        }}
+        title={`Team Trainings — ${trainingsTeam?.name}`}
+        description="Assign or remove trainings from this team"
+        size="3xl"
+        footer={
+          <Button
+            variant="outline"
+            onClick={() => {
+              setTrainingsTeam(null);
+              setTeamTrainings([]);
+            }}
+          >
+            Close
+          </Button>
+        }
+      >
+        <div className="space-y-4">
+          <Input
+            placeholder="Search trainings..."
+            value={trainingsSearch}
+            onChange={(e) => setTrainingsSearch(e.target.value)}
+          />
+          {trainingsLoading ? (
+            <div className="space-y-2">
+              {[1, 2, 3].map((i) => (
+                <Skeleton key={i} className="h-12 w-full" />
+              ))}
+            </div>
+          ) : filteredTrainings.length === 0 ? (
+            <p className="text-muted-foreground text-center py-8">
+              {trainingsSearch
+                ? "No trainings match your search"
+                : "No trainings in organization"}
+            </p>
+          ) : (
+            <div className="max-h-96 overflow-y-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Title</TableHead>
+                    <TableHead>Type</TableHead>
+                    <TableHead>Difficulty</TableHead>
+                    <TableHead className="text-center">Points</TableHead>
+                    <TableHead className="text-center">Status</TableHead>
+                    <TableHead className="text-right">Action</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filteredTrainings.map((training) => (
+                    <TableRow key={training.id}>
+                      <TableCell className="font-medium">
+                        {training.title}
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant="secondary">
+                          {training.training_type || "—"}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant="secondary">
+                          {training.difficulty || "—"}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-center">
+                        {training.point_value ?? 0}
+                      </TableCell>
+                      <TableCell className="text-center">
+                        <Badge
+                          variant={
+                            training.assigned === "Assigned"
+                              ? "success"
+                              : "secondary"
+                          }
+                        >
+                          {training.assigned}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <Button
+                          size="sm"
+                          variant={
+                            training.assigned === "Assigned"
+                              ? "destructive"
+                              : "primary"
+                          }
+                          onClick={() =>
+                            handleToggleTraining(training.id, training.assigned)
+                          }
+                        >
+                          {training.assigned === "Assigned"
                             ? "Remove"
                             : "Assign"}
                         </Button>

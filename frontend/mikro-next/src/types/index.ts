@@ -474,6 +474,20 @@ export interface ProjectTeamsResponse {
   status: number;
 }
 
+export interface TeamTrainingItem {
+  id: number;
+  title: string;
+  training_type: string;
+  difficulty: string;
+  point_value: number;
+  assigned: string;
+}
+
+export interface TeamTrainingsResponse {
+  trainings: TeamTrainingItem[];
+  status: number;
+}
+
 // API Response types
 export interface ApiResponse<T = unknown> {
   data?: T;

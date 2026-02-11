@@ -9,7 +9,7 @@ from flask.views import MethodView
 from flask import g, request
 
 from ..utils import requires_admin
-from ..database import Team, TeamUser, User, ProjectTeam, ProjectUser, Project
+from ..database import Team, TeamUser, User, ProjectTeam, ProjectUser, Project, TeamTraining, Training
 
 
 class TeamAPI(MethodView):
@@ -36,6 +36,12 @@ class TeamAPI(MethodView):
             return self.assign_team_to_project()
         elif path == "unassign_team_from_project":
             return self.unassign_team_from_project()
+        elif path == "fetch_team_trainings":
+            return self.fetch_team_trainings()
+        elif path == "assign_training_to_team":
+            return self.assign_training_to_team()
+        elif path == "unassign_training_from_team":
+            return self.unassign_training_from_team()
         return {"message": "Unknown path", "status": 404}
 
     @requires_admin
@@ -363,3 +369,83 @@ class TeamAPI(MethodView):
             "removed": removed,
             "status": 200,
         }
+
+    @requires_admin
+    def fetch_team_trainings(self):
+        """Get all org trainings with their assignment status for a team."""
+        if not g.user:
+            return {"message": "Missing user info", "status": 304}
+
+        team_id = request.json.get("teamId")
+        if not team_id:
+            return {"message": "teamId required", "status": 400}
+
+        team = Team.query.filter_by(id=team_id, org_id=g.user.org_id).first()
+        if not team:
+            return {"message": f"Team {team_id} not found", "status": 400}
+
+        assigned_ids = {
+            tt.training_id
+            for tt in TeamTraining.query.filter_by(team_id=team_id).all()
+        }
+
+        org_trainings = Training.query.filter_by(org_id=g.user.org_id).all()
+
+        trainings = []
+        for t in org_trainings:
+            trainings.append({
+                "id": t.id,
+                "title": t.title,
+                "training_type": t.training_type,
+                "difficulty": t.difficulty,
+                "point_value": t.point_value,
+                "assigned": "Assigned" if t.id in assigned_ids else "Not Assigned",
+            })
+
+        return {"trainings": trainings, "status": 200}
+
+    @requires_admin
+    def assign_training_to_team(self):
+        """Assign a training to a team (idempotent)."""
+        if not g.user:
+            return {"message": "Missing user info", "status": 304}
+
+        team_id = request.json.get("teamId")
+        training_id = request.json.get("trainingId")
+        if not team_id:
+            return {"message": "teamId required", "status": 400}
+        if not training_id:
+            return {"message": "trainingId required", "status": 400}
+
+        team = Team.query.filter_by(id=team_id, org_id=g.user.org_id).first()
+        if not team:
+            return {"message": f"Team {team_id} not found", "status": 400}
+
+        existing = TeamTraining.query.filter_by(
+            team_id=team_id, training_id=training_id
+        ).first()
+        if not existing:
+            TeamTraining.create(team_id=team_id, training_id=training_id)
+
+        return {"message": "Training assigned to team", "status": 200}
+
+    @requires_admin
+    def unassign_training_from_team(self):
+        """Remove a training from a team."""
+        if not g.user:
+            return {"message": "Missing user info", "status": 304}
+
+        team_id = request.json.get("teamId")
+        training_id = request.json.get("trainingId")
+        if not team_id:
+            return {"message": "teamId required", "status": 400}
+        if not training_id:
+            return {"message": "trainingId required", "status": 400}
+
+        relation = TeamTraining.query.filter_by(
+            team_id=team_id, training_id=training_id
+        ).first()
+        if relation:
+            relation.delete(soft=False)
+
+        return {"message": "Training removed from team", "status": 200}

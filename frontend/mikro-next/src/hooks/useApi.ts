@@ -22,6 +22,7 @@ import type {
   TeamsResponse,
   TeamMembersResponse,
   ProjectTeamsResponse,
+  TeamTrainingsResponse,
 } from "@/types";
 
 /**
@@ -635,4 +636,16 @@ export function useUnassignTeamFromProject() {
   return useApiMutation<{ message: string; removed: number; status: number }>(
     "/team/unassign_team_from_project"
   );
+}
+
+export function useFetchTeamTrainings() {
+  return useApiMutation<TeamTrainingsResponse>("/team/fetch_team_trainings");
+}
+
+export function useAssignTrainingToTeam() {
+  return useApiMutation<{ message: string; status: number }>("/team/assign_training_to_team");
+}
+
+export function useUnassignTrainingFromTeam() {
+  return useApiMutation<{ message: string; status: number }>("/team/unassign_training_from_team");
 }
