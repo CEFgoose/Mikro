@@ -76,12 +76,13 @@ function StatCard({ label, value, sub }: { label: string; value: string | number
 
 export default function UserProfilePage() {
   const params = useParams();
-  const userId = params.id as string;
+  const userId = decodeURIComponent(params.id as string);
 
   const { mutate: fetchProfile, loading: profileLoading, error: profileError } = useFetchUserProfile();
   const { mutate: fetchStats, loading: statsLoading } = useFetchUserStatsByDate();
 
   const [user, setUser] = useState<UserProfileData | null>(null);
+  const [pageLoading, setPageLoading] = useState(true);
   const [datePreset, setDatePreset] = useState<DatePreset>("monthly");
   const [customStart, setCustomStart] = useState("");
   const [customEnd, setCustomEnd] = useState("");
@@ -96,7 +97,7 @@ export default function UserProfilePage() {
     if (userId) {
       fetchProfile({ userId }).then((res) => {
         if (res?.user) setUser(res.user);
-      }).catch(() => {});
+      }).catch(() => {}).finally(() => setPageLoading(false));
     }
   }, [userId, fetchProfile]);
 
@@ -135,7 +136,7 @@ export default function UserProfilePage() {
     return (first + last).toUpperCase() || user.full_name?.[0]?.toUpperCase() || "?";
   }, [user]);
 
-  if (profileLoading && !user) {
+  if (pageLoading) {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-kaart-orange" />

@@ -62,6 +62,8 @@ class UserAPI(MethodView):
             return self.fetch_user_profile_by_id()
         elif path == "fetch_user_stats_by_date":
             return self.fetch_user_stats_by_date()
+        elif path == "fetch_user_changesets":
+            return self.fetch_user_changesets()
         # elif path == "register_user":
         #     return self.register_user()
         return {
@@ -820,11 +822,18 @@ class UserAPI(MethodView):
         if not user or user.org_id != g.user.org_id:
             return {"message": "User not found in your organization", "status": 404}
 
+        # Support both date-only and datetime formats
         try:
-            start_date = datetime.strptime(start_date_str, "%Y-%m-%d")
-            end_date = datetime.strptime(end_date_str, "%Y-%m-%d") + timedelta(days=1)
+            try:
+                start_date = datetime.strptime(start_date_str, "%Y-%m-%dT%H:%M:%S")
+            except ValueError:
+                start_date = datetime.strptime(start_date_str, "%Y-%m-%d")
+            try:
+                end_date = datetime.strptime(end_date_str, "%Y-%m-%dT%H:%M:%S")
+            except ValueError:
+                end_date = datetime.strptime(end_date_str, "%Y-%m-%d") + timedelta(days=1)
         except ValueError:
-            return {"message": "Invalid date format. Use YYYY-MM-DD.", "status": 400}
+            return {"message": "Invalid date format. Use YYYY-MM-DD or YYYY-MM-DDTHH:MM:SS.", "status": 400}
 
         # Query time entries in date range
         entries = (
@@ -867,6 +876,60 @@ class UserAPI(MethodView):
             for v in sorted(project_hours.values(), key=lambda x: x["total_seconds"], reverse=True)
         ]
 
+        # Date-filtered task stats
+        osm_username = user.osm_username
+        tasks_mapped_in_range = 0
+        tasks_validated_in_range = 0
+        tasks_invalidated_in_range = 0
+        validator_validated_in_range = 0
+        mapping_earnings_in_range = 0.0
+        validation_earnings_in_range = 0.0
+
+        if osm_username:
+            mapped_tasks = Task.query.filter(
+                Task.mapped_by == osm_username,
+                Task.mapped == True,
+                Task.date_mapped >= start_date,
+                Task.date_mapped < end_date,
+            ).all()
+            tasks_mapped_in_range = len(mapped_tasks)
+            mapping_earnings_in_range = sum(
+                t.mapping_rate or 0 for t in mapped_tasks if t.validated
+            )
+
+            validated_tasks = Task.query.filter(
+                Task.mapped_by == osm_username,
+                Task.validated == True,
+                Task.date_validated >= start_date,
+                Task.date_validated < end_date,
+            ).all()
+            tasks_validated_in_range = len(validated_tasks)
+
+            invalidated_tasks = Task.query.filter(
+                Task.mapped_by == osm_username,
+                Task.invalidated == True,
+                Task.date_validated >= start_date,
+                Task.date_validated < end_date,
+            ).all()
+            tasks_invalidated_in_range = len(invalidated_tasks)
+
+            validator_validated_in_range = Task.query.filter(
+                Task.validated_by == osm_username,
+                Task.validated == True,
+                Task.date_validated >= start_date,
+                Task.date_validated < end_date,
+            ).count()
+
+            validation_earnings_in_range = sum(
+                t.validation_rate or 0
+                for t in Task.query.filter(
+                    Task.validated_by == osm_username,
+                    Task.validated == True,
+                    Task.date_validated >= start_date,
+                    Task.date_validated < end_date,
+                ).all()
+            )
+
         return {
             "status": 200,
             "stats": {
@@ -876,5 +939,175 @@ class UserAPI(MethodView):
                 "entries_count": len(entries),
                 "time_entries": [self._format_time_entry(e) for e in entries],
                 "projects": projects_list,
+                "tasks_mapped": tasks_mapped_in_range,
+                "tasks_validated": tasks_validated_in_range,
+                "tasks_invalidated": tasks_invalidated_in_range,
+                "validator_validated": validator_validated_in_range,
+                "mapping_earnings": round(mapping_earnings_in_range, 2),
+                "validation_earnings": round(validation_earnings_in_range, 2),
             },
+        }
+
+    @requires_admin
+    def fetch_user_changesets(self):
+        """Fetch OSM changesets for a user within a date range."""
+        import xml.etree.ElementTree as ET
+        from concurrent.futures import ThreadPoolExecutor, as_completed
+
+        data = request.get_json() or {}
+        user_id = data.get("userId")
+        start_date_str = data.get("startDate")
+        end_date_str = data.get("endDate")
+
+        if not user_id or not start_date_str or not end_date_str:
+            return {"message": "userId, startDate, and endDate are required", "status": 400}
+
+        user = User.query.get(user_id)
+        if not user or user.org_id != g.user.org_id:
+            return {"message": "User not found in your organization", "status": 404}
+
+        osm_username = user.osm_username
+        if not osm_username:
+            return {
+                "status": 200,
+                "changesets": [],
+                "summary": {
+                    "totalChangesets": 0, "totalChanges": 0,
+                    "totalAdded": 0, "totalModified": 0, "totalDeleted": 0,
+                },
+                "hashtagSummary": {},
+                "message": "No OSM username set for this user",
+            }
+
+        # Fetch changesets from OSM API
+        osm_url = "https://api.openstreetmap.org/api/0.6/changesets"
+        params = {
+            "display_name": osm_username,
+            "time": f"{start_date_str},{end_date_str}",
+            "closed": "true",
+        }
+
+        try:
+            resp = requests.get(osm_url, params=params, timeout=30)
+            if not resp.ok:
+                current_app.logger.error(f"OSM API error: {resp.status_code} - {resp.text[:200]}")
+                return {"message": "Could not reach OSM API", "status": 502}
+        except requests.RequestException as e:
+            current_app.logger.error(f"OSM API request failed: {e}")
+            return {"message": f"OSM API error: {str(e)}", "status": 502}
+
+        # Parse changeset list XML
+        try:
+            root = ET.fromstring(resp.text)
+        except ET.ParseError as e:
+            current_app.logger.error(f"Failed to parse OSM XML: {e}")
+            return {"message": "Failed to parse OSM API response", "status": 502}
+
+        changeset_metas = []
+        for cs in root.findall("changeset"):
+            tags = {}
+            for tag in cs.findall("tag"):
+                tags[tag.get("k", "")] = tag.get("v", "")
+
+            # Extract hashtags from comment
+            comment = tags.get("comment", "")
+            hashtags_from_comment = [
+                word for word in comment.split() if word.startswith("#")
+            ]
+            # Also check the hashtag tag
+            hashtag_tag = tags.get("hashtag", "")
+            if hashtag_tag:
+                for h in hashtag_tag.split(";"):
+                    h = h.strip()
+                    if h and not h.startswith("#"):
+                        h = "#" + h
+                    if h and h not in hashtags_from_comment:
+                        hashtags_from_comment.append(h)
+
+            changeset_metas.append({
+                "id": int(cs.get("id", 0)),
+                "createdAt": cs.get("created_at", ""),
+                "closedAt": cs.get("closed_at", ""),
+                "changesCount": int(cs.get("changes_count", 0)),
+                "comment": comment,
+                "hashtags": hashtags_from_comment,
+                "source": tags.get("source", ""),
+                "imageryUsed": tags.get("imagery_used", tags.get("source", "")),
+                "added": None,
+                "modified": None,
+                "deleted": None,
+            })
+
+        # Fetch detail counts for each changeset concurrently
+        def fetch_changeset_details(cs_id):
+            """Fetch OsmChange XML and count create/modify/delete elements."""
+            try:
+                detail_url = f"https://api.openstreetmap.org/api/0.6/changeset/{cs_id}/download"
+                detail_resp = requests.get(detail_url, timeout=30)
+                if not detail_resp.ok:
+                    return cs_id, None, None, None
+
+                detail_root = ET.fromstring(detail_resp.text)
+                added = 0
+                modified = 0
+                deleted = 0
+                for child in detail_root:
+                    tag_name = child.tag.lower()
+                    count = len(list(child))
+                    if tag_name == "create":
+                        added += count
+                    elif tag_name == "modify":
+                        modified += count
+                    elif tag_name == "delete":
+                        deleted += count
+
+                return cs_id, added, modified, deleted
+            except Exception:
+                return cs_id, None, None, None
+
+        # Concurrently fetch details (max 5 workers)
+        detail_map = {}
+        if changeset_metas:
+            with ThreadPoolExecutor(max_workers=5) as executor:
+                futures = {
+                    executor.submit(fetch_changeset_details, cs["id"]): cs["id"]
+                    for cs in changeset_metas
+                }
+                for future in as_completed(futures):
+                    cs_id, added, modified, deleted = future.result()
+                    detail_map[cs_id] = (added, modified, deleted)
+
+        # Merge details into changeset metadata
+        for cs in changeset_metas:
+            details = detail_map.get(cs["id"])
+            if details:
+                cs["added"], cs["modified"], cs["deleted"] = details
+
+        # Compute summary
+        total_changesets = len(changeset_metas)
+        total_changes = sum(cs["changesCount"] for cs in changeset_metas)
+        total_added = sum(cs["added"] or 0 for cs in changeset_metas)
+        total_modified = sum(cs["modified"] or 0 for cs in changeset_metas)
+        total_deleted = sum(cs["deleted"] or 0 for cs in changeset_metas)
+
+        # Aggregate hashtags
+        hashtag_summary = {}
+        for cs in changeset_metas:
+            for h in cs["hashtags"]:
+                hashtag_summary[h] = hashtag_summary.get(h, 0) + 1
+
+        # Sort changesets by creation date (newest first)
+        changeset_metas.sort(key=lambda x: x["createdAt"], reverse=True)
+
+        return {
+            "status": 200,
+            "changesets": changeset_metas,
+            "summary": {
+                "totalChangesets": total_changesets,
+                "totalChanges": total_changes,
+                "totalAdded": total_added,
+                "totalModified": total_modified,
+                "totalDeleted": total_deleted,
+            },
+            "hashtagSummary": hashtag_summary,
         }

@@ -196,6 +196,10 @@ class Task(ModelWithSoftDeleteAndCRUD, SurrogatePK):
     parent_task_id = db.Column(db.Integer, nullable=True)  # From TM4 for split tracking
     sibling_count = db.Column(db.Integer, nullable=True)  # Total siblings in split group (4 for TM4)
 
+    # Date tracking for time-filtered stats
+    date_mapped = db.Column(db.DateTime, nullable=True)
+    date_validated = db.Column(db.DateTime, nullable=True)
+
     # Attribution
     mapped_by = db.Column(db.String(100), nullable=False)
     validated_by = db.Column(db.String(100), nullable=True)

@@ -16,6 +16,7 @@ import type {
   TimeTrackingActiveSessionsResponse,
   UserProfileResponse,
   UserStatsDateResponse,
+  ChangesetsResponse,
 } from "@/types";
 
 /**
@@ -568,4 +569,9 @@ export function usePurgeTimeEntries() {
     entries_deleted: number;
     status: number;
   }>("/timetracking/purge_all_time_entries");
+}
+
+// Admin: fetch OSM changesets for a user
+export function useFetchUserChangesets() {
+  return useApiMutation<ChangesetsResponse>("/user/fetch_user_changesets");
 }

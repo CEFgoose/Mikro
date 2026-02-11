@@ -422,6 +422,12 @@ export interface UserStatsDateResponse {
     entries_count: number;
     time_entries: TimeEntry[];
     projects: UserStatsDateProjectBreakdown[];
+    tasks_mapped: number;
+    tasks_validated: number;
+    tasks_invalidated: number;
+    validator_validated: number;
+    mapping_earnings: number;
+    validation_earnings: number;
   };
   status: number;
 }
@@ -462,5 +468,36 @@ export interface LoginResponse {
   city: string;
   country: string;
   needs_onboarding: boolean;
+  status: number;
+}
+
+// OSM Changeset types
+export interface Changeset {
+  id: number;
+  createdAt: string;
+  closedAt: string;
+  changesCount: number;
+  added: number | null;
+  modified: number | null;
+  deleted: number | null;
+  comment: string;
+  hashtags: string[];
+  source: string;
+  imageryUsed: string;
+}
+
+export interface ChangesetSummary {
+  totalChangesets: number;
+  totalChanges: number;
+  totalAdded: number;
+  totalModified: number;
+  totalDeleted: number;
+}
+
+export interface ChangesetsResponse {
+  changesets: Changeset[];
+  summary: ChangesetSummary;
+  hashtagSummary: Record<string, number>;
+  message?: string;
   status: number;
 }

@@ -8,6 +8,7 @@ TM3 support has been removed.
 
 import requests
 
+from sqlalchemy import func
 from flask.views import MethodView
 from flask import g, request, current_app
 
@@ -200,6 +201,7 @@ class TaskAPI(MethodView):
                                 validated=True,
                                 invalidated=False,
                                 self_validated=is_self_validated,
+                                date_validated=func.now(),
                             )
 
                             # Create UserTasks entry for validator (for validator dashboard)
@@ -395,6 +397,7 @@ class TaskAPI(MethodView):
                             target_task.update(
                                 invalidated=True,
                                 validated=False,
+                                date_validated=func.now(),
                             )
 
                             # For split tasks, only update stats when ALL siblings are invalidated
@@ -508,6 +511,7 @@ class TaskAPI(MethodView):
                             mapped_by=contrib_username,
                             validated_by="",
                             validated=False,
+                            date_mapped=func.now(),
                         )
                         UserTasks.create(user_id=mapper.id, task_id=new_task.id)
                         mapper.update(total_tasks_mapped=mapper.total_tasks_mapped + 1)
@@ -616,6 +620,7 @@ class TaskAPI(MethodView):
                         task_exists.update(
                             invalidated=True,
                             validated=False,
+                            date_validated=func.now(),
                         )
                         # For split tasks, only count when ALL siblings are invalidated
                         if self._should_count_invalidation(task_exists):
@@ -642,6 +647,8 @@ class TaskAPI(MethodView):
                         validated_by="",
                         validated=False,
                         invalidated=True,
+                        date_mapped=func.now(),
+                        date_validated=func.now(),
                     )
                     UserTasks.create(user_id=mapper.id, task_id=new_task.id)
                     # For new tasks, always count mapped (it's a new task)
@@ -742,6 +749,8 @@ class TaskAPI(MethodView):
                             validated_by=task_info.get("invalidatedBy", ""),
                             validated=False,
                             invalidated=True,
+                            date_mapped=func.now(),
+                            date_validated=func.now(),
                         )
                         UserTasks.create(user_id=user.id, task_id=new_task.id)
                         # For new tasks, always count mapped (it's a new task)
