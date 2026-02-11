@@ -461,6 +461,19 @@ export interface TeamMembersResponse {
   status: number;
 }
 
+export interface ProjectTeamItem {
+  id: number;
+  name: string;
+  member_count: number;
+  lead_name: string | null;
+  assigned: string;
+}
+
+export interface ProjectTeamsResponse {
+  teams: ProjectTeamItem[];
+  status: number;
+}
+
 // API Response types
 export interface ApiResponse<T = unknown> {
   data?: T;

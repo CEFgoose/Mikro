@@ -544,6 +544,25 @@ class TeamUser(CRUDMixin, SurrogatePK, db.Model):
     )
 
 
+class ProjectTeam(CRUDMixin, SurrogatePK, db.Model):
+    """Association between teams and projects."""
+
+    __tablename__ = "project_teams"
+
+    team_id = db.Column(
+        db.Integer,
+        db.ForeignKey("teams.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    project_id = db.Column(
+        db.BigInteger,
+        db.ForeignKey("projects.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+
+
 class TimeEntry(CRUDMixin, db.Model):
     """Time tracking entry for contractor clock in/out."""
 

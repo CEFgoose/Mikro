@@ -21,6 +21,7 @@ import type {
   TaskHistoryResponse,
   TeamsResponse,
   TeamMembersResponse,
+  ProjectTeamsResponse,
 } from "@/types";
 
 /**
@@ -618,4 +619,20 @@ export function useAssignTeamMember() {
 
 export function useUnassignTeamMember() {
   return useApiMutation("/team/unassign_team_member");
+}
+
+export function useFetchProjectTeams() {
+  return useApiMutation<ProjectTeamsResponse>("/team/fetch_project_teams");
+}
+
+export function useAssignTeamToProject() {
+  return useApiMutation<{ message: string; assigned: number; skipped: number; status: number }>(
+    "/team/assign_team_to_project"
+  );
+}
+
+export function useUnassignTeamFromProject() {
+  return useApiMutation<{ message: string; removed: number; status: number }>(
+    "/team/unassign_team_from_project"
+  );
 }

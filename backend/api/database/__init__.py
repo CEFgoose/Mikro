@@ -21,6 +21,7 @@ from .core import (
     UserChecklistItem,
     Team,
     TeamUser,
+    ProjectTeam,
     TimeEntry,
 )
 
@@ -47,5 +48,6 @@ __all__ = [
     "UserChecklistItem",
     "Team",
     "TeamUser",
+    "ProjectTeam",
     "TimeEntry",
 ]

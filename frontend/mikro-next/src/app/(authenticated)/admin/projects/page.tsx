@@ -34,9 +34,12 @@ import {
   useFetchProjectUsers,
   useAssignUser,
   usePurgeProjects,
+  useFetchProjectTeams,
+  useAssignTeamToProject,
+  useUnassignTeamFromProject,
 } from "@/hooks";
 import { getTM4ProjectUrl } from "@/lib/utils";
-import type { Project } from "@/types";
+import type { Project, ProjectTeamItem } from "@/types";
 
 interface ProjectUserItem {
   id: string;
@@ -85,6 +88,9 @@ export default function AdminProjectsPage() {
   const { mutate: fetchProjectUsers, loading: loadingUsers } = useFetchProjectUsers();
   const { mutate: toggleAssignUser, loading: assigning } = useAssignUser();
   const { mutate: purgeProjects, loading: purging } = usePurgeProjects();
+  const { mutate: fetchProjectTeams, loading: loadingTeams } = useFetchProjectTeams();
+  const { mutate: assignTeamToProject } = useAssignTeamToProject();
+  const { mutate: unassignTeamFromProject } = useUnassignTeamFromProject();
   const toast = useToastActions();
 
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
@@ -95,7 +101,8 @@ export default function AdminProjectsPage() {
   const [formData, setFormData] = useState<ProjectFormData>(defaultFormData);
   const [budgetCalculation, setBudgetCalculation] = useState("");
   const [projectUsers, setProjectUsers] = useState<ProjectUserItem[]>([]);
-  const [editTab, setEditTab] = useState<"settings" | "users">("settings");
+  const [projectTeams, setProjectTeams] = useState<ProjectTeamItem[]>([]);
+  const [editTab, setEditTab] = useState<"settings" | "users" | "teams">("settings");
 
   const activeProjects = projects?.org_active_projects ?? [];
   const inactiveProjects = projects?.org_inactive_projects ?? [];
@@ -210,13 +217,18 @@ export default function AdminProjectsPage() {
     });
     setEditTab("settings");
     setShowEditModal(true);
-    // Fetch users for this project
+    // Fetch users and teams for this project
     try {
-      const response = await fetchProjectUsers({ project_id: project.id });
-      setProjectUsers(response?.users ?? []);
+      const [usersResponse, teamsResponse] = await Promise.all([
+        fetchProjectUsers({ project_id: project.id }),
+        fetchProjectTeams({ projectId: project.id }),
+      ]);
+      setProjectUsers(usersResponse?.users ?? []);
+      setProjectTeams(teamsResponse?.teams ?? []);
     } catch {
-      console.error("Failed to fetch project users");
+      console.error("Failed to fetch project data");
       setProjectUsers([]);
+      setProjectTeams([]);
     }
   };
 
@@ -230,6 +242,36 @@ export default function AdminProjectsPage() {
       toast.success("User assignment updated");
     } catch {
       toast.error("Failed to update user assignment");
+    }
+  };
+
+  const handleToggleTeamAssignment = async (teamId: number, currentStatus: string) => {
+    if (!selectedProject) return;
+    try {
+      if (currentStatus === "Assigned") {
+        const result = await unassignTeamFromProject({
+          teamId,
+          projectId: selectedProject.id,
+        });
+        toast.success(`Team removed — ${result.removed} user(s) unassigned`);
+      } else {
+        const result = await assignTeamToProject({
+          teamId,
+          projectId: selectedProject.id,
+        });
+        toast.success(
+          `Team assigned — ${result.assigned} user(s) added${result.skipped ? `, ${result.skipped} already assigned` : ""}`
+        );
+      }
+      // Refresh both teams and users lists
+      const [usersResponse, teamsResponse] = await Promise.all([
+        fetchProjectUsers({ project_id: selectedProject.id }),
+        fetchProjectTeams({ projectId: selectedProject.id }),
+      ]);
+      setProjectUsers(usersResponse?.users ?? []);
+      setProjectTeams(teamsResponse?.teams ?? []);
+    } catch {
+      toast.error("Failed to update team assignment");
     }
   };
 
@@ -520,6 +562,7 @@ export default function AdminProjectsPage() {
           setShowEditModal(false);
           setSelectedProject(null);
           setProjectUsers([]);
+          setProjectTeams([]);
         }}
         title="Edit Project"
         description={`Editing ${selectedProject?.name || "project"}`}
@@ -541,11 +584,14 @@ export default function AdminProjectsPage() {
           )
         }
       >
-        <Tabs defaultValue="settings" value={editTab} onValueChange={(v) => setEditTab(v as "settings" | "users")}>
+        <Tabs defaultValue="settings" value={editTab} onValueChange={(v) => setEditTab(v as "settings" | "users" | "teams")}>
           <TabsList className="mb-4">
             <TabsTrigger value="settings">Settings</TabsTrigger>
             <TabsTrigger value="users">
               Users ({projectUsers.filter(u => u.assigned === "Yes").length}/{selectedProject?.max_editors ?? 0})
+            </TabsTrigger>
+            <TabsTrigger value="teams">
+              Teams ({projectTeams.filter(t => t.assigned === "Assigned").length})
             </TabsTrigger>
           </TabsList>
 
@@ -658,6 +704,59 @@ export default function AdminProjectsPage() {
                             disabled={assigning}
                           >
                             {user.assigned === "Yes" ? "Unassign" : "Assign"}
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            )}
+          </TabsContent>
+
+          <TabsContent value="teams">
+            {loadingTeams ? (
+              <div className="space-y-2">
+                {[1, 2, 3].map((i) => (
+                  <Skeleton key={i} className="h-12 w-full" />
+                ))}
+              </div>
+            ) : projectTeams.length === 0 ? (
+              <p className="text-muted-foreground text-center py-8">No teams in organization</p>
+            ) : (
+              <div className="max-h-80 overflow-y-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Team</TableHead>
+                      <TableHead className="text-center">Members</TableHead>
+                      <TableHead>Lead</TableHead>
+                      <TableHead className="text-center">Status</TableHead>
+                      <TableHead className="text-right">Action</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {projectTeams.map((team) => (
+                      <TableRow key={team.id}>
+                        <TableCell className="font-medium">{team.name}</TableCell>
+                        <TableCell className="text-center">
+                          <Badge variant="secondary">{team.member_count}</Badge>
+                        </TableCell>
+                        <TableCell className="text-muted-foreground">
+                          {team.lead_name || "None"}
+                        </TableCell>
+                        <TableCell className="text-center">
+                          <Badge variant={team.assigned === "Assigned" ? "success" : "secondary"}>
+                            {team.assigned}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <Button
+                            size="sm"
+                            variant={team.assigned === "Assigned" ? "destructive" : "primary"}
+                            onClick={() => handleToggleTeamAssignment(team.id, team.assigned)}
+                          >
+                            {team.assigned === "Assigned" ? "Unassign" : "Assign"}
                           </Button>
                         </TableCell>
                       </TableRow>
