@@ -3,19 +3,44 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
+import dynamic from "next/dynamic";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui";
 import {
   useFetchUserProfile,
   useFetchUserStatsByDate,
   useFetchUserChangesets,
+  useFetchUserActivityChart,
+  useFetchUserTaskHistory,
 } from "@/hooks/useApi";
+import {
+  ComposedChart,
+  Bar,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  ResponsiveContainer,
+} from "recharts";
 import type {
   UserProfileData,
   TimeEntry,
   UserStatsDateProjectBreakdown,
   Changeset,
   ChangesetSummary,
+  ActivityDataPoint,
+  TaskHistoryEntry,
 } from "@/types";
+
+const MappingHeatmap = dynamic(() => import("@/components/MappingHeatmap"), {
+  ssr: false,
+  loading: () => (
+    <div className="h-[400px] bg-muted rounded-lg animate-pulse flex items-center justify-center">
+      <p className="text-sm text-muted-foreground">Loading map...</p>
+    </div>
+  ),
+});
 
 type DatePreset = "daily" | "weekly" | "monthly" | "custom";
 
@@ -104,6 +129,8 @@ export default function UserProfilePage() {
   const { mutate: fetchStats, loading: statsLoading } =
     useFetchUserStatsByDate();
   const { mutate: fetchChangesets } = useFetchUserChangesets();
+  const { mutate: fetchActivity } = useFetchUserActivityChart();
+  const { mutate: fetchTaskHistory } = useFetchUserTaskHistory();
 
   const [user, setUser] = useState<UserProfileData | null>(null);
   const [pageLoading, setPageLoading] = useState(true);
@@ -140,6 +167,20 @@ export default function UserProfilePage() {
   const [changesetsLoading, setChangesetsLoading] = useState(false);
   const [changesetsError, setChangesetsError] = useState<string | null>(null);
   const [showAllChangesets, setShowAllChangesets] = useState(false);
+
+  // Activity chart state
+  const [activityData, setActivityData] = useState<ActivityDataPoint[]>([]);
+  const [activityLoading, setActivityLoading] = useState(false);
+
+  // Task history state
+  const [taskHistory, setTaskHistory] = useState<TaskHistoryEntry[]>([]);
+  const [taskHistoryLoading, setTaskHistoryLoading] = useState(false);
+  const [showAllHistory, setShowAllHistory] = useState(false);
+
+  // Heatmap state
+  const [heatmapPoints, setHeatmapPoints] = useState<
+    [number, number, number][]
+  >([]);
 
   // Load profile on mount
   useEffect(() => {
@@ -191,6 +232,9 @@ export default function UserProfilePage() {
           setChangesets(res.changesets);
           setChangesetSummary(res.summary || null);
           setHashtagSummary(res.hashtagSummary || {});
+          if (res.heatmapPoints) {
+            setHeatmapPoints(res.heatmapPoints);
+          }
         }
         if (res?.message && !res.changesets?.length) {
           setChangesetsError(res.message);
@@ -204,13 +248,45 @@ export default function UserProfilePage() {
     [userId, fetchChangesets]
   );
 
-  // Load date-filtered stats + changesets when preset changes
+  const loadActivity = useCallback(
+    async (startDate: string, endDate: string) => {
+      setActivityLoading(true);
+      try {
+        const res = await fetchActivity({ userId, startDate, endDate });
+        setActivityData(res?.activity || []);
+      } catch {
+        // handled
+      } finally {
+        setActivityLoading(false);
+      }
+    },
+    [userId, fetchActivity]
+  );
+
+  const loadTaskHistory = useCallback(
+    async (startDate: string, endDate: string) => {
+      setTaskHistoryLoading(true);
+      try {
+        const res = await fetchTaskHistory({ userId, startDate, endDate });
+        setTaskHistory(res?.tasks || []);
+      } catch {
+        // handled
+      } finally {
+        setTaskHistoryLoading(false);
+      }
+    },
+    [userId, fetchTaskHistory]
+  );
+
+  // Load date-filtered stats + changesets + activity + history when preset changes
   useEffect(() => {
     if (!userId || datePreset === "custom") return;
     const { start, end } = getDateRange(datePreset);
     loadDateStats(start, end);
     loadChangesets(start, end);
-  }, [userId, datePreset, loadDateStats, loadChangesets]);
+    loadActivity(start, end);
+    loadTaskHistory(start, end);
+  }, [userId, datePreset, loadDateStats, loadChangesets, loadActivity, loadTaskHistory]);
 
   const handleApplyCustom = () => {
     if (customStart && customEnd) {
@@ -218,6 +294,8 @@ export default function UserProfilePage() {
       const endDT = `${customEnd}T${customEndTime}:00`;
       loadDateStats(startDT, endDT);
       loadChangesets(customStart, customEnd);
+      loadActivity(customStart, customEnd);
+      loadTaskHistory(customStart, customEnd);
     }
   };
 
@@ -283,6 +361,9 @@ export default function UserProfilePage() {
   const displayedChangesets = showAllChangesets
     ? changesets
     : changesets.slice(0, 10);
+  const displayedHistory = showAllHistory
+    ? taskHistory
+    : taskHistory.slice(0, 20);
   const sortedHashtags = Object.entries(hashtagSummary).sort(
     (a, b) => b[1] - a[1]
   );
@@ -622,6 +703,86 @@ export default function UserProfilePage() {
           />
         </div>
 
+        {/* Activity Chart */}
+        <Card className="mb-6">
+          <CardHeader>
+            <CardTitle>Activity Overview</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {activityLoading ? (
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-kaart-orange" />
+                Loading activity data...
+              </div>
+            ) : activityData.length > 0 ? (
+              <div style={{ width: "100%", height: 300 }}>
+                <ResponsiveContainer>
+                  <ComposedChart data={activityData}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis
+                      dataKey="date"
+                      tick={{ fontSize: 12 }}
+                      tickFormatter={(v: string) =>
+                        new Date(v + "T00:00:00").toLocaleDateString("en-US", {
+                          month: "short",
+                          day: "numeric",
+                        })
+                      }
+                    />
+                    <YAxis yAxisId="left" tick={{ fontSize: 12 }} />
+                    <YAxis
+                      yAxisId="right"
+                      orientation="right"
+                      tick={{ fontSize: 12 }}
+                    />
+                    <Tooltip
+                      labelFormatter={(v) =>
+                        new Date(String(v) + "T00:00:00").toLocaleDateString(
+                          "en-US",
+                          {
+                            month: "short",
+                            day: "numeric",
+                            year: "numeric",
+                          }
+                        )
+                      }
+                    />
+                    <Legend />
+                    <Bar
+                      yAxisId="left"
+                      dataKey="tasksMapped"
+                      name="Tasks Mapped"
+                      fill="#f97316"
+                      stackId="tasks"
+                    />
+                    <Bar
+                      yAxisId="left"
+                      dataKey="tasksValidated"
+                      name="Tasks Validated"
+                      fill="#3b82f6"
+                      stackId="tasks"
+                    />
+                    <Line
+                      yAxisId="right"
+                      dataKey="hoursWorked"
+                      name="Hours Worked"
+                      stroke="#10b981"
+                      strokeWidth={2}
+                      dot={{ r: 3 }}
+                    />
+                  </ComposedChart>
+                </ResponsiveContainer>
+              </div>
+            ) : (
+              dateLabel && (
+                <p className="text-sm text-muted-foreground text-center py-4">
+                  No activity data for this period.
+                </p>
+              )
+            )}
+          </CardContent>
+        </Card>
+
         {/* Time Tracking */}
         <Card className="mb-6">
           <CardHeader>
@@ -764,8 +925,103 @@ export default function UserProfilePage() {
           </CardContent>
         </Card>
 
+        {/* Task History */}
+        <Card className="mb-6">
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <CardTitle>Task History</CardTitle>
+              {taskHistory.length > 0 && (
+                <span className="text-sm text-muted-foreground">
+                  {taskHistory.length} tasks
+                </span>
+              )}
+            </div>
+          </CardHeader>
+          <CardContent>
+            {taskHistoryLoading ? (
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-kaart-orange" />
+                Loading task history...
+              </div>
+            ) : taskHistory.length > 0 ? (
+              <div className="space-y-3">
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead className="bg-muted border-b border-gray-200">
+                      <tr>
+                        <th className="px-4 py-2 text-left font-semibold text-gray-700">
+                          Task
+                        </th>
+                        <th className="px-4 py-2 text-left font-semibold text-gray-700">
+                          Project
+                        </th>
+                        <th className="px-4 py-2 text-left font-semibold text-gray-700">
+                          Action
+                        </th>
+                        <th className="px-4 py-2 text-left font-semibold text-gray-700">
+                          Date
+                        </th>
+                        <th className="px-4 py-2 text-left font-semibold text-gray-700">
+                          Status
+                        </th>
+                        <th className="px-4 py-2 text-right font-semibold text-gray-700">
+                          Rate
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-border bg-white">
+                      {displayedHistory.map((t, i) => (
+                        <tr key={`${t.taskId}-${t.action}-${i}`}>
+                          <td className="px-4 py-2 font-mono">#{t.taskId}</td>
+                          <td className="px-4 py-2">{t.projectName}</td>
+                          <td className="px-4 py-2">
+                            <span
+                              className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
+                                t.action === "mapped"
+                                  ? "bg-orange-100 text-orange-800"
+                                  : t.action === "validated"
+                                    ? "bg-blue-100 text-blue-800"
+                                    : "bg-red-100 text-red-800"
+                              }`}
+                            >
+                              {t.action}
+                            </span>
+                          </td>
+                          <td className="px-4 py-2 whitespace-nowrap">
+                            {formatDateTime(t.date)}
+                          </td>
+                          <td className="px-4 py-2">{t.status}</td>
+                          <td className="px-4 py-2 text-right font-mono">
+                            ${(t.mappingRate || t.validationRate || 0).toFixed(2)}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+                {taskHistory.length > 20 && (
+                  <button
+                    onClick={() => setShowAllHistory(!showAllHistory)}
+                    className="text-sm text-kaart-orange hover:underline"
+                  >
+                    {showAllHistory
+                      ? `Show less (20 of ${taskHistory.length})`
+                      : `Show all ${taskHistory.length} tasks`}
+                  </button>
+                )}
+              </div>
+            ) : (
+              dateLabel && (
+                <p className="text-sm text-muted-foreground text-center py-4">
+                  No task history for this period.
+                </p>
+              )
+            )}
+          </CardContent>
+        </Card>
+
         {/* Changeset Analysis */}
-        <Card>
+        <Card className="mb-6">
           <CardHeader>
             <div className="flex items-center justify-between">
               <CardTitle>Changeset Analysis</CardTitle>
@@ -795,7 +1051,7 @@ export default function UserProfilePage() {
 
             {/* Summary cards */}
             {changesetSummary && !changesetsLoading && (
-              <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+              <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-4">
                 <StatCard
                   label="Changesets"
                   value={changesetSummary.totalChangesets}
@@ -818,6 +1074,21 @@ export default function UserProfilePage() {
                   label="Deleted"
                   value={changesetSummary.totalDeleted}
                   sub="- removed"
+                />
+                <StatCard
+                  label="Nodes"
+                  value={changesetSummary.totalNodes}
+                  sub="points"
+                />
+                <StatCard
+                  label="Ways"
+                  value={changesetSummary.totalWays}
+                  sub="lines/areas"
+                />
+                <StatCard
+                  label="Relations"
+                  value={changesetSummary.totalRelations}
+                  sub="groups"
                 />
               </div>
             )}
@@ -944,6 +1215,23 @@ export default function UserProfilePage() {
                   ))}
                 </div>
               </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Geographic Heatmap */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Geographic Activity</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {changesetsLoading ? (
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-kaart-orange" />
+                Loading geographic data...
+              </div>
+            ) : (
+              <MappingHeatmap points={heatmapPoints} height="400px" />
             )}
           </CardContent>
         </Card>

@@ -17,6 +17,8 @@ import type {
   UserProfileResponse,
   UserStatsDateResponse,
   ChangesetsResponse,
+  ActivityChartResponse,
+  TaskHistoryResponse,
 } from "@/types";
 
 /**
@@ -574,4 +576,14 @@ export function usePurgeTimeEntries() {
 // Admin: fetch OSM changesets for a user
 export function useFetchUserChangesets() {
   return useApiMutation<ChangesetsResponse>("/user/fetch_user_changesets");
+}
+
+// Admin: fetch daily activity chart data for a user
+export function useFetchUserActivityChart() {
+  return useApiMutation<ActivityChartResponse>("/user/fetch_user_activity_chart");
+}
+
+// Admin: fetch task-level history for a user
+export function useFetchUserTaskHistory() {
+  return useApiMutation<TaskHistoryResponse>("/user/fetch_user_task_history");
 }

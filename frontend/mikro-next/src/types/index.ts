@@ -471,6 +471,12 @@ export interface LoginResponse {
   status: number;
 }
 
+export interface ElementCounts {
+  nodes: number;
+  ways: number;
+  relations: number;
+}
+
 // OSM Changeset types
 export interface Changeset {
   id: number;
@@ -484,6 +490,8 @@ export interface Changeset {
   hashtags: string[];
   source: string;
   imageryUsed: string;
+  elements: ElementCounts | null;
+  centroid: { lat: number; lon: number } | null;
 }
 
 export interface ChangesetSummary {
@@ -492,12 +500,48 @@ export interface ChangesetSummary {
   totalAdded: number;
   totalModified: number;
   totalDeleted: number;
+  totalNodes: number;
+  totalWays: number;
+  totalRelations: number;
 }
 
 export interface ChangesetsResponse {
   changesets: Changeset[];
   summary: ChangesetSummary;
   hashtagSummary: Record<string, number>;
+  heatmapPoints: [number, number, number][];
   message?: string;
+  status: number;
+}
+
+// Activity Chart types
+export interface ActivityDataPoint {
+  date: string;
+  tasksMapped: number;
+  tasksValidated: number;
+  hoursWorked: number;
+}
+
+export interface ActivityChartResponse {
+  activity: ActivityDataPoint[];
+  status: number;
+}
+
+// Task History types
+export interface TaskHistoryEntry {
+  taskId: number;
+  projectId: number;
+  projectName: string;
+  action: "mapped" | "validated" | "invalidated";
+  date: string | null;
+  status: string;
+  validatedBy?: string;
+  mappedBy?: string;
+  mappingRate?: number;
+  validationRate?: number;
+}
+
+export interface TaskHistoryResponse {
+  tasks: TaskHistoryEntry[];
   status: number;
 }

@@ -64,6 +64,10 @@ class UserAPI(MethodView):
             return self.fetch_user_stats_by_date()
         elif path == "fetch_user_changesets":
             return self.fetch_user_changesets()
+        elif path == "fetch_user_activity_chart":
+            return self.fetch_user_activity_chart()
+        elif path == "fetch_user_task_history":
+            return self.fetch_user_task_history()
         # elif path == "register_user":
         #     return self.register_user()
         return {
@@ -1024,6 +1028,18 @@ class UserAPI(MethodView):
                     if h and h not in hashtags_from_comment:
                         hashtags_from_comment.append(h)
 
+            # Extract bbox centroid for heatmap
+            min_lat = cs.get("min_lat")
+            max_lat = cs.get("max_lat")
+            min_lon = cs.get("min_lon")
+            max_lon = cs.get("max_lon")
+            centroid = None
+            if min_lat and max_lat and min_lon and max_lon:
+                centroid = {
+                    "lat": (float(min_lat) + float(max_lat)) / 2,
+                    "lon": (float(min_lon) + float(max_lon)) / 2,
+                }
+
             changeset_metas.append({
                 "id": int(cs.get("id", 0)),
                 "createdAt": cs.get("created_at", ""),
@@ -1036,34 +1052,48 @@ class UserAPI(MethodView):
                 "added": None,
                 "modified": None,
                 "deleted": None,
+                "elements": None,
+                "centroid": centroid,
             })
 
         # Fetch detail counts for each changeset concurrently
         def fetch_changeset_details(cs_id):
-            """Fetch OsmChange XML and count create/modify/delete elements."""
+            """Fetch OsmChange XML and count create/modify/delete elements plus element types."""
             try:
                 detail_url = f"https://api.openstreetmap.org/api/0.6/changeset/{cs_id}/download"
                 detail_resp = requests.get(detail_url, timeout=30)
                 if not detail_resp.ok:
-                    return cs_id, None, None, None
+                    return cs_id, None, None, None, None
 
                 detail_root = ET.fromstring(detail_resp.text)
                 added = 0
                 modified = 0
                 deleted = 0
+                nodes = 0
+                ways = 0
+                relations = 0
+
                 for child in detail_root:
                     tag_name = child.tag.lower()
-                    count = len(list(child))
-                    if tag_name == "create":
-                        added += count
-                    elif tag_name == "modify":
-                        modified += count
-                    elif tag_name == "delete":
-                        deleted += count
+                    for elem in child:
+                        elem_type = elem.tag.lower()
+                        if elem_type == "node":
+                            nodes += 1
+                        elif elem_type == "way":
+                            ways += 1
+                        elif elem_type == "relation":
+                            relations += 1
 
-                return cs_id, added, modified, deleted
+                        if tag_name == "create":
+                            added += 1
+                        elif tag_name == "modify":
+                            modified += 1
+                        elif tag_name == "delete":
+                            deleted += 1
+
+                return cs_id, added, modified, deleted, {"nodes": nodes, "ways": ways, "relations": relations}
             except Exception:
-                return cs_id, None, None, None
+                return cs_id, None, None, None, None
 
         # Concurrently fetch details (max 5 workers)
         detail_map = {}
@@ -1074,14 +1104,15 @@ class UserAPI(MethodView):
                     for cs in changeset_metas
                 }
                 for future in as_completed(futures):
-                    cs_id, added, modified, deleted = future.result()
-                    detail_map[cs_id] = (added, modified, deleted)
+                    result = future.result()
+                    cs_id = result[0]
+                    detail_map[cs_id] = result[1:]
 
         # Merge details into changeset metadata
         for cs in changeset_metas:
             details = detail_map.get(cs["id"])
             if details:
-                cs["added"], cs["modified"], cs["deleted"] = details
+                cs["added"], cs["modified"], cs["deleted"], cs["elements"] = details
 
         # Compute summary
         total_changesets = len(changeset_metas)
@@ -1089,6 +1120,15 @@ class UserAPI(MethodView):
         total_added = sum(cs["added"] or 0 for cs in changeset_metas)
         total_modified = sum(cs["modified"] or 0 for cs in changeset_metas)
         total_deleted = sum(cs["deleted"] or 0 for cs in changeset_metas)
+        total_nodes = sum((cs.get("elements") or {}).get("nodes", 0) for cs in changeset_metas)
+        total_ways = sum((cs.get("elements") or {}).get("ways", 0) for cs in changeset_metas)
+        total_relations = sum((cs.get("elements") or {}).get("relations", 0) for cs in changeset_metas)
+
+        # Build heatmap points from centroids
+        heatmap_points = [
+            [cs["centroid"]["lat"], cs["centroid"]["lon"], cs["changesCount"]]
+            for cs in changeset_metas if cs.get("centroid")
+        ]
 
         # Aggregate hashtags
         hashtag_summary = {}
@@ -1108,6 +1148,175 @@ class UserAPI(MethodView):
                 "totalAdded": total_added,
                 "totalModified": total_modified,
                 "totalDeleted": total_deleted,
+                "totalNodes": total_nodes,
+                "totalWays": total_ways,
+                "totalRelations": total_relations,
             },
             "hashtagSummary": hashtag_summary,
+            "heatmapPoints": heatmap_points,
         }
+
+    @requires_admin
+    def fetch_user_activity_chart(self):
+        """Aggregate daily activity data for charting."""
+        data = request.get_json() or {}
+        user_id = data.get("userId")
+        start_date_str = data.get("startDate")
+        end_date_str = data.get("endDate")
+
+        if not user_id or not start_date_str or not end_date_str:
+            return {"message": "userId, startDate, and endDate required", "status": 400}
+
+        user = User.query.get(user_id)
+        if not user or user.org_id != g.user.org_id:
+            return {"message": "User not found", "status": 404}
+
+        # Parse dates
+        try:
+            try:
+                start_date = datetime.strptime(start_date_str, "%Y-%m-%dT%H:%M:%S")
+            except ValueError:
+                start_date = datetime.strptime(start_date_str, "%Y-%m-%d")
+            try:
+                end_date = datetime.strptime(end_date_str, "%Y-%m-%dT%H:%M:%S")
+            except ValueError:
+                end_date = datetime.strptime(end_date_str, "%Y-%m-%d") + timedelta(days=1)
+        except ValueError:
+            return {"message": "Invalid date format", "status": 400}
+
+        osm_username = user.osm_username
+
+        # Generate day-by-day buckets
+        days = {}
+        current = start_date.date() if hasattr(start_date, "date") else start_date
+        end = end_date.date() if hasattr(end_date, "date") else end_date
+        while current <= end:
+            days[current.isoformat()] = {
+                "date": current.isoformat(),
+                "tasksMapped": 0,
+                "tasksValidated": 0,
+                "hoursWorked": 0.0,
+            }
+            current += timedelta(days=1)
+
+        # Fill task data
+        if osm_username:
+            mapped = Task.query.filter(
+                Task.mapped_by == osm_username,
+                Task.mapped == True,
+                Task.date_mapped >= start_date,
+                Task.date_mapped < end_date,
+            ).all()
+            for t in mapped:
+                day_key = t.date_mapped.date().isoformat()
+                if day_key in days:
+                    days[day_key]["tasksMapped"] += 1
+
+            validated = Task.query.filter(
+                Task.validated_by == osm_username,
+                Task.validated == True,
+                Task.date_validated >= start_date,
+                Task.date_validated < end_date,
+            ).all()
+            for t in validated:
+                day_key = t.date_validated.date().isoformat()
+                if day_key in days:
+                    days[day_key]["tasksValidated"] += 1
+
+        # Fill time tracking data
+        entries = TimeEntry.query.filter(
+            TimeEntry.user_id == user_id,
+            TimeEntry.status == "completed",
+            TimeEntry.clock_in >= start_date,
+            TimeEntry.clock_in < end_date,
+        ).all()
+        for e in entries:
+            day_key = e.clock_in.date().isoformat()
+            if day_key in days:
+                days[day_key]["hoursWorked"] += round((e.duration_seconds or 0) / 3600, 1)
+
+        # Filter out days with no activity
+        activity = [
+            v for v in sorted(days.values(), key=lambda x: x["date"])
+            if v["tasksMapped"] or v["tasksValidated"] or v["hoursWorked"]
+        ]
+
+        return {"status": 200, "activity": activity}
+
+    @requires_admin
+    def fetch_user_task_history(self):
+        """Fetch task-level history for a user in date range."""
+        data = request.get_json() or {}
+        user_id = data.get("userId")
+        start_date_str = data.get("startDate")
+        end_date_str = data.get("endDate")
+
+        if not user_id or not start_date_str or not end_date_str:
+            return {"message": "userId, startDate, and endDate required", "status": 400}
+
+        user = User.query.get(user_id)
+        if not user or user.org_id != g.user.org_id:
+            return {"message": "User not found", "status": 404}
+
+        # Parse dates
+        try:
+            try:
+                start_date = datetime.strptime(start_date_str, "%Y-%m-%dT%H:%M:%S")
+            except ValueError:
+                start_date = datetime.strptime(start_date_str, "%Y-%m-%d")
+            try:
+                end_date = datetime.strptime(end_date_str, "%Y-%m-%dT%H:%M:%S")
+            except ValueError:
+                end_date = datetime.strptime(end_date_str, "%Y-%m-%d") + timedelta(days=1)
+        except ValueError:
+            return {"message": "Invalid date format", "status": 400}
+
+        osm_username = user.osm_username
+        if not osm_username:
+            return {"status": 200, "tasks": []}
+
+        history = []
+
+        # Tasks mapped by this user
+        mapped = Task.query.filter(
+            Task.mapped_by == osm_username,
+            Task.date_mapped >= start_date,
+            Task.date_mapped < end_date,
+        ).all()
+        for t in mapped:
+            proj = Project.query.get(t.project_id)
+            history.append({
+                "taskId": t.task_id,
+                "projectId": t.project_id,
+                "projectName": proj.name if proj else f"Project {t.project_id}",
+                "action": "mapped",
+                "date": t.date_mapped.isoformat() if t.date_mapped else None,
+                "status": "validated" if t.validated else ("invalidated" if t.invalidated else "pending"),
+                "validatedBy": t.validated_by,
+                "mappingRate": t.mapping_rate,
+            })
+
+        # Tasks validated/invalidated by this user
+        val_tasks = Task.query.filter(
+            Task.validated_by == osm_username,
+            Task.date_validated >= start_date,
+            Task.date_validated < end_date,
+        ).all()
+        for t in val_tasks:
+            proj = Project.query.get(t.project_id)
+            action = "validated" if t.validated else "invalidated"
+            history.append({
+                "taskId": t.task_id,
+                "projectId": t.project_id,
+                "projectName": proj.name if proj else f"Project {t.project_id}",
+                "action": action,
+                "date": t.date_validated.isoformat() if t.date_validated else None,
+                "status": action,
+                "mappedBy": t.mapped_by,
+                "validationRate": t.validation_rate,
+            })
+
+        # Sort by date descending
+        history.sort(key=lambda x: x["date"] or "", reverse=True)
+
+        return {"status": 200, "tasks": history}
