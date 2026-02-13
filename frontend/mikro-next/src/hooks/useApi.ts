@@ -26,6 +26,8 @@ import type {
   TeamChecklistsResponse,
   TeamProfileData,
   UserTeamsResponse,
+  EditingStatsResponse,
+  TimekeepingStatsResponse,
 } from "@/types";
 
 /**
@@ -675,4 +677,14 @@ export function useFetchUserTeams() {
 
 export function useFetchUserTeamProfile() {
   return useApiMutation<TeamProfileData>("/team/fetch_user_team_profile");
+}
+
+// ─── Reports ────────────────────────────────────────────────
+
+export function useFetchEditingStats() {
+  return useApiMutation<EditingStatsResponse>("/reports/fetch_editing_stats");
+}
+
+export function useFetchTimekeepingStats() {
+  return useApiMutation<TimekeepingStatsResponse>("/reports/fetch_timekeeping_stats");
 }

@@ -10,6 +10,7 @@ from .Checklists import ChecklistAPI
 from .OSMAuth import OSMAuthAPI
 from .TimeTracking import TimeTrackingAPI
 from .Teams import TeamAPI
+from .Reports import ReportsAPI
 
 __all__ = {
     "UserAPI",
@@ -22,4 +23,5 @@ __all__ = {
     "OSMAuthAPI",
     "TimeTrackingAPI",
     "TeamAPI",
+    "ReportsAPI",
 }

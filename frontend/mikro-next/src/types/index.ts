@@ -579,6 +579,86 @@ export interface UserTeamsResponse {
   status: number;
 }
 
+// ─── Reports Types ──────────────────────────────────────────
+
+export interface EditingStatsResponse {
+  status: number;
+  snapshot_timestamp: string;
+  summary: {
+    total_mapped: number;
+    total_validated: number;
+    total_invalidated: number;
+    active_projects: number;
+    completed_projects: number;
+  };
+  tasks_over_time: Array<{
+    week: string;
+    mapped: number;
+    validated: number;
+    invalidated: number;
+  }>;
+  projects: Array<{
+    id: number;
+    name: string;
+    url: string;
+    total_tasks: number;
+    tasks_mapped: number;
+    tasks_validated: number;
+    tasks_invalidated: number;
+    percent_mapped: number;
+    percent_validated: number;
+    mapping_rate: number;
+    validation_rate: number;
+    status: boolean;
+    difficulty: string;
+  }>;
+  top_contributors: Array<{
+    user_id: string | null;
+    user_name: string;
+    osm_username: string;
+    tasks_mapped: number;
+    tasks_validated: number;
+    tasks_invalidated: number;
+    total_hours: number;
+  }>;
+}
+
+export interface TimekeepingStatsResponse {
+  status: number;
+  snapshot_timestamp: string;
+  summary: {
+    total_hours: number;
+    total_entries: number;
+    total_changesets: number;
+    total_changes: number;
+    active_users: number;
+    avg_hours_per_user: number;
+    weekly_rate_change_percent: number;
+  };
+  hours_by_category: Array<{
+    category: string;
+    hours: number;
+  }>;
+  weekly_activity: Array<{
+    week: string;
+    hours: number;
+    changesets: number;
+    changes: number;
+    changes_per_changeset: number;
+    changes_per_hour: number;
+  }>;
+  user_breakdown: Array<{
+    user_id: string;
+    user_name: string;
+    osm_username: string;
+    total_hours: number;
+    entries_count: number;
+    changeset_count: number;
+    changes_count: number;
+    category_hours: Record<string, number>;
+  }>;
+}
+
 // API Response types
 export interface ApiResponse<T = unknown> {
   data?: T;
