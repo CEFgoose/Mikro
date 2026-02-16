@@ -890,44 +890,85 @@ class TaskAPI(MethodView):
 
         Creates a SyncJob record that the background worker picks up.
         Returns immediately instead of blocking the request.
+        Falls back to inline sync if sync_jobs table doesn't exist yet.
         """
         if not g.user:
             return {"message": "User not found", "status": 304}
 
-        # Check if a sync is already running
-        running_job = SyncJob.query.filter_by(
-            org_id=g.user.org_id, status="running"
-        ).first()
-        if running_job:
+        # Try background worker path; fall back to inline if table missing
+        try:
+            running_job = SyncJob.query.filter_by(
+                org_id=g.user.org_id, status="running"
+            ).first()
+            if running_job:
+                return {
+                    "message": "Sync already in progress",
+                    "job_id": running_job.id,
+                    "progress": running_job.progress,
+                    "status": 200,
+                }
+
+            job = SyncJob.create(
+                org_id=g.user.org_id,
+                status="queued",
+            )
+
             return {
-                "message": "Sync already in progress",
-                "job_id": running_job.id,
-                "progress": running_job.progress,
+                "message": "Task sync queued — running in background",
+                "job_id": job.id,
                 "status": 200,
             }
+        except Exception:
+            # sync_jobs table doesn't exist yet — run inline as fallback
+            db.session.rollback()
+            current_app.logger.warning(
+                "sync_jobs table not available, running sync inline"
+            )
+            return self._run_sync_inline()
 
-        # Create a new sync job (worker picks it up)
-        job = SyncJob.create(
-            org_id=g.user.org_id,
-            status="queued",
-        )
+    def _run_sync_inline(self):
+        """Fallback: run sync inline when background worker is unavailable."""
+        org_users = User.query.filter_by(org_id=g.user.org_id).all()
 
-        return {
-            "message": "Task sync queued — running in background",
-            "job_id": job.id,
-            "status": 200,
-        }
+        all_visible_projects = Project.query.filter(
+            Project.org_id == g.user.org_id,
+            Project.status == True,
+            Project.visibility == True,
+        ).all()
+        visible_project_ids = [p.id for p in all_visible_projects]
+
+        for user in org_users:
+            assigned_project_ids = [
+                relation.project_id
+                for relation in ProjectUser.query.filter_by(user_id=user.id).all()
+            ]
+            all_project_ids = list(set(assigned_project_ids + visible_project_ids))
+
+            user_projects = Project.query.filter(
+                Project.org_id == user.org_id,
+                Project.status == True,
+                Project.id.in_(all_project_ids),
+            ).all()
+
+            for project in user_projects:
+                self.TM4_payment_call(project.id, user)
+
+        return {"message": "updated", "status": 200}
 
     def check_sync_status(self):
         """Check the status of the latest sync job for the current org."""
         if not g.user:
             return {"message": "User not found", "status": 304}
 
-        job = (
-            SyncJob.query.filter_by(org_id=g.user.org_id)
-            .order_by(SyncJob.id.desc())
-            .first()
-        )
+        try:
+            job = (
+                SyncJob.query.filter_by(org_id=g.user.org_id)
+                .order_by(SyncJob.id.desc())
+                .first()
+            )
+        except Exception:
+            db.session.rollback()
+            return {"message": "Sync status not available", "status": 200}
 
         if not job:
             return {"message": "No sync jobs found", "status": 200}
