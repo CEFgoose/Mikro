@@ -25,6 +25,7 @@ from .core import (
     TeamTraining,
     TeamChecklist,
     TimeEntry,
+    SyncJob,
 )
 
 __all__ = [
@@ -54,4 +55,5 @@ __all__ = [
     "TeamTraining",
     "TeamChecklist",
     "TimeEntry",
+    "SyncJob",
 ]
