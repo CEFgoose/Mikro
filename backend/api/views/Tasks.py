@@ -404,28 +404,23 @@ class TaskAPI(MethodView):
                             # TM4 always splits into exactly 4 children
                             target_task.update(parent_task_id=parent_task_id, sibling_count=4)
 
-                        # Check task history for any invalidation actions
-                        # TM4 records STATE_CHANGE with actionText="INVALIDATED" when task is invalidated
+                        # Find invalidation actions in history for validator info
                         invalidation_actions = [
                             h for h in task_history
                             if h.get("action") == "STATE_CHANGE" and h.get("actionText") == "INVALIDATED"
                         ]
-                        was_ever_invalidated = len(invalidation_actions) > 0
 
-                        # Log full history for debugging
-                        history_summary = [
-                            {"action": h.get("action"), "actionText": h.get("actionText"), "actionBy": h.get("actionBy")}
-                            for h in task_history[:5]  # First 5 entries
-                        ]
+                        # Log task status for debugging
                         current_app.logger.info(
-                            f"TM4 API response for task {tm4_task_id}: status={task_status}, "
-                            f"history_count={len(task_history)}, invalidation_actions={len(invalidation_actions)}, "
-                            f"was_ever_invalidated={was_ever_invalidated}, history_summary={history_summary}"
+                            f"TM4 task {tm4_task_id}: status={task_status}, "
+                            f"history_count={len(task_history)}, "
+                            f"invalidation_actions={len(invalidation_actions)}"
                         )
 
-                        # Check for INVALIDATED either by current status OR by history
-                        # A task may have been invalidated and then re-mapped/re-validated
-                        if task_status == "INVALIDATED" or was_ever_invalidated:
+                        # Only mark as invalidated if CURRENT status is INVALIDATED
+                        # Do NOT use historical invalidations — a task that was
+                        # invalidated then re-mapped and re-validated is currently valid
+                        if task_status == "INVALIDATED":
                             # Get validator info from the invalidation action
                             validator_username = None
                             if invalidation_actions:
