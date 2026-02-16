@@ -168,7 +168,17 @@ class TaskAPI(MethodView):
             ).first()
 
             if validator_exists is not None:
-                for task in c.get("validatedTasks", []):
+                validated_tasks = c.get("validatedTasks", [])
+                current_app.logger.info(
+                    f"Processing {len(validated_tasks)} validations by "
+                    f"Mikro user {c['username']} on project {project_id}"
+                )
+                tasks_created = 0
+                tasks_validated = 0
+                tasks_skipped = 0
+
+                for task in validated_tasks:
+                  try:
                     task_exists = Task.query.filter_by(
                         task_id=task, project_id=project_id
                     ).first()
@@ -190,10 +200,7 @@ class TaskAPI(MethodView):
                             validated=False,
                             date_mapped=func.now(),
                         )
-                        current_app.logger.info(
-                            f"Created task {task} (mapper={original_mapper}) "
-                            f"because Mikro validator {c['username']} validated it"
-                        )
+                        tasks_created += 1
 
                     if not task_exists.validated:
                         # Look up mapper — may be None if mapper is not in Mikro
@@ -298,6 +305,21 @@ class TaskAPI(MethodView):
                         target_project.update(
                             tasks_validated=target_project.tasks_validated + 1
                         )
+                        tasks_validated += 1
+                    else:
+                        tasks_skipped += 1
+                  except Exception as e:
+                    current_app.logger.error(
+                        f"Error processing validation of task {task} by "
+                        f"{c['username']} on project {project_id}: {e}"
+                    )
+                    db.session.rollback()
+
+                current_app.logger.info(
+                    f"Validator {c['username']} on project {project_id}: "
+                    f"created={tasks_created}, validated={tasks_validated}, "
+                    f"skipped={tasks_skipped}"
+                )
             else:
                 # Handle external validators (not in our system)
                 for task in c.get("validatedTasks", []):
