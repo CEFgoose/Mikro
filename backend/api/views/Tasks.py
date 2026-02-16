@@ -167,71 +167,67 @@ class TaskAPI(MethodView):
                         task_id=task, project_id=project_id
                     ).first()
 
-                    if task_exists is not None:
-                        if (
-                            task_exists.mapped_by in usernames
-                            and not task_exists.validated
-                        ):
-                            mapper = User.query.filter_by(
-                                osm_username=task_exists.mapped_by
-                            ).first()
+                    if task_exists is not None and not task_exists.validated:
+                        # Look up mapper — may be None if mapper is not in Mikro
+                        mapper = User.query.filter_by(
+                            osm_username=task_exists.mapped_by
+                        ).first()
 
-                            if not mapper:
-                                continue
-
-                            # Handle previously invalidated tasks
-                            if task_exists.invalidated is True:
+                        # Handle previously invalidated tasks
+                        if task_exists.invalidated is True:
+                            if mapper:
                                 mapper.update(
                                     total_tasks_validated=mapper.total_tasks_validated - 1,
                                 )
-                                validator_exists.update(
-                                    validator_tasks_invalidated=validator_exists.validator_tasks_invalidated - 1
-                                )
-                                target_project.update(
-                                    tasks_invalidated=target_project.tasks_invalidated - 1
-                                )
-
-                            # Detect self-validation (mapper validated their own work)
-                            is_self_validated = task_exists.mapped_by == c["username"]
-
-                            # Update task status
-                            task_exists.update(
-                                validated_by=c["username"],
-                                unknown_validator=False,
-                                validated=True,
-                                invalidated=False,
-                                self_validated=is_self_validated,
-                                date_validated=func.now(),
+                            validator_exists.update(
+                                validator_tasks_invalidated=validator_exists.validator_tasks_invalidated - 1
+                            )
+                            target_project.update(
+                                tasks_invalidated=target_project.tasks_invalidated - 1
                             )
 
-                            # Create UserTasks entry for validator (for validator dashboard)
-                            validator_task_link = UserTasks.query.filter_by(
-                                user_id=validator_exists.id, task_id=task_exists.id
-                            ).first()
-                            if not validator_task_link:
-                                UserTasks.create(user_id=validator_exists.id, task_id=task_exists.id)
+                        # Detect self-validation (mapper validated their own work)
+                        is_self_validated = task_exists.mapped_by == c["username"]
 
-                            # Skip payment updates for self-validated tasks
-                            if is_self_validated:
-                                current_app.logger.warning(
-                                    f"Self-validation detected: {c['username']} validated their own task {task}"
+                        # Update task status
+                        task_exists.update(
+                            validated_by=c["username"],
+                            unknown_validator=False,
+                            validated=True,
+                            invalidated=False,
+                            self_validated=is_self_validated,
+                            date_validated=func.now(),
+                        )
+
+                        # Create UserTasks entry for validator (for validator dashboard)
+                        validator_task_link = UserTasks.query.filter_by(
+                            user_id=validator_exists.id, task_id=task_exists.id
+                        ).first()
+                        if not validator_task_link:
+                            UserTasks.create(user_id=validator_exists.id, task_id=task_exists.id)
+
+                        # Skip payment updates for self-validated tasks
+                        if is_self_validated:
+                            current_app.logger.warning(
+                                f"Self-validation detected: {c['username']} validated their own task {task}"
+                            )
+                            # For split tasks, only count when all siblings are validated
+                            if self._should_count_validation(task_exists):
+                                target_project.update(
+                                    tasks_validated=target_project.tasks_validated + 1
                                 )
-                                # For split tasks, only count when all siblings are validated
-                                if self._should_count_validation(task_exists):
-                                    target_project.update(
-                                        tasks_validated=target_project.tasks_validated + 1
-                                    )
-                                continue
+                            continue
 
-                            # For split tasks, only update stats/payments when ALL siblings are validated
-                            # This prevents counting each segment separately
-                            if not self._should_count_validation(task_exists):
-                                current_app.logger.info(
-                                    f"Split task {task} validated but not all siblings complete yet - deferring stats update"
-                                )
-                                continue
+                        # For split tasks, only update stats/payments when ALL siblings are validated
+                        # This prevents counting each segment separately
+                        if not self._should_count_validation(task_exists):
+                            current_app.logger.info(
+                                f"Split task {task} validated but not all siblings complete yet - deferring stats update"
+                            )
+                            continue
 
-                            # Update mapper payment totals (only when all split siblings are validated)
+                        # Update mapper payment totals only if mapper is a Mikro user
+                        if mapper:
                             old_validated_total = int(mapper.total_tasks_validated)
                             new_tasks_validated = old_validated_total + 1
 
@@ -250,30 +246,30 @@ class TaskAPI(MethodView):
                                 total_tasks_validated=new_tasks_validated,
                             )
 
-                            # Update validator payment totals
-                            old_validations_payment = float(
-                                validator_exists.validation_payable_total or 0
-                            )
+                        # Update validator payment totals (always — regardless of mapper)
+                        old_validations_payment = float(
+                            validator_exists.validation_payable_total or 0
+                        )
 
-                            # For split tasks, calculate total validation rate for all siblings
-                            if self._is_split_task(task_exists):
-                                siblings = self._get_split_siblings(task_exists)
-                                new_validations_payment = sum(s.validation_rate or 0 for s in siblings)
-                            else:
-                                new_validations_payment = task_exists.validation_rate or 0
+                        # For split tasks, calculate total validation rate for all siblings
+                        if self._is_split_task(task_exists):
+                            siblings = self._get_split_siblings(task_exists)
+                            new_validations_payment = sum(s.validation_rate or 0 for s in siblings)
+                        else:
+                            new_validations_payment = task_exists.validation_rate or 0
 
-                            current_validations_payment = (
-                                old_validations_payment + new_validations_payment
-                            )
+                        current_validations_payment = (
+                            old_validations_payment + new_validations_payment
+                        )
 
-                            validator_exists.update(
-                                validator_tasks_validated=validator_exists.validator_tasks_validated + 1,
-                                validation_payable_total=current_validations_payment,
-                            )
+                        validator_exists.update(
+                            validator_tasks_validated=validator_exists.validator_tasks_validated + 1,
+                            validation_payable_total=current_validations_payment,
+                        )
 
-                            target_project.update(
-                                tasks_validated=target_project.tasks_validated + 1
-                            )
+                        target_project.update(
+                            tasks_validated=target_project.tasks_validated + 1
+                        )
             else:
                 # Handle external validators (not in our system)
                 for task in c.get("validatedTasks", []):
@@ -283,8 +279,7 @@ class TaskAPI(MethodView):
 
                     if task_exists is not None:
                         if (
-                            task_exists.mapped_by in usernames
-                            and not task_exists.validated
+                            not task_exists.validated
                             and not task_exists.validated_by
                         ):
                             task_exists.update(

@@ -1,8 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle, Skeleton, Badge } from "@/components/ui";
-import { useAdminDashboardStats, useOrgTransactions, useUsersList, useOrgProjects, usePurgeTaskStats } from "@/hooks";
+import { Card, CardContent, CardHeader, CardTitle, Skeleton, Badge, Button, useToastActions } from "@/components/ui";
+import { useAdminDashboardStats, useOrgTransactions, useUsersList, useOrgProjects, usePurgeTaskStats, useAdminSyncAllTasks } from "@/hooks";
 import { TimeTrackingWidget } from "@/components/widgets/TimeTrackingWidget";
 import { AdminTimeManagement } from "@/components/widgets/AdminTimeManagement";
 import Link from "next/link";
@@ -28,7 +28,19 @@ export default function AdminDashboard() {
   const { data: users, loading: usersLoading } = useUsersList();
   const { data: projects } = useOrgProjects();
   const { mutate: purgeTaskStats, loading: purging } = usePurgeTaskStats();
+  const { mutate: syncAllTasks, loading: syncing } = useAdminSyncAllTasks();
+  const toast = useToastActions();
   const [purgeConfirm, setPurgeConfirm] = useState(false);
+
+  const handleSyncAllTasks = async () => {
+    try {
+      await syncAllTasks({});
+      toast.success("Task sync complete");
+      refetchStats();
+    } catch {
+      toast.error("Failed to sync tasks");
+    }
+  };
 
   const handlePurgeTaskStats = async () => {
     if (!purgeConfirm) {
@@ -47,11 +59,21 @@ export default function AdminDashboard() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight">Admin Dashboard</h1>
-        <p className="text-muted-foreground">
-          Organization overview and management
-        </p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">Admin Dashboard</h1>
+          <p className="text-muted-foreground">
+            Organization overview and management
+          </p>
+        </div>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={handleSyncAllTasks}
+          disabled={syncing}
+        >
+          {syncing ? "Syncing..." : "Sync All Tasks"}
+        </Button>
       </div>
 
       {/* Time Tracking Widget */}
