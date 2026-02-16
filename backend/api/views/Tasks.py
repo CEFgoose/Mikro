@@ -156,6 +156,12 @@ class TaskAPI(MethodView):
             current_app.logger.error(f"Project {project_id} not found")
             return {"response": "project not found"}
 
+        # Build reverse lookup: task_id -> mapper username from contributions
+        task_to_mapper = {}
+        for contrib in contributions:
+            for t in contrib.get("mappedTasks", []):
+                task_to_mapper[t] = contrib["username"]
+
         for c in contributions:
             validator_exists = User.query.filter_by(
                 osm_username=c["username"]
@@ -167,7 +173,29 @@ class TaskAPI(MethodView):
                         task_id=task, project_id=project_id
                     ).first()
 
-                    if task_exists is not None and not task_exists.validated:
+                    # Task doesn't exist yet — create it ONLY because a Mikro
+                    # validator validated it. Mapper stats are NOT updated.
+                    if task_exists is None:
+                        original_mapper = task_to_mapper.get(task, "unknown")
+                        task_exists = Task.create(
+                            task_id=task,
+                            org_id=g.user.org_id if hasattr(g, "user") and g.user else None,
+                            project_id=project_id,
+                            mapping_rate=target_project.mapping_rate_per_task,
+                            validation_rate=target_project.validation_rate_per_task,
+                            paid_out=False,
+                            mapped=True,
+                            mapped_by=original_mapper,
+                            validated_by="",
+                            validated=False,
+                            date_mapped=func.now(),
+                        )
+                        current_app.logger.info(
+                            f"Created task {task} (mapper={original_mapper}) "
+                            f"because Mikro validator {c['username']} validated it"
+                        )
+
+                    if not task_exists.validated:
                         # Look up mapper — may be None if mapper is not in Mikro
                         mapper = User.query.filter_by(
                             osm_username=task_exists.mapped_by
