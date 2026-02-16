@@ -539,9 +539,7 @@ class TaskAPI(MethodView):
                         mapped_by=mapper.osm_username,
                     ).first()
 
-                    is_new_task = task_exists is None
-
-                    if is_new_task:
+                    if task_exists is None:
                         new_task = Task.create(
                             task_id=task,
                             org_id=g.user.org_id if g.user else None,
@@ -579,10 +577,8 @@ class TaskAPI(MethodView):
                             )
                         target_task = task_exists
 
-                    # Fetch individual task details from TM4 only for NEW tasks
-                    # to detect split tasks (parent_task_id). Skip for existing
-                    # tasks to avoid hundreds of redundant API calls per sync.
-                    if is_new_task and target_task and not target_task.parent_task_id:
+                    # Fetch individual task details from TM4 to get parent_task_id (for split tasks)
+                    if target_task and not target_task.parent_task_id:
                         try:
                             tm4_base_url = self._get_tm4_base_url()
                             headers = self._get_tm4_headers()
@@ -905,44 +901,25 @@ class TaskAPI(MethodView):
         ).all()
         visible_project_ids = [p.id for p in all_visible_projects]
 
-        # Collect ALL unique project IDs across all users
-        all_project_ids = set(visible_project_ids)
         for user in org_users:
-            assigned_ids = [
-                r.project_id
-                for r in ProjectUser.query.filter_by(user_id=user.id).all()
+            # Get user's explicitly assigned projects
+            assigned_project_ids = [
+                relation.project_id
+                for relation in ProjectUser.query.filter_by(user_id=user.id).all()
             ]
-            all_project_ids.update(assigned_ids)
 
-        all_projects = Project.query.filter(
-            Project.org_id == g.user.org_id,
-            Project.status == True,
-            Project.id.in_(list(all_project_ids))
-        ).all()
+            # Combine assigned + visible projects
+            all_project_ids = list(set(assigned_project_ids + visible_project_ids))
 
-        # Phase 1: Process each project ONCE (mapped, validated, invalidated from contributions)
-        headers = self._get_tm4_headers()
-        base_url = self._get_tm4_base_url()
-        for project in all_projects:
-            tm4_url = f"{base_url}/projects/{project.id}/contributions/"
-            try:
-                response = requests.get(tm4_url, headers=headers, timeout=60)
-                if response.ok:
-                    data = response.json()
-                    self.get_mapped_TM4_tasks(data, project.id)
-                    self.get_validated_TM4_tasks(data, project.id)
-                    self.get_invalidated_TM4_tasks_from_contributions(data, project.id)
-                else:
-                    current_app.logger.error(
-                        f"TM4 contributions call failed for project {project.id}: {response.status_code}"
-                    )
-            except requests.RequestException as e:
-                current_app.logger.error(f"TM4 API error for project {project.id}: {e}")
+            user_projects = Project.query.filter(
+                Project.org_id == user.org_id,
+                Project.status == True,
+                Project.id.in_(all_project_ids)
+            ).all()
 
-        # Phase 2: Per-user invalidation checks (user-specific UserTasks)
-        for user in org_users:
-            for project in all_projects:
-                self.get_invalidated_TM4_tasks(project.id, user)
+            # Process all projects (TM4 only - TM3 support removed)
+            for project in user_projects:
+                self.TM4_payment_call(project.id, user)
 
         return {"message": "updated", "status": 200}
 
