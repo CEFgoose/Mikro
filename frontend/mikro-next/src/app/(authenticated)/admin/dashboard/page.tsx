@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle, Skeleton, Badge, Button, useToastActions } from "@/components/ui";
-import { useAdminDashboardStats, useOrgTransactions, useUsersList, useOrgProjects, usePurgeTaskStats, useAdminSyncAllTasks, useCheckSyncStatus } from "@/hooks";
+import { useAdminDashboardStats, useOrgTransactions, useUsersList, useOrgProjects, usePurgeTaskStats, useAdminSyncAllTasks } from "@/hooks";
 import { TimeTrackingWidget } from "@/components/widgets/TimeTrackingWidget";
 import { AdminTimeManagement } from "@/components/widgets/AdminTimeManagement";
 import Link from "next/link";
@@ -28,62 +28,17 @@ export default function AdminDashboard() {
   const { data: users, loading: usersLoading } = useUsersList();
   const { data: projects } = useOrgProjects();
   const { mutate: purgeTaskStats, loading: purging } = usePurgeTaskStats();
-  const { mutate: syncAllTasks } = useAdminSyncAllTasks();
-  const { mutate: checkSyncStatus } = useCheckSyncStatus();
+  const { mutate: syncAllTasks, loading: syncing } = useAdminSyncAllTasks();
   const toast = useToastActions();
   const [purgeConfirm, setPurgeConfirm] = useState(false);
-  const [syncProgress, setSyncProgress] = useState<string | null>(null);
-  const [syncing, setSyncing] = useState(false);
-  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
-
-  const stopPolling = useCallback(() => {
-    if (pollRef.current) {
-      clearInterval(pollRef.current);
-      pollRef.current = null;
-    }
-  }, []);
-
-  const startPolling = useCallback(() => {
-    stopPolling();
-    setSyncing(true);
-
-    pollRef.current = setInterval(async () => {
-      try {
-        const result = await checkSyncStatus({});
-        if (result.sync_status === "running" || result.sync_status === "queued") {
-          setSyncProgress(result.progress || "Syncing...");
-        } else if (result.sync_status === "completed") {
-          stopPolling();
-          setSyncing(false);
-          setSyncProgress(null);
-          toast.success("Task sync complete");
-          refetchStats();
-        } else if (result.sync_status === "failed") {
-          stopPolling();
-          setSyncing(false);
-          setSyncProgress(null);
-          toast.error(result.error || "Sync failed");
-        }
-      } catch {
-        stopPolling();
-        setSyncing(false);
-        setSyncProgress(null);
-      }
-    }, 5000);
-  }, [checkSyncStatus, stopPolling, toast, refetchStats]);
-
-  useEffect(() => {
-    return () => stopPolling();
-  }, [stopPolling]);
 
   const handleSyncAllTasks = async () => {
     try {
-      const result = await syncAllTasks({});
-      setSyncing(true);
-      setSyncProgress(result.message || "Queued...");
-      startPolling();
+      await syncAllTasks({});
+      toast.success("Task sync complete");
+      refetchStats();
     } catch {
-      toast.error("Failed to start sync");
+      toast.error("Failed to sync tasks");
     }
   };
 
@@ -111,19 +66,14 @@ export default function AdminDashboard() {
             Organization overview and management
           </p>
         </div>
-        <div className="flex items-center gap-3">
-          {syncing && syncProgress && (
-            <span className="text-sm text-muted-foreground">{syncProgress}</span>
-          )}
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleSyncAllTasks}
-            disabled={syncing}
-          >
-            {syncing ? "Syncing..." : "Sync All Tasks"}
-          </Button>
-        </div>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={handleSyncAllTasks}
+          disabled={syncing}
+        >
+          {syncing ? "Syncing..." : "Sync All Tasks"}
+        </Button>
       </div>
 
       {/* Time Tracking Widget */}

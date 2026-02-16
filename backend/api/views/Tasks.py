@@ -20,7 +20,6 @@ from ..database import (
     UserTasks,
     User,
     ValidatorTaskAction,
-    SyncJob,
     db,
 )
 
@@ -117,8 +116,6 @@ class TaskAPI(MethodView):
             return self.update_user_tasks()
         elif path == "admin_update_all_user_tasks":
             return self.admin_update_all_user_tasks()
-        elif path == "check_sync_status":
-            return self.check_sync_status()
         elif path == "fetch_external_validations":
             return self.admin_fetch_external_validations()
         elif path == "update_task":
@@ -886,61 +883,45 @@ class TaskAPI(MethodView):
     @requires_admin
     def admin_update_all_user_tasks(self):
         """
-        Queue a background sync job for all users in the organization.
+        Update tasks for all users in the organization from TM4.
 
-        Creates a SyncJob record that the background worker picks up.
-        Returns immediately instead of blocking the request.
+        Admin-only endpoint to sync all user tasks.
+        Includes both assigned projects AND public (visible) projects.
         """
         if not g.user:
             return {"message": "User not found", "status": 304}
 
-        # Check if a sync is already running
-        running_job = SyncJob.query.filter_by(
-            org_id=g.user.org_id, status="running"
-        ).first()
-        if running_job:
-            return {
-                "message": "Sync already in progress",
-                "job_id": running_job.id,
-                "progress": running_job.progress,
-                "status": 200,
-            }
+        org_users = User.query.filter_by(org_id=g.user.org_id).all()
 
-        # Create a new sync job (worker picks it up)
-        job = SyncJob.create(
-            org_id=g.user.org_id,
-            status="queued",
-        )
+        # Get all active projects in org (for public/visible check)
+        all_visible_projects = Project.query.filter(
+            Project.org_id == g.user.org_id,
+            Project.status == True,
+            Project.visibility == True,
+        ).all()
+        visible_project_ids = [p.id for p in all_visible_projects]
 
-        return {
-            "message": "Task sync queued — running in background",
-            "job_id": job.id,
-            "status": 200,
-        }
+        for user in org_users:
+            # Get user's explicitly assigned projects
+            assigned_project_ids = [
+                relation.project_id
+                for relation in ProjectUser.query.filter_by(user_id=user.id).all()
+            ]
 
-    def check_sync_status(self):
-        """Check the status of the latest sync job for the current org."""
-        if not g.user:
-            return {"message": "User not found", "status": 304}
+            # Combine assigned + visible projects
+            all_project_ids = list(set(assigned_project_ids + visible_project_ids))
 
-        job = (
-            SyncJob.query.filter_by(org_id=g.user.org_id)
-            .order_by(SyncJob.id.desc())
-            .first()
-        )
+            user_projects = Project.query.filter(
+                Project.org_id == user.org_id,
+                Project.status == True,
+                Project.id.in_(all_project_ids)
+            ).all()
 
-        if not job:
-            return {"message": "No sync jobs found", "status": 200}
+            # Process all projects (TM4 only - TM3 support removed)
+            for project in user_projects:
+                self.TM4_payment_call(project.id, user)
 
-        return {
-            "job_id": job.id,
-            "status": 200,
-            "sync_status": job.status,
-            "progress": job.progress,
-            "started_at": job.started_at.isoformat() if job.started_at else None,
-            "completed_at": job.completed_at.isoformat() if job.completed_at else None,
-            "error": job.error,
-        }
+        return {"message": "updated", "status": 200}
 
     @requires_admin
     def admin_fetch_external_validations(self):

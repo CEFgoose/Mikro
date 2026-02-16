@@ -1,3 +1,2 @@
 web: gunicorn --worker-tmp-dir /dev/shm "app:create_app()" --timeout 120 --bind 0.0.0.0:$PORT
-worker: python -m api.worker
 release: flask db upgrade

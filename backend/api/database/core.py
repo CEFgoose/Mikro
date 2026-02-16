@@ -647,21 +647,3 @@ class TimeEntry(CRUDMixin, db.Model):
 
     def __repr__(self):
         return f"<TimeEntry {self.id} user={self.user_id} status={self.status}>"
-
-
-class SyncJob(CRUDMixin, db.Model):
-    """Background sync job tracking for task synchronization."""
-
-    __tablename__ = "sync_jobs"
-
-    id = Column(Integer, primary_key=True, autoincrement=True)
-    org_id = Column(String(255), nullable=True, index=True)
-    status = Column(String(50), nullable=False, default="queued")
-    started_at = Column(DateTime, nullable=True)
-    completed_at = Column(DateTime, nullable=True)
-    progress = Column(String(500), nullable=True)
-    error = db.Column(db.Text, nullable=True)
-    created_at = Column(DateTime, default=func.now())
-
-    def __repr__(self):
-        return f"<SyncJob {self.id} org={self.org_id} status={self.status}>"

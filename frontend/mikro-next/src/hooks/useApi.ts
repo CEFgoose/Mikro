@@ -327,18 +327,6 @@ export function useAdminSyncAllTasks() {
   return useApiMutation("/task/admin_update_all_user_tasks");
 }
 
-export function useCheckSyncStatus() {
-  return useApiMutation<{
-    job_id?: number;
-    sync_status?: string;
-    progress?: string;
-    started_at?: string;
-    completed_at?: string;
-    error?: string;
-    message?: string;
-  }>("/task/check_sync_status");
-}
-
 export function useCreateTraining() {
   return useApiMutation("/training/create_training");
 }
