@@ -192,7 +192,7 @@ class TaskAPI(MethodView):
                         original_mapper = task_to_mapper.get(task, "unknown")
                         task_exists = Task.create(
                             task_id=task,
-                            org_id=g.user.org_id if hasattr(g, "user") and g.user else None,
+                            org_id=target_project.org_id,
                             project_id=project_id,
                             mapping_rate=target_project.mapping_rate_per_task,
                             validation_rate=target_project.validation_rate_per_task,
@@ -545,7 +545,7 @@ class TaskAPI(MethodView):
                     if task_exists is None:
                         new_task = Task.create(
                             task_id=task,
-                            org_id=g.user.org_id if g.user else None,
+                            org_id=target_project.org_id,
                             project_id=project_id,
                             mapping_rate=target_project.mapping_rate_per_task,
                             validation_rate=target_project.validation_rate_per_task,

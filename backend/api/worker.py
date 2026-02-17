@@ -36,86 +36,89 @@ def run_sync_job(app, job):
     Runs the same sync logic as admin_update_all_user_tasks but in a
     separate process not bound by gunicorn timeout.
 
+    Called from poll_for_jobs which already holds the app context —
+    do NOT create a nested app context here (it causes session teardown
+    to kill the session and lose status updates).
+
     Args:
         app: Flask application instance
         job: SyncJob model instance
     """
-    with app.app_context():
-        from .database import db, SyncJob, User, Project, ProjectUser
-        from .views.Tasks import TaskAPI
+    from .database import db, SyncJob, User, Project, ProjectUser
+    from .views.Tasks import TaskAPI
 
-        task_api = TaskAPI()
+    task_api = TaskAPI()
 
-        try:
-            # Mark job as running
-            job.status = "running"
-            job.started_at = datetime.now(timezone.utc)
-            job.progress = "Starting sync..."
+    try:
+        # Mark job as running
+        job.status = "running"
+        job.started_at = datetime.now(timezone.utc)
+        job.progress = "Starting sync..."
+        db.session.commit()
+
+        org_id = job.org_id
+        org_users = User.query.filter_by(org_id=org_id).all()
+
+        # Get all visible projects in org
+        all_visible_projects = Project.query.filter(
+            Project.org_id == org_id,
+            Project.status == True,
+            Project.visibility == True,
+        ).all()
+        visible_project_ids = [p.id for p in all_visible_projects]
+
+        total_users = len(org_users)
+        for i, user in enumerate(org_users, 1):
+            # Update progress
+            job.progress = f"Syncing user {i}/{total_users}: {user.osm_username or user.email or user.id}"
             db.session.commit()
 
-            org_id = job.org_id
-            org_users = User.query.filter_by(org_id=org_id).all()
-
-            # Get all visible projects in org
-            all_visible_projects = Project.query.filter(
-                Project.org_id == org_id,
-                Project.status == True,
-                Project.visibility == True,
-            ).all()
-            visible_project_ids = [p.id for p in all_visible_projects]
-
-            total_users = len(org_users)
-            for i, user in enumerate(org_users, 1):
-                # Update progress
-                job.progress = f"Syncing user {i}/{total_users}: {user.osm_username or user.email or user.id}"
-                db.session.commit()
-
-                # Get user's assigned projects
-                assigned_project_ids = [
-                    relation.project_id
-                    for relation in ProjectUser.query.filter_by(
-                        user_id=user.id
-                    ).all()
-                ]
-
-                # Combine assigned + visible
-                all_project_ids = list(
-                    set(assigned_project_ids + visible_project_ids)
-                )
-
-                user_projects = Project.query.filter(
-                    Project.org_id == user.org_id,
-                    Project.status == True,
-                    Project.id.in_(all_project_ids),
+            # Get user's assigned projects
+            assigned_project_ids = [
+                relation.project_id
+                for relation in ProjectUser.query.filter_by(
+                    user_id=user.id
                 ).all()
+            ]
 
-                for j, project in enumerate(user_projects, 1):
-                    job.progress = f"User {i}/{total_users} - Project {project.id} ({j}/{len(user_projects)})"
-                    db.session.commit()
-                    task_api.TM4_payment_call(project.id, user)
-
-            # Mark completed
-            job.status = "completed"
-            job.completed_at = datetime.now(timezone.utc)
-            job.progress = f"Completed: synced {total_users} users"
-            db.session.commit()
-
-            logger.info(
-                f"Sync job {job.id} completed for org {org_id} "
-                f"({total_users} users)"
+            # Combine assigned + visible
+            all_project_ids = list(
+                set(assigned_project_ids + visible_project_ids)
             )
 
-        except Exception as e:
-            logger.error(f"Sync job {job.id} failed: {e}")
-            db.session.rollback()
-            try:
-                job.status = "failed"
-                job.error = str(e)[:2000]
-                job.completed_at = datetime.now(timezone.utc)
+            user_projects = Project.query.filter(
+                Project.org_id == user.org_id,
+                Project.status == True,
+                Project.id.in_(all_project_ids),
+            ).all()
+
+            for j, project in enumerate(user_projects, 1):
+                job.progress = f"User {i}/{total_users} - Project {project.id} ({j}/{len(user_projects)})"
                 db.session.commit()
-            except Exception:
-                logger.error(f"Failed to update job {job.id} error status")
-                db.session.rollback()
+                task_api.TM4_payment_call(project.id, user)
+
+        # Mark completed
+        job.status = "completed"
+        job.completed_at = datetime.now(timezone.utc)
+        job.progress = f"Completed: synced {total_users} users"
+        db.session.commit()
+
+        logger.info(
+            f"Sync job {job.id} completed for org {org_id} "
+            f"({total_users} users)"
+        )
+
+    except Exception as e:
+        logger.error(f"Sync job {job.id} failed: {e}")
+        db.session.rollback()
+        try:
+            job.status = "failed"
+            job.error = str(e)[:2000]
+            job.completed_at = datetime.now(timezone.utc)
+            db.session.commit()
+        except Exception:
+            logger.error(f"Failed to update job {job.id} error status")
+            db.session.rollback()
 
 
 def poll_for_jobs(app):
