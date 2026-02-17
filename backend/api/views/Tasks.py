@@ -133,8 +133,6 @@ class TaskAPI(MethodView):
     def _get_tm4_headers(self):
         """Get headers for TM4 API requests."""
         token = current_app.config.get("TM4_API_TOKEN")
-        if not token:
-            current_app.logger.warning("TM4_API_TOKEN not configured")
         return {
             "Authorization": f"Bearer {token}" if token else "",
             "Accept-Language": "en-US",

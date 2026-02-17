@@ -33,6 +33,8 @@ import {
   Legend,
   ResponsiveContainer,
   Cell,
+  PieChart,
+  Pie,
 } from "recharts";
 
 // ─── Color Constants ─────────────────────────────────────────
@@ -45,15 +47,261 @@ const COLORS = {
   review: "#6366f1",
   training: "#f59e0b",
   other: "#9ca3af",
+  deleted: "#ef4444",
+  added: "#f97316",
+  modified: "#3b82f6",
 };
 
 const CATEGORY_COLORS: Record<string, string> = {
   mapping: "#f97316",
+  "editing / osm": "#f97316",
   validation: "#3b82f6",
+  "kaart qc": "#3b82f6",
   review: "#6366f1",
+  management: "#8b5cf6",
   training: "#f59e0b",
+  "kaart training / meetings": "#f59e0b",
+  "project creation / team planning": "#06b6d4",
+  "community outreach - general": "#10b981",
+  "community qc": "#14b8a6",
+  "community events / trainings / meetings": "#a855f7",
+  "wiki / osm documentation": "#ec4899",
+  "imagery capture": "#64748b",
   other: "#9ca3af",
 };
+
+const WEEKLY_TASK_COLORS = [
+  "#8b5cf6", // Management
+  "#f59e0b", // Kaart Training / Meetings
+  "#3b82f6", // Kaart QC
+  "#64748b", // Imagery Capture
+  "#06b6d4", // Project Creation / Team Planning
+  "#14b8a6", // Community QC
+  "#ec4899", // Wiki / OSM Documentation
+  "#a855f7", // Community Events / Trainings / Meetings
+  "#10b981", // Community Outreach - General
+];
+
+const COMMUNITY_OUTREACH_COLORS = {
+  "Wiki / OSM Documentation": "#ec4899",
+  "Community QC": "#14b8a6",
+  "Community Events / Trainings / Meetings": "#a855f7",
+  "Community Outreach - General": "#10b981",
+};
+
+// ─── Mock Data (charts requiring Kibana / external sources) ──
+
+const MOCK_ACTIVITY_ELEMENT_TYPES = [
+  {
+    title: "Oneways",
+    data: [
+      { week: "1/19", deleted: 107, added: 147, modified: 107 },
+      { week: "1/26", deleted: 0, added: 0, modified: 65 },
+      { week: "2/2", deleted: 0, added: 0, modified: 0 },
+      { week: "2/9", deleted: 0, added: 0, modified: 0 },
+    ],
+  },
+  {
+    title: "Access & Barriers",
+    data: [
+      { week: "1/19", deleted: 800, added: 1200, modified: 0 },
+      { week: "1/26", deleted: 0, added: 0, modified: 0 },
+      { week: "2/2", deleted: 684, added: 0, modified: 510 },
+      { week: "2/9", deleted: 0, added: 0, modified: 0 },
+    ],
+  },
+  {
+    title: "Highways",
+    data: [
+      { week: "1/19", deleted: 4613, added: 0, modified: 7543 },
+      { week: "1/26", deleted: 0, added: 1359, modified: 6397 },
+      { week: "2/2", deleted: 0, added: 0, modified: 0 },
+      { week: "2/9", deleted: 0, added: 0, modified: 0 },
+    ],
+  },
+  {
+    title: "Refs",
+    data: [
+      { week: "1/19", deleted: 0, added: 300, modified: 0 },
+      { week: "1/26", deleted: 0, added: 149, modified: 148 },
+      { week: "2/2", deleted: 0, added: 0, modified: 0 },
+      { week: "2/9", deleted: 0, added: 0, modified: 0 },
+    ],
+  },
+  {
+    title: "Turn Restrictions",
+    data: [
+      { week: "1/19", deleted: 0, added: 11, modified: 0 },
+      { week: "1/26", deleted: 0, added: 0, modified: 1 },
+      { week: "2/2", deleted: 1, added: 0, modified: 0 },
+      { week: "2/9", deleted: 0, added: 0, modified: 0 },
+    ],
+  },
+  {
+    title: "Names",
+    data: [
+      { week: "1/19", deleted: 0, added: 1326, modified: 1260 },
+      { week: "1/26", deleted: 0, added: 0, modified: 0 },
+      { week: "2/2", deleted: 0, added: 0, modified: 1040 },
+      { week: "2/9", deleted: 0, added: 0, modified: 0 },
+    ],
+  },
+  {
+    title: "Construction",
+    data: [
+      { week: "1/19", deleted: 27, added: 0, modified: 0 },
+      { week: "1/26", deleted: 0, added: 16, modified: 0 },
+      { week: "2/2", deleted: 5, added: 0, modified: 6 },
+      { week: "2/9", deleted: 0, added: 0, modified: 0 },
+    ],
+  },
+  {
+    title: "Classifications",
+    data: [
+      { week: "1/19", deleted: 0, added: 867, modified: 0 },
+      { week: "1/26", deleted: 0, added: 750, modified: 0 },
+      { week: "2/2", deleted: 0, added: 0, modified: 249 },
+      { week: "2/9", deleted: 0, added: 0, modified: 0 },
+    ],
+  },
+];
+
+const MOCK_COMMUNITY_EVENTS = [
+  {
+    id: 1,
+    title: "Local Govt Mapping - Pesolis Renesta Pessidos Pestled",
+    categories: ["Discussion", "OSM Community"],
+    summary:
+      "Discussed government mapping priorities with local officials. Focused on road network and administrative boundary improvements.",
+    participants: { new: 4, return: 3, key: 2, total: 9 },
+  },
+  {
+    id: 2,
+    title: "Nentanga Group Makdedirps - Rafai Overt Reduce All Environments",
+    categories: ["Event", "University"],
+    summary:
+      "University outreach event introducing OSM to geography students. Hands-on mapping session with tutorial walkthrough.",
+    participants: { new: 8, return: 5, key: 1, total: 14 },
+  },
+  {
+    id: 3,
+    title: "Pessint bor Aggressive TTracking",
+    categories: ["1:1 Interaction", "New User"],
+    summary:
+      "One-on-one onboarding session with new community mapper. Covered JOSM setup and basic editing workflow.",
+    participants: { new: 1, return: 0, key: 0, total: 1 },
+  },
+];
+
+const MOCK_OVERWRITES = [
+  {
+    id: 1,
+    title: "Local Govt Mapping - Pesolis Renesta Pessidos Pestled",
+    link: "#",
+  },
+];
+
+const MOCK_WEEKLY_TASK_HOURS = [
+  {
+    week: "1/19",
+    Management: 50,
+    "Kaart Training / Meetings": 120,
+    "Kaart QC": 80,
+    "Imagery Capture": 30,
+    "Project Creation / Team Planning": 60,
+    "Community QC": 40,
+    "Wiki / OSM Documentation": 20,
+    "Community Events / Trainings / Meetings": 350,
+    "Community Outreach - General": 250,
+  },
+  {
+    week: "1/26",
+    Management: 60,
+    "Kaart Training / Meetings": 100,
+    "Kaart QC": 90,
+    "Imagery Capture": 25,
+    "Project Creation / Team Planning": 50,
+    "Community QC": 35,
+    "Wiki / OSM Documentation": 15,
+    "Community Events / Trainings / Meetings": 400,
+    "Community Outreach - General": 225,
+  },
+  {
+    week: "2/2",
+    Management: 55,
+    "Kaart Training / Meetings": 130,
+    "Kaart QC": 70,
+    "Imagery Capture": 35,
+    "Project Creation / Team Planning": 45,
+    "Community QC": 50,
+    "Wiki / OSM Documentation": 25,
+    "Community Events / Trainings / Meetings": 500,
+    "Community Outreach - General": 290,
+  },
+  {
+    week: "2/9",
+    Management: 45,
+    "Kaart Training / Meetings": 110,
+    "Kaart QC": 85,
+    "Imagery Capture": 20,
+    "Project Creation / Team Planning": 55,
+    "Community QC": 45,
+    "Wiki / OSM Documentation": 30,
+    "Community Events / Trainings / Meetings": 375,
+    "Community Outreach - General": 235,
+  },
+];
+
+const WEEKLY_TASK_CATEGORIES = [
+  "Management",
+  "Kaart Training / Meetings",
+  "Kaart QC",
+  "Imagery Capture",
+  "Project Creation / Team Planning",
+  "Community QC",
+  "Wiki / OSM Documentation",
+  "Community Events / Trainings / Meetings",
+  "Community Outreach - General",
+];
+
+const MOCK_COMMUNITY_OUTREACH = [
+  {
+    week: "1/19",
+    "Wiki / OSM Documentation": 20,
+    "Community QC": 40,
+    "Community Events / Trainings / Meetings": 120,
+    "Community Outreach - General": 231,
+    newParticipants: 15,
+    returnParticipants: 10,
+  },
+  {
+    week: "1/26",
+    "Wiki / OSM Documentation": 15,
+    "Community QC": 35,
+    "Community Events / Trainings / Meetings": 166,
+    "Community Outreach - General": 244,
+    newParticipants: 20,
+    returnParticipants: 12,
+  },
+  {
+    week: "2/2",
+    "Wiki / OSM Documentation": 25,
+    "Community QC": 50,
+    "Community Events / Trainings / Meetings": 140,
+    "Community Outreach - General": 177,
+    newParticipants: 18,
+    returnParticipants: 15,
+  },
+  {
+    week: "2/9",
+    "Wiki / OSM Documentation": 30,
+    "Community QC": 45,
+    "Community Events / Trainings / Meetings": 150,
+    "Community Outreach - General": 200,
+    newParticipants: 22,
+    returnParticipants: 14,
+  },
+];
 
 // ─── Helper Components ───────────────────────────────────────
 
@@ -85,6 +333,100 @@ function LoadingSpinner() {
       <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-kaart-orange" />
     </div>
   );
+}
+
+function CategoryBadge({ label }: { label: string }) {
+  const colorMap: Record<string, string> = {
+    Discussion: "bg-blue-600",
+    "OSM Community": "bg-green-600",
+    Event: "bg-purple-600",
+    University: "bg-indigo-600",
+    "1:1 Interaction": "bg-orange-600",
+    "New User": "bg-teal-600",
+  };
+  return (
+    <span
+      className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium text-white ${colorMap[label] || "bg-gray-600"}`}
+    >
+      {label}
+    </span>
+  );
+}
+
+function MiniActivityChart({
+  title,
+  data,
+}: {
+  title: string;
+  data: { week: string; deleted: number; added: number; modified: number }[];
+}) {
+  return (
+    <Card>
+      <CardContent className="p-3">
+        <p className="text-xs font-semibold text-gray-700 mb-2">
+          Team Activity: {title}
+        </p>
+        <div style={{ width: "100%", height: 140 }}>
+          <ResponsiveContainer>
+            <BarChart data={data} barSize={12}>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis dataKey="week" tick={{ fontSize: 9 }} />
+              <YAxis tick={{ fontSize: 9 }} width={35} />
+              <Tooltip contentStyle={{ fontSize: 11 }} />
+              <Legend
+                wrapperStyle={{ fontSize: 9 }}
+                iconSize={8}
+              />
+              <Bar
+                dataKey="deleted"
+                name="Deleted"
+                fill={COLORS.deleted}
+                stackId="a"
+              />
+              <Bar
+                dataKey="added"
+                name="Added"
+                fill={COLORS.added}
+                stackId="a"
+              />
+              <Bar
+                dataKey="modified"
+                name="Modified"
+                fill={COLORS.modified}
+                stackId="a"
+              />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+function getProjectStatus(proj: {
+  percent_mapped: number;
+  percent_validated: number;
+  status: boolean;
+}): { label: string; className: string } {
+  if (proj.percent_mapped >= 95 && proj.percent_validated >= 90)
+    return {
+      label: "Complete",
+      className: "bg-green-100 text-green-800",
+    };
+  if (!proj.status)
+    return {
+      label: "Inactive",
+      className: "bg-gray-100 text-gray-800",
+    };
+  if (proj.percent_mapped < 15)
+    return {
+      label: "Stagnant",
+      className: "bg-yellow-100 text-yellow-800",
+    };
+  return {
+    label: "In Progress",
+    className: "bg-blue-100 text-blue-800",
+  };
 }
 
 // ─── Helper Functions ────────────────────────────────────────
@@ -148,12 +490,21 @@ export default function AdminReportsPage() {
   const [expandedUsers, setExpandedUsers] = useState<Set<string>>(
     new Set()
   );
+  const [expandedEvents, setExpandedEvents] = useState<Set<number>>(
+    new Set()
+  );
 
   // ── Hooks ────────────────────────────────────────────────
-  const { mutate: fetchEditing, loading: editingLoading, error: editingError } =
-    useFetchEditingStats();
-  const { mutate: fetchTimekeeping, loading: timekeepingLoading, error: timekeepingError } =
-    useFetchTimekeepingStats();
+  const {
+    mutate: fetchEditing,
+    loading: editingLoading,
+    error: editingError,
+  } = useFetchEditingStats();
+  const {
+    mutate: fetchTimekeeping,
+    loading: timekeepingLoading,
+    error: timekeepingError,
+  } = useFetchTimekeepingStats();
   const { data: teamsData } = useFetchTeams();
 
   // ── Data Fetching ────────────────────────────────────────
@@ -201,6 +552,29 @@ export default function AdminReportsPage() {
   useEffect(() => {
     fetchData();
   }, [fetchData]);
+
+  // ── Computed: editing donut ──────────────────────────────
+  const overallProgress = editingData
+    ? (() => {
+        const totalTasks = editingData.projects.reduce(
+          (s, p) => s + p.total_tasks,
+          0
+        );
+        const totalMapped = editingData.projects.reduce(
+          (s, p) => s + p.tasks_mapped,
+          0
+        );
+        const pct = totalTasks > 0 ? Math.round((totalMapped / totalTasks) * 100) : 0;
+        return { totalTasks, totalMapped, pct };
+      })()
+    : null;
+
+  const donutData = overallProgress
+    ? [
+        { name: "Completed", value: overallProgress.pct },
+        { name: "Remaining", value: 100 - overallProgress.pct },
+      ]
+    : [];
 
   // ── Render ───────────────────────────────────────────────
   return (
@@ -297,7 +671,11 @@ export default function AdminReportsPage() {
       </Card>
 
       {/* TABS */}
-      <Tabs defaultValue="editing" value={activeTab} onValueChange={setActiveTab}>
+      <Tabs
+        defaultValue="editing"
+        value={activeTab}
+        onValueChange={setActiveTab}
+      >
         <TabsList>
           <TabsTrigger value="editing">Editing</TabsTrigger>
           <TabsTrigger value="community">Community</TabsTrigger>
@@ -316,25 +694,134 @@ export default function AdminReportsPage() {
             </Card>
           ) : editingData ? (
             <div className="space-y-6">
-              {/* Summary Stat Cards */}
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <StatCard
-                  label="Tasks Mapped"
-                  value={editingData.summary.total_mapped}
-                />
-                <StatCard
-                  label="Tasks Validated"
-                  value={editingData.summary.total_validated}
-                />
-                <StatCard
-                  label="Tasks Invalidated"
-                  value={editingData.summary.total_invalidated}
-                />
-                <StatCard
-                  label="Active Projects"
-                  value={editingData.summary.active_projects}
-                  sub={`${editingData.summary.completed_projects} completed`}
-                />
+              {/* ── Hero Row: Donut + Heatmap + Changeset Totals ── */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {/* Project Progress Donut */}
+                <Card>
+                  <CardHeader className="pb-0">
+                    <CardTitle className="text-base">
+                      Project Progress
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="flex flex-col items-center">
+                    <div style={{ width: 180, height: 180, position: "relative" }}>
+                      <ResponsiveContainer>
+                        <PieChart>
+                          <Pie
+                            data={donutData}
+                            cx="50%"
+                            cy="50%"
+                            innerRadius={55}
+                            outerRadius={80}
+                            startAngle={90}
+                            endAngle={-270}
+                            dataKey="value"
+                            strokeWidth={0}
+                          >
+                            <Cell fill={COLORS.mapped} />
+                            <Cell fill="#e5e7eb" />
+                          </Pie>
+                        </PieChart>
+                      </ResponsiveContainer>
+                      <div className="absolute inset-0 flex flex-col items-center justify-center">
+                        <span className="text-3xl font-bold text-gray-900">
+                          {overallProgress?.pct ?? 0}%
+                        </span>
+                        <span className="text-xs text-muted-foreground">
+                          Completed
+                        </span>
+                      </div>
+                    </div>
+                    <div className="text-center mt-2 space-y-1">
+                      <p className="text-sm text-muted-foreground">
+                        {overallProgress?.totalMapped.toLocaleString()} /{" "}
+                        {overallProgress?.totalTasks.toLocaleString()} tasks
+                      </p>
+                      <p className="text-sm font-medium">
+                        {editingData.summary.active_projects} active projects
+                      </p>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Changeset Heatmap Placeholder */}
+                <Card>
+                  <CardHeader className="pb-0">
+                    <CardTitle className="text-base">
+                      Map of changeset centroids
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="flex items-center justify-center">
+                    <div className="w-full h-48 bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg flex items-center justify-center border border-blue-200">
+                      <div className="text-center">
+                        <svg
+                          className="w-12 h-12 text-blue-300 mx-auto mb-2"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={1.5}
+                            d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                          />
+                        </svg>
+                        <p className="text-sm text-blue-400">
+                          Heatmap — pending OSM data integration
+                        </p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Changeset Totals */}
+                <Card>
+                  <CardHeader className="pb-0">
+                    <CardTitle className="text-base">
+                      Changeset totals
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-gray-700 leading-relaxed mt-2">
+                      During this time period, a total of{" "}
+                      <span className="font-bold text-gray-900">
+                        {editingData.summary.total_mapped.toLocaleString()}
+                      </span>{" "}
+                      tasks were mapped across{" "}
+                      <span className="font-bold text-gray-900">
+                        {editingData.summary.active_projects}
+                      </span>{" "}
+                      active projects, with{" "}
+                      <span className="font-bold text-gray-900">
+                        {editingData.summary.total_validated.toLocaleString()}
+                      </span>{" "}
+                      tasks validated and{" "}
+                      <span className="font-bold text-gray-900">
+                        {editingData.summary.total_invalidated.toLocaleString()}
+                      </span>{" "}
+                      invalidated.
+                    </p>
+                    <div className="grid grid-cols-2 gap-3 mt-4">
+                      <div className="bg-muted rounded-lg p-3 text-center">
+                        <p className="text-xl font-bold text-gray-900">
+                          {editingData.summary.total_mapped.toLocaleString()}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          Tasks Mapped
+                        </p>
+                      </div>
+                      <div className="bg-muted rounded-lg p-3 text-center">
+                        <p className="text-xl font-bold text-gray-900">
+                          {editingData.summary.total_validated.toLocaleString()}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          Validated
+                        </p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
               </div>
 
               {/* Tasks Over Time Bar Chart */}
@@ -399,11 +886,12 @@ export default function AdminReportsPage() {
                 </CardContent>
               </Card>
 
-              {/* Project Progress Table */}
+              {/* Detailed Project Table */}
               <Card>
                 <CardHeader>
                   <CardTitle>
-                    Project Progress ({editingData.projects.length})
+                    Detailed Project Table (
+                    {editingData.projects.length})
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="p-0">
@@ -412,19 +900,19 @@ export default function AdminReportsPage() {
                       <thead className="bg-muted border-b border-gray-200">
                         <tr>
                           <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">
-                            Project
+                            Project Name
+                          </th>
+                          <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">
+                            Status
                           </th>
                           <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">
                             Progress
                           </th>
                           <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">
-                            Mapped
-                          </th>
-                          <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">
-                            Validated
-                          </th>
-                          <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">
                             % Validated
+                          </th>
+                          <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">
+                            Time per Task
                           </th>
                           <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">
                             Map Rate
@@ -432,76 +920,84 @@ export default function AdminReportsPage() {
                           <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">
                             Val Rate
                           </th>
-                          <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">
-                            Status
-                          </th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-border bg-white">
-                        {editingData.projects.map((proj) => (
-                          <tr key={proj.id}>
-                            <td className="px-6 py-4">
-                              {proj.url ? (
-                                <a
-                                  href={proj.url}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="font-medium text-kaart-orange hover:underline"
+                        {editingData.projects.map((proj) => {
+                          const status = getProjectStatus(proj);
+                          return (
+                            <tr key={proj.id}>
+                              <td className="px-6 py-4">
+                                {proj.url ? (
+                                  <a
+                                    href={proj.url}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="font-medium text-kaart-orange hover:underline"
+                                  >
+                                    {proj.name}
+                                  </a>
+                                ) : (
+                                  <span className="font-medium text-gray-900">
+                                    {proj.name}
+                                  </span>
+                                )}
+                              </td>
+                              <td className="px-6 py-4">
+                                <span
+                                  className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${status.className}`}
                                 >
-                                  {proj.name}
-                                </a>
-                              ) : (
-                                <span className="font-medium text-gray-900">
-                                  {proj.name}
+                                  {status.label}
                                 </span>
-                              )}
-                            </td>
-                            <td className="px-6 py-4">
-                              <div className="flex items-center gap-2">
-                                <div
-                                  className="flex-1 h-2 bg-gray-200 rounded-full overflow-hidden"
-                                  style={{ minWidth: 80 }}
-                                >
+                              </td>
+                              <td className="px-6 py-4">
+                                <div className="flex items-center gap-2">
                                   <div
-                                    className="h-full bg-kaart-orange rounded-full transition-all"
-                                    style={{
-                                      width: `${Math.min(proj.percent_mapped, 100)}%`,
-                                    }}
-                                  />
+                                    className="flex-1 h-2 bg-gray-200 rounded-full overflow-hidden"
+                                    style={{ minWidth: 80 }}
+                                  >
+                                    <div
+                                      className="h-full bg-kaart-orange rounded-full transition-all"
+                                      style={{
+                                        width: `${Math.min(proj.percent_mapped, 100)}%`,
+                                      }}
+                                    />
+                                  </div>
+                                  <span className="text-xs text-muted-foreground w-10 text-right">
+                                    {proj.percent_mapped}%
+                                  </span>
                                 </div>
-                                <span className="text-xs text-muted-foreground w-10 text-right">
-                                  {proj.percent_mapped}%
-                                </span>
-                              </div>
-                            </td>
-                            <td className="px-6 py-4 text-gray-700">
-                              {proj.tasks_mapped}/{proj.total_tasks}
-                            </td>
-                            <td className="px-6 py-4 text-gray-700">
-                              {proj.tasks_validated}
-                            </td>
-                            <td className="px-6 py-4 text-gray-700">
-                              {proj.percent_validated}%
-                            </td>
-                            <td className="px-6 py-4 text-gray-700">
-                              ${proj.mapping_rate.toFixed(2)}
-                            </td>
-                            <td className="px-6 py-4 text-gray-700">
-                              ${proj.validation_rate.toFixed(2)}
-                            </td>
-                            <td className="px-6 py-4">
-                              <span
-                                className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                                  proj.status
-                                    ? "bg-green-100 text-green-800"
-                                    : "bg-gray-100 text-gray-800"
-                                }`}
-                              >
-                                {proj.status ? "Active" : "Inactive"}
-                              </span>
-                            </td>
-                          </tr>
-                        ))}
+                              </td>
+                              <td className="px-6 py-4">
+                                <div className="flex items-center gap-2">
+                                  <div
+                                    className="flex-1 h-2 bg-gray-200 rounded-full overflow-hidden"
+                                    style={{ minWidth: 60 }}
+                                  >
+                                    <div
+                                      className="h-full bg-blue-500 rounded-full transition-all"
+                                      style={{
+                                        width: `${Math.min(proj.percent_validated, 100)}%`,
+                                      }}
+                                    />
+                                  </div>
+                                  <span className="text-xs text-muted-foreground w-10 text-right">
+                                    {proj.percent_validated}%
+                                  </span>
+                                </div>
+                              </td>
+                              <td className="px-6 py-4 text-sm text-muted-foreground">
+                                \u2014
+                              </td>
+                              <td className="px-6 py-4 text-gray-700">
+                                ${proj.mapping_rate.toFixed(2)}
+                              </td>
+                              <td className="px-6 py-4 text-gray-700">
+                                ${proj.validation_rate.toFixed(2)}
+                              </td>
+                            </tr>
+                          );
+                        })}
                       </tbody>
                     </table>
                   </div>
@@ -587,6 +1083,25 @@ export default function AdminReportsPage() {
                   </div>
                 </CardContent>
               </Card>
+
+              {/* ── 8 Team Activity Charts (Kibana data - mock) ── */}
+              <div>
+                <h3 className="text-lg font-semibold mb-3">
+                  Editing Activity by Element Type
+                </h3>
+                <p className="text-xs text-muted-foreground mb-4">
+                  Sample data — pending Kibana integration
+                </p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                  {MOCK_ACTIVITY_ELEMENT_TYPES.map((chart) => (
+                    <MiniActivityChart
+                      key={chart.title}
+                      title={chart.title}
+                      data={chart.data}
+                    />
+                  ))}
+                </div>
+              </div>
             </div>
           ) : (
             <Card>
@@ -602,33 +1117,171 @@ export default function AdminReportsPage() {
 
         {/* ═══════ COMMUNITY TAB ═══════ */}
         <TabsContent value="community">
-          <Card>
-            <CardContent className="p-12 text-center">
-              <div className="w-16 h-16 rounded-full bg-kaart-orange/20 flex items-center justify-center text-kaart-orange text-2xl mx-auto mb-4">
-                <svg
-                  style={{ width: 32, height: 32 }}
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"
-                  />
-                </svg>
-              </div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                Community Reports Coming Soon
-              </h3>
-              <p className="text-muted-foreground max-w-md mx-auto">
-                Community event tracking, interaction logs, and participant
-                analytics will be available here once the community data
-                models are implemented.
-              </p>
-            </CardContent>
-          </Card>
+          <div className="space-y-6">
+            <p className="text-xs text-muted-foreground">
+              Sample data — pending community data source integration
+            </p>
+
+            {/* Stat Cards Row */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <Card className="bg-gray-800 text-white">
+                <CardContent className="p-6">
+                  <p className="text-sm text-gray-300 font-medium mb-1">
+                    Community Interactions
+                  </p>
+                  <p className="text-xl font-bold">
+                    3 Events; 4 Interactions
+                  </p>
+                  <div className="flex gap-4 mt-3">
+                    <span className="text-xs text-gray-400">
+                      Weekly totals +0%
+                    </span>
+                    <span className="text-xs text-green-400">
+                      Weekly Delta +97%
+                    </span>
+                  </div>
+                </CardContent>
+              </Card>
+              <Card className="bg-gray-800 text-white">
+                <CardContent className="p-6">
+                  <p className="text-sm text-gray-300 font-medium mb-1">
+                    Event Participants
+                  </p>
+                  <p className="text-xl font-bold">
+                    15 New; 10 Return
+                  </p>
+                  <p className="text-lg font-semibold text-gray-200">
+                    25 Total
+                  </p>
+                  <div className="flex gap-4 mt-3">
+                    <span className="text-xs text-gray-400">
+                      Weekly totals +0%
+                    </span>
+                    <span className="text-xs text-green-400">
+                      Weekly Delta +97%
+                    </span>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Event Summation Log */}
+            <Card className="bg-gray-800">
+              <CardHeader>
+                <CardTitle className="text-white">
+                  Event Summation Log
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-0">
+                <div className="divide-y divide-gray-700">
+                  {MOCK_COMMUNITY_EVENTS.map((event) => {
+                    const isExpanded = expandedEvents.has(event.id);
+                    return (
+                      <div key={event.id}>
+                        <div
+                          className="flex items-center gap-3 px-6 py-4 cursor-pointer hover:bg-gray-700/50 transition-colors"
+                          onClick={() => {
+                            const next = new Set(expandedEvents);
+                            if (isExpanded) next.delete(event.id);
+                            else next.add(event.id);
+                            setExpandedEvents(next);
+                          }}
+                        >
+                          <span className="text-gray-400 text-sm w-4">
+                            {isExpanded ? "\u25BC" : "\u25B6"}
+                          </span>
+                          <span className="text-white font-medium flex-1 text-sm">
+                            {event.title}
+                          </span>
+                          <div className="flex gap-1.5">
+                            {event.categories.map((cat) => (
+                              <CategoryBadge key={cat} label={cat} />
+                            ))}
+                          </div>
+                          <button className="px-3 py-1 text-xs font-medium text-kaart-orange border border-kaart-orange rounded hover:bg-kaart-orange hover:text-white transition-colors">
+                            Edit
+                          </button>
+                        </div>
+                        {isExpanded && (
+                          <div className="px-14 pb-4 text-gray-300">
+                            <p className="text-sm mb-3">
+                              {event.summary}
+                            </p>
+                            <div className="bg-gray-900 rounded-lg p-3 inline-block">
+                              <p className="text-xs font-semibold text-gray-200 mb-1">
+                                Participants:
+                              </p>
+                              <div className="text-xs text-gray-400 space-y-0.5">
+                                <p>
+                                  {event.participants.new} new
+                                </p>
+                                <p>
+                                  {event.participants.return}{" "}
+                                  return
+                                </p>
+                                <p>
+                                  {event.participants.key} key
+                                </p>
+                                <p className="font-medium text-gray-200">
+                                  {event.participants.total}{" "}
+                                  total
+                                </p>
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Overwrites Section */}
+            <Card className="bg-gray-800">
+              <CardHeader>
+                <CardTitle className="text-white flex items-center gap-2">
+                  <svg
+                    className="w-5 h-5 text-orange-400"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"
+                    />
+                  </svg>
+                  Overwrites
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-0">
+                <div className="divide-y divide-gray-700">
+                  {MOCK_OVERWRITES.map((ow) => (
+                    <div
+                      key={ow.id}
+                      className="flex items-center gap-3 px-6 py-4"
+                    >
+                      <span className="text-gray-400 text-sm w-4">
+                        \u25B6
+                      </span>
+                      <span className="text-white font-medium flex-1 text-sm">
+                        {ow.title}
+                      </span>
+                      <a
+                        href={ow.link}
+                        className="px-3 py-1 text-xs font-medium text-kaart-orange border border-kaart-orange rounded hover:bg-kaart-orange hover:text-white transition-colors"
+                      >
+                        Link
+                      </a>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
         </TabsContent>
 
         {/* ═══════ TIMEKEEPING TAB ═══════ */}
@@ -643,17 +1296,22 @@ export default function AdminReportsPage() {
             </Card>
           ) : timekeepingData ? (
             <div className="space-y-6">
-              {/* Summary Card + Stats */}
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <Card className="md:col-span-2">
-                  <CardContent className="p-6">
-                    <p className="text-sm text-muted-foreground">
+              {/* ── Top Row: Totals + Task Breakdown ── */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* Total Team Hours + Summary Text */}
+                <Card>
+                  <CardHeader className="pb-0">
+                    <div className="flex items-center justify-between">
+                      <CardTitle className="text-base">Totals</CardTitle>
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-sm text-muted-foreground mb-1">
                       Total Team Hours
                     </p>
-                    <div className="flex items-baseline gap-3 mt-1">
+                    <div className="flex items-baseline gap-3">
                       <p className="text-3xl font-bold">
-                        {timekeepingData.summary.total_hours.toLocaleString()}
-                        h
+                        {timekeepingData.summary.total_hours.toLocaleString()}h
                       </p>
                       <span
                         className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
@@ -667,179 +1325,312 @@ export default function AdminReportsPage() {
                           .weekly_rate_change_percent >= 0
                           ? "+"
                           : ""}
-                        {
-                          timekeepingData.summary
-                            .weekly_rate_change_percent
-                        }
+                        {timekeepingData.summary.weekly_rate_change_percent}
                         %
                       </span>
                     </div>
-                    <p className="text-sm text-muted-foreground mt-2">
+                    <p className="text-sm text-muted-foreground mt-1">
                       {timekeepingData.summary.total_entries.toLocaleString()}{" "}
-                      entries across{" "}
-                      {timekeepingData.summary.active_users} users
+                      entries
                     </p>
+                    <div className="mt-4 p-3 bg-muted rounded-lg">
+                      <p className="text-sm text-gray-700 leading-relaxed">
+                        During this time period, a total of{" "}
+                        <span className="font-bold">
+                          {timekeepingData.summary.total_hours.toLocaleString()}{" "}
+                          hours
+                        </span>{" "}
+                        were logged. This is{" "}
+                        <span className="font-bold">100.0%</span> of the
+                        total hours logged.
+                      </p>
+                    </div>
+                    <div className="grid grid-cols-2 gap-3 mt-4">
+                      <div className="text-center">
+                        <p className="text-xl font-bold text-gray-900">
+                          {timekeepingData.summary.total_changesets.toLocaleString()}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          Changesets
+                        </p>
+                      </div>
+                      <div className="text-center">
+                        <p className="text-xl font-bold text-gray-900">
+                          {timekeepingData.summary.total_changes.toLocaleString()}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          Changes
+                        </p>
+                      </div>
+                    </div>
                   </CardContent>
                 </Card>
-                <StatCard
-                  label="Total Changesets"
-                  value={timekeepingData.summary.total_changesets.toLocaleString()}
-                />
-                <StatCard
-                  label="Total Changes"
-                  value={timekeepingData.summary.total_changes.toLocaleString()}
-                />
+
+                {/* Hours by Category — Horizontal BarChart */}
+                <Card>
+                  <CardHeader className="pb-0">
+                    <CardTitle className="text-base">Task</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    {timekeepingData.hours_by_category.length > 0 ? (
+                      <div
+                        style={{
+                          width: "100%",
+                          height: Math.max(
+                            200,
+                            timekeepingData.hours_by_category.length * 40
+                          ),
+                        }}
+                      >
+                        <ResponsiveContainer>
+                          <BarChart
+                            data={timekeepingData.hours_by_category}
+                            layout="vertical"
+                          >
+                            <CartesianGrid strokeDasharray="3 3" />
+                            <XAxis
+                              type="number"
+                              tick={{ fontSize: 11 }}
+                            />
+                            <YAxis
+                              type="category"
+                              dataKey="category"
+                              tick={{ fontSize: 10 }}
+                              width={160}
+                              tickFormatter={(v: string) =>
+                                v.charAt(0).toUpperCase() + v.slice(1)
+                              }
+                            />
+                            <Tooltip
+                              formatter={(value) => [
+                                `${value}h`,
+                                "Hours",
+                              ]}
+                            />
+                            <Bar dataKey="hours" name="Hours">
+                              {timekeepingData.hours_by_category.map(
+                                (entry, index) => (
+                                  <Cell
+                                    key={index}
+                                    fill={
+                                      CATEGORY_COLORS[
+                                        entry.category
+                                      ] || CATEGORY_COLORS.other
+                                    }
+                                  />
+                                )
+                              )}
+                            </Bar>
+                          </BarChart>
+                        </ResponsiveContainer>
+                      </div>
+                    ) : (
+                      <p className="text-sm text-muted-foreground text-center py-8">
+                        No time tracking data for this period.
+                      </p>
+                    )}
+                  </CardContent>
+                </Card>
               </div>
 
-              {/* Hours by Category — Horizontal BarChart */}
-              <Card>
-                <CardHeader>
-                  <CardTitle>Hours by Category</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  {timekeepingData.hours_by_category.length > 0 ? (
-                    <div
-                      style={{
-                        width: "100%",
-                        height: Math.max(
-                          200,
-                          timekeepingData.hours_by_category.length * 50
-                        ),
-                      }}
-                    >
+              {/* ── Middle Row: 3 Charts ── */}
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+                {/* Weekly Team Activity — ComposedChart */}
+                <Card>
+                  <CardHeader className="pb-0">
+                    <CardTitle className="text-base">
+                      Weekly Team Activity
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    {timekeepingData.weekly_activity.length > 0 ? (
+                      <div style={{ width: "100%", height: 280 }}>
+                        <ResponsiveContainer>
+                          <ComposedChart
+                            data={timekeepingData.weekly_activity}
+                          >
+                            <CartesianGrid strokeDasharray="3 3" />
+                            <XAxis
+                              dataKey="week"
+                              tick={{ fontSize: 10 }}
+                              tickFormatter={(v: string) =>
+                                new Date(
+                                  v + "T00:00:00"
+                                ).toLocaleDateString("en-US", {
+                                  month: "numeric",
+                                  day: "numeric",
+                                })
+                              }
+                            />
+                            <YAxis
+                              yAxisId="left"
+                              tick={{ fontSize: 10 }}
+                            />
+                            <YAxis
+                              yAxisId="right"
+                              orientation="right"
+                              tick={{ fontSize: 10 }}
+                            />
+                            <Tooltip
+                              labelFormatter={(v) =>
+                                new Date(
+                                  String(v) + "T00:00:00"
+                                ).toLocaleDateString("en-US", {
+                                  month: "short",
+                                  day: "numeric",
+                                  year: "numeric",
+                                })
+                              }
+                            />
+                            <Legend
+                              wrapperStyle={{ fontSize: 10 }}
+                            />
+                            <Bar
+                              yAxisId="left"
+                              dataKey="hours"
+                              name="Hours"
+                              fill={COLORS.hours}
+                            />
+                            <Line
+                              yAxisId="right"
+                              dataKey="changes_per_hour"
+                              name="Changes/Hour"
+                              stroke={COLORS.mapped}
+                              strokeWidth={2}
+                              dot={{ r: 3 }}
+                            />
+                            <Line
+                              yAxisId="right"
+                              dataKey="changes_per_changeset"
+                              name="Changes/Changeset"
+                              stroke={COLORS.review}
+                              strokeWidth={2}
+                              dot={{ r: 3 }}
+                            />
+                          </ComposedChart>
+                        </ResponsiveContainer>
+                      </div>
+                    ) : (
+                      <p className="text-sm text-muted-foreground text-center py-8">
+                        No weekly activity data.
+                      </p>
+                    )}
+                  </CardContent>
+                </Card>
+
+                {/* Weekly Task Hours — Stacked BarChart (mock) */}
+                <Card>
+                  <CardHeader className="pb-0">
+                    <CardTitle className="text-base">
+                      Weekly Task Hours
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div style={{ width: "100%", height: 280 }}>
                       <ResponsiveContainer>
-                        <BarChart
-                          data={timekeepingData.hours_by_category}
-                          layout="vertical"
-                        >
+                        <BarChart data={MOCK_WEEKLY_TASK_HOURS}>
                           <CartesianGrid strokeDasharray="3 3" />
                           <XAxis
-                            type="number"
-                            tick={{ fontSize: 12 }}
+                            dataKey="week"
+                            tick={{ fontSize: 10 }}
                           />
-                          <YAxis
-                            type="category"
-                            dataKey="category"
-                            tick={{ fontSize: 12 }}
-                            width={100}
-                            tickFormatter={(v: string) =>
-                              v.charAt(0).toUpperCase() + v.slice(1)
-                            }
-                          />
+                          <YAxis tick={{ fontSize: 10 }} />
                           <Tooltip
-                            formatter={(value) => [
-                              `${value}h`,
-                              "Hours",
-                            ]}
+                            contentStyle={{ fontSize: 11 }}
                           />
-                          <Bar dataKey="hours" name="Hours">
-                            {timekeepingData.hours_by_category.map(
-                              (entry, index) => (
-                                <Cell
-                                  key={index}
-                                  fill={
-                                    CATEGORY_COLORS[entry.category] ||
-                                    CATEGORY_COLORS.other
-                                  }
-                                />
-                              )
-                            )}
-                          </Bar>
+                          <Legend
+                            wrapperStyle={{ fontSize: 9 }}
+                            iconSize={8}
+                          />
+                          {WEEKLY_TASK_CATEGORIES.map(
+                            (cat, i) => (
+                              <Bar
+                                key={cat}
+                                dataKey={cat}
+                                stackId="a"
+                                fill={
+                                  WEEKLY_TASK_COLORS[
+                                    i % WEEKLY_TASK_COLORS.length
+                                  ]
+                                }
+                              />
+                            )
+                          )}
                         </BarChart>
                       </ResponsiveContainer>
                     </div>
-                  ) : (
-                    <p className="text-sm text-muted-foreground text-center py-8">
-                      No time tracking data for this period.
+                    <p className="text-[10px] text-muted-foreground text-center mt-1">
+                      Sample data — pending backend integration
                     </p>
-                  )}
-                </CardContent>
-              </Card>
+                  </CardContent>
+                </Card>
 
-              {/* Weekly Activity — ComposedChart */}
-              <Card>
-                <CardHeader>
-                  <CardTitle>Weekly Activity</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  {timekeepingData.weekly_activity.length > 0 ? (
-                    <div style={{ width: "100%", height: 300 }}>
+                {/* Community Outreach Trends — Stacked Bar + Lines (mock) */}
+                <Card>
+                  <CardHeader className="pb-0">
+                    <CardTitle className="text-base">
+                      Community Outreach Trends
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div style={{ width: "100%", height: 280 }}>
                       <ResponsiveContainer>
                         <ComposedChart
-                          data={timekeepingData.weekly_activity}
+                          data={MOCK_COMMUNITY_OUTREACH}
                         >
                           <CartesianGrid strokeDasharray="3 3" />
                           <XAxis
                             dataKey="week"
-                            tick={{ fontSize: 12 }}
-                            tickFormatter={(v: string) =>
-                              new Date(
-                                v + "T00:00:00"
-                              ).toLocaleDateString("en-US", {
-                                month: "short",
-                                day: "numeric",
-                              })
-                            }
+                            tick={{ fontSize: 10 }}
                           />
-                          <YAxis
-                            yAxisId="left"
-                            tick={{ fontSize: 12 }}
-                          />
-                          <YAxis
-                            yAxisId="right"
-                            orientation="right"
-                            tick={{ fontSize: 12 }}
-                          />
+                          <YAxis tick={{ fontSize: 10 }} />
                           <Tooltip
-                            labelFormatter={(v) =>
-                              new Date(
-                                String(v) + "T00:00:00"
-                              ).toLocaleDateString("en-US", {
-                                month: "short",
-                                day: "numeric",
-                                year: "numeric",
-                              })
-                            }
+                            contentStyle={{ fontSize: 11 }}
                           />
-                          <Legend />
-                          <Bar
-                            yAxisId="left"
-                            dataKey="hours"
-                            name="Hours"
-                            fill={COLORS.hours}
+                          <Legend
+                            wrapperStyle={{ fontSize: 9 }}
+                            iconSize={8}
                           />
+                          {Object.entries(
+                            COMMUNITY_OUTREACH_COLORS
+                          ).map(([cat, color]) => (
+                            <Bar
+                              key={cat}
+                              dataKey={cat}
+                              stackId="a"
+                              fill={color}
+                            />
+                          ))}
                           <Line
-                            yAxisId="right"
-                            dataKey="changes_per_hour"
-                            name="Changes/Hour"
-                            stroke={COLORS.mapped}
+                            dataKey="newParticipants"
+                            name="# of New Participants"
+                            stroke="#1f2937"
                             strokeWidth={2}
                             dot={{ r: 3 }}
                           />
                           <Line
-                            yAxisId="right"
-                            dataKey="changes_per_changeset"
-                            name="Changes/Changeset"
-                            stroke={COLORS.review}
+                            dataKey="returnParticipants"
+                            name="# of Retained Participants"
+                            stroke="#ef4444"
                             strokeWidth={2}
                             dot={{ r: 3 }}
+                            strokeDasharray="5 5"
                           />
                         </ComposedChart>
                       </ResponsiveContainer>
                     </div>
-                  ) : (
-                    <p className="text-sm text-muted-foreground text-center py-8">
-                      No weekly activity data for this period.
+                    <p className="text-[10px] text-muted-foreground text-center mt-1">
+                      Sample data — pending community data integration
                     </p>
-                  )}
-                </CardContent>
-              </Card>
+                  </CardContent>
+                </Card>
+              </div>
 
               {/* Per-User Time Tracking Table */}
               <Card>
                 <CardHeader>
                   <CardTitle>
-                    Time Tracking by User (
+                    Time Tracking (
                     {timekeepingData.user_breakdown.length})
                   </CardTitle>
                 </CardHeader>
@@ -853,9 +1644,6 @@ export default function AdminReportsPage() {
                             Name
                           </th>
                           <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">
-                            OSM Username
-                          </th>
-                          <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">
                             Hours
                           </th>
                           <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">
@@ -866,6 +1654,9 @@ export default function AdminReportsPage() {
                           </th>
                           <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">
                             Changes
+                          </th>
+                          <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">
+                            OSM usernames
                           </th>
                         </tr>
                       </thead>
@@ -879,7 +1670,9 @@ export default function AdminReportsPage() {
                               <tr
                                 className="cursor-pointer hover:bg-muted/50 transition-colors"
                                 onClick={() => {
-                                  const next = new Set(expandedUsers);
+                                  const next = new Set(
+                                    expandedUsers
+                                  );
                                   if (isExpanded)
                                     next.delete(u.user_id);
                                   else next.add(u.user_id);
@@ -887,13 +1680,24 @@ export default function AdminReportsPage() {
                                 }}
                               >
                                 <td className="px-6 py-4 text-gray-400">
-                                  {isExpanded ? "\u25BC" : "\u25B6"}
+                                  {isExpanded
+                                    ? "\u25BC"
+                                    : "\u25B6"}
                                 </td>
-                                <td className="px-6 py-4 font-medium text-gray-900">
-                                  {u.user_name}
-                                </td>
-                                <td className="px-6 py-4 text-gray-700">
-                                  {u.osm_username || "\u2014"}
+                                <td className="px-6 py-4">
+                                  <div className="flex items-center gap-2">
+                                    <div className="w-8 h-8 rounded-full bg-kaart-orange/20 flex items-center justify-center text-kaart-orange text-xs font-bold">
+                                      {(u.user_name || "?")
+                                        .split(" ")
+                                        .map((n) => n[0])
+                                        .join("")
+                                        .slice(0, 2)
+                                        .toUpperCase()}
+                                    </div>
+                                    <span className="font-medium text-gray-900">
+                                      {u.user_name}
+                                    </span>
+                                  </div>
                                 </td>
                                 <td className="px-6 py-4 text-gray-700">
                                   {u.total_hours}h
@@ -906,6 +1710,9 @@ export default function AdminReportsPage() {
                                 </td>
                                 <td className="px-6 py-4 text-gray-700">
                                   {u.changes_count.toLocaleString()}
+                                </td>
+                                <td className="px-6 py-4 text-gray-700">
+                                  {u.osm_username || "\u2014"}
                                 </td>
                               </tr>
                               {isExpanded && (
