@@ -621,6 +621,13 @@ export interface EditingStatsResponse {
     tasks_invalidated: number;
     total_hours: number;
   }>;
+  comparison?: {
+    summary: {
+      total_mapped: number;
+      total_validated: number;
+      total_invalidated: number;
+    };
+  } | null;
 }
 
 export interface TimekeepingStatsResponse {
@@ -657,6 +664,16 @@ export interface TimekeepingStatsResponse {
     changes_count: number;
     category_hours: Record<string, number>;
   }>;
+  comparison?: {
+    summary: {
+      total_hours: number;
+      total_entries: number;
+      total_changesets: number;
+      total_changes: number;
+      active_users: number;
+      avg_hours_per_user: number;
+    };
+  } | null;
 }
 
 // API Response types

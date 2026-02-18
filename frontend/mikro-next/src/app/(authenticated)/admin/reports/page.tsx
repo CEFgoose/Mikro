@@ -16,6 +16,7 @@ import {
   useFetchEditingStats,
   useFetchTimekeepingStats,
   useFetchTeams,
+  useUsersList,
 } from "@/hooks/useApi";
 import type {
   EditingStatsResponse,
@@ -309,16 +310,34 @@ function StatCard({
   label,
   value,
   sub,
+  compareValue,
 }: {
   label: string;
   value: string | number;
   sub?: string;
+  compareValue?: number | null;
 }) {
+  const numValue = typeof value === "string" ? parseFloat(value.replace(/,/g, "")) : value;
+  const delta =
+    compareValue != null && compareValue > 0
+      ? ((numValue - compareValue) / compareValue) * 100
+      : null;
+
   return (
     <Card>
       <CardContent className="p-4 text-center">
         <p className="text-sm text-muted-foreground">{label}</p>
         <p className="text-2xl font-bold mt-1">{value}</p>
+        {delta != null && (
+          <p
+            className={`text-xs font-medium mt-1 ${delta >= 0 ? "text-green-600" : "text-red-600"}`}
+          >
+            {delta >= 0 ? "\u25B2" : "\u25BC"} {Math.abs(delta).toFixed(1)}%
+            <span className="text-muted-foreground font-normal ml-1">
+              vs prior
+            </span>
+          </p>
+        )}
         {sub && (
           <p className="text-xs text-muted-foreground mt-1">{sub}</p>
         )}
@@ -482,6 +501,8 @@ export default function AdminReportsPage() {
   const [customStart, setCustomStart] = useState("");
   const [customEnd, setCustomEnd] = useState("");
   const [teamFilter, setTeamFilter] = useState<number | null>(null);
+  const [userFilter, setUserFilter] = useState<number | null>(null);
+  const [compareEnabled, setCompareEnabled] = useState(false);
   const [snapshotTime, setSnapshotTime] = useState<string | null>(null);
   const [editingData, setEditingData] =
     useState<EditingStatsResponse | null>(null);
@@ -506,6 +527,7 @@ export default function AdminReportsPage() {
     error: timekeepingError,
   } = useFetchTimekeepingStats();
   const { data: teamsData } = useFetchTeams();
+  const { data: usersData } = useUsersList();
 
   // ── Data Fetching ────────────────────────────────────────
   const fetchData = useCallback(async () => {
@@ -520,7 +542,23 @@ export default function AdminReportsPage() {
       endDate = range.end;
     }
 
-    const params = { startDate, endDate, teamId: teamFilter };
+    const params: Record<string, unknown> = {
+      startDate,
+      endDate,
+      teamId: teamFilter,
+      userId: userFilter,
+    };
+
+    // Add comparison period if enabled
+    if (compareEnabled) {
+      const start = new Date(startDate);
+      const end = new Date(endDate);
+      const periodMs = end.getTime() - start.getTime();
+      const compareEnd = new Date(start.getTime());
+      const compareStart = new Date(start.getTime() - periodMs);
+      params.compareStartDate = compareStart.toISOString().split("T")[0];
+      params.compareEndDate = compareEnd.toISOString().split("T")[0];
+    }
 
     try {
       if (activeTab === "editing") {
@@ -544,6 +582,8 @@ export default function AdminReportsPage() {
     customStart,
     customEnd,
     teamFilter,
+    userFilter,
+    compareEnabled,
     activeTab,
     fetchEditing,
     fetchTimekeeping,
@@ -646,16 +686,33 @@ export default function AdminReportsPage() {
               </div>
             )}
 
+            {/* Compare toggle */}
+            <button
+              onClick={() => setCompareEnabled((prev) => !prev)}
+              className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                compareEnabled
+                  ? "bg-blue-600 text-white"
+                  : "bg-muted text-muted-foreground hover:bg-muted/80"
+              }`}
+            >
+              Compare
+            </button>
+
             {/* Team filter */}
             <div className="flex items-center gap-2 ml-auto">
               <span className="text-sm text-muted-foreground">Team:</span>
               <select
                 value={teamFilter ?? ""}
-                onChange={(e) =>
-                  setTeamFilter(
-                    e.target.value ? Number(e.target.value) : null
-                  )
-                }
+                onChange={(e) => {
+                  const newTeamId = e.target.value ? Number(e.target.value) : null;
+                  setTeamFilter(newTeamId);
+                  // Reset user filter if user not in new team
+                  if (userFilter && newTeamId && teamsData?.teams) {
+                    // We can't easily check membership client-side without team member data,
+                    // so just reset user filter when team changes
+                    setUserFilter(null);
+                  }
+                }}
                 className="px-3 py-1.5 border border-input rounded-lg text-sm bg-background"
               >
                 <option value="">All Teams</option>
@@ -664,6 +721,28 @@ export default function AdminReportsPage() {
                     {t.name}
                   </option>
                 ))}
+              </select>
+
+              {/* User filter */}
+              <span className="text-sm text-muted-foreground ml-2">User:</span>
+              <select
+                value={userFilter ?? ""}
+                onChange={(e) =>
+                  setUserFilter(
+                    e.target.value ? Number(e.target.value) : null
+                  )
+                }
+                className="px-3 py-1.5 border border-input rounded-lg text-sm bg-background"
+              >
+                <option value="">All Users</option>
+                {usersData?.users
+                  ?.slice()
+                  .sort((a, b) => (a.name || "").localeCompare(b.name || ""))
+                  .map((u) => (
+                    <option key={u.id} value={u.id}>
+                      {u.name}
+                    </option>
+                  ))}
               </select>
             </div>
           </div>
@@ -724,7 +803,7 @@ export default function AdminReportsPage() {
                         </PieChart>
                       </ResponsiveContainer>
                       <div className="absolute inset-0 flex flex-col items-center justify-center">
-                        <span className="text-3xl font-bold text-gray-900">
+                        <span className="text-3xl font-bold text-foreground">
                           {overallProgress?.pct ?? 0}%
                         </span>
                         <span className="text-xs text-muted-foreground">
@@ -783,41 +862,61 @@ export default function AdminReportsPage() {
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <p className="text-gray-700 leading-relaxed mt-2">
+                    <p className="text-foreground leading-relaxed mt-2">
                       During this time period, a total of{" "}
-                      <span className="font-bold text-gray-900">
+                      <span className="font-bold text-foreground">
                         {editingData.summary.total_mapped.toLocaleString()}
                       </span>{" "}
                       tasks were mapped across{" "}
-                      <span className="font-bold text-gray-900">
+                      <span className="font-bold text-foreground">
                         {editingData.summary.active_projects}
                       </span>{" "}
                       active projects, with{" "}
-                      <span className="font-bold text-gray-900">
+                      <span className="font-bold text-foreground">
                         {editingData.summary.total_validated.toLocaleString()}
                       </span>{" "}
                       tasks validated and{" "}
-                      <span className="font-bold text-gray-900">
+                      <span className="font-bold text-foreground">
                         {editingData.summary.total_invalidated.toLocaleString()}
                       </span>{" "}
                       invalidated.
                     </p>
                     <div className="grid grid-cols-2 gap-3 mt-4">
                       <div className="bg-muted rounded-lg p-3 text-center">
-                        <p className="text-xl font-bold text-gray-900">
+                        <p className="text-xl font-bold text-foreground">
                           {editingData.summary.total_mapped.toLocaleString()}
                         </p>
                         <p className="text-xs text-muted-foreground">
                           Tasks Mapped
                         </p>
+                        {editingData.comparison?.summary && (() => {
+                          const prev = editingData.comparison.summary.total_mapped;
+                          const curr = editingData.summary.total_mapped;
+                          const delta = prev > 0 ? ((curr - prev) / prev) * 100 : null;
+                          return delta != null ? (
+                            <p className={`text-xs font-medium mt-1 ${delta >= 0 ? "text-green-600" : "text-red-600"}`}>
+                              {delta >= 0 ? "\u25B2" : "\u25BC"} {Math.abs(delta).toFixed(1)}%
+                            </p>
+                          ) : null;
+                        })()}
                       </div>
                       <div className="bg-muted rounded-lg p-3 text-center">
-                        <p className="text-xl font-bold text-gray-900">
+                        <p className="text-xl font-bold text-foreground">
                           {editingData.summary.total_validated.toLocaleString()}
                         </p>
                         <p className="text-xs text-muted-foreground">
                           Validated
                         </p>
+                        {editingData.comparison?.summary && (() => {
+                          const prev = editingData.comparison.summary.total_validated;
+                          const curr = editingData.summary.total_validated;
+                          const delta = prev > 0 ? ((curr - prev) / prev) * 100 : null;
+                          return delta != null ? (
+                            <p className={`text-xs font-medium mt-1 ${delta >= 0 ? "text-green-600" : "text-red-600"}`}>
+                              {delta >= 0 ? "\u25B2" : "\u25BC"} {Math.abs(delta).toFixed(1)}%
+                            </p>
+                          ) : null;
+                        })()}
                       </div>
                     </div>
                   </CardContent>
@@ -1334,7 +1433,7 @@ export default function AdminReportsPage() {
                       entries
                     </p>
                     <div className="mt-4 p-3 bg-muted rounded-lg">
-                      <p className="text-sm text-gray-700 leading-relaxed">
+                      <p className="text-sm text-foreground leading-relaxed">
                         During this time period, a total of{" "}
                         <span className="font-bold">
                           {timekeepingData.summary.total_hours.toLocaleString()}{" "}
@@ -1347,20 +1446,40 @@ export default function AdminReportsPage() {
                     </div>
                     <div className="grid grid-cols-2 gap-3 mt-4">
                       <div className="text-center">
-                        <p className="text-xl font-bold text-gray-900">
+                        <p className="text-xl font-bold text-foreground">
                           {timekeepingData.summary.total_changesets.toLocaleString()}
                         </p>
                         <p className="text-xs text-muted-foreground">
                           Changesets
                         </p>
+                        {timekeepingData.comparison?.summary && (() => {
+                          const prev = timekeepingData.comparison.summary.total_changesets;
+                          const curr = timekeepingData.summary.total_changesets;
+                          const delta = prev > 0 ? ((curr - prev) / prev) * 100 : null;
+                          return delta != null ? (
+                            <p className={`text-xs font-medium mt-1 ${delta >= 0 ? "text-green-600" : "text-red-600"}`}>
+                              {delta >= 0 ? "\u25B2" : "\u25BC"} {Math.abs(delta).toFixed(1)}%
+                            </p>
+                          ) : null;
+                        })()}
                       </div>
                       <div className="text-center">
-                        <p className="text-xl font-bold text-gray-900">
+                        <p className="text-xl font-bold text-foreground">
                           {timekeepingData.summary.total_changes.toLocaleString()}
                         </p>
                         <p className="text-xs text-muted-foreground">
                           Changes
                         </p>
+                        {timekeepingData.comparison?.summary && (() => {
+                          const prev = timekeepingData.comparison.summary.total_changes;
+                          const curr = timekeepingData.summary.total_changes;
+                          const delta = prev > 0 ? ((curr - prev) / prev) * 100 : null;
+                          return delta != null ? (
+                            <p className={`text-xs font-medium mt-1 ${delta >= 0 ? "text-green-600" : "text-red-600"}`}>
+                              {delta >= 0 ? "\u25B2" : "\u25BC"} {Math.abs(delta).toFixed(1)}%
+                            </p>
+                          ) : null;
+                        })()}
                       </div>
                     </div>
                   </CardContent>

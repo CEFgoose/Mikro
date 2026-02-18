@@ -33,6 +33,9 @@ class ReportsAPI(MethodView):
         start_date_str = request.json.get("startDate")
         end_date_str = request.json.get("endDate")
         team_id = request.json.get("teamId")
+        user_id = request.json.get("userId")
+        compare_start_str = request.json.get("compareStartDate")
+        compare_end_str = request.json.get("compareEndDate")
 
         if not start_date_str or not end_date_str:
             return {"message": "startDate and endDate required", "status": 400}
@@ -46,9 +49,15 @@ class ReportsAPI(MethodView):
         except ValueError:
             end_date = datetime.strptime(end_date_str, "%Y-%m-%d") + timedelta(days=1)
 
-        # If team filter, get member OSM usernames
+        # User/team filter → resolve to OSM usernames
         osm_usernames = None
-        if team_id:
+        if user_id:
+            user_obj = User.query.get(user_id)
+            if user_obj and user_obj.osm_username:
+                osm_usernames = [user_obj.osm_username]
+            else:
+                osm_usernames = []  # no OSM username → match nothing
+        elif team_id:
             member_users = (
                 User.query.join(TeamUser, TeamUser.user_id == User.id)
                 .filter(TeamUser.team_id == team_id)
@@ -278,6 +287,56 @@ class ReportsAPI(MethodView):
                 }
             )
 
+        # --- Comparison period (optional) ---
+        comparison = None
+        if compare_start_str and compare_end_str:
+            try:
+                cmp_start = datetime.strptime(compare_start_str, "%Y-%m-%dT%H:%M:%S")
+            except ValueError:
+                cmp_start = datetime.strptime(compare_start_str, "%Y-%m-%d")
+            try:
+                cmp_end = datetime.strptime(compare_end_str, "%Y-%m-%dT%H:%M:%S")
+            except ValueError:
+                cmp_end = datetime.strptime(compare_end_str, "%Y-%m-%d") + timedelta(days=1)
+
+            cmp_mapped_q = Task.query.filter(
+                Task.org_id == g.user.org_id,
+                Task.mapped == True,
+                Task.date_mapped >= cmp_start,
+                Task.date_mapped < cmp_end,
+            )
+            if osm_usernames:
+                cmp_mapped_q = cmp_mapped_q.filter(Task.mapped_by.in_(osm_usernames))
+            cmp_total_mapped = cmp_mapped_q.count()
+
+            cmp_validated_q = Task.query.filter(
+                Task.org_id == g.user.org_id,
+                Task.validated == True,
+                Task.date_validated >= cmp_start,
+                Task.date_validated < cmp_end,
+            )
+            if osm_usernames:
+                cmp_validated_q = cmp_validated_q.filter(Task.validated_by.in_(osm_usernames))
+            cmp_total_validated = cmp_validated_q.count()
+
+            cmp_invalidated_q = Task.query.filter(
+                Task.org_id == g.user.org_id,
+                Task.invalidated == True,
+                Task.date_validated >= cmp_start,
+                Task.date_validated < cmp_end,
+            )
+            if osm_usernames:
+                cmp_invalidated_q = cmp_invalidated_q.filter(Task.validated_by.in_(osm_usernames))
+            cmp_total_invalidated = cmp_invalidated_q.count()
+
+            comparison = {
+                "summary": {
+                    "total_mapped": cmp_total_mapped,
+                    "total_validated": cmp_total_validated,
+                    "total_invalidated": cmp_total_invalidated,
+                },
+            }
+
         return {
             "status": 200,
             "snapshot_timestamp": datetime.utcnow().isoformat() + "Z",
@@ -291,6 +350,7 @@ class ReportsAPI(MethodView):
             "tasks_over_time": tasks_over_time,
             "projects": projects_list,
             "top_contributors": top_contributors,
+            "comparison": comparison,
         }
 
     @requires_admin
@@ -302,6 +362,9 @@ class ReportsAPI(MethodView):
         start_date_str = request.json.get("startDate")
         end_date_str = request.json.get("endDate")
         team_id = request.json.get("teamId")
+        user_id = request.json.get("userId")
+        compare_start_str = request.json.get("compareStartDate")
+        compare_end_str = request.json.get("compareEndDate")
 
         if not start_date_str or not end_date_str:
             return {"message": "startDate and endDate required", "status": 400}
@@ -323,7 +386,9 @@ class ReportsAPI(MethodView):
             TimeEntry.clock_in < end_date,
         ]
         member_ids = None
-        if team_id:
+        if user_id:
+            base_filter.append(TimeEntry.user_id == user_id)
+        elif team_id:
             member_ids = [
                 tu.user_id for tu in TeamUser.query.filter_by(team_id=team_id).all()
             ]
@@ -360,7 +425,9 @@ class ReportsAPI(MethodView):
             TimeEntry.clock_in >= prior_start,
             TimeEntry.clock_in < prior_end,
         ]
-        if team_id and member_ids is not None:
+        if user_id:
+            prior_filter.append(TimeEntry.user_id == user_id)
+        elif team_id and member_ids is not None:
             prior_filter.append(TimeEntry.user_id.in_(member_ids))
         prior_seconds = (
             db.session.query(func.sum(TimeEntry.duration_seconds))
@@ -482,6 +549,58 @@ class ReportsAPI(MethodView):
                 }
             )
 
+        # --- Comparison period (optional) ---
+        comparison = None
+        if compare_start_str and compare_end_str:
+            try:
+                cmp_start = datetime.strptime(compare_start_str, "%Y-%m-%dT%H:%M:%S")
+            except ValueError:
+                cmp_start = datetime.strptime(compare_start_str, "%Y-%m-%d")
+            try:
+                cmp_end = datetime.strptime(compare_end_str, "%Y-%m-%dT%H:%M:%S")
+            except ValueError:
+                cmp_end = datetime.strptime(compare_end_str, "%Y-%m-%d") + timedelta(days=1)
+
+            cmp_filter = [
+                TimeEntry.org_id == g.user.org_id,
+                TimeEntry.status == "completed",
+                TimeEntry.clock_in >= cmp_start,
+                TimeEntry.clock_in < cmp_end,
+            ]
+            if user_id:
+                cmp_filter.append(TimeEntry.user_id == user_id)
+            elif team_id and member_ids is not None:
+                cmp_filter.append(TimeEntry.user_id.in_(member_ids))
+
+            cmp_summary = (
+                db.session.query(
+                    func.sum(TimeEntry.duration_seconds).label("total_seconds"),
+                    func.count().label("total_entries"),
+                    func.sum(TimeEntry.changeset_count).label("total_changesets"),
+                    func.sum(TimeEntry.changes_count).label("total_changes"),
+                    func.count(func.distinct(TimeEntry.user_id)).label("active_users"),
+                )
+                .filter(*cmp_filter)
+                .first()
+            )
+
+            cmp_seconds = cmp_summary.total_seconds or 0
+            cmp_hours = round(cmp_seconds / 3600, 1)
+            cmp_active = cmp_summary.active_users or 0
+
+            comparison = {
+                "summary": {
+                    "total_hours": cmp_hours,
+                    "total_entries": cmp_summary.total_entries or 0,
+                    "total_changesets": cmp_summary.total_changesets or 0,
+                    "total_changes": cmp_summary.total_changes or 0,
+                    "active_users": cmp_active,
+                    "avg_hours_per_user": (
+                        round(cmp_hours / cmp_active, 1) if cmp_active else 0
+                    ),
+                },
+            }
+
         return {
             "status": 200,
             "snapshot_timestamp": datetime.utcnow().isoformat() + "Z",
@@ -497,4 +616,5 @@ class ReportsAPI(MethodView):
             "hours_by_category": hours_by_category,
             "weekly_activity": weekly_activity,
             "user_breakdown": user_breakdown,
+            "comparison": comparison,
         }
