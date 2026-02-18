@@ -6,6 +6,8 @@ Handles user management operations.
 """
 
 import requests
+import secrets
+import string
 from datetime import datetime, timedelta
 from flask.views import MethodView
 from flask import g, request, current_app
@@ -80,14 +82,16 @@ class UserAPI(MethodView):
         Bulk import users via Auth0 Management API.
         Expects JSON: { "users": [{ "email": "...", "name": "...", "role": "..." }, ...] }
         """
+        VALID_ROLES = {"admin", "validator", "user"}
+
         users = request.json.get("users", [])
         if not users:
             return {"message": "No users provided", "status": 400}
 
         # Get Auth0 config
         domain = current_app.config.get("AUTH0_DOMAIN")
-        client_id = current_app.config.get("AUTH0_MGMT_CLIENT_ID")
-        client_secret = current_app.config.get("AUTH0_MGMT_CLIENT_SECRET")
+        client_id = current_app.config.get("AUTH0_M2M_CLIENT_ID")
+        client_secret = current_app.config.get("AUTH0_M2M_CLIENT_SECRET")
 
         if not all([domain, client_id, client_secret]):
             return {
@@ -114,12 +118,20 @@ class UserAPI(MethodView):
             results = {"success": [], "failed": []}
 
             for user_data in users:
-                email = user_data.get("email")
+                email = user_data.get("email", "").strip().lower()
                 name = user_data.get("name", "")
-                role = user_data.get("role", "user")
+                role = user_data.get("role", "user").strip().lower()
 
                 if not email:
                     results["failed"].append({"email": "unknown", "error": "No email provided"})
+                    continue
+
+                # Validate role
+                if role not in VALID_ROLES:
+                    results["failed"].append({
+                        "email": email,
+                        "error": f"Invalid role '{role}'. Must be one of: {', '.join(sorted(VALID_ROLES))}"
+                    })
                     continue
 
                 # Parse name into first/last
@@ -128,36 +140,42 @@ class UserAPI(MethodView):
                 last_name = name_parts[1] if len(name_parts) > 1 else ""
 
                 try:
+                    # Generate cryptographically random temp password
+                    alphabet = string.ascii_letters + string.digits + "!@#$%"
+                    temp_password = "".join(secrets.choice(alphabet) for _ in range(24))
+
                     # Create user in Auth0
                     create_url = f"https://{domain}/api/v2/users"
                     user_payload = {
                         "email": email,
                         "connection": "Username-Password-Authentication",
                         "email_verified": False,
-                        "password": f"TempPass{email.split('@')[0]}123!",
+                        "password": temp_password,
                         "name": name or email.split("@")[0],
                         "given_name": first_name,
                         "family_name": last_name,
                     }
                     create_response = requests.post(create_url, json=user_payload, headers=headers)
 
+                    auth0_created = True
                     if create_response.status_code == 409:
-                        results["failed"].append({"email": email, "error": "User already exists"})
-                        continue
+                        # User already exists in Auth0 — still sync to local DB
+                        auth0_created = False
                     elif not create_response.ok:
                         error_detail = create_response.json().get("message", create_response.text[:100])
                         current_app.logger.error(f"Auth0 create user failed for {email}: {error_detail}")
                         results["failed"].append({"email": email, "error": f"Auth0: {error_detail}"})
                         continue
 
-                    # Trigger password reset email
-                    reset_url = f"https://{domain}/dbconnections/change_password"
-                    reset_payload = {
-                        "client_id": client_id,
-                        "email": email,
-                        "connection": "Username-Password-Authentication",
-                    }
-                    requests.post(reset_url, json=reset_payload)
+                    # Trigger password reset email (only for newly created Auth0 users)
+                    if auth0_created:
+                        reset_url = f"https://{domain}/dbconnections/change_password"
+                        reset_payload = {
+                            "client_id": client_id,
+                            "email": email,
+                            "connection": "Username-Password-Authentication",
+                        }
+                        requests.post(reset_url, json=reset_payload)
 
                     # Create/update user in local database
                     existing_user = User.query.filter_by(email=email).first()
@@ -177,7 +195,8 @@ class UserAPI(MethodView):
                             org_id=g.user.org_id,
                         )
 
-                    results["success"].append(email)
+                    suffix = " (already in Auth0, synced locally)" if not auth0_created else ""
+                    results["success"].append(email + suffix)
 
                 except Exception as e:
                     current_app.logger.error(f"Error importing user {email}: {e}")
@@ -463,13 +482,13 @@ class UserAPI(MethodView):
 
         # Get Auth0 config
         domain = current_app.config.get("AUTH0_DOMAIN")
-        client_id = current_app.config.get("AUTH0_MGMT_CLIENT_ID")
-        client_secret = current_app.config.get("AUTH0_MGMT_CLIENT_SECRET")
+        client_id = current_app.config.get("AUTH0_M2M_CLIENT_ID")
+        client_secret = current_app.config.get("AUTH0_M2M_CLIENT_SECRET")
 
         if not all([domain, client_id, client_secret]):
             current_app.logger.error("Auth0 Management API not configured")
             return {
-                "message": "Auth0 Management API not configured. Please set AUTH0_MGMT_CLIENT_ID and AUTH0_MGMT_CLIENT_SECRET.",
+                "message": "Auth0 Management API not configured. Please set AUTH0_M2M_CLIENT_ID and AUTH0_M2M_CLIENT_SECRET.",
                 "status": 500,
             }
 
@@ -489,6 +508,10 @@ class UserAPI(MethodView):
 
             access_token = token_response.json().get("access_token")
 
+            # Generate cryptographically random temp password
+            alphabet = string.ascii_letters + string.digits + "!@#$%"
+            temp_password = "".join(secrets.choice(alphabet) for _ in range(24))
+
             # Create user in Auth0
             create_url = f"https://{domain}/api/v2/users"
             headers = {"Authorization": f"Bearer {access_token}"}
@@ -496,7 +519,7 @@ class UserAPI(MethodView):
                 "email": email,
                 "connection": "Username-Password-Authentication",
                 "email_verified": False,
-                "password": f"TempPass{email.split('@')[0]}123!",  # Temp password, user will reset
+                "password": temp_password,
             }
             create_response = requests.post(create_url, json=user_payload, headers=headers)
 

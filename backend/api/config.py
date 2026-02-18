@@ -21,8 +21,8 @@ class BaseConfig:
     AUTH0_NAMESPACE = "mikro"  # For custom claims like mikro/roles
 
     # Auth0 Management API (for user invitations)
-    AUTH0_MGMT_CLIENT_ID = os.environ.get("AUTH0_MGMT_CLIENT_ID")
-    AUTH0_MGMT_CLIENT_SECRET = os.environ.get("AUTH0_MGMT_CLIENT_SECRET")
+    AUTH0_M2M_CLIENT_ID = os.environ.get("AUTH0_M2M_CLIENT_ID")
+    AUTH0_M2M_CLIENT_SECRET = os.environ.get("AUTH0_M2M_CLIENT_SECRET")
 
     # Database Configuration
     # Supports both DATABASE_URL (DigitalOcean) and individual vars
