@@ -158,13 +158,29 @@ class UserAPI(MethodView):
                     create_response = requests.post(create_url, json=user_payload, headers=headers)
 
                     auth0_created = True
+                    auth0_user_id = None
                     if create_response.status_code == 409:
-                        # User already exists in Auth0 — still sync to local DB
+                        # User already exists in Auth0 — look up their ID
                         auth0_created = False
+                        lookup_url = f"https://{domain}/api/v2/users-by-email"
+                        lookup_resp = requests.get(
+                            lookup_url,
+                            params={"email": email},
+                            headers=headers,
+                        )
+                        if lookup_resp.ok and lookup_resp.json():
+                            auth0_user_id = lookup_resp.json()[0].get("user_id")
                     elif not create_response.ok:
                         error_detail = create_response.json().get("message", create_response.text[:100])
                         current_app.logger.error(f"Auth0 create user failed for {email}: {error_detail}")
                         results["failed"].append({"email": email, "error": f"Auth0: {error_detail}"})
+                        continue
+                    else:
+                        # New user created — get their Auth0 ID
+                        auth0_user_id = create_response.json().get("user_id")
+
+                    if not auth0_user_id:
+                        results["failed"].append({"email": email, "error": "Could not resolve Auth0 user ID"})
                         continue
 
                     # Trigger password reset email (only for newly created Auth0 users)
@@ -179,15 +195,21 @@ class UserAPI(MethodView):
 
                     # Create/update user in local database
                     existing_user = User.query.filter_by(email=email).first()
+                    if not existing_user:
+                        existing_user = User.query.filter_by(id=auth0_user_id).first()
+
                     if existing_user:
                         existing_user.update(
                             first_name=first_name,
                             last_name=last_name,
                             role=role,
                             org_id=g.user.org_id,
+                            auth0_sub=auth0_user_id,
                         )
                     else:
                         User.create(
+                            id=auth0_user_id,
+                            auth0_sub=auth0_user_id,
                             email=email,
                             first_name=first_name,
                             last_name=last_name,
@@ -199,6 +221,7 @@ class UserAPI(MethodView):
                     results["success"].append(email + suffix)
 
                 except Exception as e:
+                    db.session.rollback()
                     current_app.logger.error(f"Error importing user {email}: {e}")
                     results["failed"].append({"email": email, "error": str(e)})
 
