@@ -382,7 +382,7 @@ function MiniActivityChart({
   return (
     <Card>
       <CardContent className="p-3">
-        <p className="text-xs font-semibold text-gray-700 mb-2">
+        <p className="text-xs font-semibold text-foreground mb-2">
           Team Activity: {title}
         </p>
         <div style={{ width: "100%", height: 140 }}>
@@ -435,7 +435,7 @@ function getProjectStatus(proj: {
   if (!proj.status)
     return {
       label: "Inactive",
-      className: "bg-gray-100 text-gray-800",
+      className: "bg-muted text-muted-foreground",
     };
   if (proj.percent_mapped < 15)
     return {
@@ -687,16 +687,38 @@ export default function AdminReportsPage() {
             )}
 
             {/* Compare toggle */}
-            <button
-              onClick={() => setCompareEnabled((prev) => !prev)}
-              className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
-                compareEnabled
-                  ? "bg-blue-600 text-white"
-                  : "bg-muted text-muted-foreground hover:bg-muted/80"
-              }`}
-            >
-              Compare
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setCompareEnabled((prev) => !prev)}
+                className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                  compareEnabled
+                    ? "bg-blue-600 text-white"
+                    : "bg-muted text-muted-foreground hover:bg-muted/80"
+                }`}
+              >
+                {compareEnabled ? "Compare ON" : "Compare"}
+              </button>
+              {compareEnabled && (() => {
+                let s: string, e: string;
+                if (datePreset === "custom") {
+                  s = customStart; e = customEnd;
+                } else {
+                  const r = getDateRange(datePreset);
+                  s = r.start; e = r.end;
+                }
+                const start = new Date(s);
+                const end = new Date(e);
+                const periodMs = end.getTime() - start.getTime();
+                const cEnd = new Date(start.getTime());
+                const cStart = new Date(start.getTime() - periodMs);
+                const fmt = (d: Date) => d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+                return (
+                  <span className="text-xs text-muted-foreground">
+                    vs {fmt(cStart)} – {fmt(cEnd)}
+                  </span>
+                );
+              })()}
+            </div>
 
             {/* Team filter */}
             <div className="flex items-center gap-2 ml-auto">
@@ -996,32 +1018,32 @@ export default function AdminReportsPage() {
                 <CardContent className="p-0">
                   <div className="overflow-x-auto">
                     <table className="w-full">
-                      <thead className="bg-muted border-b border-gray-200">
+                      <thead className="bg-muted border-b border-border">
                         <tr>
-                          <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">
+                          <th className="px-6 py-3 text-left text-sm font-semibold text-foreground">
                             Project Name
                           </th>
-                          <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">
+                          <th className="px-6 py-3 text-left text-sm font-semibold text-foreground">
                             Status
                           </th>
-                          <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">
+                          <th className="px-6 py-3 text-left text-sm font-semibold text-foreground">
                             Progress
                           </th>
-                          <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">
+                          <th className="px-6 py-3 text-left text-sm font-semibold text-foreground">
                             % Validated
                           </th>
-                          <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">
+                          <th className="px-6 py-3 text-left text-sm font-semibold text-foreground">
                             Time per Task
                           </th>
-                          <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">
+                          <th className="px-6 py-3 text-left text-sm font-semibold text-foreground">
                             Map Rate
                           </th>
-                          <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">
+                          <th className="px-6 py-3 text-left text-sm font-semibold text-foreground">
                             Val Rate
                           </th>
                         </tr>
                       </thead>
-                      <tbody className="divide-y divide-border bg-white">
+                      <tbody className="divide-y divide-border bg-card">
                         {editingData.projects.map((proj) => {
                           const status = getProjectStatus(proj);
                           return (
@@ -1037,7 +1059,7 @@ export default function AdminReportsPage() {
                                     {proj.name}
                                   </a>
                                 ) : (
-                                  <span className="font-medium text-gray-900">
+                                  <span className="font-medium text-foreground">
                                     {proj.name}
                                   </span>
                                 )}
@@ -1052,7 +1074,7 @@ export default function AdminReportsPage() {
                               <td className="px-6 py-4">
                                 <div className="flex items-center gap-2">
                                   <div
-                                    className="flex-1 h-2 bg-gray-200 rounded-full overflow-hidden"
+                                    className="flex-1 h-2 bg-muted rounded-full overflow-hidden"
                                     style={{ minWidth: 80 }}
                                   >
                                     <div
@@ -1070,7 +1092,7 @@ export default function AdminReportsPage() {
                               <td className="px-6 py-4">
                                 <div className="flex items-center gap-2">
                                   <div
-                                    className="flex-1 h-2 bg-gray-200 rounded-full overflow-hidden"
+                                    className="flex-1 h-2 bg-muted rounded-full overflow-hidden"
                                     style={{ minWidth: 60 }}
                                   >
                                     <div
@@ -1088,10 +1110,10 @@ export default function AdminReportsPage() {
                               <td className="px-6 py-4 text-sm text-muted-foreground">
                                 \u2014
                               </td>
-                              <td className="px-6 py-4 text-gray-700">
+                              <td className="px-6 py-4 text-foreground">
                                 ${proj.mapping_rate.toFixed(2)}
                               </td>
-                              <td className="px-6 py-4 text-gray-700">
+                              <td className="px-6 py-4 text-foreground">
                                 ${proj.validation_rate.toFixed(2)}
                               </td>
                             </tr>
@@ -1111,29 +1133,29 @@ export default function AdminReportsPage() {
                 <CardContent className="p-0">
                   <div className="overflow-x-auto">
                     <table className="w-full">
-                      <thead className="bg-muted border-b border-gray-200">
+                      <thead className="bg-muted border-b border-border">
                         <tr>
-                          <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">
+                          <th className="px-6 py-3 text-left text-sm font-semibold text-foreground">
                             Name
                           </th>
-                          <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">
+                          <th className="px-6 py-3 text-left text-sm font-semibold text-foreground">
                             OSM Username
                           </th>
-                          <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">
+                          <th className="px-6 py-3 text-left text-sm font-semibold text-foreground">
                             Mapped
                           </th>
-                          <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">
+                          <th className="px-6 py-3 text-left text-sm font-semibold text-foreground">
                             Validated
                           </th>
-                          <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">
+                          <th className="px-6 py-3 text-left text-sm font-semibold text-foreground">
                             Invalidated
                           </th>
-                          <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">
+                          <th className="px-6 py-3 text-left text-sm font-semibold text-foreground">
                             Hours
                           </th>
                         </tr>
                       </thead>
-                      <tbody className="divide-y divide-border bg-white">
+                      <tbody className="divide-y divide-border bg-card">
                         {editingData.top_contributors.map((c) => (
                           <tr
                             key={c.osm_username}
@@ -1154,25 +1176,25 @@ export default function AdminReportsPage() {
                                 className={
                                   c.user_id
                                     ? "font-medium text-kaart-orange"
-                                    : "font-medium text-gray-900"
+                                    : "font-medium text-foreground"
                                 }
                               >
                                 {c.user_name}
                               </span>
                             </td>
-                            <td className="px-6 py-4 text-gray-700">
+                            <td className="px-6 py-4 text-foreground">
                               {c.osm_username}
                             </td>
-                            <td className="px-6 py-4 text-gray-700">
+                            <td className="px-6 py-4 text-foreground">
                               {c.tasks_mapped}
                             </td>
-                            <td className="px-6 py-4 text-gray-700">
+                            <td className="px-6 py-4 text-foreground">
                               {c.tasks_validated}
                             </td>
-                            <td className="px-6 py-4 text-gray-700">
+                            <td className="px-6 py-4 text-foreground">
                               {c.tasks_invalidated}
                             </td>
-                            <td className="px-6 py-4 text-gray-700">
+                            <td className="px-6 py-4 text-foreground">
                               {c.total_hours}h
                             </td>
                           </tr>
