@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useUser } from "@auth0/nextjs-auth0/client";
 import { useSearchParams } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle, Button, Input } from "@/components/ui";
+import { useTheme } from "@/contexts/ThemeContext";
 
 interface UserProfile {
   id: number;
@@ -29,6 +30,7 @@ export default function AccountPage() {
   const [osmLinking, setOsmLinking] = useState(false);
   const [osmUnlinking, setOsmUnlinking] = useState(false);
   const [osmMessage, setOsmMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
+  const { isDarkMode, toggleDarkMode } = useTheme();
 
   // Form state
   const [paymentEmail, setPaymentEmail] = useState("");
@@ -203,9 +205,9 @@ export default function AccountPage() {
                   alignItems: "center",
                   gap: 12,
                   padding: 16,
-                  backgroundColor: "#f0fdf4",
+                  backgroundColor: "var(--secondary)",
                   borderRadius: 8,
-                  border: "1px solid #bbf7d0",
+                  border: "1px solid var(--border)",
                 }}
               >
                 <div
@@ -241,7 +243,7 @@ export default function AccountPage() {
                       Verified
                     </span>
                   </div>
-                  <p style={{ fontSize: 13, color: "#6b7280", marginTop: 4 }}>
+                  <p style={{ fontSize: 13, color: "var(--muted-foreground)", marginTop: 4 }}>
                     Linked {profile.osm_verified_at ? new Date(profile.osm_verified_at).toLocaleDateString() : ""}
                     {profile.osm_id && ` (OSM ID: ${profile.osm_id})`}
                   </p>
@@ -253,10 +255,10 @@ export default function AccountPage() {
                   style={{
                     padding: "6px 12px",
                     fontSize: 13,
-                    color: "#2563eb",
+                    color: "var(--accent)",
                     textDecoration: "none",
                     borderRadius: 6,
-                    border: "1px solid #2563eb",
+                    border: "1px solid var(--accent)",
                   }}
                 >
                   View Profile
@@ -283,7 +285,7 @@ export default function AccountPage() {
           ) : (
             // Not Linked - Show Link Button
             <div>
-              <p style={{ fontSize: 14, color: "#6b7280", marginBottom: 16 }}>
+              <p style={{ fontSize: 14, color: "var(--muted-foreground)", marginBottom: 16 }}>
                 Link your OpenStreetMap account to verify your identity and enable automatic stats tracking.
               </p>
               <Button onClick={handleLinkOSM} disabled={osmLinking}>
@@ -315,7 +317,7 @@ export default function AccountPage() {
         </CardHeader>
         <CardContent>
           {/* Avatar and Name */}
-          <div style={{ display: "flex", alignItems: "center", gap: 16, paddingBottom: 20, marginBottom: 20, borderBottom: "1px solid #e5e7eb" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 16, paddingBottom: 20, marginBottom: 20, borderBottom: "1px solid var(--border)" }}>
             <div style={{
               width: 64,
               height: 64,
@@ -332,7 +334,7 @@ export default function AccountPage() {
             </div>
             <div>
               <h2 style={{ fontSize: 20, fontWeight: 600, marginBottom: 4 }}>{profile?.name || auth0User?.name}</h2>
-              <p style={{ fontSize: 14, color: "#6b7280", marginBottom: 6 }}>{profile?.email || auth0User?.email}</p>
+              <p style={{ fontSize: 14, color: "var(--muted-foreground)", marginBottom: 6 }}>{profile?.email || auth0User?.email}</p>
               <span style={{
                 display: "inline-flex",
                 alignItems: "center",
@@ -360,7 +362,7 @@ export default function AccountPage() {
                   placeholder="your-payoneer@email.com"
                 />
               ) : (
-                <p style={{ fontSize: 15, color: "#111827" }}>{profile?.payment_email || "-"}</p>
+                <p style={{ fontSize: 15, color: "var(--foreground)" }}>{profile?.payment_email || "-"}</p>
               )}
             </div>
 
@@ -374,7 +376,7 @@ export default function AccountPage() {
                     placeholder="City"
                   />
                 ) : (
-                  <p style={{ fontSize: 15, color: "#111827" }}>{profile?.city || "-"}</p>
+                  <p style={{ fontSize: 15, color: "var(--foreground)" }}>{profile?.city || "-"}</p>
                 )}
               </div>
               <div>
@@ -386,7 +388,7 @@ export default function AccountPage() {
                     placeholder="Country"
                   />
                 ) : (
-                  <p style={{ fontSize: 15, color: "#111827" }}>{profile?.country || "-"}</p>
+                  <p style={{ fontSize: 15, color: "var(--foreground)" }}>{profile?.country || "-"}</p>
                 )}
               </div>
             </div>
@@ -394,7 +396,7 @@ export default function AccountPage() {
 
           {/* Save/Cancel Buttons */}
           {isEditing && (
-            <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", paddingTop: 20, marginTop: 20, borderTop: "1px solid #e5e7eb" }}>
+            <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", paddingTop: 20, marginTop: 20, borderTop: "1px solid var(--border)" }}>
               <Button
                 variant="outline"
                 onClick={() => {
@@ -414,13 +416,67 @@ export default function AccountPage() {
         </CardContent>
       </Card>
 
+      {/* Appearance Card */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Appearance</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              padding: 16,
+              backgroundColor: "var(--secondary)",
+              borderRadius: 8,
+              border: "1px solid var(--border)",
+            }}
+          >
+            <div>
+              <h3 style={{ fontWeight: 500, fontSize: 15 }}>Dark Mode</h3>
+              <p style={{ fontSize: 13, color: "var(--muted-foreground)", marginTop: 4 }}>
+                Enable dark theme for the application
+              </p>
+            </div>
+            <button
+              onClick={toggleDarkMode}
+              style={{
+                position: "relative",
+                display: "inline-flex",
+                height: 24,
+                width: 44,
+                alignItems: "center",
+                borderRadius: 9999,
+                border: "none",
+                cursor: "pointer",
+                transition: "background-color 0.2s",
+                backgroundColor: isDarkMode ? "#3b82f6" : "#d1d5db",
+              }}
+            >
+              <span
+                style={{
+                  display: "inline-block",
+                  height: 16,
+                  width: 16,
+                  borderRadius: "50%",
+                  backgroundColor: "white",
+                  transition: "transform 0.2s",
+                  transform: isDarkMode ? "translateX(24px)" : "translateX(4px)",
+                }}
+              />
+            </button>
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Session Card */}
       <Card>
         <CardHeader>
           <CardTitle>Session</CardTitle>
         </CardHeader>
         <CardContent>
-          <p style={{ fontSize: 14, color: "#6b7280", marginBottom: 12 }}>
+          <p style={{ fontSize: 14, color: "var(--muted-foreground)", marginBottom: 12 }}>
             Sign out of your account on this device.
           </p>
           <a

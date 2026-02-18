@@ -129,7 +129,7 @@ export function Sidebar({ role }: SidebarProps) {
   const getNavLinkStyle = (isActive: boolean): React.CSSProperties => ({
     ...linkBaseStyle,
     backgroundColor: isActive ? "rgba(255, 107, 53, 0.1)" : "transparent",
-    color: isActive ? "#ff6b35" : "#6b7280",
+    color: isActive ? "#ff6b35" : "var(--muted-foreground)",
   });
 
   return (
@@ -142,8 +142,8 @@ export function Sidebar({ role }: SidebarProps) {
         zIndex: 40,
         height: "calc(100vh - 64px)",
         width: 180,
-        borderRight: "1px solid #e5e7eb",
-        backgroundColor: "white",
+        borderRight: "1px solid var(--border)",
+        backgroundColor: "var(--background)",
       }}
     >
       <div

@@ -1637,30 +1637,30 @@ export default function AdminReportsPage() {
                 <CardContent className="p-0">
                   <div className="overflow-x-auto">
                     <table className="w-full">
-                      <thead className="bg-muted border-b border-gray-200">
+                      <thead className="bg-muted border-b border-border">
                         <tr>
-                          <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700 w-8"></th>
-                          <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">
+                          <th className="px-6 py-3 text-left text-sm font-semibold text-foreground w-8"></th>
+                          <th className="px-6 py-3 text-left text-sm font-semibold text-foreground">
                             Name
                           </th>
-                          <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">
+                          <th className="px-6 py-3 text-left text-sm font-semibold text-foreground">
                             Hours
                           </th>
-                          <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">
+                          <th className="px-6 py-3 text-left text-sm font-semibold text-foreground">
                             Records
                           </th>
-                          <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">
+                          <th className="px-6 py-3 text-left text-sm font-semibold text-foreground">
                             Changesets
                           </th>
-                          <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">
+                          <th className="px-6 py-3 text-left text-sm font-semibold text-foreground">
                             Changes
                           </th>
-                          <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">
+                          <th className="px-6 py-3 text-left text-sm font-semibold text-foreground">
                             OSM usernames
                           </th>
                         </tr>
                       </thead>
-                      <tbody className="divide-y divide-border bg-white">
+                      <tbody className="divide-y divide-border bg-card">
                         {timekeepingData.user_breakdown.map((u) => {
                           const isExpanded = expandedUsers.has(
                             u.user_id
@@ -1679,7 +1679,7 @@ export default function AdminReportsPage() {
                                   setExpandedUsers(next);
                                 }}
                               >
-                                <td className="px-6 py-4 text-gray-400">
+                                <td className="px-6 py-4 text-muted-foreground">
                                   {isExpanded
                                     ? "\u25BC"
                                     : "\u25B6"}
@@ -1694,24 +1694,24 @@ export default function AdminReportsPage() {
                                         .slice(0, 2)
                                         .toUpperCase()}
                                     </div>
-                                    <span className="font-medium text-gray-900">
+                                    <span className="font-medium text-foreground">
                                       {u.user_name}
                                     </span>
                                   </div>
                                 </td>
-                                <td className="px-6 py-4 text-gray-700">
+                                <td className="px-6 py-4 text-foreground">
                                   {u.total_hours}h
                                 </td>
-                                <td className="px-6 py-4 text-gray-700">
+                                <td className="px-6 py-4 text-foreground">
                                   {u.entries_count}
                                 </td>
-                                <td className="px-6 py-4 text-gray-700">
+                                <td className="px-6 py-4 text-foreground">
                                   {u.changeset_count}
                                 </td>
-                                <td className="px-6 py-4 text-gray-700">
+                                <td className="px-6 py-4 text-foreground">
                                   {u.changes_count.toLocaleString()}
                                 </td>
-                                <td className="px-6 py-4 text-gray-700">
+                                <td className="px-6 py-4 text-foreground">
                                   {u.osm_username || "\u2014"}
                                 </td>
                               </tr>
@@ -1739,7 +1739,7 @@ export default function AdminReportsPage() {
                                                 CATEGORY_COLORS.other,
                                             }}
                                           />
-                                          <span className="text-sm text-gray-700 capitalize">
+                                          <span className="text-sm text-muted-foreground capitalize">
                                             {cat}:{" "}
                                             <span className="font-medium">
                                               {hrs}h

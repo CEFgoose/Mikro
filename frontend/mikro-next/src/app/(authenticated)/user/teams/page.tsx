@@ -45,15 +45,15 @@ export default function UserTeamsPage() {
         <CardContent className="p-0">
           <div className="overflow-x-auto">
             <table className="w-full">
-              <thead className="bg-muted border-b border-gray-200">
+              <thead className="bg-muted border-b border-border">
                 <tr>
-                  <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">Name</th>
-                  <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">Description</th>
-                  <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">Lead</th>
-                  <th className="px-6 py-3 text-center text-sm font-semibold text-gray-700">Members</th>
+                  <th className="px-6 py-3 text-left text-sm font-semibold text-foreground">Name</th>
+                  <th className="px-6 py-3 text-left text-sm font-semibold text-foreground">Description</th>
+                  <th className="px-6 py-3 text-left text-sm font-semibold text-foreground">Lead</th>
+                  <th className="px-6 py-3 text-center text-sm font-semibold text-foreground">Members</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-border bg-white">
+              <tbody className="divide-y divide-border bg-card">
                 {filteredTeams.map((team) => (
                   <tr key={team.id}>
                     <td className="px-6 py-4">
@@ -67,10 +67,10 @@ export default function UserTeamsPage() {
                     <td className="px-6 py-4 text-muted-foreground max-w-xs truncate">
                       {team.description || "—"}
                     </td>
-                    <td className="px-6 py-4 text-gray-700">
+                    <td className="px-6 py-4 text-foreground">
                       {team.lead_name || <span className="text-muted-foreground">None</span>}
                     </td>
-                    <td className="px-6 py-4 text-center text-gray-700">{team.member_count}</td>
+                    <td className="px-6 py-4 text-center text-foreground">{team.member_count}</td>
                   </tr>
                 ))}
                 {filteredTeams.length === 0 && (

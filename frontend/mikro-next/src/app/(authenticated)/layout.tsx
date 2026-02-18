@@ -60,7 +60,7 @@ export default async function AuthenticatedLayout({
   }
 
   return (
-    <div style={{ minHeight: "100vh", backgroundColor: "#f9fafb" }}>
+    <div style={{ minHeight: "100vh", backgroundColor: "var(--muted)" }}>
       <Header />
       <Sidebar role={role as "user" | "validator" | "admin"} />
       <main

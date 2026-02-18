@@ -272,7 +272,7 @@ export default function AdminUsersPage() {
     <div className="space-y-8">
       {/* Action Buttons */}
       <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-bold text-gray-900">Users</h1>
+        <h1 className="text-2xl font-bold text-foreground">Users</h1>
         <div className="flex gap-2">
           <Button onClick={() => setShowAddModal(true)}>Add</Button>
           <Button
@@ -298,19 +298,19 @@ export default function AdminUsersPage() {
         <CardContent className="p-0">
           <div className="overflow-x-auto">
             <table className="w-full">
-              <thead className="bg-muted border-b border-gray-200">
+              <thead className="bg-muted border-b border-border">
                 <tr>
-                  <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">Name</th>
-                  <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">Role</th>
-                  <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">Projects</th>
-                  <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">Mapped</th>
-                  <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">Validated</th>
-                  <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">Invalidated</th>
-                  <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">Awaiting</th>
-                  <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">Total Paid</th>
+                  <th className="px-6 py-4 text-left text-sm font-semibold text-foreground">Name</th>
+                  <th className="px-6 py-4 text-left text-sm font-semibold text-foreground">Role</th>
+                  <th className="px-6 py-4 text-left text-sm font-semibold text-foreground">Projects</th>
+                  <th className="px-6 py-4 text-left text-sm font-semibold text-foreground">Mapped</th>
+                  <th className="px-6 py-4 text-left text-sm font-semibold text-foreground">Validated</th>
+                  <th className="px-6 py-4 text-left text-sm font-semibold text-foreground">Invalidated</th>
+                  <th className="px-6 py-4 text-left text-sm font-semibold text-foreground">Awaiting</th>
+                  <th className="px-6 py-4 text-left text-sm font-semibold text-foreground">Total Paid</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-border bg-white">
+              <tbody className="divide-y divide-border bg-card">
                 {users.map((user) => (
                   <tr
                     key={user.id}
@@ -341,14 +341,14 @@ export default function AdminUsersPage() {
                         {user.role}
                       </span>
                     </td>
-                    <td className="px-6 py-5 text-gray-700">{user.assigned_projects ?? 0}</td>
-                    <td className="px-6 py-5 text-gray-700">{user.total_tasks_mapped ?? 0}</td>
-                    <td className="px-6 py-5 text-gray-700">{user.total_tasks_validated ?? 0}</td>
-                    <td className="px-6 py-5 text-gray-700">{user.total_tasks_invalidated ?? 0}</td>
-                    <td className="px-6 py-5 text-gray-700">
+                    <td className="px-6 py-5 text-foreground">{user.assigned_projects ?? 0}</td>
+                    <td className="px-6 py-5 text-foreground">{user.total_tasks_mapped ?? 0}</td>
+                    <td className="px-6 py-5 text-foreground">{user.total_tasks_validated ?? 0}</td>
+                    <td className="px-6 py-5 text-foreground">{user.total_tasks_invalidated ?? 0}</td>
+                    <td className="px-6 py-5 text-foreground">
                       ${user.awaiting_payment?.toFixed(2) ?? "0.00"}
                     </td>
-                    <td className="px-6 py-5 text-gray-700">
+                    <td className="px-6 py-5 text-foreground">
                       ${user.total_payout?.toFixed(2) ?? "0.00"}
                     </td>
                   </tr>

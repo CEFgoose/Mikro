@@ -104,7 +104,7 @@ export default function AdminTeamProfilePage() {
               {team.name?.[0]?.toUpperCase() || "T"}
             </div>
             <div className="flex-1 min-w-0">
-              <h1 className="text-2xl font-bold text-gray-900">{team.name}</h1>
+              <h1 className="text-2xl font-bold text-foreground">{team.name}</h1>
               {team.description && (
                 <p className="text-muted-foreground mt-1">{team.description}</p>
               )}
@@ -190,18 +190,18 @@ export default function AdminTeamProfilePage() {
           <CardContent className="p-0">
             <div className="overflow-x-auto">
               <table className="w-full">
-                <thead className="bg-muted border-b border-gray-200">
+                <thead className="bg-muted border-b border-border">
                   <tr>
-                    <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">Name</th>
-                    <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">Role</th>
-                    <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">OSM Username</th>
-                    <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">Mapped</th>
-                    <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">Validated</th>
-                    <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">Invalidated</th>
-                    <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">Earnings</th>
+                    <th className="px-6 py-3 text-left text-sm font-semibold text-foreground">Name</th>
+                    <th className="px-6 py-3 text-left text-sm font-semibold text-foreground">Role</th>
+                    <th className="px-6 py-3 text-left text-sm font-semibold text-foreground">OSM Username</th>
+                    <th className="px-6 py-3 text-left text-sm font-semibold text-foreground">Mapped</th>
+                    <th className="px-6 py-3 text-left text-sm font-semibold text-foreground">Validated</th>
+                    <th className="px-6 py-3 text-left text-sm font-semibold text-foreground">Invalidated</th>
+                    <th className="px-6 py-3 text-left text-sm font-semibold text-foreground">Earnings</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-border bg-white">
+                <tbody className="divide-y divide-border bg-card">
                   {members.map((member) => (
                     <tr
                       key={member.id}
@@ -226,13 +226,13 @@ export default function AdminTeamProfilePage() {
                           {member.role}
                         </span>
                       </td>
-                      <td className="px-6 py-4 text-gray-700">
+                      <td className="px-6 py-4 text-foreground">
                         {member.osm_username || "-"}
                       </td>
-                      <td className="px-6 py-4 text-gray-700">{member.total_tasks_mapped}</td>
-                      <td className="px-6 py-4 text-gray-700">{member.total_tasks_validated}</td>
-                      <td className="px-6 py-4 text-gray-700">{member.total_tasks_invalidated ?? 0}</td>
-                      <td className="px-6 py-4 text-gray-700">
+                      <td className="px-6 py-4 text-foreground">{member.total_tasks_mapped}</td>
+                      <td className="px-6 py-4 text-foreground">{member.total_tasks_validated}</td>
+                      <td className="px-6 py-4 text-foreground">{member.total_tasks_invalidated ?? 0}</td>
+                      <td className="px-6 py-4 text-foreground">
                         ${(member.payable_total ?? 0).toFixed(2)}
                       </td>
                     </tr>
@@ -253,15 +253,15 @@ export default function AdminTeamProfilePage() {
           <CardContent className="p-0">
             <div className="overflow-x-auto">
               <table className="w-full">
-                <thead className="bg-muted border-b border-gray-200">
+                <thead className="bg-muted border-b border-border">
                   <tr>
-                    <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">Project</th>
-                    <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">Team Mapped</th>
-                    <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">Team Validated</th>
-                    <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">Team Earnings</th>
+                    <th className="px-6 py-3 text-left text-sm font-semibold text-foreground">Project</th>
+                    <th className="px-6 py-3 text-left text-sm font-semibold text-foreground">Team Mapped</th>
+                    <th className="px-6 py-3 text-left text-sm font-semibold text-foreground">Team Validated</th>
+                    <th className="px-6 py-3 text-left text-sm font-semibold text-foreground">Team Earnings</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-border bg-white">
+                <tbody className="divide-y divide-border bg-card">
                   {projects.map((proj) => (
                     <tr
                       key={proj.id}
@@ -271,9 +271,9 @@ export default function AdminTeamProfilePage() {
                       <td className="px-6 py-4">
                         <span className="font-medium text-kaart-orange">{proj.name}</span>
                       </td>
-                      <td className="px-6 py-4 text-gray-700">{proj.team_tasks_mapped}</td>
-                      <td className="px-6 py-4 text-gray-700">{proj.team_tasks_validated}</td>
-                      <td className="px-6 py-4 text-gray-700">
+                      <td className="px-6 py-4 text-foreground">{proj.team_tasks_mapped}</td>
+                      <td className="px-6 py-4 text-foreground">{proj.team_tasks_validated}</td>
+                      <td className="px-6 py-4 text-foreground">
                         ${(proj.team_earnings ?? 0).toFixed(2)}
                       </td>
                     </tr>
@@ -294,15 +294,15 @@ export default function AdminTeamProfilePage() {
           <CardContent className="p-0">
             <div className="overflow-x-auto">
               <table className="w-full">
-                <thead className="bg-muted border-b border-gray-200">
+                <thead className="bg-muted border-b border-border">
                   <tr>
-                    <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">Title</th>
-                    <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">Type</th>
-                    <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">Difficulty</th>
-                    <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">Points</th>
+                    <th className="px-6 py-3 text-left text-sm font-semibold text-foreground">Title</th>
+                    <th className="px-6 py-3 text-left text-sm font-semibold text-foreground">Type</th>
+                    <th className="px-6 py-3 text-left text-sm font-semibold text-foreground">Difficulty</th>
+                    <th className="px-6 py-3 text-left text-sm font-semibold text-foreground">Points</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-border bg-white">
+                <tbody className="divide-y divide-border bg-card">
                   {assigned_trainings.map((training) => (
                     <tr
                       key={training.id}
@@ -328,7 +328,7 @@ export default function AdminTeamProfilePage() {
                           {training.difficulty}
                         </span>
                       </td>
-                      <td className="px-6 py-4 text-gray-700">{training.point_value}</td>
+                      <td className="px-6 py-4 text-foreground">{training.point_value}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -347,14 +347,14 @@ export default function AdminTeamProfilePage() {
           <CardContent className="p-0">
             <div className="overflow-x-auto">
               <table className="w-full">
-                <thead className="bg-muted border-b border-gray-200">
+                <thead className="bg-muted border-b border-border">
                   <tr>
-                    <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">Name</th>
-                    <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">Difficulty</th>
-                    <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">Status</th>
+                    <th className="px-6 py-3 text-left text-sm font-semibold text-foreground">Name</th>
+                    <th className="px-6 py-3 text-left text-sm font-semibold text-foreground">Difficulty</th>
+                    <th className="px-6 py-3 text-left text-sm font-semibold text-foreground">Status</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-border bg-white">
+                <tbody className="divide-y divide-border bg-card">
                   {assigned_checklists.map((checklist) => (
                     <tr
                       key={checklist.id}
