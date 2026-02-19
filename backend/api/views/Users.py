@@ -183,15 +183,14 @@ class UserAPI(MethodView):
                         results["failed"].append({"email": email, "error": "Could not resolve Auth0 user ID"})
                         continue
 
-                    # Trigger password reset email (only for newly created Auth0 users)
-                    if auth0_created:
-                        reset_url = f"https://{domain}/dbconnections/change_password"
-                        reset_payload = {
-                            "client_id": client_id,
-                            "email": email,
-                            "connection": "Username-Password-Authentication",
-                        }
-                        requests.post(reset_url, json=reset_payload)
+                    # Trigger password set email for all imported users
+                    reset_url = f"https://{domain}/dbconnections/change_password"
+                    reset_payload = {
+                        "client_id": client_id,
+                        "email": email,
+                        "connection": "Username-Password-Authentication",
+                    }
+                    requests.post(reset_url, json=reset_payload)
 
                     # Create/update user in local database
                     existing_user = User.query.filter_by(email=email).first()
