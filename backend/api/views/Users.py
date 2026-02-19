@@ -111,6 +111,8 @@ class UserAPI(MethodView):
             return self.fetch_user_activity_chart()
         elif path == "fetch_user_task_history":
             return self.fetch_user_task_history()
+        elif path == "admin_update_user_profile":
+            return self.admin_update_user_profile()
         # elif path == "register_user":
         #     return self.register_user()
         return {
@@ -901,6 +903,18 @@ class UserAPI(MethodView):
         last_name = (user.last_name or "").title()
         full_name = f"{first_name} {last_name}".strip() or user.email or "Unknown"
 
+        # Resolve country/region names
+        country_name = None
+        region_name = None
+        if user.country_id:
+            country_obj = Country.query.get(user.country_id)
+            if country_obj:
+                country_name = country_obj.name
+                if country_obj.region_id:
+                    region_obj = Region.query.get(country_obj.region_id)
+                    if region_obj:
+                        region_name = region_obj.name
+
         return {
             "status": 200,
             "user": {
@@ -915,6 +929,8 @@ class UserAPI(MethodView):
                 "city": user.city,
                 "country": user.country,
                 "country_id": user.country_id,
+                "country_name": country_name,
+                "region_name": region_name,
                 "timezone": user.timezone,
                 "joined": user.create_time.isoformat() if user.create_time else None,
                 # Task stats
@@ -941,6 +957,55 @@ class UserAPI(MethodView):
                 "time_entries": [self._format_time_entry(e) for e in time_entries],
             },
         }
+
+    @requires_admin
+    def admin_update_user_profile(self):
+        """Admin update of a user's country/timezone from profile page."""
+        data = request.get_json() or {}
+        user_id = data.get("userId")
+        if not user_id:
+            return {"message": "userId is required", "status": 400}
+
+        user = User.query.get(user_id)
+        if not user or user.org_id != g.user.org_id:
+            return {"message": "User not found in your organization", "status": 404}
+
+        updates = {}
+
+        # Handle country_id change
+        new_country_id = data.get("countryId")
+        if new_country_id is not None:
+            if new_country_id:
+                country_obj = Country.query.get(new_country_id)
+                if not country_obj:
+                    return {"message": "Country not found", "status": 404}
+                updates["country_id"] = new_country_id
+                # Auto-set timezone from country default if not explicitly provided
+                if "timezone" not in data and country_obj.default_timezone:
+                    updates["timezone"] = country_obj.default_timezone
+                # Also update free-text country field
+                updates["country"] = country_obj.name
+                # Manage UserCountry record
+                existing_uc = UserCountry.query.filter_by(
+                    user_id=user_id, country_id=new_country_id
+                ).first()
+                if not existing_uc:
+                    UserCountry.create(
+                        user_id=user_id,
+                        country_id=new_country_id,
+                        is_primary=True,
+                    )
+            else:
+                updates["country_id"] = None
+
+        # Handle explicit timezone
+        if "timezone" in data:
+            updates["timezone"] = data["timezone"] or None
+
+        if updates:
+            user.update(**updates)
+
+        return {"status": 200, "message": "User profile updated"}
 
     @requires_admin
     def fetch_user_stats_by_date(self):

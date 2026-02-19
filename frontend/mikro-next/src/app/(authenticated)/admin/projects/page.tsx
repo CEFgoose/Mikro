@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Card,
   CardContent,
@@ -25,6 +25,7 @@ import {
   Skeleton,
 } from "@/components/ui";
 import { useToastActions } from "@/components/ui";
+import { FilterBar } from "@/components/filters";
 import {
   useOrgProjects,
   useCreateProject,
@@ -37,6 +38,8 @@ import {
   useFetchProjectTeams,
   useAssignTeamToProject,
   useUnassignTeamFromProject,
+  useFilters,
+  useFetchFilterOptions,
 } from "@/hooks";
 import { getTM4ProjectUrl } from "@/lib/utils";
 import type { Project, ProjectTeamItem } from "@/types";
@@ -79,6 +82,8 @@ const defaultFormData: ProjectFormData = {
 
 export default function AdminProjectsPage() {
   const { data: projects, loading, refetch } = useOrgProjects();
+  const { activeFilters, setActiveFilters, filtersBody } = useFilters();
+  const { data: filterOptions, loading: filterOptionsLoading } = useFetchFilterOptions();
   const { mutate: createProject, loading: creating } = useCreateProject();
   const { mutate: updateProject, loading: updating } = useUpdateProject();
   const { mutate: deleteProject, loading: deleting } = useDeleteProject();
@@ -103,6 +108,11 @@ export default function AdminProjectsPage() {
   const [projectUsers, setProjectUsers] = useState<ProjectUserItem[]>([]);
   const [projectTeams, setProjectTeams] = useState<ProjectTeamItem[]>([]);
   const [editTab, setEditTab] = useState<"settings" | "users" | "teams">("settings");
+
+  // Re-fetch projects when filters change
+  useEffect(() => {
+    if (refetch) refetch(filtersBody ? { filters: filtersBody } : {});
+  }, [filtersBody]);
 
   const activeProjects = projects?.org_active_projects ?? [];
   const inactiveProjects = projects?.org_inactive_projects ?? [];
@@ -156,7 +166,7 @@ export default function AdminProjectsPage() {
       setShowAddModal(false);
       setFormData(defaultFormData);
       setBudgetCalculation("");
-      refetch();
+      refetch(filtersBody ? { filters: filtersBody } : {});
     } catch (err) {
       const message = err instanceof Error ? err.message : "Failed to create project";
       toast.error(message);
@@ -181,7 +191,7 @@ export default function AdminProjectsPage() {
       toast.success("Project updated successfully");
       setShowEditModal(false);
       setSelectedProject(null);
-      refetch();
+      refetch(filtersBody ? { filters: filtersBody } : {});
     } catch (err) {
       const message = err instanceof Error ? err.message : "Failed to update project";
       toast.error(message);
@@ -196,7 +206,7 @@ export default function AdminProjectsPage() {
       toast.success("Project deleted successfully");
       setShowDeleteModal(false);
       setSelectedProject(null);
-      refetch();
+      refetch(filtersBody ? { filters: filtersBody } : {});
     } catch (err) {
       const message = err instanceof Error ? err.message : "Failed to delete project";
       toast.error(message);
@@ -285,7 +295,7 @@ export default function AdminProjectsPage() {
       const result = await purgeProjects({});
       toast.success(`Purged ${result.projects_deleted} projects, ${result.tasks_deleted} tasks, reset ${result.users_reset} users`);
       setShowPurgeModal(false);
-      refetch();
+      refetch(filtersBody ? { filters: filtersBody } : {});
     } catch {
       toast.error("Failed to purge projects");
     }
@@ -448,6 +458,24 @@ export default function AdminProjectsPage() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Filters */}
+      <FilterBar
+        dimensions={filterOptions?.dimensions ? Object.entries(filterOptions.dimensions).map(([key, values]) => ({
+          key,
+          label: key.charAt(0).toUpperCase() + key.slice(1),
+          options: Array.isArray(values)
+            ? values.map((v) =>
+                typeof v === 'string'
+                  ? { value: v, label: v }
+                  : { value: String(v.id ?? v.name), label: v.name }
+              )
+            : [],
+        })) : []}
+        activeFilters={activeFilters}
+        onChange={setActiveFilters}
+        loading={filterOptionsLoading}
+      />
 
       {/* Projects Tabs */}
       <Tabs defaultValue="active">

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import {
   Card,
@@ -22,6 +22,7 @@ import {
   Skeleton,
 } from "@/components/ui";
 import { useToastActions } from "@/components/ui";
+import { FilterBar } from "@/components/filters";
 import {
   useFetchTeams,
   useCreateTeam,
@@ -37,6 +38,8 @@ import {
   useAssignChecklistToTeam,
   useUnassignChecklistFromTeam,
   useUsersList,
+  useFilters,
+  useFetchFilterOptions,
 } from "@/hooks";
 import type { Team, TeamMemberItem, TeamTrainingItem, TeamChecklistItem } from "@/types";
 
@@ -50,6 +53,8 @@ export default function AdminTeamsPage() {
   const { mutate: unassignMember } = useUnassignTeamMember();
   const { data: usersData } = useUsersList();
   const toast = useToastActions();
+  const { activeFilters, setActiveFilters, filtersBody } = useFilters();
+  const { data: filterOptions, loading: filterOptionsLoading } = useFetchFilterOptions();
 
   const [search, setSearch] = useState("");
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -82,6 +87,15 @@ export default function AdminTeamsPage() {
   const [formName, setFormName] = useState("");
   const [formDescription, setFormDescription] = useState("");
   const [formLeadId, setFormLeadId] = useState("");
+
+  // Re-fetch teams when server-side filters change
+  useEffect(() => {
+    if (filtersBody) {
+      refetch({ filters: filtersBody });
+    } else {
+      refetch();
+    }
+  }, [filtersBody]);
 
   const teams = teamsData?.teams ?? [];
   const filteredTeams = teams.filter((t) =>
@@ -339,6 +353,24 @@ export default function AdminTeamsPage() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Filters */}
+      <FilterBar
+        dimensions={filterOptions?.dimensions ? Object.entries(filterOptions.dimensions).map(([key, values]) => ({
+          key,
+          label: key.charAt(0).toUpperCase() + key.slice(1),
+          options: Array.isArray(values)
+            ? values.map((v) =>
+                typeof v === 'string'
+                  ? { value: v, label: v }
+                  : { value: String(v.id ?? v.name), label: v.name }
+              )
+            : [],
+        })) : []}
+        activeFilters={activeFilters}
+        onChange={setActiveFilters}
+        loading={filterOptionsLoading}
+      />
 
       {/* Search + Table */}
       <Card>

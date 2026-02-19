@@ -694,6 +694,11 @@ export function useFetchUserTeamProfile() {
   return useApiMutation<TeamProfileData>("/team/fetch_user_team_profile");
 }
 
+// Admin: update user profile (country/timezone)
+export function useAdminUpdateUserProfile() {
+  return useApiMutation<{ status: number; message: string }>("/user/admin_update_user_profile");
+}
+
 // ─── Reports ────────────────────────────────────────────────
 
 export function useFetchEditingStats() {

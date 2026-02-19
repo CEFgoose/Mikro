@@ -15,6 +15,7 @@ from flask import g, request, current_app
 from sqlalchemy import func
 
 from ..utils import requires_admin
+from ..filters import resolve_filtered_user_ids
 from ..database import (
     Project,
     Task,
@@ -497,6 +498,23 @@ class ProjectAPI(MethodView):
         # Check if user is authenticated
         if not g:
             return {"message": "User not found", "status": 304}
+
+        # Check for filters in the request body
+        filters = request.json.get("filters") if request.json else None
+        filtered_user_ids = resolve_filtered_user_ids(filters, g.user.org_id)
+
+        # If filters produced a user-id set, restrict to projects that have
+        # at least one assigned user in that set via the ProjectUser table.
+        if filtered_user_ids is not None:
+            filtered_project_ids = {
+                pu.project_id
+                for pu in ProjectUser.query.filter(
+                    ProjectUser.user_id.in_(filtered_user_ids)
+                ).all()
+            }
+        else:
+            filtered_project_ids = None
+
         # Get all projects for the organization
         org_active_projects = []
         org_inactive_projects = []
@@ -506,6 +524,15 @@ class ProjectAPI(MethodView):
         inactive_projects = Project.query.filter_by(
             org_id=g.user.org_id, status=False
         ).all()
+
+        # Apply project-level filter if filters were provided
+        if filtered_project_ids is not None:
+            active_projects = [
+                p for p in active_projects if p.id in filtered_project_ids
+            ]
+            inactive_projects = [
+                p for p in inactive_projects if p.id in filtered_project_ids
+            ]
         # Add each project to the list
         for project in active_projects:
             # Get effective task counts that handle split tasks properly

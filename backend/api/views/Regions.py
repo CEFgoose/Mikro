@@ -359,6 +359,10 @@ class RegionAPI(MethodView):
     @requires_admin
     def seed_defaults(self):
         """Seed default regions and countries. Idempotent — skips existing."""
+        import logging
+
+        logger = logging.getLogger(__name__)
+
         defaults = {
             "Latin America": [
                 ("Colombia", "COL", "America/Bogota"),
@@ -428,28 +432,63 @@ class RegionAPI(MethodView):
 
         created_regions = 0
         created_countries = 0
+        skipped_countries = 0
+        errors = []
 
         for region_name, country_list in defaults.items():
             region = Region.query.filter_by(name=region_name).first()
             if not region:
-                region = Region.create(name=region_name, org_id=g.user.org_id)
+                region = Region(
+                    name=region_name, org_id=g.user.org_id
+                )
+                db.session.add(region)
+                db.session.flush()  # get region.id without committing
                 created_regions += 1
 
             for country_name, iso_code, tz in country_list:
                 existing = Country.query.filter_by(iso_code=iso_code).first()
-                if not existing:
-                    Country.create(
+                if existing:
+                    # Update region_id if country exists but isn't linked
+                    if existing.region_id != region.id:
+                        existing.region_id = region.id
+                    skipped_countries += 1
+                    continue
+                try:
+                    country = Country(
                         name=country_name,
                         iso_code=iso_code,
                         region_id=region.id,
                         default_timezone=tz,
                         org_id=g.user.org_id,
                     )
+                    db.session.add(country)
+                    db.session.flush()
                     created_countries += 1
+                except Exception as e:
+                    db.session.rollback()
+                    logger.error(f"Failed to create country {country_name}: {e}")
+                    errors.append(f"{country_name}: {str(e)}")
+
+        # Single commit for everything
+        try:
+            db.session.commit()
+        except Exception as e:
+            db.session.rollback()
+            logger.error(f"Failed to commit seed data: {e}")
+            return {
+                "status": 500,
+                "message": f"Failed to commit: {str(e)}",
+            }
+
+        msg = f"Seeded {created_regions} regions and {created_countries} countries"
+        if skipped_countries:
+            msg += f" ({skipped_countries} already existed)"
+        if errors:
+            msg += f". Errors: {'; '.join(errors)}"
 
         return {
             "status": 200,
-            "message": f"Seeded {created_regions} regions and {created_countries} countries",
+            "message": msg,
             "created_regions": created_regions,
             "created_countries": created_countries,
         }

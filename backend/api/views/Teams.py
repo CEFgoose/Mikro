@@ -10,6 +10,7 @@ from flask import g, request
 
 from ..utils import requires_admin, requires_auth
 from ..database import Team, TeamUser, User, ProjectTeam, ProjectUser, Project, TeamTraining, Training, TeamChecklist, Checklist, Task
+from ..filters import resolve_filtered_user_ids
 
 
 class TeamAPI(MethodView):
@@ -58,11 +59,28 @@ class TeamAPI(MethodView):
 
     @requires_admin
     def fetch_teams(self):
-        """List all teams for the org with member counts."""
+        """List all teams for the org with member counts.
+
+        Supports optional filters in request body to narrow teams
+        to only those containing at least one matching member.
+        """
         if not g.user:
             return {"message": "Missing user info", "status": 304}
 
+        filters = request.json.get("filters") if request.json else None
+        filtered_user_ids = resolve_filtered_user_ids(filters, g.user.org_id)
+
         org_teams = Team.query.filter_by(org_id=g.user.org_id).all()
+
+        # If filters are active, restrict to teams with at least one matching member
+        if filtered_user_ids is not None:
+            matching_team_ids = {
+                tu.team_id
+                for tu in TeamUser.query.filter(
+                    TeamUser.user_id.in_(filtered_user_ids)
+                ).all()
+            }
+            org_teams = [t for t in org_teams if t.id in matching_team_ids]
 
         teams = []
         for team in org_teams:

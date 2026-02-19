@@ -4,13 +4,25 @@ import { useState, useEffect, useMemo, useCallback } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import dynamic from "next/dynamic";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  Modal,
+  Button,
+  Select,
+  Input,
+  useToastActions,
+} from "@/components/ui";
 import {
   useFetchUserProfile,
   useFetchUserStatsByDate,
   useFetchUserChangesets,
   useFetchUserActivityChart,
   useFetchUserTaskHistory,
+  useFetchCountries,
+  useAdminUpdateUserProfile,
 } from "@/hooks/useApi";
 import {
   ComposedChart,
@@ -131,6 +143,10 @@ export default function UserProfilePage() {
   const { mutate: fetchChangesets } = useFetchUserChangesets();
   const { mutate: fetchActivity } = useFetchUserActivityChart();
   const { mutate: fetchTaskHistory } = useFetchUserTaskHistory();
+  const { data: countriesData } = useFetchCountries();
+  const { mutate: updateProfile, loading: updateProfileLoading } =
+    useAdminUpdateUserProfile();
+  const toast = useToastActions();
 
   const [user, setUser] = useState<UserProfileData | null>(null);
   const [pageLoading, setPageLoading] = useState(true);
@@ -181,6 +197,11 @@ export default function UserProfilePage() {
   const [heatmapPoints, setHeatmapPoints] = useState<
     [number, number, number][]
   >([]);
+
+  // Location edit modal state
+  const [locationModalOpen, setLocationModalOpen] = useState(false);
+  const [editCountryId, setEditCountryId] = useState<string>("");
+  const [editTimezone, setEditTimezone] = useState<string>("");
 
   // Load profile on mount
   useEffect(() => {
@@ -317,6 +338,55 @@ export default function UserProfilePage() {
     URL.revokeObjectURL(url);
   };
 
+  const openLocationModal = useCallback(() => {
+    if (user) {
+      setEditCountryId(user.country_id ? String(user.country_id) : "");
+      setEditTimezone(user.timezone || "");
+      setLocationModalOpen(true);
+    }
+  }, [user]);
+
+  const handleCountryChange = useCallback(
+    (value: string) => {
+      setEditCountryId(value);
+      // Auto-fill timezone from the selected country's default
+      const countries = countriesData?.countries || [];
+      const selected = countries.find((c) => String(c.id) === value);
+      if (selected?.default_timezone) {
+        setEditTimezone(selected.default_timezone);
+      }
+    },
+    [countriesData]
+  );
+
+  const handleSaveLocation = useCallback(async () => {
+    try {
+      await updateProfile({
+        userId: userId,
+        countryId: editCountryId ? Number(editCountryId) : null,
+        timezone: editTimezone || null,
+      });
+      toast.success("Location updated successfully");
+      setLocationModalOpen(false);
+      // Refresh profile data
+      const res = await fetchProfile({ userId });
+      if (res?.user) setUser(res.user);
+    } catch {
+      toast.error("Failed to update location");
+    }
+  }, [userId, editCountryId, editTimezone, updateProfile, fetchProfile, toast]);
+
+  const countryOptions = useMemo(() => {
+    const countries = countriesData?.countries || [];
+    return [
+      { value: "", label: "No country" },
+      ...countries.map((c) => ({
+        value: String(c.id),
+        label: c.name,
+      })),
+    ];
+  }, [countriesData]);
+
   const initials = useMemo(() => {
     if (!user) return "?";
     const first = user.first_name?.[0] || "";
@@ -422,7 +492,57 @@ export default function UserProfilePage() {
                   <span className="text-gray-300">|</span>
                 )}
                 {locationParts && <span>{locationParts}</span>}
+                {(locationParts || user.region_name || user.timezone) && (
+                  <button
+                    onClick={openLocationModal}
+                    className="ml-1 text-muted-foreground hover:text-kaart-orange transition-colors"
+                    title="Edit location"
+                  >
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="14"
+                      height="14"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" />
+                      <path d="m15 5 4 4" />
+                    </svg>
+                  </button>
+                )}
+                {!locationParts && !user.region_name && !user.timezone && (
+                  <button
+                    onClick={openLocationModal}
+                    className="text-muted-foreground hover:text-kaart-orange transition-colors text-xs flex items-center gap-1"
+                    title="Set location"
+                  >
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="14"
+                      height="14"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" />
+                      <path d="m15 5 4 4" />
+                    </svg>
+                    Set location
+                  </button>
+                )}
               </div>
+              {(user.region_name || user.timezone) && (
+                <p className="text-sm text-muted-foreground mt-0.5">
+                  {[user.region_name, user.timezone].filter(Boolean).join(" · ")}
+                </p>
+              )}
               {user.joined && (
                 <p className="text-sm text-muted-foreground mt-1">
                   Joined: {formatDate(user.joined)}
@@ -1236,6 +1356,49 @@ export default function UserProfilePage() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Location Edit Modal */}
+      <Modal
+        isOpen={locationModalOpen}
+        onClose={() => setLocationModalOpen(false)}
+        title="Edit Location"
+        description="Update the user's country and timezone."
+        size="sm"
+        footer={
+          <>
+            <Button
+              variant="outline"
+              onClick={() => setLocationModalOpen(false)}
+              disabled={updateProfileLoading}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="primary"
+              onClick={handleSaveLocation}
+              isLoading={updateProfileLoading}
+            >
+              Save
+            </Button>
+          </>
+        }
+      >
+        <div className="space-y-4">
+          <Select
+            label="Country"
+            options={countryOptions}
+            value={editCountryId}
+            onChange={handleCountryChange}
+            placeholder="Select a country"
+          />
+          <Input
+            label="Timezone"
+            value={editTimezone}
+            onChange={(e) => setEditTimezone(e.target.value)}
+            placeholder="e.g. America/Bogota"
+          />
+        </div>
+      </Modal>
     </div>
   );
 }

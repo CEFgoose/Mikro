@@ -384,6 +384,10 @@ export interface UserProfileData {
   role: string;
   city: string;
   country: string;
+  country_id: number | null;
+  country_name: string | null;
+  region_name: string | null;
+  timezone: string | null;
   joined: string;
   total_tasks_mapped: number;
   total_tasks_validated: number;
