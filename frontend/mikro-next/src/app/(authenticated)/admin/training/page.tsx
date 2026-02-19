@@ -77,6 +77,7 @@ export default function AdminTrainingPage() {
   const mappingTrainings = trainings?.org_mapping_trainings ?? [];
   const validationTrainings = trainings?.org_validation_trainings ?? [];
   const projectTrainings = trainings?.org_project_trainings ?? [];
+  const allTrainings = [...mappingTrainings, ...validationTrainings, ...projectTrainings];
 
   const handleInputChange = (field: keyof TrainingFormData, value: string) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
@@ -366,12 +367,20 @@ export default function AdminTrainingPage() {
       </div>
 
       {/* Trainings Tabs */}
-      <Tabs defaultValue="mapping">
+      <Tabs defaultValue="all">
         <TabsList>
+          <TabsTrigger value="all">All ({allTrainings.length})</TabsTrigger>
           <TabsTrigger value="mapping">Mapping ({mappingTrainings.length})</TabsTrigger>
           <TabsTrigger value="validation">Validation ({validationTrainings.length})</TabsTrigger>
           <TabsTrigger value="project">Project Specific ({projectTrainings.length})</TabsTrigger>
         </TabsList>
+        <TabsContent value="all">
+          <Card>
+            <CardContent className="p-0">
+              <TrainingTable trainingList={allTrainings} />
+            </CardContent>
+          </Card>
+        </TabsContent>
         <TabsContent value="mapping">
           <Card>
             <CardContent className="p-0">
