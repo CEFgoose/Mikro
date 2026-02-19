@@ -75,7 +75,8 @@ export default function AdminRegionsPage() {
     } finally {
       setIsLoading(false);
     }
-  }, [toast]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     fetchRegions();
@@ -83,15 +84,12 @@ export default function AdminRegionsPage() {
 
   // When regions update, keep selectedRegion in sync
   useEffect(() => {
-    if (selectedRegion) {
-      const updated = regions.find((r) => r.id === selectedRegion.id);
-      if (updated) {
-        setSelectedRegion(updated);
-      } else {
-        setSelectedRegion(null);
-      }
-    }
-  }, [regions, selectedRegion]);
+    setSelectedRegion((prev) => {
+      if (!prev) return prev;
+      const updated = regions.find((r) => r.id === prev.id);
+      return updated ?? null;
+    });
+  }, [regions]);
 
   // Seed defaults
   const handleSeedDefaults = async () => {
