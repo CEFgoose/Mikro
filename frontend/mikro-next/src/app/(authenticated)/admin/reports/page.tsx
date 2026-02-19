@@ -455,7 +455,7 @@ function getDateRange(preset: "daily" | "weekly" | "monthly"): {
   end: string;
 } {
   const now = new Date();
-  const end = now.toISOString().split("T")[0];
+  const end = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
   let start: string;
   switch (preset) {
     case "daily":
@@ -464,13 +464,13 @@ function getDateRange(preset: "daily" | "weekly" | "monthly"): {
     case "weekly": {
       const d = new Date(now);
       d.setDate(d.getDate() - 7);
-      start = d.toISOString().split("T")[0];
+      start = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
       break;
     }
     case "monthly": {
       const d = new Date(now);
       d.setMonth(d.getMonth() - 1);
-      start = d.toISOString().split("T")[0];
+      start = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
       break;
     }
   }
@@ -551,13 +551,15 @@ export default function AdminReportsPage() {
 
     // Add comparison period if enabled
     if (compareEnabled) {
-      const start = new Date(startDate);
-      const end = new Date(endDate);
-      const periodMs = end.getTime() - start.getTime();
+      const start = new Date(startDate + "T00:00:00");
+      const end = new Date(endDate + "T00:00:00");
+      const oneDay = 86400000;
+      const periodMs = Math.max(end.getTime() - start.getTime(), oneDay);
       const compareEnd = new Date(start.getTime());
       const compareStart = new Date(start.getTime() - periodMs);
-      params.compareStartDate = compareStart.toISOString().split("T")[0];
-      params.compareEndDate = compareEnd.toISOString().split("T")[0];
+      const fmtDate = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+      params.compareStartDate = fmtDate(compareStart);
+      params.compareEndDate = fmtDate(compareEnd);
     }
 
     try {
@@ -706,15 +708,19 @@ export default function AdminReportsPage() {
                   const r = getDateRange(datePreset);
                   s = r.start; e = r.end;
                 }
-                const start = new Date(s);
-                const end = new Date(e);
-                const periodMs = end.getTime() - start.getTime();
+                const start = new Date(s + "T00:00:00");
+                const end = new Date(e + "T00:00:00");
+                const oneDay = 86400000;
+                const periodMs = Math.max(end.getTime() - start.getTime(), oneDay);
                 const cEnd = new Date(start.getTime());
                 const cStart = new Date(start.getTime() - periodMs);
                 const fmt = (d: Date) => d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+                const sameDay = periodMs <= oneDay;
                 return (
                   <span className="text-xs text-muted-foreground">
-                    vs {fmt(cStart)} – {fmt(cEnd)}
+                    {sameDay ? fmt(start) : `${fmt(start)} – ${fmt(end)}`}
+                    {" vs "}
+                    {sameDay ? fmt(cStart) : `${fmt(cStart)} – ${fmt(cEnd)}`}
                   </span>
                 );
               })()}
