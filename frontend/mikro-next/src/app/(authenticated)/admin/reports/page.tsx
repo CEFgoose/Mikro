@@ -15,9 +15,10 @@ import {
 import {
   useFetchEditingStats,
   useFetchTimekeepingStats,
-  useFetchTeams,
-  useUsersList,
+  useFetchFilterOptions,
 } from "@/hooks/useApi";
+import { useFilters } from "@/hooks";
+import { FilterBar } from "@/components/filters";
 import type {
   EditingStatsResponse,
   TimekeepingStatsResponse,
@@ -500,8 +501,6 @@ export default function AdminReportsPage() {
   >("monthly");
   const [customStart, setCustomStart] = useState("");
   const [customEnd, setCustomEnd] = useState("");
-  const [teamFilter, setTeamFilter] = useState<number | null>(null);
-  const [userFilter, setUserFilter] = useState<number | null>(null);
   const [compareEnabled, setCompareEnabled] = useState(false);
   const [snapshotTime, setSnapshotTime] = useState<string | null>(null);
   const [editingData, setEditingData] =
@@ -526,8 +525,8 @@ export default function AdminReportsPage() {
     loading: timekeepingLoading,
     error: timekeepingError,
   } = useFetchTimekeepingStats();
-  const { data: teamsData } = useFetchTeams();
-  const { data: usersData } = useUsersList();
+  const { activeFilters, setActiveFilters, filtersBody, clearFilters } = useFilters();
+  const { data: filterOptions, loading: filterOptionsLoading } = useFetchFilterOptions();
 
   // ── Data Fetching ────────────────────────────────────────
   const fetchData = useCallback(async () => {
@@ -545,8 +544,7 @@ export default function AdminReportsPage() {
     const params: Record<string, unknown> = {
       startDate,
       endDate,
-      teamId: teamFilter,
-      userId: userFilter,
+      filters: filtersBody,
     };
 
     // Add comparison period if enabled
@@ -583,8 +581,7 @@ export default function AdminReportsPage() {
     datePreset,
     customStart,
     customEnd,
-    teamFilter,
-    userFilter,
+    filtersBody,
     compareEnabled,
     activeTab,
     fetchEditing,
@@ -726,52 +723,24 @@ export default function AdminReportsPage() {
               })()}
             </div>
 
-            {/* Team filter */}
-            <div className="flex items-center gap-2 ml-auto">
-              <span className="text-sm text-muted-foreground">Team:</span>
-              <select
-                value={teamFilter ?? ""}
-                onChange={(e) => {
-                  const newTeamId = e.target.value ? Number(e.target.value) : null;
-                  setTeamFilter(newTeamId);
-                  // Reset user filter if user not in new team
-                  if (userFilter && newTeamId && teamsData?.teams) {
-                    // We can't easily check membership client-side without team member data,
-                    // so just reset user filter when team changes
-                    setUserFilter(null);
-                  }
-                }}
-                className="px-3 py-1.5 border border-input rounded-lg text-sm bg-background"
-              >
-                <option value="">All Teams</option>
-                {teamsData?.teams?.map((t) => (
-                  <option key={t.id} value={t.id}>
-                    {t.name}
-                  </option>
-                ))}
-              </select>
-
-              {/* User filter */}
-              <span className="text-sm text-muted-foreground ml-2">User:</span>
-              <select
-                value={userFilter ?? ""}
-                onChange={(e) =>
-                  setUserFilter(
-                    e.target.value ? Number(e.target.value) : null
-                  )
-                }
-                className="px-3 py-1.5 border border-input rounded-lg text-sm bg-background"
-              >
-                <option value="">All Users</option>
-                {usersData?.users
-                  ?.slice()
-                  .sort((a, b) => (a.name || "").localeCompare(b.name || ""))
-                  .map((u) => (
-                    <option key={u.id} value={u.id}>
-                      {u.name}
-                    </option>
-                  ))}
-              </select>
+            {/* Universal FilterBar */}
+            <div className="ml-auto">
+              <FilterBar
+                dimensions={filterOptions?.dimensions ? Object.entries(filterOptions.dimensions).map(([key, values]) => ({
+                  key,
+                  label: key.charAt(0).toUpperCase() + key.slice(1),
+                  options: Array.isArray(values)
+                    ? values.map((v) =>
+                        typeof v === 'string'
+                          ? { value: v, label: v }
+                          : { value: String(v.id ?? v.value ?? v.name), label: v.name }
+                      )
+                    : [],
+                })) : []}
+                activeFilters={activeFilters}
+                onChange={setActiveFilters}
+                loading={filterOptionsLoading}
+              />
             </div>
           </div>
         </CardContent>

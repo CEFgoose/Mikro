@@ -28,6 +28,9 @@ import type {
   UserTeamsResponse,
   EditingStatsResponse,
   TimekeepingStatsResponse,
+  FilterOptionsResponse,
+  RegionsResponse,
+  CountriesResponse,
 } from "@/types";
 
 /**
@@ -699,4 +702,18 @@ export function useFetchEditingStats() {
 
 export function useFetchTimekeepingStats() {
   return useApiMutation<TimekeepingStatsResponse>("/reports/fetch_timekeeping_stats");
+}
+
+// ─── Region & Filter hooks ──────────────────────────────────
+
+export function useFetchFilterOptions() {
+  return useApiCall<FilterOptionsResponse>("/region/fetch_filter_options");
+}
+
+export function useFetchRegions() {
+  return useApiCall<RegionsResponse>("/region/fetch_regions");
+}
+
+export function useFetchCountries() {
+  return useApiCall<CountriesResponse>("/region/fetch_countries");
 }

@@ -13,6 +13,9 @@ from sqlalchemy import (
     Column,
     String,
     DateTime,
+    Float,
+    ForeignKey,
+    Text,
     func,
     Integer,
     Boolean,
@@ -51,6 +54,15 @@ class User(ModelWithSoftDeleteAndCRUD, SurrogatePK):
     # Location
     city = Column(String(100), nullable=True)
     country = Column(String(100), nullable=True)
+
+    # Normalized location (FK to countries table)
+    country_id = db.Column(
+        db.Integer,
+        db.ForeignKey("countries.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
+    timezone = db.Column(db.String(50), nullable=True)  # e.g. "America/Bogota"
 
     # Role and organization
     role = Column(String(50), default="user")  # user, validator, admin
@@ -599,6 +611,55 @@ class TeamChecklist(CRUDMixin, SurrogatePK, db.Model):
         nullable=False,
         index=True,
     )
+
+
+class Region(CRUDMixin, SurrogatePK, db.Model):
+    """Geographic region grouping (e.g., Latin America, East Africa)."""
+
+    __tablename__ = "regions"
+
+    name = db.Column(db.String(100), nullable=False, unique=True)
+    org_id = db.Column(db.String(255), nullable=True)
+    created_at = db.Column(db.DateTime, default=func.now())
+
+    def __repr__(self):
+        return f"<Region {self.id}: {self.name}>"
+
+
+class Country(CRUDMixin, SurrogatePK, db.Model):
+    """Country belonging to a region, with default timezone."""
+
+    __tablename__ = "countries"
+
+    name = db.Column(db.String(100), nullable=False)
+    iso_code = db.Column(db.String(3), nullable=True, unique=True)
+    region_id = db.Column(
+        db.Integer,
+        db.ForeignKey("regions.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
+    default_timezone = db.Column(db.String(50), nullable=True)
+    org_id = db.Column(db.String(255), nullable=True)
+    created_at = db.Column(db.DateTime, default=func.now())
+
+    def __repr__(self):
+        return f"<Country {self.id}: {self.name}>"
+
+
+class UserCountry(CRUDMixin, SurrogatePK, db.Model):
+    """Association between users and countries (supports multiple countries per user)."""
+
+    __tablename__ = "user_countries"
+
+    user_id = db.Column(db.String(255), nullable=False, index=True)
+    country_id = db.Column(
+        db.Integer,
+        db.ForeignKey("countries.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    is_primary = db.Column(db.Boolean, default=True, server_default="True")
 
 
 class TimeEntry(CRUDMixin, db.Model):

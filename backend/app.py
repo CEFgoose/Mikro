@@ -120,6 +120,7 @@ def _register_views(app):
         TimeTrackingAPI,
         TeamAPI,
         ReportsAPI,
+        RegionAPI,
     )
 
     # Authentication
@@ -161,6 +162,9 @@ def _register_views(app):
 
     # Reports
     app.add_url_rule("/api/reports/<path>", view_func=ReportsAPI.as_view("reports"))
+
+    # Regions & Countries
+    app.add_url_rule("/api/region/<path>", view_func=RegionAPI.as_view("region"))
 
 
 # Create application instance for gunicorn

@@ -11,6 +11,7 @@ from .OSMAuth import OSMAuthAPI
 from .TimeTracking import TimeTrackingAPI
 from .Teams import TeamAPI
 from .Reports import ReportsAPI
+from .Regions import RegionAPI
 
 __all__ = {
     "UserAPI",
@@ -24,4 +25,5 @@ __all__ = {
     "TimeTrackingAPI",
     "TeamAPI",
     "ReportsAPI",
+    "RegionAPI",
 }

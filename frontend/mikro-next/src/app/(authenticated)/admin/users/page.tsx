@@ -3,6 +3,8 @@
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle, Button } from "@/components/ui";
+import { FilterBar } from "@/components/filters";
+import { useFilters, useFetchFilterOptions } from "@/hooks";
 import { User } from "@/types";
 
 interface CsvUser {
@@ -27,6 +29,8 @@ export default function AdminUsersPage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [showPurgeModal, setShowPurgeModal] = useState(false);
   const [isPurging, setIsPurging] = useState(false);
+  const { activeFilters, setActiveFilters, filtersBody, clearFilters } = useFilters();
+  const { data: filterOptions, loading: filterOptionsLoading } = useFetchFilterOptions();
 
   useEffect(() => {
     fetchUsers();
@@ -36,6 +40,8 @@ export default function AdminUsersPage() {
     try {
       const response = await fetch("/backend/user/fetch_users", {
         method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(filtersBody ? { filters: filtersBody } : {}),
       });
       if (response.ok) {
         const data = await response.json();
@@ -47,6 +53,10 @@ export default function AdminUsersPage() {
       setIsLoading(false);
     }
   };
+
+  useEffect(() => {
+    if (!isLoading) fetchUsers();
+  }, [filtersBody]);
 
   const handleSelectUser = (userId: string) => {
     setSelectedUser(selectedUser === userId ? null : userId);
@@ -293,6 +303,24 @@ export default function AdminUsersPage() {
         </div>
       </div>
 
+      {/* Filters */}
+      <FilterBar
+        dimensions={filterOptions?.dimensions ? Object.entries(filterOptions.dimensions).map(([key, values]) => ({
+          key,
+          label: key.charAt(0).toUpperCase() + key.slice(1),
+          options: Array.isArray(values)
+            ? values.map((v) =>
+                typeof v === 'string'
+                  ? { value: v, label: v }
+                  : { value: String(v.id ?? v.name), label: v.name }
+              )
+            : [],
+        })) : []}
+        activeFilters={activeFilters}
+        onChange={setActiveFilters}
+        loading={filterOptionsLoading}
+      />
+
       {/* Users Table */}
       <Card>
         <CardContent className="p-0">
@@ -302,6 +330,9 @@ export default function AdminUsersPage() {
                 <tr>
                   <th className="px-6 py-4 text-left text-sm font-semibold text-foreground">Name</th>
                   <th className="px-6 py-4 text-left text-sm font-semibold text-foreground">Role</th>
+                  <th className="px-6 py-4 text-left text-sm font-semibold text-foreground">Country</th>
+                  <th className="px-6 py-4 text-left text-sm font-semibold text-foreground">Region</th>
+                  <th className="px-6 py-4 text-left text-sm font-semibold text-foreground">Timezone</th>
                   <th className="px-6 py-4 text-left text-sm font-semibold text-foreground">Projects</th>
                   <th className="px-6 py-4 text-left text-sm font-semibold text-foreground">Mapped</th>
                   <th className="px-6 py-4 text-left text-sm font-semibold text-foreground">Validated</th>
@@ -341,6 +372,9 @@ export default function AdminUsersPage() {
                         {user.role}
                       </span>
                     </td>
+                    <td className="px-6 py-5 text-foreground">{user.country_name || "\u2014"}</td>
+                    <td className="px-6 py-5 text-foreground">{user.region_name || "\u2014"}</td>
+                    <td className="px-6 py-5 text-foreground">{user.timezone || "\u2014"}</td>
                     <td className="px-6 py-5 text-foreground">{user.assigned_projects ?? 0}</td>
                     <td className="px-6 py-5 text-foreground">{user.total_tasks_mapped ?? 0}</td>
                     <td className="px-6 py-5 text-foreground">{user.total_tasks_validated ?? 0}</td>
@@ -355,7 +389,7 @@ export default function AdminUsersPage() {
                 ))}
                 {users.length === 0 && (
                   <tr>
-                    <td colSpan={8} className="px-4 py-8 text-center text-muted-foreground">
+                    <td colSpan={11} className="px-4 py-8 text-center text-muted-foreground">
                       No users found
                     </td>
                   </tr>

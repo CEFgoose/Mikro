@@ -24,8 +24,49 @@ from ..database import (
     UserChecklist,
     UserChecklistItem,
     TrainingCompleted,
+    Country,
+    Region,
+    UserCountry,
     db,
 )
+from ..filters import resolve_filtered_user_ids
+
+
+def _auto_assign_country(user, country_text):
+    """
+    Auto-assign a user to a Country record based on free-text country name.
+    Sets user.country_id, user.timezone (from country default), and creates UserCountry.
+    """
+    if not country_text:
+        return
+
+    # Try exact match first, then case-insensitive
+    country_obj = Country.query.filter(
+        db.func.lower(Country.name) == country_text.strip().lower()
+    ).first()
+
+    if not country_obj:
+        # Try matching by ISO code
+        upper = country_text.strip().upper()
+        if len(upper) <= 3:
+            country_obj = Country.query.filter_by(iso_code=upper).first()
+
+    if not country_obj:
+        return
+
+    updates = {"country_id": country_obj.id}
+    if country_obj.default_timezone and not user.timezone:
+        updates["timezone"] = country_obj.default_timezone
+    user.update(**updates)
+
+    # Create UserCountry record if not exists
+    existing = UserCountry.query.filter_by(
+        user_id=user.id, country_id=country_obj.id
+    ).first()
+    if not existing:
+        UserCountry.create(
+            user_id=user.id, country_id=country_obj.id, is_primary=True
+        )
 
 
 class UserAPI(MethodView):
@@ -299,6 +340,8 @@ class UserAPI(MethodView):
             city=city,
             country=country,
         )
+        # Auto-assign country → country_id, timezone, UserCountry
+        _auto_assign_country(g.user, country)
         # Return success message and status code
         return {"message": "User Updated", "status": 200}
 
@@ -355,8 +398,21 @@ class UserAPI(MethodView):
             return_obj["message"] = "User not found"
             return_obj["status"] = 304
             return return_obj
-        # Get all the users from the database that belong to the same organization as the current user  # noqa: E501
-        users_in_org = User.query.filter_by(org_id=g.user.org_id).all()
+
+        # Support universal filter system
+        filters = request.json.get("filters") if request.json else None
+        filtered_ids = resolve_filtered_user_ids(filters, g.user.org_id) if filters else None
+
+        # Get all the users from the database that belong to the same organization
+        users_query = User.query.filter_by(org_id=g.user.org_id)
+        if filtered_ids is not None:
+            users_query = users_query.filter(User.id.in_(filtered_ids))
+        users_in_org = users_query.all()
+
+        # Build country/region lookup caches
+        country_cache = {}
+        region_cache = {}
+
         # Initialize an empty list to store information about the users
         org_users = []
         # Loop over each user and extract relevant information
@@ -369,6 +425,25 @@ class UserAPI(MethodView):
                 assigned_projects_count = len(user.assigned_projects)
             else:
                 assigned_projects_count = 0
+
+            # Resolve country and region names
+            country_name = None
+            region_name = None
+            if user.country_id:
+                if user.country_id not in country_cache:
+                    c = Country.query.get(user.country_id)
+                    country_cache[user.country_id] = c
+                country_obj = country_cache[user.country_id]
+                if country_obj:
+                    country_name = country_obj.name
+                    if country_obj.region_id:
+                        if country_obj.region_id not in region_cache:
+                            r = Region.query.get(country_obj.region_id)
+                            region_cache[country_obj.region_id] = r
+                        region_obj = region_cache[country_obj.region_id]
+                        if region_obj:
+                            region_name = region_obj.name
+
             # Append the user information to the org_users list
             org_users.append(
                 {
@@ -385,6 +460,9 @@ class UserAPI(MethodView):
                     "total_tasks_invalidated": user.total_tasks_invalidated,
                     "requesting_payment": user.requesting_payment,
                     "assigned_projects": assigned_projects_count,
+                    "country_name": country_name,
+                    "region_name": region_name,
+                    "timezone": user.timezone,
                 }
             )
         # Add the list of users to the return_obj dictionary
@@ -479,6 +557,7 @@ class UserAPI(MethodView):
             "email",
             "payment_email",
         ]
+        country_changed = False
         for field in fields:
             value = request.json.get(field)
             if (
@@ -486,8 +565,13 @@ class UserAPI(MethodView):
                 and value != ""
                 and value != getattr(g.user, field)
             ):
+                if field == "country":
+                    country_changed = True
                 setattr(g.user, field, value)
                 g.user.update()
+        # Auto-assign country when country text changes
+        if country_changed:
+            _auto_assign_country(g.user, g.user.country)
         # Return success response
         response = {"message": "User details updated", "status": 200}
         return response
@@ -830,6 +914,8 @@ class UserAPI(MethodView):
                 "role": user.role,
                 "city": user.city,
                 "country": user.country,
+                "country_id": user.country_id,
+                "timezone": user.timezone,
                 "joined": user.create_time.isoformat() if user.create_time else None,
                 # Task stats
                 "total_tasks_mapped": user.total_tasks_mapped or 0,

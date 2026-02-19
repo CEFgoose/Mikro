@@ -27,6 +27,9 @@ export interface User {
   joined?: string;
   requesting_payment?: boolean;
   validated_tasks_amounts?: number;
+  country_name?: string;
+  region_name?: string;
+  timezone?: string;
 }
 
 export interface UserListItem extends User {
@@ -787,5 +790,50 @@ export interface TaskHistoryEntry {
 
 export interface TaskHistoryResponse {
   tasks: TaskHistoryEntry[];
+  status: number;
+}
+
+// ─── Region & Filter Types ──────────────────────────────────
+
+export interface Region {
+  id: number;
+  name: string;
+  org_id: string | null;
+  created_at: string;
+}
+
+export interface Country {
+  id: number;
+  name: string;
+  iso_code: string | null;
+  region_id: number | null;
+  region_name?: string;
+  default_timezone: string | null;
+  org_id: string | null;
+}
+
+export interface FilterDimension {
+  key: string;
+  label: string;
+  options: Array<{ value: string; label: string }>;
+}
+
+export interface ActiveFilter {
+  key: string;
+  values: string[];
+}
+
+export interface FilterOptionsResponse {
+  dimensions: Record<string, Array<string | { id?: number; name: string; value?: string }>>;
+  status: number;
+}
+
+export interface RegionsResponse {
+  regions: Array<Region & { countries: Country[] }>;
+  status: number;
+}
+
+export interface CountriesResponse {
+  countries: Country[];
   status: number;
 }

@@ -24,6 +24,9 @@ from .core import (
     ProjectTeam,
     TeamTraining,
     TeamChecklist,
+    Region,
+    Country,
+    UserCountry,
     TimeEntry,
     SyncJob,
 )
@@ -54,6 +57,9 @@ __all__ = [
     "ProjectTeam",
     "TeamTraining",
     "TeamChecklist",
+    "Region",
+    "Country",
+    "UserCountry",
     "TimeEntry",
     "SyncJob",
 ]

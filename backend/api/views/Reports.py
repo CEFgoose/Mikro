@@ -12,6 +12,7 @@ from sqlalchemy import func
 
 from ..utils import requires_admin
 from ..database import db, Task, Project, User, TimeEntry, TeamUser
+from ..filters import resolve_filtered_user_ids, resolve_filtered_osm_usernames
 
 
 class ReportsAPI(MethodView):
@@ -49,9 +50,12 @@ class ReportsAPI(MethodView):
         except ValueError:
             end_date = datetime.strptime(end_date_str, "%Y-%m-%d") + timedelta(days=1)
 
-        # User/team filter → resolve to OSM usernames
+        # Universal filter system (backward compat with teamId/userId)
+        filters = request.json.get("filters")
         osm_usernames = None
-        if user_id:
+        if filters:
+            osm_usernames = resolve_filtered_osm_usernames(filters, g.user.org_id)
+        elif user_id:
             user_obj = User.query.get(user_id)
             if user_obj and user_obj.osm_username:
                 osm_usernames = [user_obj.osm_username]
@@ -378,15 +382,21 @@ class ReportsAPI(MethodView):
         except ValueError:
             end_date = datetime.strptime(end_date_str, "%Y-%m-%d") + timedelta(days=1)
 
-        # Build base filter
+        # Build base filter — universal filter system (backward compat with teamId/userId)
         base_filter = [
             TimeEntry.org_id == g.user.org_id,
             TimeEntry.status == "completed",
             TimeEntry.clock_in >= start_date,
             TimeEntry.clock_in < end_date,
         ]
+        filters = request.json.get("filters")
         member_ids = None
-        if user_id:
+        if filters:
+            filtered_ids = resolve_filtered_user_ids(filters, g.user.org_id)
+            if filtered_ids is not None:
+                member_ids = filtered_ids
+                base_filter.append(TimeEntry.user_id.in_(member_ids))
+        elif user_id:
             base_filter.append(TimeEntry.user_id == user_id)
         elif team_id:
             member_ids = [
@@ -425,10 +435,15 @@ class ReportsAPI(MethodView):
             TimeEntry.clock_in >= prior_start,
             TimeEntry.clock_in < prior_end,
         ]
-        if user_id:
-            prior_filter.append(TimeEntry.user_id == user_id)
-        elif team_id and member_ids is not None:
+        if member_ids is not None:
             prior_filter.append(TimeEntry.user_id.in_(member_ids))
+        elif user_id:
+            prior_filter.append(TimeEntry.user_id == user_id)
+        elif team_id:
+            prior_member_ids = [
+                tu.user_id for tu in TeamUser.query.filter_by(team_id=team_id).all()
+            ]
+            prior_filter.append(TimeEntry.user_id.in_(prior_member_ids))
         prior_seconds = (
             db.session.query(func.sum(TimeEntry.duration_seconds))
             .filter(*prior_filter)
@@ -567,10 +582,15 @@ class ReportsAPI(MethodView):
                 TimeEntry.clock_in >= cmp_start,
                 TimeEntry.clock_in < cmp_end,
             ]
-            if user_id:
-                cmp_filter.append(TimeEntry.user_id == user_id)
-            elif team_id and member_ids is not None:
+            if member_ids is not None:
                 cmp_filter.append(TimeEntry.user_id.in_(member_ids))
+            elif user_id:
+                cmp_filter.append(TimeEntry.user_id == user_id)
+            elif team_id:
+                cmp_member_ids = [
+                    tu.user_id for tu in TeamUser.query.filter_by(team_id=team_id).all()
+                ]
+                cmp_filter.append(TimeEntry.user_id.in_(cmp_member_ids))
 
             cmp_summary = (
                 db.session.query(
