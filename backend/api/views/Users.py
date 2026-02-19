@@ -149,7 +149,7 @@ class UserAPI(MethodView):
                     user_payload = {
                         "email": email,
                         "connection": "Username-Password-Authentication",
-                        "email_verified": False,
+                        "email_verified": True,
                         "password": temp_password,
                         "name": name or email.split("@")[0],
                         "given_name": first_name,
