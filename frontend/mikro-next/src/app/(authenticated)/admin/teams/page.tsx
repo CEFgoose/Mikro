@@ -292,7 +292,7 @@ export default function AdminTeamsPage() {
     c.name?.toLowerCase().includes(checklistsSearch.toLowerCase())
   );
 
-  if (loading) {
+  if (loading && !teamsData) {
     return (
       <div className="space-y-6">
         <div className="flex justify-between items-center">

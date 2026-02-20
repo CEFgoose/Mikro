@@ -152,6 +152,7 @@ export function FilterBar({
                   }
                   placeholder={`Select ${dim.label.toLowerCase()}...`}
                   searchable
+                  autoOpen
                   className="w-full"
                 />
               </div>

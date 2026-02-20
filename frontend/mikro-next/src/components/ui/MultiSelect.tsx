@@ -17,6 +17,7 @@ export interface MultiSelectProps {
   className?: string;
   label?: string;
   searchable?: boolean;
+  autoOpen?: boolean;
 }
 
 export function MultiSelect({
@@ -28,8 +29,9 @@ export function MultiSelect({
   className,
   label,
   searchable = true,
+  autoOpen = false,
 }: MultiSelectProps) {
-  const [isOpen, setIsOpen] = useState(false);
+  const [isOpen, setIsOpen] = useState(autoOpen);
   const [search, setSearch] = useState("");
   const containerRef = useRef<HTMLDivElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);

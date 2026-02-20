@@ -388,7 +388,7 @@ export default function AdminProjectsPage() {
     </Table>
   );
 
-  if (loading) {
+  if (loading && !projects) {
     return (
       <div className="space-y-6">
         <div className="flex justify-between items-center">

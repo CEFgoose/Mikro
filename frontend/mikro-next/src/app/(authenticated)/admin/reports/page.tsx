@@ -760,7 +760,7 @@ export default function AdminReportsPage() {
 
         {/* ═══════ EDITING TAB ═══════ */}
         <TabsContent value="editing">
-          {editingLoading ? (
+          {editingLoading && !editingData ? (
             <LoadingSpinner />
           ) : editingError ? (
             <Card>
@@ -1382,7 +1382,7 @@ export default function AdminReportsPage() {
 
         {/* ═══════ TIMEKEEPING TAB ═══════ */}
         <TabsContent value="timekeeping">
-          {timekeepingLoading ? (
+          {timekeepingLoading && !timekeepingData ? (
             <LoadingSpinner />
           ) : timekeepingError ? (
             <Card>
