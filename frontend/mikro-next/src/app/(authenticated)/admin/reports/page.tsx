@@ -16,12 +16,14 @@ import {
   useFetchEditingStats,
   useFetchTimekeepingStats,
   useFetchFilterOptions,
+  useFetchChangesetHeatmap,
 } from "@/hooks/useApi";
 import { useFilters } from "@/hooks";
 import { FilterBar } from "@/components/filters";
 import type {
   EditingStatsResponse,
   TimekeepingStatsResponse,
+  ChangesetHeatmapResponse,
 } from "@/types";
 import {
   BarChart,
@@ -38,6 +40,16 @@ import {
   PieChart,
   Pie,
 } from "recharts";
+import dynamic from "next/dynamic";
+
+const MappingHeatmap = dynamic(() => import("@/components/MappingHeatmap"), {
+  ssr: false,
+  loading: () => (
+    <div className="w-full h-48 bg-muted rounded-lg animate-pulse flex items-center justify-center">
+      <p className="text-sm text-muted-foreground">Loading map...</p>
+    </div>
+  ),
+});
 
 // ─── Color Constants ─────────────────────────────────────────
 
@@ -513,6 +525,9 @@ export default function AdminReportsPage() {
   const [expandedEvents, setExpandedEvents] = useState<Set<number>>(
     new Set()
   );
+  const [heatmapPoints, setHeatmapPoints] = useState<[number, number, number][]>([]);
+  const [heatmapLoading, setHeatmapLoading] = useState(false);
+  const [heatmapSummary, setHeatmapSummary] = useState<{ totalChangesets: number; totalChanges: number; usersWithData: number } | null>(null);
 
   // ── Hooks ────────────────────────────────────────────────
   const {
@@ -527,6 +542,7 @@ export default function AdminReportsPage() {
   } = useFetchTimekeepingStats();
   const { activeFilters, setActiveFilters, filtersBody, clearFilters } = useFilters();
   const { data: filterOptions, loading: filterOptionsLoading } = useFetchFilterOptions();
+  const { mutate: fetchHeatmap } = useFetchChangesetHeatmap();
 
   // ── Data Fetching ────────────────────────────────────────
   const fetchData = useCallback(async () => {
@@ -567,6 +583,20 @@ export default function AdminReportsPage() {
           setEditingData(res);
           setSnapshotTime(res.snapshot_timestamp);
         }
+
+        // Fetch heatmap data (non-blocking — runs alongside editing stats)
+        setHeatmapLoading(true);
+        fetchHeatmap(params)
+          .then((heatRes) => {
+            if (heatRes?.status === 200) {
+              setHeatmapPoints(heatRes.heatmapPoints || []);
+              setHeatmapSummary(heatRes.summary || null);
+            }
+          })
+          .catch(() => {
+            // Heatmap failure shouldn't affect editing stats
+          })
+          .finally(() => setHeatmapLoading(false));
       } else if (activeTab === "timekeeping") {
         const res = await fetchTimekeeping(params);
         if (res?.status === 200) {
@@ -586,6 +616,7 @@ export default function AdminReportsPage() {
     activeTab,
     fetchEditing,
     fetchTimekeeping,
+    fetchHeatmap,
   ]);
 
   useEffect(() => {
@@ -820,34 +851,31 @@ export default function AdminReportsPage() {
                   </CardContent>
                 </Card>
 
-                {/* Changeset Heatmap Placeholder */}
                 <Card>
                   <CardHeader className="pb-0">
-                    <CardTitle className="text-base">
-                      Map of changeset centroids
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="flex items-center justify-center">
-                    <div className="w-full h-48 bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg flex items-center justify-center border border-blue-200">
-                      <div className="text-center">
-                        <svg
-                          className="w-12 h-12 text-blue-300 mx-auto mb-2"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={1.5}
-                            d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                          />
-                        </svg>
-                        <p className="text-sm text-blue-400">
-                          Heatmap — pending OSM data integration
-                        </p>
-                      </div>
+                    <div className="flex items-center justify-between">
+                      <CardTitle className="text-base">
+                        Map of changeset centroids
+                      </CardTitle>
+                      {heatmapSummary && !heatmapLoading && (
+                        <span className="text-xs text-muted-foreground">
+                          {heatmapSummary.usersWithData} users &middot;{" "}
+                          {heatmapSummary.totalChangesets.toLocaleString()} changesets
+                        </span>
+                      )}
                     </div>
+                  </CardHeader>
+                  <CardContent>
+                    {heatmapLoading ? (
+                      <div className="w-full h-48 flex items-center justify-center gap-2">
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-kaart-orange" />
+                        <span className="text-sm text-muted-foreground">
+                          Fetching changesets from OSM...
+                        </span>
+                      </div>
+                    ) : (
+                      <MappingHeatmap points={heatmapPoints} height="200px" />
+                    )}
                   </CardContent>
                 </Card>
 

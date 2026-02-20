@@ -5,8 +5,12 @@ Reports API endpoints for Mikro.
 Handles editing statistics and timekeeping reports for admin dashboards.
 """
 
+import xml.etree.ElementTree as ET
+from concurrent.futures import ThreadPoolExecutor, as_completed
+
+import requests as http_requests
 from flask.views import MethodView
-from flask import g, request
+from flask import g, request, current_app
 from datetime import datetime, timedelta
 from sqlalchemy import func
 
@@ -23,6 +27,8 @@ class ReportsAPI(MethodView):
             return self.fetch_editing_stats()
         elif path == "fetch_timekeeping_stats":
             return self.fetch_timekeeping_stats()
+        elif path == "fetch_changeset_heatmap":
+            return self.fetch_changeset_heatmap()
         return {"message": "Unknown path", "status": 404}
 
     @requires_admin
@@ -637,4 +643,139 @@ class ReportsAPI(MethodView):
             "weekly_activity": weekly_activity,
             "user_breakdown": user_breakdown,
             "comparison": comparison,
+        }
+
+    @requires_admin
+    def fetch_changeset_heatmap(self):
+        """Fetch aggregated changeset centroids for the org heatmap."""
+        if not g.user:
+            return {"message": "Missing user info", "status": 304}
+
+        start_date_str = request.json.get("startDate")
+        end_date_str = request.json.get("endDate")
+
+        if not start_date_str or not end_date_str:
+            return {"message": "startDate and endDate required", "status": 400}
+
+        try:
+            start_date = datetime.strptime(start_date_str, "%Y-%m-%dT%H:%M:%S")
+        except ValueError:
+            start_date = datetime.strptime(start_date_str, "%Y-%m-%d")
+        try:
+            end_date = datetime.strptime(end_date_str, "%Y-%m-%dT%H:%M:%S")
+        except ValueError:
+            end_date = datetime.strptime(end_date_str, "%Y-%m-%d") + timedelta(days=1)
+
+        # Get OSM usernames of mappers active in this period
+        active_mappers_q = (
+            db.session.query(Task.mapped_by)
+            .filter(
+                Task.org_id == g.user.org_id,
+                Task.mapped == True,
+                Task.date_mapped >= start_date,
+                Task.date_mapped < end_date,
+                Task.mapped_by != None,
+            )
+            .distinct()
+        )
+
+        # Apply filters if provided
+        filters = request.json.get("filters")
+        if filters:
+            filtered_usernames = resolve_filtered_osm_usernames(
+                filters, g.user.org_id
+            )
+            if filtered_usernames is not None:
+                active_mappers_q = active_mappers_q.filter(
+                    Task.mapped_by.in_(filtered_usernames)
+                )
+
+        osm_usernames = [row[0] for row in active_mappers_q.all()]
+
+        if not osm_usernames:
+            return {
+                "status": 200,
+                "heatmapPoints": [],
+                "summary": {
+                    "totalChangesets": 0,
+                    "totalChanges": 0,
+                    "usersWithData": 0,
+                },
+            }
+
+        # Fetch changesets from OSM API for each username concurrently
+        def _fetch_user_heatmap(username):
+            """Fetch changeset list for one user and extract centroids."""
+            osm_url = "https://api.openstreetmap.org/api/0.6/changesets"
+            params = {
+                "display_name": username,
+                "time": f"{start_date_str},{end_date_str}",
+                "closed": "true",
+            }
+            try:
+                resp = http_requests.get(osm_url, params=params, timeout=30)
+                if not resp.ok:
+                    current_app.logger.warning(
+                        f"OSM API error for {username}: {resp.status_code}"
+                    )
+                    return username, [], 0, 0
+            except http_requests.RequestException as e:
+                current_app.logger.warning(
+                    f"OSM API request failed for {username}: {e}"
+                )
+                return username, [], 0, 0
+
+            try:
+                root = ET.fromstring(resp.text)
+            except ET.ParseError:
+                current_app.logger.warning(
+                    f"Failed to parse OSM XML for {username}"
+                )
+                return username, [], 0, 0
+
+            points = []
+            cs_count = 0
+            changes_total = 0
+            for cs in root.findall("changeset"):
+                cs_count += 1
+                changes = int(cs.get("changes_count", 0))
+                changes_total += changes
+
+                min_lat = cs.get("min_lat")
+                max_lat = cs.get("max_lat")
+                min_lon = cs.get("min_lon")
+                max_lon = cs.get("max_lon")
+                if min_lat and max_lat and min_lon and max_lon:
+                    lat = (float(min_lat) + float(max_lat)) / 2
+                    lon = (float(min_lon) + float(max_lon)) / 2
+                    points.append([lat, lon, max(changes, 1)])
+
+            return username, points, cs_count, changes_total
+
+        all_points = []
+        total_changesets = 0
+        total_changes = 0
+        users_with_data = 0
+
+        with ThreadPoolExecutor(max_workers=5) as executor:
+            futures = {
+                executor.submit(_fetch_user_heatmap, un): un
+                for un in osm_usernames
+            }
+            for future in as_completed(futures):
+                username, points, cs_count, changes = future.result()
+                if points:
+                    all_points.extend(points)
+                    users_with_data += 1
+                total_changesets += cs_count
+                total_changes += changes
+
+        return {
+            "status": 200,
+            "heatmapPoints": all_points,
+            "summary": {
+                "totalChangesets": total_changesets,
+                "totalChanges": total_changes,
+                "usersWithData": users_with_data,
+            },
         }

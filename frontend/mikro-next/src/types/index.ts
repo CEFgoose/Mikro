@@ -685,6 +685,16 @@ export interface TimekeepingStatsResponse {
   } | null;
 }
 
+export interface ChangesetHeatmapResponse {
+  status: number;
+  heatmapPoints: [number, number, number][];
+  summary: {
+    totalChangesets: number;
+    totalChanges: number;
+    usersWithData: number;
+  };
+}
+
 // API Response types
 export interface ApiResponse<T = unknown> {
   data?: T;

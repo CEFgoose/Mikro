@@ -28,6 +28,7 @@ import type {
   UserTeamsResponse,
   EditingStatsResponse,
   TimekeepingStatsResponse,
+  ChangesetHeatmapResponse,
   FilterOptionsResponse,
   RegionsResponse,
   CountriesResponse,
@@ -707,6 +708,10 @@ export function useFetchEditingStats() {
 
 export function useFetchTimekeepingStats() {
   return useApiMutation<TimekeepingStatsResponse>("/reports/fetch_timekeeping_stats");
+}
+
+export function useFetchChangesetHeatmap() {
+  return useApiMutation<ChangesetHeatmapResponse>("/reports/fetch_changeset_heatmap");
 }
 
 // ─── Region & Filter hooks ──────────────────────────────────
