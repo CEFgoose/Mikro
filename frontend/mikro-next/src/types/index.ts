@@ -663,6 +663,8 @@ export interface TimekeepingStatsResponse {
     changes_per_changeset: number;
     changes_per_hour: number;
   }>;
+  weekly_category_hours: Array<Record<string, string | number>>;
+  weekly_category_names: string[];
   user_breakdown: Array<{
     user_id: string;
     user_name: string;

@@ -633,6 +633,34 @@ class ReportsAPI(MethodView):
                 },
             }
 
+        # --- Weekly hours by category (for stacked bar chart) ---
+        weekly_cat_results = (
+            db.session.query(
+                func.date_trunc("week", TimeEntry.clock_in).label("week"),
+                TimeEntry.category,
+                func.sum(TimeEntry.duration_seconds).label("seconds"),
+            )
+            .filter(*base_filter)
+            .group_by("week", TimeEntry.category)
+            .order_by("week")
+            .all()
+        )
+
+        # Pivot into [{week, Cat1: hours, Cat2: hours, ...}]
+        weekly_cat_map = {}
+        all_cats = set()
+        for row in weekly_cat_results:
+            week_key = row.week.strftime("%Y-%m-%d")
+            cat = row.category or "other"
+            all_cats.add(cat)
+            if week_key not in weekly_cat_map:
+                weekly_cat_map[week_key] = {"week": week_key}
+            weekly_cat_map[week_key][cat] = round((row.seconds or 0) / 3600, 1)
+
+        weekly_category_hours = sorted(
+            weekly_cat_map.values(), key=lambda x: x["week"]
+        )
+
         return {
             "status": 200,
             "snapshot_timestamp": datetime.utcnow().isoformat() + "Z",
@@ -647,6 +675,8 @@ class ReportsAPI(MethodView):
             },
             "hours_by_category": hours_by_category,
             "weekly_activity": weekly_activity,
+            "weekly_category_hours": weekly_category_hours,
+            "weekly_category_names": sorted(all_cats),
             "user_breakdown": user_breakdown,
             "comparison": comparison,
         }

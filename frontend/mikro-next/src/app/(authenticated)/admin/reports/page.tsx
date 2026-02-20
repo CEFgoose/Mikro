@@ -144,68 +144,6 @@ const MOCK_OVERWRITES = [
   },
 ];
 
-const MOCK_WEEKLY_TASK_HOURS = [
-  {
-    week: "1/19",
-    Management: 50,
-    "Kaart Training / Meetings": 120,
-    "Kaart QC": 80,
-    "Imagery Capture": 30,
-    "Project Creation / Team Planning": 60,
-    "Community QC": 40,
-    "Wiki / OSM Documentation": 20,
-    "Community Events / Trainings / Meetings": 350,
-    "Community Outreach - General": 250,
-  },
-  {
-    week: "1/26",
-    Management: 60,
-    "Kaart Training / Meetings": 100,
-    "Kaart QC": 90,
-    "Imagery Capture": 25,
-    "Project Creation / Team Planning": 50,
-    "Community QC": 35,
-    "Wiki / OSM Documentation": 15,
-    "Community Events / Trainings / Meetings": 400,
-    "Community Outreach - General": 225,
-  },
-  {
-    week: "2/2",
-    Management: 55,
-    "Kaart Training / Meetings": 130,
-    "Kaart QC": 70,
-    "Imagery Capture": 35,
-    "Project Creation / Team Planning": 45,
-    "Community QC": 50,
-    "Wiki / OSM Documentation": 25,
-    "Community Events / Trainings / Meetings": 500,
-    "Community Outreach - General": 290,
-  },
-  {
-    week: "2/9",
-    Management: 45,
-    "Kaart Training / Meetings": 110,
-    "Kaart QC": 85,
-    "Imagery Capture": 20,
-    "Project Creation / Team Planning": 55,
-    "Community QC": 45,
-    "Wiki / OSM Documentation": 30,
-    "Community Events / Trainings / Meetings": 375,
-    "Community Outreach - General": 235,
-  },
-];
-
-const WEEKLY_TASK_CATEGORIES = [
-  "Management",
-  "Kaart Training / Meetings",
-  "Kaart QC",
-  "Imagery Capture",
-  "Project Creation / Team Planning",
-  "Community QC",
-  "Wiki / OSM Documentation",
-  "Community Events / Trainings / Meetings",
-  "Community Outreach - General",
-];
 
 const MOCK_COMMUNITY_OUTREACH = [
   {
@@ -1746,50 +1684,56 @@ export default function AdminReportsPage() {
                   </CardContent>
                 </Card>
 
-                {/* Weekly Task Hours — Stacked BarChart (mock) */}
+                {/* Weekly Task Hours — Stacked BarChart */}
                 <Card>
                   <CardHeader className="pb-0">
                     <CardTitle className="text-base">
-                      Weekly Task Hours
+                      Weekly Task Hours by Category
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <div style={{ width: "100%", height: 280 }}>
-                      <ResponsiveContainer>
-                        <BarChart data={MOCK_WEEKLY_TASK_HOURS}>
-                          <CartesianGrid strokeDasharray="3 3" />
-                          <XAxis
-                            dataKey="week"
-                            tick={{ fontSize: 10 }}
-                          />
-                          <YAxis tick={{ fontSize: 10 }} />
-                          <Tooltip
-                            contentStyle={{ fontSize: 11 }}
-                          />
-                          <Legend
-                            wrapperStyle={{ fontSize: 9 }}
-                            iconSize={8}
-                          />
-                          {WEEKLY_TASK_CATEGORIES.map(
-                            (cat, i) => (
-                              <Bar
-                                key={cat}
-                                dataKey={cat}
-                                stackId="a"
-                                fill={
-                                  WEEKLY_TASK_COLORS[
-                                    i % WEEKLY_TASK_COLORS.length
-                                  ]
-                                }
-                              />
-                            )
-                          )}
-                        </BarChart>
-                      </ResponsiveContainer>
-                    </div>
-                    <p className="text-[10px] text-muted-foreground text-center mt-1">
-                      Sample data — pending backend integration
-                    </p>
+                    {timekeepingData.weekly_category_hours?.length > 0 ? (
+                      <div style={{ width: "100%", height: 280 }}>
+                        <ResponsiveContainer>
+                          <BarChart data={timekeepingData.weekly_category_hours.map(row => ({
+                            ...row,
+                            week: new Date(row.week + "T00:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric" }),
+                          }))}>
+                            <CartesianGrid strokeDasharray="3 3" />
+                            <XAxis
+                              dataKey="week"
+                              tick={{ fontSize: 10 }}
+                            />
+                            <YAxis tick={{ fontSize: 10 }} label={{ value: "Hours", angle: -90, position: "insideLeft", style: { fontSize: 10 } }} />
+                            <Tooltip
+                              contentStyle={{ fontSize: 11 }}
+                            />
+                            <Legend
+                              wrapperStyle={{ fontSize: 9 }}
+                              iconSize={8}
+                            />
+                            {(timekeepingData.weekly_category_names || []).map(
+                              (cat, i) => (
+                                <Bar
+                                  key={cat}
+                                  dataKey={cat}
+                                  stackId="a"
+                                  fill={
+                                    WEEKLY_TASK_COLORS[
+                                      i % WEEKLY_TASK_COLORS.length
+                                    ]
+                                  }
+                                />
+                              )
+                            )}
+                          </BarChart>
+                        </ResponsiveContainer>
+                      </div>
+                    ) : (
+                      <p className="text-sm text-muted-foreground text-center py-8">
+                        No category data for this period.
+                      </p>
+                    )}
                   </CardContent>
                 </Card>
 
