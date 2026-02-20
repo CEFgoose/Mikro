@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, Fragment } from "react";
+import { useState, useEffect, useCallback, useRef, Fragment } from "react";
 import { useRouter } from "next/navigation";
 import {
   Card,
@@ -17,6 +17,9 @@ import {
   useFetchTimekeepingStats,
   useFetchFilterOptions,
   useFetchChangesetHeatmap,
+  useFetchElementAnalysis,
+  useQueueElementAnalysis,
+  useCheckElementAnalysisStatus,
 } from "@/hooks/useApi";
 import { useFilters } from "@/hooks";
 import { FilterBar } from "@/components/filters";
@@ -24,6 +27,7 @@ import type {
   EditingStatsResponse,
   TimekeepingStatsResponse,
   ChangesetHeatmapResponse,
+  ElementAnalysisCategory,
 } from "@/types";
 import {
   BarChart,
@@ -104,81 +108,6 @@ const COMMUNITY_OUTREACH_COLORS = {
 };
 
 // ─── Mock Data (charts requiring Kibana / external sources) ──
-
-const MOCK_ACTIVITY_ELEMENT_TYPES = [
-  {
-    title: "Oneways",
-    data: [
-      { week: "1/19", deleted: 107, added: 147, modified: 107 },
-      { week: "1/26", deleted: 0, added: 0, modified: 65 },
-      { week: "2/2", deleted: 0, added: 0, modified: 0 },
-      { week: "2/9", deleted: 0, added: 0, modified: 0 },
-    ],
-  },
-  {
-    title: "Access & Barriers",
-    data: [
-      { week: "1/19", deleted: 800, added: 1200, modified: 0 },
-      { week: "1/26", deleted: 0, added: 0, modified: 0 },
-      { week: "2/2", deleted: 684, added: 0, modified: 510 },
-      { week: "2/9", deleted: 0, added: 0, modified: 0 },
-    ],
-  },
-  {
-    title: "Highways",
-    data: [
-      { week: "1/19", deleted: 4613, added: 0, modified: 7543 },
-      { week: "1/26", deleted: 0, added: 1359, modified: 6397 },
-      { week: "2/2", deleted: 0, added: 0, modified: 0 },
-      { week: "2/9", deleted: 0, added: 0, modified: 0 },
-    ],
-  },
-  {
-    title: "Refs",
-    data: [
-      { week: "1/19", deleted: 0, added: 300, modified: 0 },
-      { week: "1/26", deleted: 0, added: 149, modified: 148 },
-      { week: "2/2", deleted: 0, added: 0, modified: 0 },
-      { week: "2/9", deleted: 0, added: 0, modified: 0 },
-    ],
-  },
-  {
-    title: "Turn Restrictions",
-    data: [
-      { week: "1/19", deleted: 0, added: 11, modified: 0 },
-      { week: "1/26", deleted: 0, added: 0, modified: 1 },
-      { week: "2/2", deleted: 1, added: 0, modified: 0 },
-      { week: "2/9", deleted: 0, added: 0, modified: 0 },
-    ],
-  },
-  {
-    title: "Names",
-    data: [
-      { week: "1/19", deleted: 0, added: 1326, modified: 1260 },
-      { week: "1/26", deleted: 0, added: 0, modified: 0 },
-      { week: "2/2", deleted: 0, added: 0, modified: 1040 },
-      { week: "2/9", deleted: 0, added: 0, modified: 0 },
-    ],
-  },
-  {
-    title: "Construction",
-    data: [
-      { week: "1/19", deleted: 27, added: 0, modified: 0 },
-      { week: "1/26", deleted: 0, added: 16, modified: 0 },
-      { week: "2/2", deleted: 5, added: 0, modified: 6 },
-      { week: "2/9", deleted: 0, added: 0, modified: 0 },
-    ],
-  },
-  {
-    title: "Classifications",
-    data: [
-      { week: "1/19", deleted: 0, added: 867, modified: 0 },
-      { week: "1/26", deleted: 0, added: 750, modified: 0 },
-      { week: "2/2", deleted: 0, added: 0, modified: 249 },
-      { week: "2/9", deleted: 0, added: 0, modified: 0 },
-    ],
-  },
-];
 
 const MOCK_COMMUNITY_EVENTS = [
   {
@@ -528,6 +457,20 @@ export default function AdminReportsPage() {
   const [heatmapPoints, setHeatmapPoints] = useState<[number, number, number][]>([]);
   const [heatmapLoading, setHeatmapLoading] = useState(false);
   const [heatmapSummary, setHeatmapSummary] = useState<{ totalChangesets: number; totalChanges: number; usersWithData: number } | null>(null);
+  const [elementCategories, setElementCategories] = useState<ElementAnalysisCategory[]>([]);
+  const [elementLastUpdated, setElementLastUpdated] = useState<string | null>(null);
+  const [elementLoading, setElementLoading] = useState(false);
+  const [elementRefreshing, setElementRefreshing] = useState(false);
+  const [elementProgress, setElementProgress] = useState<string | null>(null);
+  const [showRefreshModal, setShowRefreshModal] = useState(false);
+  const elementPollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  // Cleanup polling interval on unmount
+  useEffect(() => {
+    return () => {
+      if (elementPollRef.current) clearInterval(elementPollRef.current);
+    };
+  }, []);
 
   // ── Hooks ────────────────────────────────────────────────
   const {
@@ -543,6 +486,9 @@ export default function AdminReportsPage() {
   const { activeFilters, setActiveFilters, filtersBody, clearFilters } = useFilters();
   const { data: filterOptions, loading: filterOptionsLoading } = useFetchFilterOptions();
   const { mutate: fetchHeatmap } = useFetchChangesetHeatmap();
+  const { mutate: fetchElementAnalysis } = useFetchElementAnalysis();
+  const { mutate: queueElementAnalysis } = useQueueElementAnalysis();
+  const { mutate: checkElementAnalysisStatus } = useCheckElementAnalysisStatus();
 
   // ── Data Fetching ────────────────────────────────────────
   const fetchData = useCallback(async () => {
@@ -593,10 +539,20 @@ export default function AdminReportsPage() {
               setHeatmapSummary(heatRes.summary || null);
             }
           })
-          .catch(() => {
-            // Heatmap failure shouldn't affect editing stats
-          })
+          .catch(() => {})
           .finally(() => setHeatmapLoading(false));
+
+        // Fetch element analysis cache (non-blocking)
+        setElementLoading(true);
+        fetchElementAnalysis({ startDate, endDate })
+          .then((elRes) => {
+            if (elRes?.status === 200) {
+              setElementCategories(elRes.categories || []);
+              setElementLastUpdated(elRes.lastUpdated);
+            }
+          })
+          .catch(() => {})
+          .finally(() => setElementLoading(false));
       } else if (activeTab === "timekeeping") {
         const res = await fetchTimekeeping(params);
         if (res?.status === 200) {
@@ -617,6 +573,7 @@ export default function AdminReportsPage() {
     fetchEditing,
     fetchTimekeeping,
     fetchHeatmap,
+    fetchElementAnalysis,
   ]);
 
   useEffect(() => {
@@ -1208,24 +1165,151 @@ export default function AdminReportsPage() {
                 </CardContent>
               </Card>
 
-              {/* ── 8 Team Activity Charts (Kibana data - mock) ── */}
+              {/* ── 8 Team Activity Charts (live from worker cache) ── */}
               <div>
-                <h3 className="text-lg font-semibold mb-3">
-                  Editing Activity by Element Type
-                </h3>
-                <p className="text-xs text-muted-foreground mb-4">
-                  Sample data — pending Kibana integration
-                </p>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                  {MOCK_ACTIVITY_ELEMENT_TYPES.map((chart) => (
-                    <MiniActivityChart
-                      key={chart.title}
-                      title={chart.title}
-                      data={chart.data}
-                    />
-                  ))}
+                <div className="flex items-center justify-between mb-3">
+                  <div>
+                    <h3 className="text-lg font-semibold">
+                      Editing Activity by Element Type
+                    </h3>
+                    {elementLastUpdated && (
+                      <p className="text-xs text-muted-foreground">
+                        Last updated: {formatDateTime(elementLastUpdated)}
+                      </p>
+                    )}
+                    {!elementLastUpdated && !elementLoading && (
+                      <p className="text-xs text-muted-foreground">
+                        No cached data yet — click Refresh to run analysis
+                      </p>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-2">
+                    {elementRefreshing && elementProgress && (
+                      <span className="text-xs text-muted-foreground">
+                        {elementProgress}
+                      </span>
+                    )}
+                    <button
+                      onClick={() => setShowRefreshModal(true)}
+                      disabled={elementRefreshing}
+                      className="inline-flex items-center px-3 py-1.5 rounded-lg bg-muted text-foreground text-sm font-medium hover:bg-muted/80 transition-colors disabled:opacity-50"
+                    >
+                      {elementRefreshing ? (
+                        <>
+                          <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-kaart-orange mr-2" />
+                          Analyzing...
+                        </>
+                      ) : (
+                        "Refresh Analysis"
+                      )}
+                    </button>
+                  </div>
                 </div>
+                {elementLoading ? (
+                  <div className="flex items-center justify-center h-32 gap-2">
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-kaart-orange" />
+                    <span className="text-sm text-muted-foreground">Loading cached data...</span>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                    {elementCategories.map((chart) => (
+                      <MiniActivityChart
+                        key={chart.title}
+                        title={chart.title}
+                        data={chart.data}
+                      />
+                    ))}
+                  </div>
+                )}
               </div>
+
+              {/* Refresh Analysis Warning Modal */}
+              {showRefreshModal && (
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+                  <div className="bg-card border border-border rounded-xl shadow-xl max-w-md mx-4 p-6">
+                    <h3 className="text-lg font-semibold text-foreground mb-3">
+                      Refresh Element Analysis
+                    </h3>
+                    <p className="text-sm text-muted-foreground mb-4">
+                      This will re-analyze all changesets from the OSM API for
+                      the last 4 weeks. The process runs in the background and
+                      typically takes 2-5 minutes depending on the number of
+                      active mappers and their changeset volume.
+                    </p>
+                    <p className="text-sm text-muted-foreground mb-6">
+                      This analysis also runs automatically every night at
+                      midnight MST.
+                    </p>
+                    <div className="flex justify-end gap-3">
+                      <button
+                        onClick={() => setShowRefreshModal(false)}
+                        className="px-4 py-2 rounded-lg bg-muted text-foreground text-sm font-medium hover:bg-muted/80 transition-colors"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        onClick={async () => {
+                          setShowRefreshModal(false);
+                          setElementRefreshing(true);
+                          setElementProgress("Queuing analysis...");
+                          try {
+                            const queueRes = await queueElementAnalysis({});
+                            if (queueRes?.status === 200 && queueRes.job_id) {
+                              // Poll for status every 5 seconds
+                              if (elementPollRef.current) clearInterval(elementPollRef.current);
+                              elementPollRef.current = setInterval(async () => {
+                                try {
+                                  const statusRes = await checkElementAnalysisStatus({});
+                                  if (statusRes?.status === 200) {
+                                    setElementProgress(statusRes.progress || "Processing...");
+                                    if (statusRes.sync_status === "completed") {
+                                      if (elementPollRef.current) clearInterval(elementPollRef.current);
+                                      elementPollRef.current = null;
+                                      setElementRefreshing(false);
+                                      setElementProgress(null);
+                                      // Refetch cached data
+                                      let startDate: string, endDate: string;
+                                      if (datePreset === "custom") {
+                                        startDate = customStart;
+                                        endDate = customEnd;
+                                      } else {
+                                        const range = getDateRange(datePreset);
+                                        startDate = range.start;
+                                        endDate = range.end;
+                                      }
+                                      const elRes = await fetchElementAnalysis({ startDate, endDate });
+                                      if (elRes?.status === 200) {
+                                        setElementCategories(elRes.categories || []);
+                                        setElementLastUpdated(elRes.lastUpdated);
+                                      }
+                                    } else if (statusRes.sync_status === "failed") {
+                                      if (elementPollRef.current) clearInterval(elementPollRef.current);
+                                      elementPollRef.current = null;
+                                      setElementRefreshing(false);
+                                      setElementProgress(null);
+                                    }
+                                  }
+                                } catch {
+                                  if (elementPollRef.current) clearInterval(elementPollRef.current);
+                                  elementPollRef.current = null;
+                                  setElementRefreshing(false);
+                                  setElementProgress(null);
+                                }
+                              }, 5000);
+                            }
+                          } catch {
+                            setElementRefreshing(false);
+                            setElementProgress(null);
+                          }
+                        }}
+                        className="px-4 py-2 rounded-lg bg-kaart-orange text-white text-sm font-medium hover:bg-kaart-orange-dark transition-colors"
+                      >
+                        Start Analysis
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           ) : (
             <Card>

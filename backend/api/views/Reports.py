@@ -15,7 +15,7 @@ from datetime import datetime, timedelta
 from sqlalchemy import func
 
 from ..utils import requires_admin
-from ..database import db, Task, Project, User, TimeEntry, TeamUser
+from ..database import db, Task, Project, User, TimeEntry, TeamUser, SyncJob, ElementAnalysisCache
 from ..filters import resolve_filtered_user_ids, resolve_filtered_osm_usernames
 
 
@@ -29,6 +29,12 @@ class ReportsAPI(MethodView):
             return self.fetch_timekeeping_stats()
         elif path == "fetch_changeset_heatmap":
             return self.fetch_changeset_heatmap()
+        elif path == "fetch_element_analysis":
+            return self.fetch_element_analysis()
+        elif path == "queue_element_analysis":
+            return self.queue_element_analysis()
+        elif path == "check_element_analysis_status":
+            return self.check_element_analysis_status()
         return {"message": "Unknown path", "status": 404}
 
     @requires_admin
@@ -778,4 +784,133 @@ class ReportsAPI(MethodView):
                 "totalChanges": total_changes,
                 "usersWithData": users_with_data,
             },
+        }
+
+    @requires_admin
+    def fetch_element_analysis(self):
+        """Fetch cached element analysis data for the org."""
+        if not g.user:
+            return {"message": "Missing user info", "status": 304}
+
+        start_date_str = request.json.get("startDate")
+        end_date_str = request.json.get("endDate")
+
+        if not start_date_str or not end_date_str:
+            return {"message": "startDate and endDate required", "status": 400}
+
+        try:
+            start_date = datetime.strptime(start_date_str, "%Y-%m-%d").date()
+        except ValueError:
+            start_date = datetime.strptime(start_date_str, "%Y-%m-%dT%H:%M:%S").date()
+        try:
+            end_date = datetime.strptime(end_date_str, "%Y-%m-%d").date()
+        except ValueError:
+            end_date = datetime.strptime(end_date_str, "%Y-%m-%dT%H:%M:%S").date()
+
+        rows = ElementAnalysisCache.query.filter(
+            ElementAnalysisCache.org_id == g.user.org_id,
+            ElementAnalysisCache.week >= start_date,
+            ElementAnalysisCache.week <= end_date,
+        ).all()
+
+        # Group by category, then by week
+        cat_data = {}  # {category: {week_date: {week, added, modified, deleted}}}
+        last_updated = None
+        for row in rows:
+            if row.category not in cat_data:
+                cat_data[row.category] = {}
+            week_str = f"{row.week.month}/{row.week.day}"
+            cat_data[row.category][row.week] = {
+                "week": week_str,
+                "added": row.added,
+                "modified": row.modified,
+                "deleted": row.deleted,
+            }
+            if last_updated is None or (row.updated_at and row.updated_at > last_updated):
+                last_updated = row.updated_at
+
+        # Build ordered category list matching the 8 expected categories
+        all_categories = [
+            "Oneways", "Access & Barriers", "Highways", "Refs",
+            "Turn Restrictions", "Names", "Construction", "Classifications",
+        ]
+
+        categories = []
+        for cat_name in all_categories:
+            week_data = cat_data.get(cat_name, {})
+            # Sort by actual date key for correct chronological order
+            sorted_data = [
+                week_data[k] for k in sorted(week_data.keys())
+            ]
+            categories.append({
+                "title": cat_name,
+                "data": sorted_data,
+            })
+
+        return {
+            "status": 200,
+            "categories": categories,
+            "lastUpdated": last_updated.isoformat() + "Z" if last_updated else None,
+        }
+
+    @requires_admin
+    def queue_element_analysis(self):
+        """Queue a background element analysis job."""
+        if not g.user:
+            return {"message": "Missing user info", "status": 304}
+
+        org_id = g.user.org_id
+
+        # Check for already running/queued analysis job
+        existing = SyncJob.query.filter(
+            SyncJob.org_id == org_id,
+            SyncJob.job_type == "element_analysis",
+            SyncJob.status.in_(["queued", "running"]),
+        ).first()
+        if existing:
+            return {
+                "status": 200,
+                "job_id": existing.id,
+                "message": "Analysis job already in progress",
+            }
+
+        new_job = SyncJob(
+            org_id=org_id,
+            status="queued",
+            job_type="element_analysis",
+        )
+        db.session.add(new_job)
+        db.session.commit()
+
+        return {
+            "status": 200,
+            "job_id": new_job.id,
+        }
+
+    @requires_admin
+    def check_element_analysis_status(self):
+        """Check status of the latest element analysis job."""
+        if not g.user:
+            return {"message": "Missing user info", "status": 304}
+
+        job = (
+            SyncJob.query.filter_by(
+                org_id=g.user.org_id,
+                job_type="element_analysis",
+            )
+            .order_by(SyncJob.id.desc())
+            .first()
+        )
+
+        if not job:
+            return {"status": 200, "message": "No analysis jobs found"}
+
+        return {
+            "status": 200,
+            "job_id": job.id,
+            "sync_status": job.status,
+            "progress": job.progress,
+            "started_at": job.started_at.isoformat() + "Z" if job.started_at else None,
+            "completed_at": job.completed_at.isoformat() + "Z" if job.completed_at else None,
+            "error": job.error,
         }

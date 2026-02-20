@@ -29,6 +29,7 @@ from .core import (
     UserCountry,
     TimeEntry,
     SyncJob,
+    ElementAnalysisCache,
 )
 
 __all__ = [
@@ -62,4 +63,5 @@ __all__ = [
     "UserCountry",
     "TimeEntry",
     "SyncJob",
+    "ElementAnalysisCache",
 ]

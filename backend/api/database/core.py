@@ -723,6 +723,7 @@ class SyncJob(CRUDMixin, db.Model):
     id = Column(Integer, primary_key=True, autoincrement=True)
     org_id = Column(String(255), nullable=True, index=True)
     status = Column(String(50), nullable=False, default="queued")
+    job_type = Column(String(50), nullable=False, default="task_sync", server_default="task_sync")
     started_at = Column(DateTime, nullable=True)
     completed_at = Column(DateTime, nullable=True)
     progress = Column(String(500), nullable=True)
@@ -730,4 +731,22 @@ class SyncJob(CRUDMixin, db.Model):
     created_at = Column(DateTime, default=func.now())
 
     def __repr__(self):
-        return f"<SyncJob {self.id} org={self.org_id} status={self.status}>"
+        return f"<SyncJob {self.id} org={self.org_id} type={self.job_type} status={self.status}>"
+
+
+class ElementAnalysisCache(CRUDMixin, db.Model):
+    """Cached element type analysis results from OSM changeset data."""
+
+    __tablename__ = "element_analysis_cache"
+
+    id = Column(BigInteger, primary_key=True, autoincrement=True)
+    org_id = Column(String(255), nullable=True, index=True)
+    week = Column(db.Date, nullable=False)
+    category = Column(String(50), nullable=False)
+    added = Column(Integer, nullable=False, default=0)
+    modified = Column(Integer, nullable=False, default=0)
+    deleted = Column(Integer, nullable=False, default=0)
+    updated_at = Column(DateTime, default=func.now())
+
+    def __repr__(self):
+        return f"<ElementAnalysisCache org={self.org_id} week={self.week} cat={self.category}>"

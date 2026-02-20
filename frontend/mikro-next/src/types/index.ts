@@ -695,6 +695,17 @@ export interface ChangesetHeatmapResponse {
   };
 }
 
+export interface ElementAnalysisCategory {
+  title: string;
+  data: Array<{ week: string; deleted: number; added: number; modified: number }>;
+}
+
+export interface ElementAnalysisResponse {
+  status: number;
+  categories: ElementAnalysisCategory[];
+  lastUpdated: string | null;
+}
+
 // API Response types
 export interface ApiResponse<T = unknown> {
   data?: T;

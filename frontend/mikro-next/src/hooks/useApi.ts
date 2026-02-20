@@ -343,6 +343,39 @@ export function useCheckSyncStatus() {
   }>("/task/check_sync_status");
 }
 
+// Element analysis - background worker-powered OSM tag analysis
+export function useFetchElementAnalysis() {
+  return useApiMutation<{
+    status: number;
+    categories: Array<{
+      title: string;
+      data: Array<{ week: string; deleted: number; added: number; modified: number }>;
+    }>;
+    lastUpdated: string | null;
+  }>("/reports/fetch_element_analysis");
+}
+
+export function useQueueElementAnalysis() {
+  return useApiMutation<{
+    status: number;
+    job_id?: number;
+    message?: string;
+  }>("/reports/queue_element_analysis");
+}
+
+export function useCheckElementAnalysisStatus() {
+  return useApiMutation<{
+    status: number;
+    job_id?: number;
+    sync_status?: string;
+    progress?: string;
+    started_at?: string;
+    completed_at?: string;
+    error?: string;
+    message?: string;
+  }>("/reports/check_element_analysis_status");
+}
+
 export function useCreateTraining() {
   return useApiMutation("/training/create_training");
 }
