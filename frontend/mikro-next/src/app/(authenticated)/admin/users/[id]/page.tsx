@@ -470,13 +470,20 @@ export default function UserProfilePage() {
                 >
                   {user.role}
                 </span>
+                {user.is_tracked_only && (
+                  <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800">
+                    Tracked Only
+                  </span>
+                )}
                 {user.mapper_level != null && (
                   <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
                     Level {user.mapper_level}
                   </span>
                 )}
               </div>
-              <p className="text-muted-foreground mt-1">{user.email}</p>
+              {user.email && !user.is_tracked_only && (
+                <p className="text-muted-foreground mt-1">{user.email}</p>
+              )}
               <div className="flex items-center gap-2 text-sm text-muted-foreground mt-1 flex-wrap">
                 {user.osm_username && (
                   <a
@@ -548,7 +555,7 @@ export default function UserProfilePage() {
                   Joined: {formatDate(user.joined)}
                 </p>
               )}
-              {user.payment_email && (
+              {user.payment_email && !user.is_tracked_only && (
                 <p className="text-sm text-muted-foreground mt-1">
                   Payment email:{" "}
                   <span className="font-medium text-foreground">
@@ -611,51 +618,53 @@ export default function UserProfilePage() {
       )}
 
       {/* Section 4: Payment Summary */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Payment Summary</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-            <div className="text-center">
-              <p className="text-sm text-muted-foreground">Mapping</p>
-              <p className="text-lg font-semibold">
-                ${(user.mapping_payable_total ?? 0).toFixed(2)}
-              </p>
+      {!user.is_tracked_only && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Payment Summary</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+              <div className="text-center">
+                <p className="text-sm text-muted-foreground">Mapping</p>
+                <p className="text-lg font-semibold">
+                  ${(user.mapping_payable_total ?? 0).toFixed(2)}
+                </p>
+              </div>
+              <div className="text-center">
+                <p className="text-sm text-muted-foreground">Validation</p>
+                <p className="text-lg font-semibold">
+                  ${(user.validation_payable_total ?? 0).toFixed(2)}
+                </p>
+              </div>
+              <div className="text-center">
+                <p className="text-sm text-muted-foreground">Checklists</p>
+                <p className="text-lg font-semibold">
+                  ${(user.checklist_payable_total ?? 0).toFixed(2)}
+                </p>
+              </div>
+              <div className="text-center">
+                <p className="text-sm text-muted-foreground">Payable</p>
+                <p className="text-lg font-semibold text-green-600">
+                  ${(user.payable_total ?? 0).toFixed(2)}
+                </p>
+              </div>
+              <div className="text-center">
+                <p className="text-sm text-muted-foreground">Requested</p>
+                <p className="text-lg font-semibold text-yellow-600">
+                  ${(user.requested_total ?? 0).toFixed(2)}
+                </p>
+              </div>
+              <div className="text-center">
+                <p className="text-sm text-muted-foreground">Paid</p>
+                <p className="text-lg font-semibold text-blue-600">
+                  ${(user.paid_total ?? 0).toFixed(2)}
+                </p>
+              </div>
             </div>
-            <div className="text-center">
-              <p className="text-sm text-muted-foreground">Validation</p>
-              <p className="text-lg font-semibold">
-                ${(user.validation_payable_total ?? 0).toFixed(2)}
-              </p>
-            </div>
-            <div className="text-center">
-              <p className="text-sm text-muted-foreground">Checklists</p>
-              <p className="text-lg font-semibold">
-                ${(user.checklist_payable_total ?? 0).toFixed(2)}
-              </p>
-            </div>
-            <div className="text-center">
-              <p className="text-sm text-muted-foreground">Payable</p>
-              <p className="text-lg font-semibold text-green-600">
-                ${(user.payable_total ?? 0).toFixed(2)}
-              </p>
-            </div>
-            <div className="text-center">
-              <p className="text-sm text-muted-foreground">Requested</p>
-              <p className="text-lg font-semibold text-yellow-600">
-                ${(user.requested_total ?? 0).toFixed(2)}
-              </p>
-            </div>
-            <div className="text-center">
-              <p className="text-sm text-muted-foreground">Paid</p>
-              <p className="text-lg font-semibold text-blue-600">
-                ${(user.paid_total ?? 0).toFixed(2)}
-              </p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Section 5: Projects */}
       {user.projects && user.projects.length > 0 && (

@@ -29,6 +29,9 @@ export default function AdminUsersPage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [showPurgeModal, setShowPurgeModal] = useState(false);
   const [isPurging, setIsPurging] = useState(false);
+  const [showTrackModal, setShowTrackModal] = useState(false);
+  const [trackOsmUsername, setTrackOsmUsername] = useState("");
+  const [trackDisplayName, setTrackDisplayName] = useState("");
   const { activeFilters, setActiveFilters, filtersBody, clearFilters } = useFilters();
   const { data: filterOptions, loading: filterOptionsLoading } = useFetchFilterOptions();
 
@@ -270,6 +273,41 @@ export default function AdminUsersPage() {
     }
   };
 
+  const handleCreateTrackedUser = async () => {
+    if (!trackOsmUsername.trim()) {
+      alert("OSM username is required");
+      return;
+    }
+    setIsSaving(true);
+    try {
+      const nameParts = trackDisplayName.trim().split(" ", 2);
+      const response = await fetch("/backend/user/create_tracked_user", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          osm_username: trackOsmUsername.trim(),
+          first_name: nameParts[0] || trackOsmUsername.trim(),
+          last_name: nameParts[1] || "",
+        }),
+      });
+      const data = await response.json();
+      if (response.ok && data.status === 200) {
+        alert(data.message || "Tracked user created");
+        setShowTrackModal(false);
+        setTrackOsmUsername("");
+        setTrackDisplayName("");
+        fetchUsers();
+      } else {
+        alert(data.message || "Failed to create tracked user");
+      }
+    } catch (error) {
+      console.error("Failed to create tracked user:", error);
+      alert("Failed to create tracked user");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -285,6 +323,7 @@ export default function AdminUsersPage() {
         <h1 className="text-2xl font-bold text-foreground">Users</h1>
         <div className="flex gap-2">
           <Button onClick={() => setShowAddModal(true)}>Add</Button>
+          <Button variant="outline" onClick={() => setShowTrackModal(true)}>Track</Button>
           <Button
             variant="secondary"
             onClick={handleOpenEditModal}
@@ -360,17 +399,24 @@ export default function AdminUsersPage() {
                       </Link>
                     </td>
                     <td className="px-6 py-5">
-                      <span
-                        className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
-                          user.role === "admin"
-                            ? "bg-purple-100 text-purple-800"
-                            : user.role === "validator"
-                            ? "bg-blue-100 text-blue-800"
-                            : "bg-green-100 text-green-800"
-                        }`}
-                      >
-                        {user.role}
-                      </span>
+                      <div className="flex items-center gap-1.5">
+                        <span
+                          className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                            user.role === "admin"
+                              ? "bg-purple-100 text-purple-800"
+                              : user.role === "validator"
+                              ? "bg-blue-100 text-blue-800"
+                              : "bg-green-100 text-green-800"
+                          }`}
+                        >
+                          {user.role}
+                        </span>
+                        {user.is_tracked_only && (
+                          <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-amber-100 text-amber-800">
+                            tracked
+                          </span>
+                        )}
+                      </div>
                     </td>
                     <td className="px-6 py-5 text-foreground">{user.country_name || "\u2014"}</td>
                     <td className="px-6 py-5 text-foreground">{user.region_name || "\u2014"}</td>
@@ -584,6 +630,51 @@ export default function AdminUsersPage() {
                 </Button>
                 <Button variant="destructive" onClick={handlePurgeUsers} disabled={isPurging}>
                   {isPurging ? "Purging..." : "Purge All Users"}
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      {/* Track User Modal */}
+      {showTrackModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <Card className="w-full max-w-md">
+            <CardHeader>
+              <CardTitle>Track External User</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium mb-1">OSM Username *</label>
+                <input
+                  type="text"
+                  className="w-full px-3 py-2 border border-input rounded-lg focus:outline-none focus:ring-2 focus:ring-ring"
+                  placeholder="e.g. jorge_mapper"
+                  value={trackOsmUsername}
+                  onChange={(e) => setTrackOsmUsername(e.target.value)}
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">Display Name (optional)</label>
+                <input
+                  type="text"
+                  className="w-full px-3 py-2 border border-input rounded-lg focus:outline-none focus:ring-2 focus:ring-ring"
+                  placeholder="e.g. Jorge Martinez"
+                  value={trackDisplayName}
+                  onChange={(e) => setTrackDisplayName(e.target.value)}
+                />
+              </div>
+              <p className="text-sm text-muted-foreground">
+                This creates a tracked-only user record. No email or login is created.
+                The task sync will automatically pick up their OSM contributions.
+              </p>
+              <div className="flex gap-2 justify-end">
+                <Button variant="outline" onClick={() => { setShowTrackModal(false); setTrackOsmUsername(""); setTrackDisplayName(""); }}>
+                  Cancel
+                </Button>
+                <Button onClick={handleCreateTrackedUser} disabled={isSaving || !trackOsmUsername.trim()}>
+                  {isSaving ? "Creating..." : "Track User"}
                 </Button>
               </div>
             </CardContent>

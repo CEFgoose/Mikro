@@ -30,6 +30,7 @@ export interface User {
   country_name?: string;
   region_name?: string;
   timezone?: string;
+  is_tracked_only?: boolean;
 }
 
 export interface UserListItem extends User {
@@ -388,6 +389,7 @@ export interface UserProfileData {
   country_name: string | null;
   region_name: string | null;
   timezone: string | null;
+  is_tracked_only?: boolean;
   joined: string;
   total_tasks_mapped: number;
   total_tasks_validated: number;

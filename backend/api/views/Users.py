@@ -113,6 +113,8 @@ class UserAPI(MethodView):
             return self.fetch_user_task_history()
         elif path == "admin_update_user_profile":
             return self.admin_update_user_profile()
+        elif path == "create_tracked_user":
+            return self.create_tracked_user()
         # elif path == "register_user":
         #     return self.register_user()
         return {
@@ -465,6 +467,7 @@ class UserAPI(MethodView):
                     "country_name": country_name,
                     "region_name": region_name,
                     "timezone": user.timezone,
+                    "is_tracked_only": user.is_tracked_only or False,
                 }
             )
         # Add the list of users to the return_obj dictionary
@@ -932,6 +935,7 @@ class UserAPI(MethodView):
                 "country_name": country_name,
                 "region_name": region_name,
                 "timezone": user.timezone,
+                "is_tracked_only": user.is_tracked_only or False,
                 "joined": user.create_time.isoformat() if user.create_time else None,
                 # Task stats
                 "total_tasks_mapped": user.total_tasks_mapped or 0,
@@ -1006,6 +1010,50 @@ class UserAPI(MethodView):
             user.update(**updates)
 
         return {"status": 200, "message": "User profile updated"}
+
+    @requires_admin
+    def create_tracked_user(self):
+        """
+        Create a tracked-only user (no Auth0, no email, no invitation).
+        Just an OSM username for the task sync to match against.
+        """
+        import uuid
+
+        data = request.get_json() or {}
+        osm_username = (data.get("osm_username") or "").strip()
+
+        if not osm_username:
+            return {"message": "osm_username is required", "status": 400}
+
+        # Check for duplicate osm_username
+        existing = User.query.filter_by(osm_username=osm_username).first()
+        if existing:
+            return {
+                "message": f"A user with OSM username '{osm_username}' already exists",
+                "status": 400,
+            }
+
+        user_id = f"tracked|{uuid.uuid4()}"
+        first_name = (data.get("first_name") or osm_username).strip()
+        last_name = (data.get("last_name") or "").strip()
+
+        new_user = User.create(
+            id=user_id,
+            auth0_sub=None,
+            email=None,
+            first_name=first_name,
+            last_name=last_name,
+            osm_username=osm_username,
+            role="user",
+            org_id=g.user.org_id,
+            is_tracked_only=True,
+        )
+
+        return {
+            "message": f"Tracked user '{osm_username}' created successfully",
+            "user_id": new_user.id,
+            "status": 200,
+        }
 
     @requires_admin
     def fetch_user_stats_by_date(self):

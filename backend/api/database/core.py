@@ -135,6 +135,11 @@ class User(ModelWithSoftDeleteAndCRUD, SurrogatePK):
         db.Boolean, nullable=False, default=False, server_default="False"
     )
 
+    # Tracked-only users (no Auth0, no login — OSM tracking only)
+    is_tracked_only = db.Column(
+        db.Boolean, nullable=False, default=False, server_default="False"
+    )
+
     def __repr__(self):
         return f"<User {self.email}>"
 
