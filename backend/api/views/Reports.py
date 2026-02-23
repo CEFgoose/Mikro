@@ -35,6 +35,8 @@ class ReportsAPI(MethodView):
             return self.queue_element_analysis()
         elif path == "check_element_analysis_status":
             return self.check_element_analysis_status()
+        elif path == "fetch_mapillary_stats":
+            return self.fetch_mapillary_stats()
         return {"message": "Unknown path", "status": 404}
 
     @requires_admin
@@ -943,4 +945,227 @@ class ReportsAPI(MethodView):
             "started_at": job.started_at.isoformat() + "Z" if job.started_at else None,
             "completed_at": job.completed_at.isoformat() + "Z" if job.completed_at else None,
             "error": job.error,
+        }
+
+    @requires_admin
+    def fetch_mapillary_stats(self):
+        """Fetch Mapillary imagery upload statistics."""
+        if not g.user:
+            return {"message": "Missing user info", "status": 304}
+
+        token = current_app.config.get("MAPILLARY_ACCESS_TOKEN")
+        if not token:
+            return {
+                "status": 200,
+                "summary": {
+                    "total_images": 0,
+                    "total_trips": 0,
+                    "total_sequences": 0,
+                    "active_contributors": 0,
+                    "images_by_user": [],
+                },
+                "trips": [],
+                "weekly_uploads": [],
+                "message": "Mapillary API token not configured",
+            }
+
+        start_date_str = request.json.get("startDate")
+        end_date_str = request.json.get("endDate")
+        team_id = request.json.get("teamId")
+        user_id = request.json.get("userId")
+
+        # Get users with mapillary_username set
+        users_query = User.query.filter(
+            User.org_id == g.user.org_id,
+            User.mapillary_username.isnot(None),
+            User.mapillary_username != "",
+        )
+
+        # Apply filters
+        if user_id:
+            users_query = users_query.filter(User.id == user_id)
+        elif team_id:
+            from ..database import TeamUser as TU
+            team_user_ids = [
+                tu.user_id for tu in TU.query.filter_by(team_id=team_id).all()
+            ]
+            if team_user_ids:
+                users_query = users_query.filter(User.id.in_(team_user_ids))
+            else:
+                users_query = users_query.filter(False)
+
+        mapillary_users = users_query.all()
+
+        if not mapillary_users:
+            return {
+                "status": 200,
+                "summary": {
+                    "total_images": 0,
+                    "total_trips": 0,
+                    "total_sequences": 0,
+                    "active_contributors": 0,
+                    "images_by_user": [],
+                },
+                "trips": [],
+                "weekly_uploads": [],
+                "message": "No users have Mapillary usernames linked",
+            }
+
+        # Build date range
+        if start_date_str and end_date_str:
+            start_dt = datetime.strptime(start_date_str, "%Y-%m-%d")
+            end_dt = datetime.strptime(end_date_str, "%Y-%m-%d")
+        else:
+            end_dt = datetime.utcnow()
+            start_dt = end_dt - timedelta(days=30)
+
+        start_iso = start_dt.strftime("%Y-%m-%dT00:00:00Z")
+        end_iso = end_dt.strftime("%Y-%m-%dT23:59:59Z")
+
+        def fetch_user_images(user):
+            """Fetch all Mapillary images for a single user."""
+            first_name = (user.first_name or "").title()
+            last_name = (user.last_name or "").title()
+            full_name = f"{first_name} {last_name}".strip() or user.mapillary_username
+            all_images = []
+            url = (
+                f"https://graph.mapillary.com/images"
+                f"?access_token={token}"
+                f"&creator_username={user.mapillary_username}"
+                f"&start_captured_at={start_iso}"
+                f"&end_captured_at={end_iso}"
+                f"&fields=id,captured_at,sequence"
+                f"&limit=2000"
+            )
+            try:
+                while url:
+                    resp = http_requests.get(url, timeout=30)
+                    if resp.status_code != 200:
+                        current_app.logger.warning(
+                            f"Mapillary API error for {user.mapillary_username}: {resp.status_code}"
+                        )
+                        break
+                    data = resp.json()
+                    images = data.get("data", [])
+                    all_images.extend(images)
+                    # Cursor-based pagination
+                    paging = data.get("paging", {})
+                    url = paging.get("next")
+            except Exception as e:
+                current_app.logger.error(
+                    f"Mapillary fetch error for {user.mapillary_username}: {e}"
+                )
+            return {
+                "user_id": user.id,
+                "user_name": full_name,
+                "mapillary_username": user.mapillary_username,
+                "images": all_images,
+            }
+
+        # Fetch images concurrently
+        all_user_results = []
+        with ThreadPoolExecutor(max_workers=5) as executor:
+            futures = {
+                executor.submit(fetch_user_images, u): u for u in mapillary_users
+            }
+            for future in as_completed(futures):
+                try:
+                    result = future.result()
+                    all_user_results.append(result)
+                except Exception as e:
+                    current_app.logger.error(f"Mapillary fetch thread error: {e}")
+
+        # Process results: build trips, weekly uploads, per-user counts
+        total_images = 0
+        total_sequences = set()
+        images_by_user = []
+        all_trips = []
+        weekly_buckets = {}
+
+        for user_result in all_user_results:
+            images = user_result["images"]
+            user_name = user_result["user_name"]
+            mapillary_un = user_result["mapillary_username"]
+            user_image_count = len(images)
+            total_images += user_image_count
+
+            if user_image_count > 0:
+                images_by_user.append({
+                    "username": mapillary_un,
+                    "name": user_name,
+                    "count": user_image_count,
+                })
+
+            # Group images by sequence
+            sequences = {}
+            for img in images:
+                seq_id = img.get("sequence", "unknown")
+                total_sequences.add(seq_id)
+                if seq_id not in sequences:
+                    sequences[seq_id] = []
+                sequences[seq_id].append(img)
+
+            # Derive trips: group sequences by date
+            date_groups = {}
+            for seq_id, seq_images in sequences.items():
+                # Use first image's captured_at for the date
+                if seq_images:
+                    cap_at = seq_images[0].get("captured_at", "")
+                    trip_date = cap_at[:10] if len(cap_at) >= 10 else "unknown"
+                    if trip_date not in date_groups:
+                        date_groups[trip_date] = {"images": 0, "sequences": set()}
+                    date_groups[trip_date]["images"] += len(seq_images)
+                    date_groups[trip_date]["sequences"].add(seq_id)
+
+            for trip_date, trip_data in date_groups.items():
+                all_trips.append({
+                    "user_name": user_name,
+                    "mapillary_username": mapillary_un,
+                    "date": trip_date,
+                    "image_count": trip_data["images"],
+                    "sequence_count": len(trip_data["sequences"]),
+                })
+
+            # Weekly upload buckets
+            for img in images:
+                cap_at = img.get("captured_at", "")
+                if len(cap_at) >= 10:
+                    try:
+                        img_date = datetime.strptime(cap_at[:10], "%Y-%m-%d")
+                        # Get Monday of that week
+                        week_start = img_date - timedelta(days=img_date.weekday())
+                        week_key = week_start
+                        if week_key not in weekly_buckets:
+                            weekly_buckets[week_key] = 0
+                        weekly_buckets[week_key] += 1
+                    except ValueError:
+                        pass
+
+        # Sort trips by date descending
+        all_trips.sort(key=lambda t: t["date"], reverse=True)
+
+        # Sort images_by_user by count descending
+        images_by_user.sort(key=lambda u: u["count"], reverse=True)
+
+        # Build weekly uploads (sorted chronologically)
+        weekly_uploads = []
+        for week_key in sorted(weekly_buckets.keys()):
+            weekly_uploads.append({
+                "week": f"{week_key.month}/{week_key.day}",
+                "images": weekly_buckets[week_key],
+            })
+
+        active_contributors = len([u for u in images_by_user if u["count"] > 0])
+
+        return {
+            "status": 200,
+            "summary": {
+                "total_images": total_images,
+                "total_trips": len(all_trips),
+                "total_sequences": len(total_sequences),
+                "active_contributors": active_contributors,
+                "images_by_user": images_by_user,
+            },
+            "trips": all_trips,
+            "weekly_uploads": weekly_uploads,
         }

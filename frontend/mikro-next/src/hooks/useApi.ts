@@ -32,6 +32,7 @@ import type {
   FilterOptionsResponse,
   RegionsResponse,
   CountriesResponse,
+  MapillaryStatsResponse,
 } from "@/types";
 
 /**
@@ -374,6 +375,10 @@ export function useCheckElementAnalysisStatus() {
     error?: string;
     message?: string;
   }>("/reports/check_element_analysis_status");
+}
+
+export function useFetchMapillaryStats() {
+  return useApiMutation<MapillaryStatsResponse>("/reports/fetch_mapillary_stats");
 }
 
 export function useCreateTraining() {

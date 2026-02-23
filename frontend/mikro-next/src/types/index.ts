@@ -31,6 +31,7 @@ export interface User {
   region_name?: string;
   timezone?: string;
   is_tracked_only?: boolean;
+  mapillary_username?: string;
 }
 
 export interface UserListItem extends User {
@@ -390,6 +391,7 @@ export interface UserProfileData {
   region_name: string | null;
   timezone: string | null;
   is_tracked_only?: boolean;
+  mapillary_username?: string;
   joined: string;
   total_tasks_mapped: number;
   total_tasks_validated: number;
@@ -706,6 +708,28 @@ export interface ElementAnalysisResponse {
   status: number;
   categories: ElementAnalysisCategory[];
   lastUpdated: string | null;
+}
+
+export interface MapillaryTrip {
+  user_name: string;
+  mapillary_username: string;
+  date: string;
+  image_count: number;
+  sequence_count: number;
+}
+
+export interface MapillaryStatsResponse {
+  status: number;
+  message?: string;
+  summary: {
+    total_images: number;
+    total_trips: number;
+    total_sequences: number;
+    active_contributors: number;
+    images_by_user: Array<{ username: string; name: string; count: number }>;
+  };
+  trips: MapillaryTrip[];
+  weekly_uploads: Array<{ week: string; images: number }>;
 }
 
 // API Response types

@@ -45,6 +45,7 @@ class User(ModelWithSoftDeleteAndCRUD, SurrogatePK):
     first_name = Column(String(100))
     last_name = Column(String(100))
     osm_username = Column(String(100), unique=True, nullable=True, index=True)
+    mapillary_username = Column(String(100), nullable=True, index=True)
 
     # OSM Account Linking
     osm_id = Column(BigInteger, nullable=True, unique=True, index=True)

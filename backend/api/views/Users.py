@@ -468,6 +468,7 @@ class UserAPI(MethodView):
                     "region_name": region_name,
                     "timezone": user.timezone,
                     "is_tracked_only": user.is_tracked_only or False,
+                    "mapillary_username": user.mapillary_username,
                 }
             )
         # Add the list of users to the return_obj dictionary
@@ -928,6 +929,7 @@ class UserAPI(MethodView):
                 "email": user.email,
                 "payment_email": user.payment_email,
                 "osm_username": user.osm_username,
+                "mapillary_username": user.mapillary_username,
                 "role": user.role,
                 "city": user.city,
                 "country": user.country,
@@ -1005,6 +1007,10 @@ class UserAPI(MethodView):
         # Handle explicit timezone
         if "timezone" in data:
             updates["timezone"] = data["timezone"] or None
+
+        # Handle mapillary_username
+        if "mapillary_username" in data:
+            updates["mapillary_username"] = (data["mapillary_username"] or "").strip() or None
 
         if updates:
             user.update(**updates)

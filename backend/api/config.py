@@ -65,6 +65,10 @@ class BaseConfig:
         "OSM_OAUTH_REDIRECT_URI", "http://localhost:5004/api/osm/callback"
     )
     OSM_API_URL = os.environ.get("OSM_API_URL", "https://www.openstreetmap.org")
+
+    # Mapillary API v4
+    MAPILLARY_ACCESS_TOKEN = os.environ.get("MAPILLARY_ACCESS_TOKEN")
+
     # Frontend URL for OAuth redirect after completion
     FRONTEND_URL = os.environ.get("FRONTEND_URL", "http://localhost:3000")
 

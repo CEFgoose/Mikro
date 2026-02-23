@@ -20,6 +20,7 @@ import {
   useFetchElementAnalysis,
   useQueueElementAnalysis,
   useCheckElementAnalysisStatus,
+  useFetchMapillaryStats,
 } from "@/hooks/useApi";
 import { useFilters } from "@/hooks";
 import { FilterBar } from "@/components/filters";
@@ -28,6 +29,7 @@ import type {
   TimekeepingStatsResponse,
   ChangesetHeatmapResponse,
   ElementAnalysisCategory,
+  MapillaryStatsResponse,
 } from "@/types";
 import {
   BarChart,
@@ -402,6 +404,8 @@ export default function AdminReportsPage() {
   const [elementProgress, setElementProgress] = useState<string | null>(null);
   const [showRefreshModal, setShowRefreshModal] = useState(false);
   const elementPollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const [mapillaryData, setMapillaryData] = useState<MapillaryStatsResponse | null>(null);
+  const [mapillaryLoading, setMapillaryLoading] = useState(false);
 
   // Cleanup polling interval on unmount
   useEffect(() => {
@@ -427,6 +431,7 @@ export default function AdminReportsPage() {
   const { mutate: fetchElementAnalysis } = useFetchElementAnalysis();
   const { mutate: queueElementAnalysis } = useQueueElementAnalysis();
   const { mutate: checkElementAnalysisStatus } = useCheckElementAnalysisStatus();
+  const { mutate: fetchMapillaryStats } = useFetchMapillaryStats();
 
   // ── Data Fetching ────────────────────────────────────────
   const fetchData = useCallback(async () => {
@@ -497,6 +502,23 @@ export default function AdminReportsPage() {
           setTimekeepingData(res);
           setSnapshotTime(res.snapshot_timestamp);
         }
+      } else if (activeTab === "imagery") {
+        setMapillaryLoading(true);
+        try {
+          const mapRes = await fetchMapillaryStats({
+            startDate,
+            endDate,
+            ...(filtersBody?.team ? { teamId: filtersBody.team[0] } : {}),
+            ...(filtersBody?.user ? { userId: filtersBody.user[0] } : {}),
+          });
+          if (mapRes?.status === 200) {
+            setMapillaryData(mapRes);
+          }
+        } catch (err) {
+          console.error("Error fetching Mapillary stats:", err);
+        } finally {
+          setMapillaryLoading(false);
+        }
       }
     } catch {
       // API errors are handled by the hook's error state
@@ -512,6 +534,7 @@ export default function AdminReportsPage() {
     fetchTimekeeping,
     fetchHeatmap,
     fetchElementAnalysis,
+    fetchMapillaryStats,
   ]);
 
   useEffect(() => {
@@ -682,6 +705,7 @@ export default function AdminReportsPage() {
           <TabsTrigger value="editing">Editing</TabsTrigger>
           <TabsTrigger value="community">Community</TabsTrigger>
           <TabsTrigger value="timekeeping">Timekeeping</TabsTrigger>
+          <TabsTrigger value="imagery">Imagery</TabsTrigger>
         </TabsList>
 
         {/* ═══════ EDITING TAB ═══════ */}
@@ -1941,6 +1965,130 @@ export default function AdminReportsPage() {
                 </p>
               </CardContent>
             </Card>
+          )}
+        </TabsContent>
+
+        {/* ═══════ IMAGERY TAB ═══════ */}
+        <TabsContent value="imagery">
+          {mapillaryLoading ? (
+            <div className="flex items-center justify-center py-12">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600" />
+              <span className="ml-3 text-gray-600">Loading Mapillary data...</span>
+            </div>
+          ) : !mapillaryData || mapillaryData.summary.total_images === 0 ? (
+            <Card>
+              <CardContent className="py-12 text-center">
+                <p className="text-gray-500 text-lg">No Mapillary data available</p>
+                <p className="text-gray-400 text-sm mt-2">
+                  {mapillaryData?.message || "Link Mapillary usernames to users in their profile to start tracking imagery uploads."}
+                </p>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="space-y-6">
+              {/* Summary Cards */}
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <Card>
+                  <CardContent className="pt-6">
+                    <p className="text-sm text-gray-500">Total Images</p>
+                    <p className="text-3xl font-bold">{mapillaryData.summary.total_images.toLocaleString()}</p>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardContent className="pt-6">
+                    <p className="text-sm text-gray-500">Total Trips</p>
+                    <p className="text-3xl font-bold">{mapillaryData.summary.total_trips.toLocaleString()}</p>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardContent className="pt-6">
+                    <p className="text-sm text-gray-500">Active Contributors</p>
+                    <p className="text-3xl font-bold">{mapillaryData.summary.active_contributors}</p>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardContent className="pt-6">
+                    <p className="text-sm text-gray-500">Total Sequences</p>
+                    <p className="text-3xl font-bold">{mapillaryData.summary.total_sequences.toLocaleString()}</p>
+                  </CardContent>
+                </Card>
+              </div>
+
+              {/* Weekly Uploads Chart */}
+              {mapillaryData.weekly_uploads.length > 0 && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Weekly Image Uploads</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <ResponsiveContainer width="100%" height={300}>
+                      <BarChart data={mapillaryData.weekly_uploads}>
+                        <CartesianGrid strokeDasharray="3 3" />
+                        <XAxis dataKey="week" />
+                        <YAxis />
+                        <Tooltip />
+                        <Bar dataKey="images" fill="#10b981" name="Images" radius={[4, 4, 0, 0]} />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Images by User Chart */}
+              {mapillaryData.summary.images_by_user.length > 0 && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Images by Contributor</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <ResponsiveContainer width="100%" height={Math.max(200, mapillaryData.summary.images_by_user.length * 40)}>
+                      <BarChart data={mapillaryData.summary.images_by_user} layout="vertical">
+                        <CartesianGrid strokeDasharray="3 3" />
+                        <XAxis type="number" />
+                        <YAxis type="category" dataKey="name" width={120} />
+                        <Tooltip />
+                        <Bar dataKey="count" fill="#6366f1" name="Images" radius={[0, 4, 4, 0]} />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Trips Table */}
+              {mapillaryData.trips.length > 0 && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Capture Trips</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-sm">
+                        <thead>
+                          <tr className="border-b text-left">
+                            <th className="pb-2 font-medium text-gray-600">User</th>
+                            <th className="pb-2 font-medium text-gray-600">Mapillary Username</th>
+                            <th className="pb-2 font-medium text-gray-600">Date</th>
+                            <th className="pb-2 font-medium text-gray-600 text-right">Images</th>
+                            <th className="pb-2 font-medium text-gray-600 text-right">Sequences</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {mapillaryData.trips.map((trip, i) => (
+                            <tr key={`${trip.mapillary_username}-${trip.date}-${i}`} className="border-b last:border-0">
+                              <td className="py-2">{trip.user_name}</td>
+                              <td className="py-2 text-gray-500">{trip.mapillary_username}</td>
+                              <td className="py-2">{trip.date}</td>
+                              <td className="py-2 text-right">{trip.image_count.toLocaleString()}</td>
+                              <td className="py-2 text-right">{trip.sequence_count}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+            </div>
           )}
         </TabsContent>
       </Tabs>
