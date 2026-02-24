@@ -458,7 +458,7 @@ export default function UserProfilePage() {
             </div>
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-3 flex-wrap">
-                <h1 className="text-2xl font-bold text-gray-900">
+                <h1 className="text-2xl font-bold text-foreground">
                   {user.full_name ||
                     `${user.first_name} ${user.last_name}`}
                 </h1>
@@ -691,26 +691,26 @@ export default function UserProfilePage() {
           <CardContent className="p-0">
             <div className="overflow-x-auto">
               <table className="w-full">
-                <thead className="bg-muted border-b border-gray-200">
+                <thead className="bg-muted border-b border-border">
                   <tr>
-                    <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">
+                    <th className="px-6 py-3 text-left text-sm font-semibold text-muted-foreground">
                       Project
                     </th>
-                    <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">
+                    <th className="px-6 py-3 text-left text-sm font-semibold text-muted-foreground">
                       Mapped
                     </th>
-                    <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">
+                    <th className="px-6 py-3 text-left text-sm font-semibold text-muted-foreground">
                       Validated
                     </th>
-                    <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">
+                    <th className="px-6 py-3 text-left text-sm font-semibold text-muted-foreground">
                       Invalidated
                     </th>
-                    <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">
+                    <th className="px-6 py-3 text-left text-sm font-semibold text-muted-foreground">
                       Earnings
                     </th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-border bg-white">
+                <tbody className="divide-y divide-border bg-card">
                   {user.projects.map((proj) => (
                     <tr key={proj.id}>
                       <td className="px-6 py-4">
@@ -724,21 +724,21 @@ export default function UserProfilePage() {
                             {proj.name}
                           </a>
                         ) : (
-                          <span className="font-medium text-gray-900">
+                          <span className="font-medium text-foreground">
                             {proj.name}
                           </span>
                         )}
                       </td>
-                      <td className="px-6 py-4 text-gray-700">
+                      <td className="px-6 py-4 text-muted-foreground">
                         {proj.tasks_mapped}
                       </td>
-                      <td className="px-6 py-4 text-gray-700">
+                      <td className="px-6 py-4 text-muted-foreground">
                         {proj.tasks_validated}
                       </td>
-                      <td className="px-6 py-4 text-gray-700">
+                      <td className="px-6 py-4 text-muted-foreground">
                         {proj.tasks_invalidated}
                       </td>
-                      <td className="px-6 py-4 text-gray-700">
+                      <td className="px-6 py-4 text-muted-foreground">
                         $
                         {(
                           proj.mapping_earnings + proj.validation_earnings
@@ -755,7 +755,7 @@ export default function UserProfilePage() {
 
       {/* ═══════════ DATE-FILTERED SECTION ═══════════ */}
       <div className="border-t-2 border-kaart-orange/30 pt-6">
-        <h2 className="text-lg font-semibold text-gray-900 mb-4">
+        <h2 className="text-lg font-semibold text-foreground mb-4">
           Date-Filtered Analysis
         </h2>
 
@@ -958,32 +958,32 @@ export default function UserProfilePage() {
             {filteredEntries.length > 0 ? (
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
-                  <thead className="bg-muted border-b border-gray-200">
+                  <thead className="bg-muted border-b border-border">
                     <tr>
-                      <th className="px-4 py-2 text-left font-semibold text-gray-700">
+                      <th className="px-4 py-2 text-left font-semibold text-muted-foreground">
                         Date
                       </th>
-                      <th className="px-4 py-2 text-left font-semibold text-gray-700">
+                      <th className="px-4 py-2 text-left font-semibold text-muted-foreground">
                         Project
                       </th>
-                      <th className="px-4 py-2 text-left font-semibold text-gray-700">
+                      <th className="px-4 py-2 text-left font-semibold text-muted-foreground">
                         Category
                       </th>
-                      <th className="px-4 py-2 text-left font-semibold text-gray-700">
+                      <th className="px-4 py-2 text-left font-semibold text-muted-foreground">
                         Clock In
                       </th>
-                      <th className="px-4 py-2 text-left font-semibold text-gray-700">
+                      <th className="px-4 py-2 text-left font-semibold text-muted-foreground">
                         Clock Out
                       </th>
-                      <th className="px-4 py-2 text-left font-semibold text-gray-700">
+                      <th className="px-4 py-2 text-left font-semibold text-muted-foreground">
                         Duration
                       </th>
-                      <th className="px-4 py-2 text-left font-semibold text-gray-700">
+                      <th className="px-4 py-2 text-left font-semibold text-muted-foreground">
                         Status
                       </th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-border bg-white">
+                  <tbody className="divide-y divide-border bg-card">
                     {filteredEntries.map((entry) => (
                       <tr
                         key={entry.id}
@@ -1034,25 +1034,25 @@ export default function UserProfilePage() {
 
             {filteredProjects.length > 0 && (
               <div className="mt-4">
-                <h4 className="text-sm font-semibold text-gray-700 mb-2">
+                <h4 className="text-sm font-semibold text-muted-foreground mb-2">
                   Per-project hours
                 </h4>
                 <div className="overflow-x-auto">
                   <table className="w-full text-sm">
-                    <thead className="bg-muted border-b border-gray-200">
+                    <thead className="bg-muted border-b border-border">
                       <tr>
-                        <th className="px-4 py-2 text-left font-semibold text-gray-700">
+                        <th className="px-4 py-2 text-left font-semibold text-muted-foreground">
                           Project
                         </th>
-                        <th className="px-4 py-2 text-left font-semibold text-gray-700">
+                        <th className="px-4 py-2 text-left font-semibold text-muted-foreground">
                           Hours
                         </th>
-                        <th className="px-4 py-2 text-left font-semibold text-gray-700">
+                        <th className="px-4 py-2 text-left font-semibold text-muted-foreground">
                           Sessions
                         </th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-border bg-white">
+                    <tbody className="divide-y divide-border bg-card">
                       {filteredProjects.map((proj) => (
                         <tr key={proj.id}>
                           <td className="px-4 py-2 font-medium">{proj.name}</td>
@@ -1092,29 +1092,29 @@ export default function UserProfilePage() {
               <div className="space-y-3">
                 <div className="overflow-x-auto">
                   <table className="w-full text-sm">
-                    <thead className="bg-muted border-b border-gray-200">
+                    <thead className="bg-muted border-b border-border">
                       <tr>
-                        <th className="px-4 py-2 text-left font-semibold text-gray-700">
+                        <th className="px-4 py-2 text-left font-semibold text-muted-foreground">
                           Task
                         </th>
-                        <th className="px-4 py-2 text-left font-semibold text-gray-700">
+                        <th className="px-4 py-2 text-left font-semibold text-muted-foreground">
                           Project
                         </th>
-                        <th className="px-4 py-2 text-left font-semibold text-gray-700">
+                        <th className="px-4 py-2 text-left font-semibold text-muted-foreground">
                           Action
                         </th>
-                        <th className="px-4 py-2 text-left font-semibold text-gray-700">
+                        <th className="px-4 py-2 text-left font-semibold text-muted-foreground">
                           Date
                         </th>
-                        <th className="px-4 py-2 text-left font-semibold text-gray-700">
+                        <th className="px-4 py-2 text-left font-semibold text-muted-foreground">
                           Status
                         </th>
-                        <th className="px-4 py-2 text-right font-semibold text-gray-700">
+                        <th className="px-4 py-2 text-right font-semibold text-muted-foreground">
                           Rate
                         </th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-border bg-white">
+                    <tbody className="divide-y divide-border bg-card">
                       {displayedHistory.map((t, i) => (
                         <tr key={`${t.taskId}-${t.action}-${i}`}>
                           <td className="px-4 py-2 font-mono">#{t.taskId}</td>
@@ -1243,35 +1243,35 @@ export default function UserProfilePage() {
               <>
                 <div className="overflow-x-auto">
                   <table className="w-full text-sm">
-                    <thead className="bg-muted border-b border-gray-200">
+                    <thead className="bg-muted border-b border-border">
                       <tr>
-                        <th className="px-4 py-2 text-left font-semibold text-gray-700">
+                        <th className="px-4 py-2 text-left font-semibold text-muted-foreground">
                           Changeset
                         </th>
-                        <th className="px-4 py-2 text-left font-semibold text-gray-700">
+                        <th className="px-4 py-2 text-left font-semibold text-muted-foreground">
                           Date
                         </th>
-                        <th className="px-4 py-2 text-right font-semibold text-gray-700">
+                        <th className="px-4 py-2 text-right font-semibold text-muted-foreground">
                           Changes
                         </th>
-                        <th className="px-4 py-2 text-right font-semibold text-gray-700">
+                        <th className="px-4 py-2 text-right font-semibold text-muted-foreground">
                           +Add
                         </th>
-                        <th className="px-4 py-2 text-right font-semibold text-gray-700">
+                        <th className="px-4 py-2 text-right font-semibold text-muted-foreground">
                           ~Mod
                         </th>
-                        <th className="px-4 py-2 text-right font-semibold text-gray-700">
+                        <th className="px-4 py-2 text-right font-semibold text-muted-foreground">
                           -Del
                         </th>
-                        <th className="px-4 py-2 text-left font-semibold text-gray-700">
+                        <th className="px-4 py-2 text-left font-semibold text-muted-foreground">
                           Comment
                         </th>
-                        <th className="px-4 py-2 text-left font-semibold text-gray-700">
+                        <th className="px-4 py-2 text-left font-semibold text-muted-foreground">
                           Hashtags
                         </th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-border bg-white">
+                    <tbody className="divide-y divide-border bg-card">
                       {displayedChangesets.map((cs) => (
                         <tr key={cs.id}>
                           <td className="px-4 py-2">
@@ -1345,7 +1345,7 @@ export default function UserProfilePage() {
             {/* Hashtag summary */}
             {sortedHashtags.length > 0 && (
               <div>
-                <h4 className="text-sm font-semibold text-gray-700 mb-2">
+                <h4 className="text-sm font-semibold text-muted-foreground mb-2">
                   Hashtag Summary
                 </h4>
                 <div className="flex flex-wrap gap-2">
