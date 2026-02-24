@@ -115,6 +115,10 @@ class UserAPI(MethodView):
             return self.admin_update_user_profile()
         elif path == "create_tracked_user":
             return self.create_tracked_user()
+        elif path == "link_mapillary":
+            return self.link_mapillary()
+        elif path == "unlink_mapillary":
+            return self.unlink_mapillary()
         # elif path == "register_user":
         #     return self.register_user()
         return {
@@ -384,6 +388,9 @@ class UserAPI(MethodView):
         response["osm_verified_at"] = (
             user.osm_verified_at.isoformat() if user.osm_verified_at else None
         )
+
+        # Mapillary account linking
+        response["mapillary_username"] = user.mapillary_username
 
         # Stats for display
         response["total_tasks_mapped"] = user.total_tasks_mapped or 0
@@ -1570,3 +1577,72 @@ class UserAPI(MethodView):
         history.sort(key=lambda x: x["date"] or "", reverse=True)
 
         return {"status": 200, "tasks": history}
+
+    def link_mapillary(self):
+        """Link a Mapillary account by username, verifying it exists via API."""
+        if not g.user:
+            return {"message": "User not found", "status": 304}
+
+        data = request.get_json() or {}
+        username = (data.get("mapillary_username") or "").strip()
+        if not username:
+            return {"message": "Mapillary username is required", "status": 400}
+
+        # Check if this username is already linked to another user in the org
+        existing = User.query.filter(
+            User.mapillary_username == username,
+            User.id != g.user.id,
+        ).first()
+        if existing:
+            return {
+                "message": "This Mapillary username is already linked to another user",
+                "status": 409,
+            }
+
+        # Verify the username exists on Mapillary by searching for images
+        token = current_app.config.get("MAPILLARY_ACCESS_TOKEN")
+        if token:
+            try:
+                resp = requests.get(
+                    "https://graph.mapillary.com/images",
+                    params={
+                        "access_token": token,
+                        "creator_username": username,
+                        "fields": "id",
+                        "limit": 1,
+                    },
+                    timeout=10,
+                )
+                if resp.status_code == 200:
+                    data_resp = resp.json()
+                    if not data_resp.get("data"):
+                        return {
+                            "message": f"No Mapillary account found for username '{username}'. Please check the spelling.",
+                            "status": 404,
+                        }
+                elif resp.status_code in (400, 404):
+                    return {
+                        "message": f"Mapillary username '{username}' could not be verified. Please check the spelling.",
+                        "status": 404,
+                    }
+            except Exception as e:
+                current_app.logger.warning(f"Mapillary verification failed: {e}")
+                # If API is down, still allow linking (best effort)
+
+        g.user.update(mapillary_username=username)
+        return {
+            "message": f"Mapillary account '{username}' linked successfully",
+            "mapillary_username": username,
+            "status": 200,
+        }
+
+    def unlink_mapillary(self):
+        """Unlink the current user's Mapillary account."""
+        if not g.user:
+            return {"message": "User not found", "status": 304}
+
+        if not g.user.mapillary_username:
+            return {"message": "No Mapillary account linked", "status": 400}
+
+        g.user.update(mapillary_username=None)
+        return {"message": "Mapillary account unlinked successfully", "status": 200}

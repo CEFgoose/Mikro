@@ -14,6 +14,7 @@ interface UserProfile {
   osm_id: number | null;
   osm_verified: boolean;
   osm_verified_at: string | null;
+  mapillary_username: string | null;
   payment_email: string;
   city: string;
   country: string;
@@ -30,6 +31,10 @@ export default function AccountPage() {
   const [osmLinking, setOsmLinking] = useState(false);
   const [osmUnlinking, setOsmUnlinking] = useState(false);
   const [osmMessage, setOsmMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
+  const [mapillaryInput, setMapillaryInput] = useState("");
+  const [mapillaryLinking, setMapillaryLinking] = useState(false);
+  const [mapillaryUnlinking, setMapillaryUnlinking] = useState(false);
+  const [mapillaryMessage, setMapillaryMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
   const { isDarkMode, toggleDarkMode } = useTheme();
 
   // Form state
@@ -153,6 +158,56 @@ export default function AccountPage() {
       setOsmMessage({ type: "error", text: "Failed to unlink OSM account" });
     } finally {
       setOsmUnlinking(false);
+    }
+  };
+
+  const handleLinkMapillary = async () => {
+    const username = mapillaryInput.trim();
+    if (!username) return;
+    setMapillaryLinking(true);
+    setMapillaryMessage(null);
+    try {
+      const response = await fetch("/backend/user/link_mapillary", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ mapillary_username: username }),
+      });
+      const data = await response.json();
+      if (response.ok && data.status === 200) {
+        setMapillaryMessage({ type: "success", text: data.message });
+        setMapillaryInput("");
+        fetchProfile();
+      } else {
+        setMapillaryMessage({ type: "error", text: data.message || "Failed to link Mapillary account" });
+      }
+    } catch (error) {
+      console.error("Failed to link Mapillary:", error);
+      setMapillaryMessage({ type: "error", text: "Failed to link Mapillary account" });
+    } finally {
+      setMapillaryLinking(false);
+    }
+  };
+
+  const handleUnlinkMapillary = async () => {
+    if (!confirm("Are you sure you want to unlink your Mapillary account?")) return;
+    setMapillaryUnlinking(true);
+    setMapillaryMessage(null);
+    try {
+      const response = await fetch("/backend/user/unlink_mapillary", {
+        method: "POST",
+      });
+      const data = await response.json();
+      if (response.ok && data.status === 200) {
+        setMapillaryMessage({ type: "success", text: data.message });
+        fetchProfile();
+      } else {
+        setMapillaryMessage({ type: "error", text: data.message || "Failed to unlink Mapillary account" });
+      }
+    } catch (error) {
+      console.error("Failed to unlink Mapillary:", error);
+      setMapillaryMessage({ type: "error", text: "Failed to unlink Mapillary account" });
+    } finally {
+      setMapillaryUnlinking(false);
     }
   };
 
@@ -298,6 +353,142 @@ export default function AccountPage() {
                   "Link OSM Account"
                 )}
               </Button>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Mapillary Account Linking Card */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Mapillary Account</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {mapillaryMessage && (
+            <div
+              style={{
+                padding: "12px 16px",
+                borderRadius: 8,
+                marginBottom: 16,
+                backgroundColor: mapillaryMessage.type === "success" ? "#dcfce7" : "#fee2e2",
+                color: mapillaryMessage.type === "success" ? "#166534" : "#991b1b",
+                fontSize: 14,
+              }}
+            >
+              {mapillaryMessage.text}
+            </div>
+          )}
+
+          {profile?.mapillary_username ? (
+            <div>
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 12,
+                  padding: 16,
+                  backgroundColor: "var(--secondary)",
+                  borderRadius: 8,
+                  border: "1px solid var(--border)",
+                }}
+              >
+                <div
+                  style={{
+                    width: 40,
+                    height: 40,
+                    borderRadius: "50%",
+                    backgroundColor: "#10b981",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    color: "white",
+                    fontSize: 20,
+                  }}
+                >
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
+                    <polyline points="20 6 9 17 4 12" />
+                  </svg>
+                </div>
+                <div style={{ flex: 1 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                    <span style={{ fontWeight: 600, fontSize: 16 }}>{profile.mapillary_username}</span>
+                    <span
+                      style={{
+                        fontSize: 11,
+                        padding: "2px 8px",
+                        borderRadius: 12,
+                        backgroundColor: "#10b981",
+                        color: "white",
+                        fontWeight: 500,
+                      }}
+                    >
+                      Linked
+                    </span>
+                  </div>
+                  <p style={{ fontSize: 13, color: "var(--muted-foreground)", marginTop: 4 }}>
+                    Mapillary imagery uploads are being tracked
+                  </p>
+                </div>
+                <a
+                  href={`https://www.mapillary.com/app/user/${profile.mapillary_username}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={{
+                    padding: "6px 12px",
+                    fontSize: 13,
+                    color: "var(--accent)",
+                    textDecoration: "none",
+                    borderRadius: 6,
+                    border: "1px solid var(--accent)",
+                  }}
+                >
+                  View Profile
+                </a>
+              </div>
+              <div style={{ marginTop: 12, textAlign: "right" }}>
+                <button
+                  onClick={handleUnlinkMapillary}
+                  disabled={mapillaryUnlinking}
+                  style={{
+                    fontSize: 13,
+                    color: "#dc2626",
+                    background: "none",
+                    border: "none",
+                    cursor: mapillaryUnlinking ? "not-allowed" : "pointer",
+                    textDecoration: "underline",
+                    opacity: mapillaryUnlinking ? 0.5 : 1,
+                  }}
+                >
+                  {mapillaryUnlinking ? "Unlinking..." : "Unlink Mapillary Account"}
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div>
+              <p style={{ fontSize: 14, color: "var(--muted-foreground)", marginBottom: 16 }}>
+                Link your Mapillary account to track your street-level imagery uploads.
+              </p>
+              <div style={{ display: "flex", gap: 8, alignItems: "flex-end" }}>
+                <div style={{ flex: 1 }}>
+                  <Input
+                    value={mapillaryInput}
+                    onChange={(e) => setMapillaryInput(e.target.value)}
+                    placeholder="Your Mapillary username"
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") handleLinkMapillary();
+                    }}
+                  />
+                </div>
+                <Button
+                  onClick={handleLinkMapillary}
+                  disabled={mapillaryLinking || !mapillaryInput.trim()}
+                >
+                  {mapillaryLinking ? "Verifying..." : "Link Account"}
+                </Button>
+              </div>
+              <p style={{ fontSize: 12, color: "var(--muted-foreground)", marginTop: 8 }}>
+                Your username will be verified against the Mapillary API to confirm it exists.
+              </p>
             </div>
           )}
         </CardContent>
