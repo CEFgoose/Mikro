@@ -1108,10 +1108,13 @@ class ReportsAPI(MethodView):
             # Derive trips: group sequences by date
             date_groups = {}
             for seq_id, seq_images in sequences.items():
-                # Use first image's captured_at for the date
+                # Use first image's captured_at (epoch ms) for the date
                 if seq_images:
-                    cap_at = seq_images[0].get("captured_at", "")
-                    trip_date = cap_at[:10] if len(cap_at) >= 10 else "unknown"
+                    cap_at = seq_images[0].get("captured_at")
+                    if cap_at and isinstance(cap_at, (int, float)):
+                        trip_date = datetime.utcfromtimestamp(cap_at / 1000).strftime("%Y-%m-%d")
+                    else:
+                        trip_date = "unknown"
                     if trip_date not in date_groups:
                         date_groups[trip_date] = {"images": 0, "sequences": set()}
                     date_groups[trip_date]["images"] += len(seq_images)
@@ -1128,18 +1131,15 @@ class ReportsAPI(MethodView):
 
             # Weekly upload buckets
             for img in images:
-                cap_at = img.get("captured_at", "")
-                if len(cap_at) >= 10:
-                    try:
-                        img_date = datetime.strptime(cap_at[:10], "%Y-%m-%d")
-                        # Get Monday of that week
-                        week_start = img_date - timedelta(days=img_date.weekday())
-                        week_key = week_start
-                        if week_key not in weekly_buckets:
-                            weekly_buckets[week_key] = 0
-                        weekly_buckets[week_key] += 1
-                    except ValueError:
-                        pass
+                cap_at = img.get("captured_at")
+                if cap_at and isinstance(cap_at, (int, float)):
+                    img_date = datetime.utcfromtimestamp(cap_at / 1000)
+                    # Get Monday of that week
+                    week_start = img_date - timedelta(days=img_date.weekday())
+                    week_key = week_start.date()
+                    if week_key not in weekly_buckets:
+                        weekly_buckets[week_key] = 0
+                    weekly_buckets[week_key] += 1
 
         # Sort trips by date descending
         all_trips.sort(key=lambda t: t["date"], reverse=True)
