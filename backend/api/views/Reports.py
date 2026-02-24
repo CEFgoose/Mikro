@@ -1022,6 +1022,9 @@ class ReportsAPI(MethodView):
         start_iso = start_dt.strftime("%Y-%m-%dT00:00:00Z")
         end_iso = end_dt.strftime("%Y-%m-%dT23:59:59Z")
 
+        # Capture these before spawning threads (threads lack Flask app context)
+        logger = current_app.logger
+
         def fetch_user_images(user):
             """Fetch all Mapillary images for a single user."""
             first_name = (user.first_name or "").title()
@@ -1041,7 +1044,7 @@ class ReportsAPI(MethodView):
                 while url:
                     resp = http_requests.get(url, timeout=30)
                     if resp.status_code != 200:
-                        current_app.logger.warning(
+                        logger.warning(
                             f"Mapillary API error for {user.mapillary_username}: {resp.status_code}"
                         )
                         break
@@ -1052,7 +1055,7 @@ class ReportsAPI(MethodView):
                     paging = data.get("paging", {})
                     url = paging.get("next")
             except Exception as e:
-                current_app.logger.error(
+                logger.error(
                     f"Mapillary fetch error for {user.mapillary_username}: {e}"
                 )
             return {
@@ -1073,7 +1076,7 @@ class ReportsAPI(MethodView):
                     result = future.result()
                     all_user_results.append(result)
                 except Exception as e:
-                    current_app.logger.error(f"Mapillary fetch thread error: {e}")
+                    logger.error(f"Mapillary fetch thread error: {e}")
 
         # Process results: build trips, weekly uploads, per-user counts
         total_images = 0
