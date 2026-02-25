@@ -14,6 +14,7 @@ import {
 } from "@/components/ui";
 import {
   useFetchEditingStats,
+  useFetchMrStats,
   useFetchTimekeepingStats,
   useFetchFilterOptions,
   useFetchChangesetHeatmap,
@@ -404,6 +405,7 @@ export default function AdminReportsPage() {
   const [elementProgress, setElementProgress] = useState<string | null>(null);
   const [showRefreshModal, setShowRefreshModal] = useState(false);
   const elementPollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const [mrData, setMrData] = useState<EditingStatsResponse | null>(null);
   const [mapillaryData, setMapillaryData] = useState<MapillaryStatsResponse | null>(null);
   const [mapillaryLoading, setMapillaryLoading] = useState(false);
 
@@ -420,6 +422,11 @@ export default function AdminReportsPage() {
     loading: editingLoading,
     error: editingError,
   } = useFetchEditingStats();
+  const {
+    mutate: fetchMr,
+    loading: mrLoading,
+    error: mrError,
+  } = useFetchMrStats();
   const {
     mutate: fetchTimekeeping,
     loading: timekeepingLoading,
@@ -502,6 +509,11 @@ export default function AdminReportsPage() {
           setTimekeepingData(res);
           setSnapshotTime(res.snapshot_timestamp);
         }
+      } else if (activeTab === "maproulette") {
+        const res = await fetchMr(params);
+        if (res?.status === 200) {
+          setMrData(res);
+        }
       } else if (activeTab === "imagery") {
         setMapillaryLoading(true);
         try {
@@ -531,6 +543,7 @@ export default function AdminReportsPage() {
     compareEnabled,
     activeTab,
     fetchEditing,
+    fetchMr,
     fetchTimekeeping,
     fetchHeatmap,
     fetchElementAnalysis,
@@ -583,10 +596,10 @@ export default function AdminReportsPage() {
           )}
           <button
             onClick={() => fetchData()}
-            disabled={editingLoading || timekeepingLoading}
+            disabled={editingLoading || mrLoading || timekeepingLoading}
             className="inline-flex items-center px-3 py-1.5 rounded-lg bg-kaart-orange text-white text-sm font-medium hover:bg-kaart-orange-dark transition-colors disabled:opacity-50"
           >
-            {editingLoading || timekeepingLoading
+            {editingLoading || mrLoading || timekeepingLoading
               ? "Refreshing..."
               : "Refresh"}
           </button>
@@ -706,6 +719,7 @@ export default function AdminReportsPage() {
           <TabsTrigger value="community">Community</TabsTrigger>
           <TabsTrigger value="timekeeping">Timekeeping</TabsTrigger>
           <TabsTrigger value="imagery">Imagery</TabsTrigger>
+          <TabsTrigger value="maproulette">MapRoulette</TabsTrigger>
         </TabsList>
 
         {/* ═══════ EDITING TAB ═══════ */}
@@ -2089,6 +2103,302 @@ export default function AdminReportsPage() {
                 </Card>
               )}
             </div>
+          )}
+        </TabsContent>
+
+        {/* ═══════ MAPROULETTE TAB ═══════ */}
+        <TabsContent value="maproulette">
+          {mrLoading && !mrData ? (
+            <LoadingSpinner />
+          ) : mrError ? (
+            <Card>
+              <CardContent className="p-8 text-center text-red-500">
+                Failed to load MapRoulette stats: {mrError}
+              </CardContent>
+            </Card>
+          ) : mrData ? (
+            <div className="space-y-6">
+              {/* Summary Cards */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <StatCard
+                  label="Tasks Fixed"
+                  value={mrData.summary.total_mapped.toLocaleString()}
+                  compareValue={mrData.comparison?.summary?.total_mapped}
+                />
+                <StatCard
+                  label="Tasks Validated"
+                  value={mrData.summary.total_validated.toLocaleString()}
+                  compareValue={mrData.comparison?.summary?.total_validated}
+                />
+                <StatCard
+                  label="Tasks Invalidated"
+                  value={mrData.summary.total_invalidated.toLocaleString()}
+                  compareValue={mrData.comparison?.summary?.total_invalidated}
+                />
+              </div>
+
+              {/* Tasks Over Time Bar Chart */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>Tasks Over Time</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {mrData.tasks_over_time.length > 0 ? (
+                    <div style={{ width: "100%", height: 300 }}>
+                      <ResponsiveContainer>
+                        <BarChart data={mrData.tasks_over_time}>
+                          <CartesianGrid strokeDasharray="3 3" />
+                          <XAxis
+                            dataKey="week"
+                            tick={{ fontSize: 12 }}
+                            tickFormatter={(v: string) =>
+                              new Date(
+                                v + "T00:00:00"
+                              ).toLocaleDateString("en-US", {
+                                month: "short",
+                                day: "numeric",
+                              })
+                            }
+                          />
+                          <YAxis tick={{ fontSize: 12 }} />
+                          <Tooltip
+                            labelFormatter={(v) =>
+                              new Date(
+                                String(v) + "T00:00:00"
+                              ).toLocaleDateString("en-US", {
+                                month: "short",
+                                day: "numeric",
+                                year: "numeric",
+                              })
+                            }
+                          />
+                          <Legend />
+                          <Bar
+                            dataKey="mapped"
+                            name="Fixed"
+                            fill={COLORS.mapped}
+                          />
+                          <Bar
+                            dataKey="validated"
+                            name="Validated"
+                            fill={COLORS.validated}
+                          />
+                          <Bar
+                            dataKey="invalidated"
+                            name="Invalidated"
+                            fill={COLORS.invalidated}
+                          />
+                        </BarChart>
+                      </ResponsiveContainer>
+                    </div>
+                  ) : (
+                    <p className="text-sm text-muted-foreground text-center py-8">
+                      No MapRoulette task data for this period.
+                    </p>
+                  )}
+                </CardContent>
+              </Card>
+
+              {/* Detailed Challenge Table */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>
+                    Challenges ({mrData.projects.length})
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="p-0">
+                  <div className="overflow-x-auto">
+                    <table className="w-full">
+                      <thead className="bg-muted border-b border-border">
+                        <tr>
+                          <th className="px-6 py-3 text-left text-sm font-semibold text-foreground">
+                            Challenge Name
+                          </th>
+                          <th className="px-6 py-3 text-left text-sm font-semibold text-foreground">
+                            Status
+                          </th>
+                          <th className="px-6 py-3 text-left text-sm font-semibold text-foreground">
+                            Progress
+                          </th>
+                          <th className="px-6 py-3 text-left text-sm font-semibold text-foreground">
+                            % Validated
+                          </th>
+                          <th className="px-6 py-3 text-left text-sm font-semibold text-foreground">
+                            Fix Rate
+                          </th>
+                          <th className="px-6 py-3 text-left text-sm font-semibold text-foreground">
+                            Val Rate
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-border bg-card">
+                        {mrData.projects.map((proj) => {
+                          const status = getProjectStatus(proj);
+                          return (
+                            <tr key={proj.id}>
+                              <td className="px-6 py-4">
+                                {proj.url ? (
+                                  <a
+                                    href={proj.url}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="font-medium text-kaart-orange hover:underline"
+                                  >
+                                    {proj.name}
+                                  </a>
+                                ) : (
+                                  <span className="font-medium text-foreground">
+                                    {proj.name}
+                                  </span>
+                                )}
+                              </td>
+                              <td className="px-6 py-4">
+                                <span
+                                  className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${status.className}`}
+                                >
+                                  {status.label}
+                                </span>
+                              </td>
+                              <td className="px-6 py-4">
+                                <div className="flex items-center gap-2">
+                                  <div
+                                    className="flex-1 h-2 bg-muted rounded-full overflow-hidden"
+                                    style={{ minWidth: 80 }}
+                                  >
+                                    <div
+                                      className="h-full bg-kaart-orange rounded-full transition-all"
+                                      style={{
+                                        width: `${Math.min(proj.percent_mapped, 100)}%`,
+                                      }}
+                                    />
+                                  </div>
+                                  <span className="text-xs text-muted-foreground w-10 text-right">
+                                    {proj.percent_mapped}%
+                                  </span>
+                                </div>
+                              </td>
+                              <td className="px-6 py-4">
+                                <div className="flex items-center gap-2">
+                                  <div
+                                    className="flex-1 h-2 bg-muted rounded-full overflow-hidden"
+                                    style={{ minWidth: 60 }}
+                                  >
+                                    <div
+                                      className="h-full bg-blue-500 rounded-full transition-all"
+                                      style={{
+                                        width: `${Math.min(proj.percent_validated, 100)}%`,
+                                      }}
+                                    />
+                                  </div>
+                                  <span className="text-xs text-muted-foreground w-10 text-right">
+                                    {proj.percent_validated}%
+                                  </span>
+                                </div>
+                              </td>
+                              <td className="px-6 py-4 text-foreground">
+                                ${proj.mapping_rate.toFixed(2)}
+                              </td>
+                              <td className="px-6 py-4 text-foreground">
+                                ${proj.validation_rate.toFixed(2)}
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Top Contributors Table */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>Top Contributors</CardTitle>
+                </CardHeader>
+                <CardContent className="p-0">
+                  <div className="overflow-x-auto">
+                    <table className="w-full">
+                      <thead className="bg-muted border-b border-border">
+                        <tr>
+                          <th className="px-6 py-3 text-left text-sm font-semibold text-foreground">
+                            Name
+                          </th>
+                          <th className="px-6 py-3 text-left text-sm font-semibold text-foreground">
+                            OSM Username
+                          </th>
+                          <th className="px-6 py-3 text-left text-sm font-semibold text-foreground">
+                            Fixed
+                          </th>
+                          <th className="px-6 py-3 text-left text-sm font-semibold text-foreground">
+                            Validated
+                          </th>
+                          <th className="px-6 py-3 text-left text-sm font-semibold text-foreground">
+                            Invalidated
+                          </th>
+                          <th className="px-6 py-3 text-left text-sm font-semibold text-foreground">
+                            Hours
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-border bg-card">
+                        {mrData.top_contributors.map((c) => (
+                          <tr
+                            key={c.osm_username}
+                            className={
+                              c.user_id
+                                ? "cursor-pointer hover:bg-muted/50 transition-colors"
+                                : ""
+                            }
+                            onClick={() =>
+                              c.user_id &&
+                              router.push(
+                                `/admin/users/${encodeURIComponent(c.user_id)}`
+                              )
+                            }
+                          >
+                            <td className="px-6 py-4">
+                              <span
+                                className={
+                                  c.user_id
+                                    ? "font-medium text-kaart-orange"
+                                    : "font-medium text-foreground"
+                                }
+                              >
+                                {c.user_name}
+                              </span>
+                            </td>
+                            <td className="px-6 py-4 text-foreground">
+                              {c.osm_username}
+                            </td>
+                            <td className="px-6 py-4 text-foreground">
+                              {c.tasks_mapped}
+                            </td>
+                            <td className="px-6 py-4 text-foreground">
+                              {c.tasks_validated}
+                            </td>
+                            <td className="px-6 py-4 text-foreground">
+                              {c.tasks_invalidated}
+                            </td>
+                            <td className="px-6 py-4 text-foreground">
+                              {c.total_hours}h
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          ) : (
+            <Card>
+              <CardContent className="p-12 text-center">
+                <p className="text-muted-foreground">
+                  No MapRoulette data available for this period. Select a date
+                  range and click Refresh to load MapRoulette statistics.
+                </p>
+              </CardContent>
+            </Card>
           )}
         </TabsContent>
       </Tabs>

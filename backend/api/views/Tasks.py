@@ -13,6 +13,7 @@ from flask.views import MethodView
 from flask import g, request, current_app
 
 from ..utils import requires_admin
+from .MapRoulette import MapRouletteSync
 from ..database import (
     Project,
     Task,
@@ -877,7 +878,10 @@ class TaskAPI(MethodView):
 
         # Process all projects (TM4 only - TM3 support removed)
         for project in user_projects:
-            self.TM4_payment_call(project.id, g.user)
+            if project.source == "mr":
+                MapRouletteSync().sync_challenge_tasks(project, g.user)
+            else:
+                self.TM4_payment_call(project.id, g.user)
 
         return {"message": "updated", "status": 200}
 

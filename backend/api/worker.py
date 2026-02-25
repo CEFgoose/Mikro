@@ -51,6 +51,7 @@ def run_sync_job(app, job):
     """
     from .database import db, SyncJob, User, Project, ProjectUser
     from .views.Tasks import TaskAPI
+    from .views.MapRoulette import MapRouletteSync
 
     task_api = TaskAPI()
 
@@ -100,7 +101,10 @@ def run_sync_job(app, job):
             for j, project in enumerate(user_projects, 1):
                 job.progress = f"User {i}/{total_users} - Project {project.id} ({j}/{len(user_projects)})"
                 db.session.commit()
-                task_api.TM4_payment_call(project.id, user)
+                if project.source == "mr":
+                    MapRouletteSync().sync_challenge_tasks(project, user)
+                else:
+                    task_api.TM4_payment_call(project.id, user)
 
         # Mark completed
         job.status = "completed"

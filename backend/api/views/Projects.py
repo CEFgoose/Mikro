@@ -16,6 +16,7 @@ from sqlalchemy import func
 
 from ..utils import requires_admin
 from ..filters import resolve_filtered_user_ids
+from .MapRoulette import MapRouletteSync
 from ..database import (
     Project,
     Task,
@@ -33,6 +34,21 @@ class ProjectAPI(MethodView):
     def _get_tm4_base_url(self):
         """Get TM4 API base URL from config."""
         return current_app.config.get("TM4_API_URL", "https://tasks.kaart.com/api/v2")
+
+    def _detect_source(self, url):
+        """Determine project source from URL pattern."""
+        if "maproulette" in url.lower():
+            return "mr"
+        return "tm4"
+
+    def _extract_mr_challenge_id(self, url):
+        """Extract challenge ID from MapRoulette URL."""
+        import re
+        m = re.match(r".*(?:challenges?|challenge)/(\d+)", url)
+        if m:
+            return int(m.group(1))
+        m = re.match(r"^.*\/(\d+)$", url)
+        return int(m.group(1)) if m else None
 
     def _calculate_task_payment(self, task, is_mapping=True):
         """
@@ -109,7 +125,7 @@ class ProjectAPI(MethodView):
 
     @requires_admin
     def create_project(self):
-        """Create a new TM4 project."""
+        """Create a new TM4 or MapRoulette project."""
         if not g.user:
             return {"message": "Missing user info", "status": 304}
 
@@ -130,6 +146,13 @@ class ProjectAPI(MethodView):
 
         # Assign the data to variables
         url = request.json.get("url")
+
+        # Dispatch based on source
+        source = self._detect_source(url)
+        if source == "mr":
+            return self._create_mr_project()
+
+        # --- TM4 path (unchanged) ---
         rate_type = request.json.get("rate_type")
         mapping_rate = float(request.json.get("mapping_rate"))
         validation_rate = float(request.json.get("validation_rate"))
@@ -197,6 +220,61 @@ class ProjectAPI(MethodView):
                 max_validators=max_validators,
                 visibility=visibility,
                 status=True,  # New projects are active by default
+            )
+            return {"message": "Project created", "status": 200}
+        else:
+            return {"message": "Rate per task insufficient", "status": 400}
+
+    def _create_mr_project(self):
+        """Create a new MapRoulette project from a challenge URL."""
+        url = request.json.get("url")
+        rate_type = request.json.get("rate_type")
+        mapping_rate = float(request.json.get("mapping_rate"))
+        validation_rate = float(request.json.get("validation_rate"))
+        max_editors = request.json.get("max_editors")
+        max_validators = request.json.get("max_validators")
+        visibility = request.json.get("visibility")
+
+        challenge_id = self._extract_mr_challenge_id(url)
+        if not challenge_id:
+            return {"message": "Cannot get challenge ID from MapRoulette URL", "status": 400}
+
+        # Check if project already exists
+        project_exists = Project.query.filter_by(id=challenge_id).first()
+        if project_exists:
+            return {"message": "Project already exists", "status": 400}
+
+        # Fetch challenge metadata from MapRoulette API
+        try:
+            mr_data = MapRouletteSync().fetch_challenge_metadata(challenge_id)
+        except Exception as e:
+            current_app.logger.error(f"MapRoulette API error: {e}")
+            return {"message": "MapRoulette API error", "status": 500}
+
+        project_name = mr_data.get("name", f"MR Challenge {challenge_id}")
+        total_tasks = mr_data.get("total_tasks", 0)
+
+        # Calculate budget
+        if rate_type is True:
+            calculation = (mapping_rate + validation_rate) * total_tasks
+        else:
+            calculation = 0
+
+        if mapping_rate >= 0.01 and validation_rate >= 0.01:
+            Project.create(
+                id=challenge_id,
+                org_id=g.user.org_id,
+                name=project_name,
+                total_tasks=total_tasks,
+                max_payment=float(calculation),
+                url=url,
+                validation_rate_per_task=validation_rate,
+                mapping_rate_per_task=mapping_rate,
+                max_editors=max_editors,
+                max_validators=max_validators,
+                visibility=visibility,
+                status=True,
+                source="mr",
             )
             return {"message": "Project created", "status": 200}
         else:
@@ -289,7 +367,7 @@ class ProjectAPI(MethodView):
 
     @requires_admin
     def calculate_budget(self):
-        """Calculate projected budget for a TM4 project."""
+        """Calculate projected budget for a TM4 or MapRoulette project."""
         if not hasattr(g, "user") or not g.user:
             return {"message": "Missing user info", "status": 304}
 
@@ -304,48 +382,65 @@ class ProjectAPI(MethodView):
             if request.json.get(arg) is None:
                 return {"message": f"{arg} required", "status": 400}
 
-        # Get TM4 API URL
-        base_url = self._get_tm4_base_url()
+        # Detect source from URL
+        source = self._detect_source(url)
 
-        if project_id is not None:
-            project = Project.query.filter_by(id=project_id).first()
-            if not project:
-                return {"message": "Project not found", "status": 400}
+        if source == "mr":
+            # --- MapRoulette path ---
+            challenge_id = self._extract_mr_challenge_id(url)
+            if not challenge_id:
+                return {"message": "Cannot get challenge ID from MapRoulette URL", "status": 400}
+
+            try:
+                mr_data = MapRouletteSync().fetch_challenge_metadata(challenge_id)
+            except Exception as e:
+                current_app.logger.error(f"MapRoulette API error: {e}")
+                return {"message": "MapRoulette API error", "status": 500}
+
+            total_tasks = mr_data.get("total_tasks", 0)
         else:
-            m = re.match(r"^.*\/([0-9]+)$", url)
-            if not m:
-                return {"message": "Cannot get project ID from URL", "status": 400}
-            project_id = m.group(1)
+            # --- TM4 path (unchanged) ---
+            base_url = self._get_tm4_base_url()
 
-        stats_api = f"{base_url}/projects/{project_id}/"
+            if project_id is not None:
+                project = Project.query.filter_by(id=project_id).first()
+                if not project:
+                    return {"message": "Project not found", "status": 400}
+            else:
+                m = re.match(r"^.*\/([0-9]+)$", url)
+                if not m:
+                    return {"message": "Cannot get project ID from URL", "status": 400}
+                project_id = m.group(1)
 
-        # Fetch project data from TM4
-        try:
-            current_app.logger.info(f"Fetching TM4 project data from: {stats_api}")
-            tm_fetch = requests.get(stats_api, timeout=30)
-            if not tm_fetch.ok:
-                current_app.logger.error(f"TM4 API returned {tm_fetch.status_code}: {tm_fetch.text[:500]}")
-                return {"message": f"TM4 API returned status {tm_fetch.status_code}", "status": 500}
-        except requests.RequestException as e:
-            current_app.logger.error(f"TM4 API request error: {e}")
-            return {"message": "TM4 API error", "status": 500}
+            stats_api = f"{base_url}/projects/{project_id}/"
 
-        try:
-            json_data = tm_fetch.json()
-        except requests.exceptions.JSONDecodeError:
-            current_app.logger.error(f"TM4 API returned non-JSON response: {tm_fetch.text[:500]}")
-            return {"message": "TM4 API returned invalid response", "status": 500}
+            # Fetch project data from TM4
+            try:
+                current_app.logger.info(f"Fetching TM4 project data from: {stats_api}")
+                tm_fetch = requests.get(stats_api, timeout=30)
+                if not tm_fetch.ok:
+                    current_app.logger.error(f"TM4 API returned {tm_fetch.status_code}: {tm_fetch.text[:500]}")
+                    return {"message": f"TM4 API returned status {tm_fetch.status_code}", "status": 500}
+            except requests.RequestException as e:
+                current_app.logger.error(f"TM4 API request error: {e}")
+                return {"message": "TM4 API error", "status": 500}
 
-        # Debug logging for task count
-        project_info = json_data.get("projectInfo", {})
-        features_count = len(json_data.get("tasks", {}).get("features", []))
-        project_info_total = project_info.get("totalTasks")
-        current_app.logger.info(f"TM4 project {project_id} - projectInfo.totalTasks: {project_info_total}, features count: {features_count}")
-        current_app.logger.info(f"TM4 projectInfo keys: {list(project_info.keys())}")
+            try:
+                json_data = tm_fetch.json()
+            except requests.exceptions.JSONDecodeError:
+                current_app.logger.error(f"TM4 API returned non-JSON response: {tm_fetch.text[:500]}")
+                return {"message": "TM4 API returned invalid response", "status": 500}
 
-        # Use totalTasks from projectInfo if available (more accurate than counting features)
-        total_tasks = project_info_total or features_count
-        current_app.logger.info(f"Using total_tasks: {total_tasks}")
+            # Debug logging for task count
+            project_info = json_data.get("projectInfo", {})
+            features_count = len(json_data.get("tasks", {}).get("features", []))
+            project_info_total = project_info.get("totalTasks")
+            current_app.logger.info(f"TM4 project {project_id} - projectInfo.totalTasks: {project_info_total}, features count: {features_count}")
+            current_app.logger.info(f"TM4 projectInfo keys: {list(project_info.keys())}")
+
+            # Use totalTasks from projectInfo if available (more accurate than counting features)
+            total_tasks = project_info_total or features_count
+            current_app.logger.info(f"Using total_tasks: {total_tasks}")
 
         if rate_type is True:
             mapping_rate = float(mapping_rate)
@@ -554,6 +649,7 @@ class ProjectAPI(MethodView):
                     "total_tasks": project.total_tasks,
                     "url": project.url,
                     "difficulty": project.difficulty,
+                    "source": project.source,
                     # Use effective counts that handle split tasks
                     "total_mapped": task_counts["effective_mapped"],
                     "total_validated": task_counts["effective_validated"],
@@ -585,6 +681,7 @@ class ProjectAPI(MethodView):
                     "total_tasks": project.total_tasks,
                     "url": project.url,
                     "difficulty": project.difficulty,
+                    "source": project.source,
                     # Use effective counts that handle split tasks
                     "total_mapped": task_counts["effective_mapped"],
                     "total_validated": task_counts["effective_validated"],
@@ -1030,6 +1127,7 @@ class ProjectAPI(MethodView):
                     "total_tasks": project.total_tasks,
                     "url": project.url,
                     "difficulty": project.difficulty,
+                    "source": project.source,
                     "tasks_mapped": user_project_mapped_tasks,
                     "tasks_approved": user_project_approved_tasks,
                     "tasks_unapproved": user_project_unapproved_tasks,
@@ -1322,6 +1420,7 @@ class ProjectAPI(MethodView):
                     "total_tasks": project.total_tasks,
                     "url": project.url,
                     "difficulty": project.difficulty,
+                    "source": project.source,
                     "tasks_mapped": user_project_mapped_tasks,
                     "tasks approved": user_project_approved_tasks,
                     "tasks unapproved": user_project_unapproved_tasks,
@@ -1350,6 +1449,7 @@ class ProjectAPI(MethodView):
                     "total_tasks": project.total_tasks,
                     "url": project.url,
                     "difficulty": project.difficulty,
+                    "source": project.source,
                     # "tasks_mapped": user_project_mapped_tasks,
                     # "tasks approved": user_project_approved_tasks,
                     # "tasks unapproved": user_project_unapproved_tasks,
@@ -1425,6 +1525,7 @@ class ProjectAPI(MethodView):
                     "total_tasks": project.total_tasks,
                     "url": project.url,
                     "difficulty": project.difficulty,
+                    "source": project.source,
                     "tasks_mapped": 0,  # Not assigned, so no mapping
                     "tasks approved": 0,
                     "tasks unapproved": 0,

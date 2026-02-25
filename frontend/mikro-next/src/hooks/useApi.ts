@@ -744,6 +744,10 @@ export function useFetchEditingStats() {
   return useApiMutation<EditingStatsResponse>("/reports/fetch_editing_stats");
 }
 
+export function useFetchMrStats() {
+  return useApiMutation<EditingStatsResponse>("/reports/fetch_mr_stats");
+}
+
 export function useFetchTimekeepingStats() {
   return useApiMutation<TimekeepingStatsResponse>("/reports/fetch_timekeeping_stats");
 }

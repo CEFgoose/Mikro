@@ -58,6 +58,10 @@ class BaseConfig:
     TM4_API_URL = os.environ.get("TM4_API_URL", "https://tasks.kaart.com/api/v2")
     TM4_API_TOKEN = os.environ.get("TM4_API_TOKEN")
 
+    # MapRoulette Integration
+    MR_API_URL = os.environ.get("MR_API_URL", "https://maproulette.org/api/v2")
+    MR_API_KEY = os.environ.get("MR_API_KEY")
+
     # OSM OAuth Configuration
     OSM_OAUTH_CLIENT_ID = os.environ.get("OSM_OAUTH_CLIENT_ID")
     OSM_OAUTH_CLIENT_SECRET = os.environ.get("OSM_OAUTH_CLIENT_SECRET")

@@ -41,7 +41,7 @@ import {
   useFilters,
   useFetchFilterOptions,
 } from "@/hooks";
-import { getTM4ProjectUrl } from "@/lib/utils";
+import { getProjectExternalUrl } from "@/lib/utils";
 import type { Project, ProjectTeamItem } from "@/types";
 
 interface ProjectUserItem {
@@ -60,6 +60,7 @@ function formatCurrency(amount: number): string {
 
 interface ProjectFormData {
   url: string;
+  source: "tm4" | "mr";
   mapping_rate: string;
   validation_rate: string;
   max_editors: string;
@@ -71,6 +72,7 @@ interface ProjectFormData {
 
 const defaultFormData: ProjectFormData = {
   url: "",
+  source: "tm4",
   mapping_rate: "0.10",
   validation_rate: "0.05",
   max_editors: "5",
@@ -155,6 +157,7 @@ export default function AdminProjectsPage() {
     try {
       await createProject({
         url: formData.url,
+        source: formData.source,
         rate_type: true,
         mapping_rate: parseFloat(formData.mapping_rate),
         validation_rate: parseFloat(formData.validation_rate),
@@ -217,6 +220,7 @@ export default function AdminProjectsPage() {
     setSelectedProject(project);
     setFormData({
       url: project.url,
+      source: project.source ?? "tm4",
       mapping_rate: project.mapping_rate_per_task.toString(),
       validation_rate: project.validation_rate_per_task.toString(),
       max_editors: project.max_editors?.toString() ?? "5",
@@ -319,9 +323,16 @@ export default function AdminProjectsPage() {
           <TableRow key={project.id}>
             <TableCell>
               <div>
-                <p className="font-medium">{project.name}</p>
+                <p className="font-medium">
+                  {project.name}
+                  {project.source === "mr" ? (
+                    <Badge variant="default" className="ml-2 text-[10px] bg-blue-500">MR</Badge>
+                  ) : (
+                    <Badge variant="secondary" className="ml-2 text-[10px]">TM4</Badge>
+                  )}
+                </p>
                 <a
-                  href={getTM4ProjectUrl(project.id)}
+                  href={getProjectExternalUrl(project.id, project.source)}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="text-sm text-kaart-orange hover:underline"
@@ -508,7 +519,7 @@ export default function AdminProjectsPage() {
           setBudgetCalculation("");
         }}
         title="Add New Project"
-        description="Add a TM4 project to Mikro for payment tracking"
+        description="Add a TM4 or MapRoulette project to Mikro for payment tracking"
         size="lg"
         footer={
           <>
@@ -522,9 +533,36 @@ export default function AdminProjectsPage() {
         }
       >
         <div className="space-y-4">
+          <div>
+            <label className="text-sm font-medium mb-2 block">Project Source</label>
+            <div className="flex gap-4">
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="radio"
+                  name="source"
+                  value="tm4"
+                  checked={formData.source === "tm4"}
+                  onChange={() => handleInputChange("source", "tm4")}
+                  className="accent-kaart-orange"
+                />
+                <span className="text-sm">TM4 (Tasking Manager)</span>
+              </label>
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="radio"
+                  name="source"
+                  value="mr"
+                  checked={formData.source === "mr"}
+                  onChange={() => handleInputChange("source", "mr")}
+                  className="accent-kaart-orange"
+                />
+                <span className="text-sm">MapRoulette</span>
+              </label>
+            </div>
+          </div>
           <Input
-            label="TM4 Project URL"
-            placeholder="https://tasks.kaart.com/projects/123"
+            label={formData.source === "mr" ? "MapRoulette Challenge URL" : "TM4 Project URL"}
+            placeholder={formData.source === "mr" ? "https://maproulette.org/browse/challenges/123" : "https://tasks.kaart.com/projects/123"}
             value={formData.url}
             onChange={(e) => handleInputChange("url", e.target.value)}
           />
