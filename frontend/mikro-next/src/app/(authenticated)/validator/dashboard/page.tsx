@@ -8,7 +8,7 @@ import { TimeTrackingWidget } from "@/components/widgets/TimeTrackingWidget";
 import { UserTimeHistory } from "@/components/widgets/UserTimeHistory";
 import { useSyncUserTasks, useValidatorProjects, useUserPayable, useSubmitPaymentRequest } from "@/hooks";
 import { ValidatorDashboardStats, Project } from "@/types";
-import { getTM4ProjectUrl } from "@/lib/utils";
+import { getProjectExternalUrl } from "@/lib/utils";
 import Link from "next/link";
 
 function formatCurrency(amount: number): string {
@@ -399,7 +399,7 @@ export default function ValidatorDashboard() {
                   <div
                     key={project.id}
                     className="flex items-center justify-between border-b border-border pb-3 last:border-0 last:pb-0 cursor-pointer hover:bg-muted/50 -mx-2 px-2 rounded"
-                    onClick={() => goToSource(getTM4ProjectUrl(project.id))}
+                    onClick={() => goToSource(getProjectExternalUrl(project.id, project.source))}
                   >
                     <div>
                       <p className="font-medium">{project.name}</p>
@@ -535,7 +535,7 @@ export default function ValidatorDashboard() {
                   <tr
                     key={project.id}
                     className="cursor-pointer hover:bg-muted/50 transition-colors"
-                    onDoubleClick={() => goToSource(getTM4ProjectUrl(project.id))}
+                    onDoubleClick={() => goToSource(getProjectExternalUrl(project.id, project.source))}
                   >
                     <td className="px-4 py-3 font-medium">{project.name}</td>
                     <td className="px-4 py-3">{formatCurrency(project.mapping_rate_per_task)}</td>

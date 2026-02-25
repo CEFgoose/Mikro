@@ -44,6 +44,7 @@ export interface Project {
   name: string;
   url: string;
   total_tasks: number;
+  source?: "tm4" | "mr";
   total_mapped?: number;
   total_validated?: number;
   total_invalidated?: number;

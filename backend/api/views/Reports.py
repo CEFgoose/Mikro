@@ -25,6 +25,8 @@ class ReportsAPI(MethodView):
     def post(self, path: str):
         if path == "fetch_editing_stats":
             return self.fetch_editing_stats()
+        elif path == "fetch_mr_stats":
+            return self.fetch_editing_stats(source="mr")
         elif path == "fetch_timekeeping_stats":
             return self.fetch_timekeeping_stats()
         elif path == "fetch_changeset_heatmap":
@@ -40,10 +42,19 @@ class ReportsAPI(MethodView):
         return {"message": "Unknown path", "status": 404}
 
     @requires_admin
-    def fetch_editing_stats(self):
-        """Fetch editing statistics: summary, tasks over time, projects, top contributors."""
+    def fetch_editing_stats(self, source=None):
+        """Fetch editing statistics: summary, tasks over time, projects, top contributors.
+
+        Args:
+            source: Optional source filter ("tm4" or "mr"). If None, uses
+                    request body "source" param, defaulting to "tm4".
+        """
         if not g.user:
             return {"message": "Missing user info", "status": 304}
+
+        # Determine source filter — default to "tm4" for backward compat
+        if source is None:
+            source = request.json.get("source", "tm4")
 
         start_date_str = request.json.get("startDate")
         end_date_str = request.json.get("endDate")
@@ -86,6 +97,7 @@ class ReportsAPI(MethodView):
         # --- Summary ---
         mapped_query = Task.query.filter(
             Task.org_id == g.user.org_id,
+            Task.source == source,
             Task.mapped == True,
             Task.date_mapped >= start_date,
             Task.date_mapped < end_date,
@@ -96,6 +108,7 @@ class ReportsAPI(MethodView):
 
         validated_query = Task.query.filter(
             Task.org_id == g.user.org_id,
+            Task.source == source,
             Task.validated == True,
             Task.date_validated >= start_date,
             Task.date_validated < end_date,
@@ -108,6 +121,7 @@ class ReportsAPI(MethodView):
 
         invalidated_query = Task.query.filter(
             Task.org_id == g.user.org_id,
+            Task.source == source,
             Task.invalidated == True,
             Task.date_validated >= start_date,
             Task.date_validated < end_date,
@@ -119,10 +133,10 @@ class ReportsAPI(MethodView):
         total_invalidated = invalidated_query.count()
 
         active_projects = Project.query.filter_by(
-            org_id=g.user.org_id, status=True, completed=False
+            org_id=g.user.org_id, source=source, status=True, completed=False
         ).count()
         completed_projects = Project.query.filter_by(
-            org_id=g.user.org_id, completed=True
+            org_id=g.user.org_id, source=source, completed=True
         ).count()
 
         # --- Tasks over time (weekly buckets) ---
@@ -133,6 +147,7 @@ class ReportsAPI(MethodView):
             )
             .filter(
                 Task.org_id == g.user.org_id,
+                Task.source == source,
                 Task.mapped == True,
                 Task.date_mapped >= start_date,
                 Task.date_mapped < end_date,
@@ -149,6 +164,7 @@ class ReportsAPI(MethodView):
             )
             .filter(
                 Task.org_id == g.user.org_id,
+                Task.source == source,
                 Task.validated == True,
                 Task.date_validated >= start_date,
                 Task.date_validated < end_date,
@@ -167,6 +183,7 @@ class ReportsAPI(MethodView):
             )
             .filter(
                 Task.org_id == g.user.org_id,
+                Task.source == source,
                 Task.invalidated == True,
                 Task.date_validated >= start_date,
                 Task.date_validated < end_date,
@@ -202,7 +219,9 @@ class ReportsAPI(MethodView):
 
         # --- Projects table ---
         projects_list = []
-        org_projects = Project.query.filter_by(org_id=g.user.org_id).all()
+        org_projects = Project.query.filter_by(
+            org_id=g.user.org_id, source=source
+        ).all()
         for proj in org_projects:
             total = proj.total_tasks or 0
             mapped = proj.tasks_mapped or 0
@@ -213,6 +232,7 @@ class ReportsAPI(MethodView):
                     "id": proj.id,
                     "name": proj.name,
                     "url": proj.url or "",
+                    "source": proj.source,
                     "total_tasks": total,
                     "tasks_mapped": mapped,
                     "tasks_validated": validated,
@@ -236,6 +256,7 @@ class ReportsAPI(MethodView):
             )
             .filter(
                 Task.org_id == g.user.org_id,
+                Task.source == source,
                 Task.mapped == True,
                 Task.date_mapped >= start_date,
                 Task.date_mapped < end_date,
@@ -260,6 +281,7 @@ class ReportsAPI(MethodView):
 
             val_count = Task.query.filter(
                 Task.org_id == g.user.org_id,
+                Task.source == source,
                 Task.validated_by == osm_un,
                 Task.validated == True,
                 Task.date_validated >= start_date,
@@ -268,6 +290,7 @@ class ReportsAPI(MethodView):
 
             inv_count = Task.query.filter(
                 Task.org_id == g.user.org_id,
+                Task.source == source,
                 Task.validated_by == osm_un,
                 Task.invalidated == True,
                 Task.date_validated >= start_date,
@@ -319,6 +342,7 @@ class ReportsAPI(MethodView):
 
             cmp_mapped_q = Task.query.filter(
                 Task.org_id == g.user.org_id,
+                Task.source == source,
                 Task.mapped == True,
                 Task.date_mapped >= cmp_start,
                 Task.date_mapped < cmp_end,
@@ -329,6 +353,7 @@ class ReportsAPI(MethodView):
 
             cmp_validated_q = Task.query.filter(
                 Task.org_id == g.user.org_id,
+                Task.source == source,
                 Task.validated == True,
                 Task.date_validated >= cmp_start,
                 Task.date_validated < cmp_end,
@@ -339,6 +364,7 @@ class ReportsAPI(MethodView):
 
             cmp_invalidated_q = Task.query.filter(
                 Task.org_id == g.user.org_id,
+                Task.source == source,
                 Task.invalidated == True,
                 Task.date_validated >= cmp_start,
                 Task.date_validated < cmp_end,

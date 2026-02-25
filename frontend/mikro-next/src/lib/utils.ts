@@ -18,3 +18,17 @@ export function cn(...inputs: ClassValue[]) {
 export function getTM4ProjectUrl(projectId: number | string): string {
   return `https://tasks.kaart.com/projects/${projectId}`;
 }
+
+/**
+ * Build the external URL for a project based on its source platform.
+ * TM4 projects link to tasks.kaart.com, MR projects link to maproulette.org.
+ */
+export function getProjectExternalUrl(
+  projectId: number | string,
+  source?: string
+): string {
+  if (source === "mr") {
+    return `https://maproulette.org/browse/challenges/${projectId}`;
+  }
+  return `https://tasks.kaart.com/projects/${projectId}`;
+}

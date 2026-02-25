@@ -159,6 +159,8 @@ class Project(ModelWithSoftDeleteAndCRUD, SurrogatePK):
     name = db.Column(db.String(255), nullable=True)
     org_id = db.Column(db.String(255), nullable=True)  # Changed to String for Auth0
     url = db.Column(db.String(500), nullable=False)
+    source = db.Column(db.String(20), nullable=False, server_default="tm4")  # "tm4" or "mr"
+    last_sync_cursor = db.Column(db.DateTime, nullable=True)  # For incremental MR sync
 
     # Payment settings
     max_payment = db.Column(db.Float, nullable=True, default=0)
@@ -198,6 +200,7 @@ class Task(ModelWithSoftDeleteAndCRUD, SurrogatePK):
     task_id = db.Column(db.BigInteger, nullable=True, index=True)
     org_id = db.Column(db.String(255), nullable=True)  # Changed to String for Auth0
     project_id = db.Column(db.BigInteger, nullable=False, index=True)
+    source = db.Column(db.String(20), nullable=False, server_default="tm4")  # "tm4" or "mr"
 
     # Rates
     validation_rate = db.Column(db.Float, nullable=True, default=100)
