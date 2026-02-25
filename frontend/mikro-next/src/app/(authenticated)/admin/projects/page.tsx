@@ -323,14 +323,14 @@ export default function AdminProjectsPage() {
           <TableRow key={project.id}>
             <TableCell>
               <div>
-                <p className="font-medium">
+                <div className="font-medium">
                   {project.name}
                   {project.source === "mr" ? (
                     <Badge variant="default" className="ml-2 text-[10px] bg-blue-500">MR</Badge>
                   ) : (
                     <Badge variant="secondary" className="ml-2 text-[10px]">TM4</Badge>
                   )}
-                </p>
+                </div>
                 <a
                   href={getProjectExternalUrl(project.id, project.source)}
                   target="_blank"
