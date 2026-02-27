@@ -26,6 +26,7 @@ import {
 } from "@/components/ui";
 import { useToastActions } from "@/components/ui";
 import { FilterBar } from "@/components/filters";
+import LocationsTab from "@/components/LocationsTab";
 import {
   useOrgProjects,
   useCreateProject,
@@ -109,7 +110,7 @@ export default function AdminProjectsPage() {
   const [budgetCalculation, setBudgetCalculation] = useState("");
   const [projectUsers, setProjectUsers] = useState<ProjectUserItem[]>([]);
   const [projectTeams, setProjectTeams] = useState<ProjectTeamItem[]>([]);
-  const [editTab, setEditTab] = useState<"settings" | "users" | "teams">("settings");
+  const [editTab, setEditTab] = useState<"settings" | "users" | "teams" | "locations">("settings");
 
   // Re-fetch projects when filters change
   useEffect(() => {
@@ -364,17 +365,24 @@ export default function AdminProjectsPage() {
               </div>
             </TableCell>
             <TableCell>
-              <Badge
-                variant={
-                  project.difficulty === "Easy"
-                    ? "success"
-                    : project.difficulty === "Medium"
-                    ? "warning"
-                    : "destructive"
-                }
-              >
-                {project.difficulty || "Unknown"}
-              </Badge>
+              <div className="flex items-center gap-1">
+                <Badge
+                  variant={
+                    project.difficulty === "Easy"
+                      ? "success"
+                      : project.difficulty === "Medium"
+                      ? "warning"
+                      : "destructive"
+                  }
+                >
+                  {project.difficulty || "Unknown"}
+                </Badge>
+                {(project as Project & { assigned_locations?: number }).assigned_locations ? (
+                  <Badge variant="secondary" className="text-[10px]">
+                    {(project as Project & { assigned_locations?: number }).assigned_locations} loc
+                  </Badge>
+                ) : null}
+              </div>
             </TableCell>
             <TableCell className="text-right">
               <div className="flex justify-end gap-2">
@@ -650,7 +658,7 @@ export default function AdminProjectsPage() {
           )
         }
       >
-        <Tabs defaultValue="settings" value={editTab} onValueChange={(v) => setEditTab(v as "settings" | "users" | "teams")}>
+        <Tabs defaultValue="settings" value={editTab} onValueChange={(v) => setEditTab(v as "settings" | "users" | "teams" | "locations")}>
           <TabsList className="mb-4">
             <TabsTrigger value="settings">Settings</TabsTrigger>
             <TabsTrigger value="users">
@@ -659,6 +667,7 @@ export default function AdminProjectsPage() {
             <TabsTrigger value="teams">
               Teams ({projectTeams.filter(t => t.assigned === "Assigned").length})
             </TabsTrigger>
+            <TabsTrigger value="locations">Locations</TabsTrigger>
           </TabsList>
 
           <TabsContent value="settings">
@@ -830,6 +839,12 @@ export default function AdminProjectsPage() {
                   </TableBody>
                 </Table>
               </div>
+            )}
+          </TabsContent>
+
+          <TabsContent value="locations">
+            {selectedProject && (
+              <LocationsTab resourceId={selectedProject.id} resourceType="project" />
             )}
           </TabsContent>
         </Tabs>

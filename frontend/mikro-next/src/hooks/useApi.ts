@@ -769,3 +769,61 @@ export function useFetchRegions() {
 export function useFetchCountries() {
   return useApiCall<CountriesResponse>("/region/fetch_countries");
 }
+
+// ─── Location Assignment hooks ──────────────────────────────
+
+export interface LocationsResponse {
+  status: number;
+  assigned_countries: Array<{
+    id: number;
+    name: string;
+    iso_code: string | null;
+    region_name: string | null;
+  }>;
+  all_countries: Array<{
+    id: number;
+    name: string;
+    iso_code: string | null;
+    region_id: number | null;
+  }>;
+  all_regions: Array<{ id: number; name: string }>;
+}
+
+// Project locations
+export function useFetchProjectLocations() {
+  return useApiMutation<LocationsResponse>("/region/fetch_project_locations");
+}
+export function useAssignProjectLocations() {
+  return useApiMutation<{ message: string; created: number; skipped: number; status: number }>(
+    "/region/assign_project_locations"
+  );
+}
+export function useUnassignProjectLocation() {
+  return useApiMutation("/region/unassign_project_location");
+}
+
+// Training locations
+export function useFetchTrainingLocations() {
+  return useApiMutation<LocationsResponse>("/region/fetch_training_locations");
+}
+export function useAssignTrainingLocations() {
+  return useApiMutation<{ message: string; created: number; skipped: number; status: number }>(
+    "/region/assign_training_locations"
+  );
+}
+export function useUnassignTrainingLocation() {
+  return useApiMutation("/region/unassign_training_location");
+}
+
+// Checklist locations
+export function useFetchChecklistLocations() {
+  return useApiMutation<LocationsResponse>("/region/fetch_checklist_locations");
+}
+export function useAssignChecklistLocations() {
+  return useApiMutation<{ message: string; created: number; skipped: number; status: number }>(
+    "/region/assign_checklist_locations"
+  );
+}
+export function useUnassignChecklistLocation() {
+  return useApiMutation("/region/unassign_checklist_location");
+}

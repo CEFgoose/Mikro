@@ -15,6 +15,9 @@ from ..database import (
     Region,
     Country,
     UserCountry,
+    ProjectCountry,
+    TrainingCountry,
+    ChecklistCountry,
     User,
     Team,
     TeamUser,
@@ -51,6 +54,25 @@ class RegionAPI(MethodView):
         # Filter options
         elif path == "fetch_filter_options":
             return self.fetch_filter_options()
+        # Location assignments
+        elif path == "assign_project_locations":
+            return self.assign_project_locations()
+        elif path == "unassign_project_location":
+            return self.unassign_project_location()
+        elif path == "fetch_project_locations":
+            return self.fetch_project_locations()
+        elif path == "assign_training_locations":
+            return self.assign_training_locations()
+        elif path == "unassign_training_location":
+            return self.unassign_training_location()
+        elif path == "fetch_training_locations":
+            return self.fetch_training_locations()
+        elif path == "assign_checklist_locations":
+            return self.assign_checklist_locations()
+        elif path == "unassign_checklist_location":
+            return self.unassign_checklist_location()
+        elif path == "fetch_checklist_locations":
+            return self.fetch_checklist_locations()
         # Seed
         elif path == "seed_defaults":
             return self.seed_defaults()
@@ -353,6 +375,175 @@ class RegionAPI(MethodView):
                 "timezone": timezone_options,
             },
         }
+
+    # ─── Location Assignments (Projects / Trainings / Checklists) ───
+
+    def _expand_regions_to_countries(self, region_ids):
+        """Expand a list of region IDs to the set of their country IDs."""
+        if not region_ids:
+            return set()
+        rows = (
+            Country.query.filter(Country.region_id.in_(region_ids))
+            .with_entities(Country.id)
+            .all()
+        )
+        return {r.id for r in rows}
+
+    def _assign_locations(self, model_class, fk_name, resource_id):
+        """Generic assign: create rows idempotently for country + region expansion."""
+        country_ids = set(request.json.get("countryIds") or [])
+        region_ids = request.json.get("regionIds") or []
+        country_ids |= self._expand_regions_to_countries(region_ids)
+
+        if not country_ids:
+            return {"message": "No countries or regions provided", "status": 400}
+
+        existing = {
+            getattr(r, "country_id")
+            for r in model_class.query.filter(
+                getattr(model_class, fk_name) == resource_id
+            ).all()
+        }
+        created = 0
+        for cid in country_ids:
+            if cid not in existing:
+                model_class.create(**{fk_name: resource_id, "country_id": cid})
+                created += 1
+
+        return {
+            "status": 200,
+            "message": f"{created} location(s) assigned",
+            "created": created,
+            "skipped": len(country_ids) - created,
+        }
+
+    def _unassign_location(self, model_class, fk_name, resource_id):
+        """Remove a single country assignment."""
+        country_id = request.json.get("countryId")
+        if not country_id:
+            return {"message": "countryId is required", "status": 400}
+
+        record = model_class.query.filter(
+            getattr(model_class, fk_name) == resource_id,
+            model_class.country_id == country_id,
+        ).first()
+        if not record:
+            return {"message": "Assignment not found", "status": 404}
+
+        record.delete(soft=False)
+        return {"status": 200, "message": "Location unassigned"}
+
+    def _fetch_locations(self, model_class, fk_name, resource_id):
+        """Return assigned countries + all available countries/regions."""
+        assigned_rows = model_class.query.filter(
+            getattr(model_class, fk_name) == resource_id
+        ).all()
+        assigned_country_ids = {r.country_id for r in assigned_rows}
+
+        assigned_countries = []
+        for cid in assigned_country_ids:
+            country = Country.query.get(cid)
+            if country:
+                region = Region.query.get(country.region_id) if country.region_id else None
+                assigned_countries.append({
+                    "id": country.id,
+                    "name": country.name,
+                    "iso_code": country.iso_code,
+                    "region_name": region.name if region else None,
+                })
+
+        assigned_countries.sort(key=lambda c: c["name"])
+
+        # All available countries & regions for the UI dropdowns
+        all_countries = [
+            {
+                "id": c.id,
+                "name": c.name,
+                "iso_code": c.iso_code,
+                "region_id": c.region_id,
+            }
+            for c in Country.query.order_by(Country.name).all()
+        ]
+        all_regions = [
+            {"id": r.id, "name": r.name}
+            for r in Region.query.order_by(Region.name).all()
+        ]
+
+        return {
+            "status": 200,
+            "assigned_countries": assigned_countries,
+            "all_countries": all_countries,
+            "all_regions": all_regions,
+        }
+
+    # ── Project locations ──
+
+    @requires_admin
+    def assign_project_locations(self):
+        resource_id = request.json.get("resourceId")
+        if not resource_id:
+            return {"message": "resourceId is required", "status": 400}
+        return self._assign_locations(ProjectCountry, "project_id", resource_id)
+
+    @requires_admin
+    def unassign_project_location(self):
+        resource_id = request.json.get("resourceId")
+        if not resource_id:
+            return {"message": "resourceId is required", "status": 400}
+        return self._unassign_location(ProjectCountry, "project_id", resource_id)
+
+    @requires_admin
+    def fetch_project_locations(self):
+        resource_id = request.json.get("resourceId")
+        if not resource_id:
+            return {"message": "resourceId is required", "status": 400}
+        return self._fetch_locations(ProjectCountry, "project_id", resource_id)
+
+    # ── Training locations ──
+
+    @requires_admin
+    def assign_training_locations(self):
+        resource_id = request.json.get("resourceId")
+        if not resource_id:
+            return {"message": "resourceId is required", "status": 400}
+        return self._assign_locations(TrainingCountry, "training_id", resource_id)
+
+    @requires_admin
+    def unassign_training_location(self):
+        resource_id = request.json.get("resourceId")
+        if not resource_id:
+            return {"message": "resourceId is required", "status": 400}
+        return self._unassign_location(TrainingCountry, "training_id", resource_id)
+
+    @requires_admin
+    def fetch_training_locations(self):
+        resource_id = request.json.get("resourceId")
+        if not resource_id:
+            return {"message": "resourceId is required", "status": 400}
+        return self._fetch_locations(TrainingCountry, "training_id", resource_id)
+
+    # ── Checklist locations ──
+
+    @requires_admin
+    def assign_checklist_locations(self):
+        resource_id = request.json.get("resourceId")
+        if not resource_id:
+            return {"message": "resourceId is required", "status": 400}
+        return self._assign_locations(ChecklistCountry, "checklist_id", resource_id)
+
+    @requires_admin
+    def unassign_checklist_location(self):
+        resource_id = request.json.get("resourceId")
+        if not resource_id:
+            return {"message": "resourceId is required", "status": 400}
+        return self._unassign_location(ChecklistCountry, "checklist_id", resource_id)
+
+    @requires_admin
+    def fetch_checklist_locations(self):
+        resource_id = request.json.get("resourceId")
+        if not resource_id:
+            return {"message": "resourceId is required", "status": 400}
+        return self._fetch_locations(ChecklistCountry, "checklist_id", resource_id)
 
     # ─── Seed Defaults ────────────────────────────────────
 

@@ -143,3 +143,35 @@ def _resolve_dimension(dimension, values, org_id):
         return set(values)
 
     return None
+
+
+def get_user_country_ids(user_id):
+    """
+    Return the set of country IDs associated with a user.
+
+    Combines UserCountry associations AND the user's direct country_id field.
+    """
+    rows = (
+        UserCountry.query.filter_by(user_id=user_id)
+        .with_entities(UserCountry.country_id)
+        .all()
+    )
+    ids = {r.country_id for r in rows}
+
+    user = User.query.get(user_id)
+    if user and user.country_id:
+        ids.add(user.country_id)
+
+    return ids
+
+
+def is_visible_by_location(item_country_ids, user_country_ids):
+    """
+    Check if an item is visible to a user based on location restrictions.
+
+    - No assignments on the item → visible to all (returns True).
+    - Has assignments → must share at least one country with the user.
+    """
+    if not item_country_ids:
+        return True
+    return bool(item_country_ids & user_country_ids)

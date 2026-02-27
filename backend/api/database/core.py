@@ -671,6 +671,63 @@ class UserCountry(CRUDMixin, SurrogatePK, db.Model):
     is_primary = db.Column(db.Boolean, default=True, server_default="True")
 
 
+class ProjectCountry(CRUDMixin, SurrogatePK, db.Model):
+    """Association between projects and countries for location-based visibility."""
+
+    __tablename__ = "project_countries"
+
+    project_id = db.Column(
+        db.BigInteger,
+        db.ForeignKey("projects.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    country_id = db.Column(
+        db.Integer,
+        db.ForeignKey("countries.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+
+
+class TrainingCountry(CRUDMixin, SurrogatePK, db.Model):
+    """Association between trainings and countries for location-based visibility."""
+
+    __tablename__ = "training_countries"
+
+    training_id = db.Column(
+        db.Integer,
+        db.ForeignKey("training.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    country_id = db.Column(
+        db.Integer,
+        db.ForeignKey("countries.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+
+
+class ChecklistCountry(CRUDMixin, SurrogatePK, db.Model):
+    """Association between checklists and countries for location-based visibility."""
+
+    __tablename__ = "checklist_countries"
+
+    checklist_id = db.Column(
+        db.BigInteger,
+        db.ForeignKey("checklists.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    country_id = db.Column(
+        db.Integer,
+        db.ForeignKey("countries.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+
+
 class TimeEntry(CRUDMixin, db.Model):
     """Time tracking entry for contractor clock in/out."""
 

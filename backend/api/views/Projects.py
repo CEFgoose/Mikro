@@ -15,7 +15,7 @@ from flask import g, request, current_app
 from sqlalchemy import func
 
 from ..utils import requires_admin
-from ..filters import resolve_filtered_user_ids
+from ..filters import resolve_filtered_user_ids, get_user_country_ids, is_visible_by_location
 from .MapRoulette import MapRouletteSync
 from ..database import (
     Project,
@@ -23,6 +23,7 @@ from ..database import (
     PayRequests,
     Payments,
     ProjectUser,
+    ProjectCountry,
     UserTasks,
     User,
 )
@@ -620,6 +621,15 @@ class ProjectAPI(MethodView):
             org_id=g.user.org_id, status=False
         ).all()
 
+        # Batch-load location assignment counts for admin display
+        all_project_ids = [p.id for p in active_projects + inactive_projects]
+        _loc_rows = ProjectCountry.query.filter(
+            ProjectCountry.project_id.in_(all_project_ids)
+        ).all() if all_project_ids else []
+        _loc_counts = {}
+        for r in _loc_rows:
+            _loc_counts[r.project_id] = _loc_counts.get(r.project_id, 0) + 1
+
         # Apply project-level filter if filters were provided
         if filtered_project_ids is not None:
             active_projects = [
@@ -660,6 +670,7 @@ class ProjectAPI(MethodView):
                     "raw_invalidated": task_counts["raw_invalidated"],
                     "split_task_groups": task_counts["split_task_groups"],
                     "status": project.status,
+                    "assigned_locations": _loc_counts.get(project.id, 0),
                 }
             )
         for project in inactive_projects:
@@ -692,6 +703,7 @@ class ProjectAPI(MethodView):
                     "raw_invalidated": task_counts["raw_invalidated"],
                     "split_task_groups": task_counts["split_task_groups"],
                     "status": project.status,
+                    "assigned_locations": _loc_counts.get(project.id, 0),
                 }
             )
         return {
@@ -1076,6 +1088,19 @@ class ProjectAPI(MethodView):
             Project.status == True,
         ).all()
 
+        # Location visibility filter
+        user_cids = get_user_country_ids(g.user.id)
+        all_pc = ProjectCountry.query.filter(
+            ProjectCountry.project_id.in_([p.id for p in active_projects])
+        ).all() if active_projects else []
+        proj_loc_map = {}
+        for r in all_pc:
+            proj_loc_map.setdefault(r.project_id, set()).add(r.country_id)
+        active_projects = [
+            p for p in active_projects
+            if is_visible_by_location(proj_loc_map.get(p.id, set()), user_cids)
+        ]
+
         for project in active_projects:
             user_task_ids = [
                 relation.task_id
@@ -1308,6 +1333,23 @@ class ProjectAPI(MethodView):
             if project.id not in all_user_project_ids
             and project.id not in unassigned_validation_project_ids
             and project.total_editors < project.max_editors
+        ]
+
+        # Location visibility filter for available projects
+        val_user_cids = get_user_country_ids(g.user.id)
+        all_avail_ids = [p.id for p in user_available_projects]
+        if all_avail_ids:
+            _avail_pc = ProjectCountry.query.filter(
+                ProjectCountry.project_id.in_(all_avail_ids)
+            ).all()
+        else:
+            _avail_pc = []
+        _avail_loc = {}
+        for r in _avail_pc:
+            _avail_loc.setdefault(r.project_id, set()).add(r.country_id)
+        user_available_projects = [
+            p for p in user_available_projects
+            if is_visible_by_location(_avail_loc.get(p.id, set()), val_user_cids)
         ]
 
         # Add each project to the list

@@ -11,8 +11,10 @@ from flask.views import MethodView
 from flask import g, request
 
 from ..utils import requires_admin
+from ..filters import get_user_country_ids, is_visible_by_location
 from ..database import (
     Checklist,
+    ChecklistCountry,
     ChecklistItem,
     ChecklistComment,
     UserChecklist,
@@ -428,8 +430,15 @@ class ChecklistAPI(MethodView):
 
         org_id = g.user.org_id
         org_checklists = Checklist.query.filter_by(org_id=org_id).all()
-        # comment last line in following list comprehension
-        # to allow validator to validate own checklists for testing
+
+        # Batch-load location counts for admin display
+        _cl_ids = [c.id for c in org_checklists]
+        _cc_rows = ChecklistCountry.query.filter(
+            ChecklistCountry.checklist_id.in_(_cl_ids)
+        ).all() if _cl_ids else []
+        _cc_counts = {}
+        for r in _cc_rows:
+            _cc_counts[r.checklist_id] = _cc_counts.get(r.checklist_id, 0) + 1
 
         for checklist in org_checklists:
             if checklist.due_date is not None and isinstance(
@@ -456,6 +465,7 @@ class ChecklistAPI(MethodView):
                 "active_status": checklist.active_status,
                 "completed": checklist.completed,
                 "confirmed": checklist.confirmed,
+                "assigned_locations": _cc_counts.get(checklist.id, 0),
                 "list_items": [],
             }
             checklist_items = (
@@ -589,6 +599,20 @@ class ChecklistAPI(MethodView):
         org_checklists = Checklist.query.filter_by(
             org_id=org_id, active_status=True
         ).all()
+
+        # Location visibility filter for available checklists
+        _ucl_cids = get_user_country_ids(g.user.id)
+        _cc_all = ChecklistCountry.query.filter(
+            ChecklistCountry.checklist_id.in_([c.id for c in org_checklists])
+        ).all() if org_checklists else []
+        _cl_loc_map = {}
+        for r in _cc_all:
+            _cl_loc_map.setdefault(r.checklist_id, set()).add(r.country_id)
+        org_checklists = [
+            c for c in org_checklists
+            if is_visible_by_location(_cl_loc_map.get(c.id, set()), _ucl_cids)
+        ]
+
         user_checklists = UserChecklist.query.filter_by(user_id=g.user.id).all()
         user_checklist_ids = [checklist.checklist_id for checklist in user_checklists]
         user_confirmed_checklists = []

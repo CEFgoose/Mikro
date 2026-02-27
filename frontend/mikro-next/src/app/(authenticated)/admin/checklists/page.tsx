@@ -19,6 +19,7 @@ import {
   Skeleton,
 } from "@/components/ui";
 import { useToastActions } from "@/components/ui";
+import LocationsTab from "@/components/LocationsTab";
 import {
   useAdminChecklists,
   useCreateChecklist,
@@ -99,6 +100,7 @@ export default function AdminChecklistsPage() {
   const [loadingUsers, setLoadingUsers] = useState(false);
   const [formData, setFormData] = useState<ChecklistFormData>(defaultFormData);
   const [items, setItems] = useState<ItemFormData[]>([]);
+  const [editTab, setEditTab] = useState<"settings" | "locations">("settings");
 
   const activeChecklists = useMemo(() => checklists?.active_checklists ?? [], [checklists?.active_checklists]);
   const inactiveChecklists = useMemo(() => checklists?.inactive_checklists ?? [], [checklists?.inactive_checklists]);
@@ -235,6 +237,7 @@ export default function AdminChecklistsPage() {
       assigned_user_id: checklist.assigned_user_id?.toString() || "",
       active_status: checklist.active_status ?? false,
     });
+    setEditTab("settings");
     setShowEditModal(true);
   };
 
@@ -338,17 +341,24 @@ export default function AdminChecklistsPage() {
         <CardHeader className="pb-2">
           <div className="flex justify-between items-start">
             <CardTitle className="text-lg">{checklist.name}</CardTitle>
-            <Badge
-              variant={
-                checklist.difficulty === "Easy"
-                  ? "success"
-                  : checklist.difficulty === "Medium"
-                  ? "warning"
-                  : "destructive"
-              }
-            >
-              {checklist.difficulty}
-            </Badge>
+            <div className="flex items-center gap-1">
+              <Badge
+                variant={
+                  checklist.difficulty === "Easy"
+                    ? "success"
+                    : checklist.difficulty === "Medium"
+                    ? "warning"
+                    : "destructive"
+                }
+              >
+                {checklist.difficulty}
+              </Badge>
+              {(checklist as Checklist & { assigned_locations?: number }).assigned_locations ? (
+                <Badge variant="secondary" className="text-[10px]">
+                  {(checklist as Checklist & { assigned_locations?: number }).assigned_locations} loc
+                </Badge>
+              ) : null}
+            </div>
           </div>
         </CardHeader>
         <CardContent>
@@ -759,84 +769,105 @@ export default function AdminChecklistsPage() {
         description={`Editing ${selectedChecklist?.name}`}
         size="lg"
         footer={
-          <>
-            <Button
-              variant="destructive"
-              onClick={() => {
-                setShowEditModal(false);
-                setShowDeleteModal(true);
-              }}
-            >
-              Delete
-            </Button>
+          editTab === "settings" ? (
+            <>
+              <Button
+                variant="destructive"
+                onClick={() => {
+                  setShowEditModal(false);
+                  setShowDeleteModal(true);
+                }}
+              >
+                Delete
+              </Button>
+              <Button variant="outline" onClick={() => setShowEditModal(false)}>
+                Cancel
+              </Button>
+              <Button onClick={handleUpdateChecklist} isLoading={updating}>
+                Save Changes
+              </Button>
+            </>
+          ) : (
             <Button variant="outline" onClick={() => setShowEditModal(false)}>
-              Cancel
+              Close
             </Button>
-            <Button onClick={handleUpdateChecklist} isLoading={updating}>
-              Save Changes
-            </Button>
-          </>
+          )
         }
       >
-        <div className="space-y-4">
-          <Input
-            label="Name"
-            value={formData.name}
-            onChange={(e) => handleInputChange("name", e.target.value)}
-          />
-          <div>
-            <label className="block text-sm font-medium mb-1">Description</label>
-            <textarea
-              className="w-full px-3 py-2 border border-input rounded-lg focus:outline-none focus:ring-2 focus:ring-ring bg-background"
-              rows={3}
-              value={formData.description}
-              onChange={(e) => handleInputChange("description", e.target.value)}
-            />
-          </div>
-          <div className="grid grid-cols-2 gap-4">
-            <Input
-              label="Completion Rate ($)"
-              type="number"
-              step="0.01"
-              value={formData.completion_rate}
-              onChange={(e) => handleInputChange("completion_rate", e.target.value)}
-            />
-            <Input
-              label="Validation Rate ($)"
-              type="number"
-              step="0.01"
-              value={formData.validation_rate}
-              onChange={(e) => handleInputChange("validation_rate", e.target.value)}
-            />
-          </div>
-          <Select
-            label="Difficulty"
-            value={formData.difficulty}
-            onChange={(value) => handleInputChange("difficulty", value)}
-            options={[
-              { value: "Easy", label: "Easy" },
-              { value: "Medium", label: "Medium" },
-              { value: "Hard", label: "Hard" },
-            ]}
-          />
-          <div className="flex items-center gap-3 pt-2">
-            <label className="relative inline-flex items-center cursor-pointer">
-              <input
-                type="checkbox"
-                checked={formData.active_status}
-                onChange={(e) => handleInputChange("active_status", e.target.checked)}
-                className="sr-only peer"
+        <Tabs defaultValue="settings" value={editTab} onValueChange={(v) => setEditTab(v as "settings" | "locations")}>
+          <TabsList className="mb-4">
+            <TabsTrigger value="settings">Settings</TabsTrigger>
+            <TabsTrigger value="locations">Locations</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="settings">
+            <div className="space-y-4">
+              <Input
+                label="Name"
+                value={formData.name}
+                onChange={(e) => handleInputChange("name", e.target.value)}
               />
-              <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-ring rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
-              <span className="ml-3 text-sm font-medium">
-                {formData.active_status ? "Active" : "Inactive"}
-              </span>
-            </label>
-            <span className="text-xs text-muted-foreground">
-              (Active checklists can be assigned to users)
-            </span>
-          </div>
-        </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">Description</label>
+                <textarea
+                  className="w-full px-3 py-2 border border-input rounded-lg focus:outline-none focus:ring-2 focus:ring-ring bg-background"
+                  rows={3}
+                  value={formData.description}
+                  onChange={(e) => handleInputChange("description", e.target.value)}
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <Input
+                  label="Completion Rate ($)"
+                  type="number"
+                  step="0.01"
+                  value={formData.completion_rate}
+                  onChange={(e) => handleInputChange("completion_rate", e.target.value)}
+                />
+                <Input
+                  label="Validation Rate ($)"
+                  type="number"
+                  step="0.01"
+                  value={formData.validation_rate}
+                  onChange={(e) => handleInputChange("validation_rate", e.target.value)}
+                />
+              </div>
+              <Select
+                label="Difficulty"
+                value={formData.difficulty}
+                onChange={(value) => handleInputChange("difficulty", value)}
+                options={[
+                  { value: "Easy", label: "Easy" },
+                  { value: "Medium", label: "Medium" },
+                  { value: "Hard", label: "Hard" },
+                ]}
+              />
+              <div className="flex items-center gap-3 pt-2">
+                <label className="relative inline-flex items-center cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={formData.active_status}
+                    onChange={(e) => handleInputChange("active_status", e.target.checked)}
+                    className="sr-only peer"
+                  />
+                  <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-ring rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+                  <span className="ml-3 text-sm font-medium">
+                    {formData.active_status ? "Active" : "Inactive"}
+                  </span>
+                </label>
+                <span className="text-xs text-muted-foreground">
+                  (Active checklists can be assigned to users)
+                </span>
+              </div>
+            </div>
+          </TabsContent>
+
+          <TabsContent value="locations">
+            {selectedChecklist && (
+              <LocationsTab resourceId={selectedChecklist.id} resourceType="checklist" />
+            )}
+          </TabsContent>
+        </Tabs>
       </Modal>
 
       {/* Details Modal */}

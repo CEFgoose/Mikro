@@ -9,9 +9,11 @@ from flask.views import MethodView
 from flask import g, request
 
 from ..utils import requires_admin
+from ..filters import get_user_country_ids, is_visible_by_location
 from ..database import (
     Training,
     TrainingCompleted,
+    TrainingCountry,
     TrainingQuestion,
     TrainingQuestionAnswer,
     User,
@@ -115,15 +117,27 @@ class TrainingAPI(MethodView):
         project_trainings = Training.query.filter_by(
             org_id=org_id, training_type="Project"
         ).all()
+        # Batch-load location counts for admin display
+        all_training_ids = [t.id for t in mapping_trainings + validation_trainings + project_trainings]
+        _tc_rows = TrainingCountry.query.filter(
+            TrainingCountry.training_id.in_(all_training_ids)
+        ).all() if all_training_ids else []
+        _tc_counts = {}
+        for r in _tc_rows:
+            _tc_counts[r.training_id] = _tc_counts.get(r.training_id, 0) + 1
+
         # Prepare response
         org_mapping_trainings = [
-            self.format_training(training) for training in mapping_trainings
+            {**self.format_training(training), "assigned_locations": _tc_counts.get(training.id, 0)}
+            for training in mapping_trainings
         ]
         org_validation_trainings = [
-            self.format_training(training) for training in validation_trainings
+            {**self.format_training(training), "assigned_locations": _tc_counts.get(training.id, 0)}
+            for training in validation_trainings
         ]
         org_project_trainings = [
-            self.format_training(training) for training in project_trainings
+            {**self.format_training(training), "assigned_locations": _tc_counts.get(training.id, 0)}
+            for training in project_trainings
         ]
         return {
             "org_mapping_trainings": org_mapping_trainings,
@@ -413,31 +427,36 @@ class TrainingAPI(MethodView):
                 user_id=g.user.id
             ).all()
         ]
+
+        # Location visibility filter
+        all_org_trainings = Training.query.filter_by(org_id=org_id).all()
+        _user_cids = get_user_country_ids(g.user.id)
+        _tc_all = TrainingCountry.query.filter(
+            TrainingCountry.training_id.in_([t.id for t in all_org_trainings])
+        ).all() if all_org_trainings else []
+        _t_loc_map = {}
+        for r in _tc_all:
+            _t_loc_map.setdefault(r.training_id, set()).add(r.country_id)
+        visible_trainings = [
+            t for t in all_org_trainings
+            if is_visible_by_location(_t_loc_map.get(t.id, set()), _user_cids)
+        ]
+
         mapping_trainings = [
-            training
-            for training in Training.query.filter_by(
-                org_id=org_id, training_type="Mapping"
-            ).all()
-            if training.id not in trainings_completed_ids
+            t for t in visible_trainings
+            if t.training_type == "Mapping" and t.id not in trainings_completed_ids
         ]
         validation_trainings = [
-            training
-            for training in Training.query.filter_by(
-                org_id=org_id, training_type="Validation"
-            ).all()
-            if training.id not in trainings_completed_ids
+            t for t in visible_trainings
+            if t.training_type == "Validation" and t.id not in trainings_completed_ids
         ]
         project_trainings = [
-            training
-            for training in Training.query.filter_by(
-                org_id=org_id, training_type="Project"
-            ).all()
-            if training.id not in trainings_completed_ids
+            t for t in visible_trainings
+            if t.training_type == "Project" and t.id not in trainings_completed_ids
         ]
         completed_trainings = [
-            training
-            for training in Training.query.filter_by(org_id=org_id).all()
-            if training.id in trainings_completed_ids
+            t for t in visible_trainings
+            if t.id in trainings_completed_ids
         ]
         # Prepare response
         formatted_mapping_trainings = [

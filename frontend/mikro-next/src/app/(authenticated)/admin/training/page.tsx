@@ -25,6 +25,7 @@ import {
   Skeleton,
 } from "@/components/ui";
 import { useToastActions } from "@/components/ui";
+import LocationsTab from "@/components/LocationsTab";
 import {
   useOrgTrainings,
   useCreateTraining,
@@ -73,6 +74,7 @@ export default function AdminTrainingPage() {
   const [showPurgeModal, setShowPurgeModal] = useState(false);
   const [formData, setFormData] = useState<TrainingFormData>(defaultFormData);
   const [questions, setQuestions] = useState<QuestionFormData[]>([]);
+  const [editTab, setEditTab] = useState<"settings" | "locations">("settings");
 
   const mappingTrainings = trainings?.org_mapping_trainings ?? [];
   const validationTrainings = trainings?.org_validation_trainings ?? [];
@@ -176,6 +178,7 @@ export default function AdminTrainingPage() {
       training_type: training.training_type ?? "Mapping",
       project_id: training.project_id?.toString() ?? "",
     });
+    setEditTab("settings");
     setShowEditModal(true);
   };
 
@@ -245,17 +248,24 @@ export default function AdminTrainingPage() {
           <TableRow key={training.id}>
             <TableCell className="font-medium">{training.title}</TableCell>
             <TableCell>
-              <Badge
-                variant={
-                  training.difficulty === "Easy"
-                    ? "success"
-                    : training.difficulty === "Medium"
-                    ? "warning"
-                    : "destructive"
-                }
-              >
-                {training.difficulty}
-              </Badge>
+              <div className="flex items-center gap-1">
+                <Badge
+                  variant={
+                    training.difficulty === "Easy"
+                      ? "success"
+                      : training.difficulty === "Medium"
+                      ? "warning"
+                      : "destructive"
+                  }
+                >
+                  {training.difficulty}
+                </Badge>
+                {(training as Training & { assigned_locations?: number }).assigned_locations ? (
+                  <Badge variant="secondary" className="text-[10px]">
+                    {(training as Training & { assigned_locations?: number }).assigned_locations} loc
+                  </Badge>
+                ) : null}
+              </div>
             </TableCell>
             <TableCell>{training.point_value}</TableCell>
             <TableCell>{training.questions?.length ?? 0}</TableCell>
@@ -543,46 +553,67 @@ export default function AdminTrainingPage() {
         description={`Editing ${selectedTraining?.title}`}
         size="lg"
         footer={
-          <>
+          editTab === "settings" ? (
+            <>
+              <Button variant="outline" onClick={() => setShowEditModal(false)}>
+                Cancel
+              </Button>
+              <Button onClick={handleUpdateTraining} isLoading={updating}>
+                Save Changes
+              </Button>
+            </>
+          ) : (
             <Button variant="outline" onClick={() => setShowEditModal(false)}>
-              Cancel
+              Close
             </Button>
-            <Button onClick={handleUpdateTraining} isLoading={updating}>
-              Save Changes
-            </Button>
-          </>
+          )
         }
       >
-        <div className="space-y-4">
-          <Input
-            label="Title"
-            value={formData.title}
-            onChange={(e) => handleInputChange("title", e.target.value)}
-          />
-          <Input
-            label="Training URL"
-            value={formData.training_url}
-            onChange={(e) => handleInputChange("training_url", e.target.value)}
-          />
-          <div className="grid grid-cols-2 gap-4">
-            <Input
-              label="Point Value"
-              type="number"
-              value={formData.point_value}
-              onChange={(e) => handleInputChange("point_value", e.target.value)}
-            />
-            <Select
-              label="Difficulty"
-              value={formData.difficulty}
-              onChange={(value) => handleInputChange("difficulty", value)}
-              options={[
-                { value: "Easy", label: "Easy" },
-                { value: "Medium", label: "Medium" },
-                { value: "Hard", label: "Hard" },
-              ]}
-            />
-          </div>
-        </div>
+        <Tabs defaultValue="settings" value={editTab} onValueChange={(v) => setEditTab(v as "settings" | "locations")}>
+          <TabsList className="mb-4">
+            <TabsTrigger value="settings">Settings</TabsTrigger>
+            <TabsTrigger value="locations">Locations</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="settings">
+            <div className="space-y-4">
+              <Input
+                label="Title"
+                value={formData.title}
+                onChange={(e) => handleInputChange("title", e.target.value)}
+              />
+              <Input
+                label="Training URL"
+                value={formData.training_url}
+                onChange={(e) => handleInputChange("training_url", e.target.value)}
+              />
+              <div className="grid grid-cols-2 gap-4">
+                <Input
+                  label="Point Value"
+                  type="number"
+                  value={formData.point_value}
+                  onChange={(e) => handleInputChange("point_value", e.target.value)}
+                />
+                <Select
+                  label="Difficulty"
+                  value={formData.difficulty}
+                  onChange={(value) => handleInputChange("difficulty", value)}
+                  options={[
+                    { value: "Easy", label: "Easy" },
+                    { value: "Medium", label: "Medium" },
+                    { value: "Hard", label: "Hard" },
+                  ]}
+                />
+              </div>
+            </div>
+          </TabsContent>
+
+          <TabsContent value="locations">
+            {selectedTraining && (
+              <LocationsTab resourceId={selectedTraining.id} resourceType="training" />
+            )}
+          </TabsContent>
+        </Tabs>
       </Modal>
 
       {/* Questions Modal */}
