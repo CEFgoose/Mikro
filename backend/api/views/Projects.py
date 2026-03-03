@@ -252,8 +252,11 @@ class ProjectAPI(MethodView):
             current_app.logger.error(f"MapRoulette API error: {e}")
             return {"message": "MapRoulette API error", "status": 500}
 
+        if not mr_data:
+            return {"message": "Could not fetch challenge metadata from MapRoulette", "status": 500}
+
         project_name = mr_data.get("name", f"MR Challenge {challenge_id}")
-        total_tasks = mr_data.get("total_tasks", 0)
+        total_tasks = mr_data.get("task_count", 0)
 
         # Calculate budget
         if rate_type is True:
@@ -398,7 +401,10 @@ class ProjectAPI(MethodView):
                 current_app.logger.error(f"MapRoulette API error: {e}")
                 return {"message": "MapRoulette API error", "status": 500}
 
-            total_tasks = mr_data.get("total_tasks", 0)
+            if not mr_data:
+                return {"message": "Could not fetch challenge metadata from MapRoulette", "status": 500}
+
+            total_tasks = mr_data.get("task_count", 0)
         else:
             # --- TM4 path (unchanged) ---
             base_url = self._get_tm4_base_url()

@@ -209,6 +209,13 @@ class MapRouletteSync:
                 return None
 
             data = response.json()
+            if not isinstance(data, dict):
+                current_app.logger.error(
+                    f"MR challenge {challenge_id} returned non-dict: "
+                    f"{type(data).__name__} = {data}"
+                )
+                return None
+
             name = data.get("name", f"MR Challenge {challenge_id}")
             description = data.get("description", "")
 
@@ -229,7 +236,7 @@ class MapRouletteSync:
                 f"MR API error fetching challenge {challenge_id}: {e}"
             )
             return None
-        except (ValueError, KeyError) as e:
+        except (ValueError, KeyError, AttributeError) as e:
             current_app.logger.error(
                 f"MR JSON parse error for challenge {challenge_id}: {e}"
             )
