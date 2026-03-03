@@ -564,7 +564,11 @@ export default function AdminTrainingPage() {
               </Button>
             </>
           ) : (
-            <Button variant="outline" onClick={() => setShowEditModal(false)}>
+            <Button variant="outline" onClick={() => {
+              setShowEditModal(false);
+              setSelectedTraining(null);
+              refetch();
+            }}>
               Close
             </Button>
           )

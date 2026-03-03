@@ -653,7 +653,13 @@ export default function AdminProjectsPage() {
               </Button>
             </>
           ) : (
-            <Button variant="outline" onClick={() => setShowEditModal(false)}>
+            <Button variant="outline" onClick={() => {
+              setShowEditModal(false);
+              setSelectedProject(null);
+              setProjectUsers([]);
+              setProjectTeams([]);
+              refetch();
+            }}>
               Close
             </Button>
           )

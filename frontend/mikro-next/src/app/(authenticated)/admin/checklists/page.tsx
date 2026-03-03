@@ -789,7 +789,11 @@ export default function AdminChecklistsPage() {
               </Button>
             </>
           ) : (
-            <Button variant="outline" onClick={() => setShowEditModal(false)}>
+            <Button variant="outline" onClick={() => {
+              setShowEditModal(false);
+              setSelectedChecklist(null);
+              refetch();
+            }}>
               Close
             </Button>
           )
