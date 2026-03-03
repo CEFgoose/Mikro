@@ -548,6 +548,7 @@ export default function AdminTrainingPage() {
         onClose={() => {
           setShowEditModal(false);
           setSelectedTraining(null);
+          refetch();
         }}
         title="Edit Training"
         description={`Editing ${selectedTraining?.title}`}

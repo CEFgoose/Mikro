@@ -637,6 +637,7 @@ export default function AdminProjectsPage() {
           setSelectedProject(null);
           setProjectUsers([]);
           setProjectTeams([]);
+          refetch();
         }}
         title="Edit Project"
         description={`Editing ${selectedProject?.name || "project"}`}

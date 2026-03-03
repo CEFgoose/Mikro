@@ -764,6 +764,7 @@ export default function AdminChecklistsPage() {
         onClose={() => {
           setShowEditModal(false);
           setSelectedChecklist(null);
+          refetch();
         }}
         title="Edit Checklist"
         description={`Editing ${selectedChecklist?.name}`}
