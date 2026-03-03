@@ -827,3 +827,18 @@ export function useAssignChecklistLocations() {
 export function useUnassignChecklistLocation() {
   return useApiMutation("/region/unassign_checklist_location");
 }
+
+// Project trainings
+export function useFetchProjectTrainings() {
+  return useApiMutation<{
+    assigned_trainings: Array<{ id: number; title: string; training_type: string; difficulty: string }>;
+    available_trainings: Array<{ id: number; title: string; training_type: string; difficulty: string }>;
+    status: number;
+  }>("/project/fetch_project_trainings");
+}
+export function useAssignProjectTraining() {
+  return useApiMutation("/project/assign_project_training");
+}
+export function useUnassignProjectTraining() {
+  return useApiMutation("/project/unassign_project_training");
+}

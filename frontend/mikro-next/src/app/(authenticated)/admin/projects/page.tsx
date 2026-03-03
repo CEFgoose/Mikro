@@ -27,6 +27,7 @@ import {
 import { useToastActions } from "@/components/ui";
 import { FilterBar } from "@/components/filters";
 import LocationsTab from "@/components/LocationsTab";
+import ProjectTrainingsTab from "@/components/ProjectTrainingsTab";
 import {
   useOrgProjects,
   useCreateProject,
@@ -110,7 +111,7 @@ export default function AdminProjectsPage() {
   const [budgetCalculation, setBudgetCalculation] = useState("");
   const [projectUsers, setProjectUsers] = useState<ProjectUserItem[]>([]);
   const [projectTeams, setProjectTeams] = useState<ProjectTeamItem[]>([]);
-  const [editTab, setEditTab] = useState<"settings" | "users" | "teams" | "locations">("settings");
+  const [editTab, setEditTab] = useState<"settings" | "users" | "teams" | "training" | "locations">("settings");
 
   // Re-fetch projects when filters change
   useEffect(() => {
@@ -380,6 +381,11 @@ export default function AdminProjectsPage() {
                 {(project as Project & { assigned_locations?: number }).assigned_locations ? (
                   <Badge variant="secondary" className="text-[10px]">
                     {(project as Project & { assigned_locations?: number }).assigned_locations} loc
+                  </Badge>
+                ) : null}
+                {(project as Project & { assigned_trainings?: number }).assigned_trainings ? (
+                  <Badge variant="secondary" className="text-[10px]">
+                    {(project as Project & { assigned_trainings?: number }).assigned_trainings} trn
                   </Badge>
                 ) : null}
               </div>
@@ -659,7 +665,7 @@ export default function AdminProjectsPage() {
           </>
         }
       >
-        <Tabs defaultValue="settings" value={editTab} onValueChange={(v) => setEditTab(v as "settings" | "users" | "teams" | "locations")}>
+        <Tabs defaultValue="settings" value={editTab} onValueChange={(v) => setEditTab(v as "settings" | "users" | "teams" | "training" | "locations")}>
           <TabsList className="mb-4">
             <TabsTrigger value="settings">Settings</TabsTrigger>
             <TabsTrigger value="users">
@@ -668,6 +674,7 @@ export default function AdminProjectsPage() {
             <TabsTrigger value="teams">
               Teams ({projectTeams.filter(t => t.assigned === "Assigned").length})
             </TabsTrigger>
+            <TabsTrigger value="training">Training</TabsTrigger>
             <TabsTrigger value="locations">Locations</TabsTrigger>
           </TabsList>
 
@@ -840,6 +847,12 @@ export default function AdminProjectsPage() {
                   </TableBody>
                 </Table>
               </div>
+            )}
+          </TabsContent>
+
+          <TabsContent value="training">
+            {selectedProject && (
+              <ProjectTrainingsTab projectId={selectedProject.id} />
             )}
           </TabsContent>
 

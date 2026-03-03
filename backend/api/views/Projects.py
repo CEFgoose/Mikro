@@ -24,6 +24,8 @@ from ..database import (
     Payments,
     ProjectUser,
     ProjectCountry,
+    ProjectTraining,
+    Training,
     UserTasks,
     User,
 )
@@ -119,6 +121,12 @@ class ProjectAPI(MethodView):
             return self.unassign_user_project()
         elif path == "purge_all_projects":
             return self.purge_all_projects()
+        elif path == "fetch_project_trainings":
+            return self.fetch_project_trainings()
+        elif path == "assign_project_training":
+            return self.assign_project_training()
+        elif path == "unassign_project_training":
+            return self.unassign_project_training()
 
         return {
             "message": "Only /project/{fetch_users,fetch_user_projects} is permitted with GET",  # noqa: E501
@@ -636,6 +644,14 @@ class ProjectAPI(MethodView):
         for r in _loc_rows:
             _loc_counts[r.project_id] = _loc_counts.get(r.project_id, 0) + 1
 
+        # Batch-load training assignment counts for admin display
+        _trn_rows = ProjectTraining.query.filter(
+            ProjectTraining.project_id.in_(all_project_ids)
+        ).all() if all_project_ids else []
+        _trn_counts = {}
+        for r in _trn_rows:
+            _trn_counts[r.project_id] = _trn_counts.get(r.project_id, 0) + 1
+
         # Apply project-level filter if filters were provided
         if filtered_project_ids is not None:
             active_projects = [
@@ -677,6 +693,7 @@ class ProjectAPI(MethodView):
                     "split_task_groups": task_counts["split_task_groups"],
                     "status": project.status,
                     "assigned_locations": _loc_counts.get(project.id, 0),
+                    "assigned_trainings": _trn_counts.get(project.id, 0),
                 }
             )
         for project in inactive_projects:
@@ -710,6 +727,7 @@ class ProjectAPI(MethodView):
                     "split_task_groups": task_counts["split_task_groups"],
                     "status": project.status,
                     "assigned_locations": _loc_counts.get(project.id, 0),
+                    "assigned_trainings": _trn_counts.get(project.id, 0),
                 }
             )
         return {
@@ -1653,3 +1671,103 @@ class ProjectAPI(MethodView):
             "users_reset": users_reset,
             "status": 200,
         }
+
+    @requires_admin
+    def fetch_project_trainings(self):
+        """Fetch trainings assigned to a project and all available trainings."""
+        if not g.user:
+            return {"message": "Missing user info", "status": 304}
+
+        project_id = request.json.get("project_id")
+        if not project_id:
+            return {"message": "project_id required", "status": 400}
+
+        # Get assigned training IDs for this project
+        assigned_rows = ProjectTraining.query.filter_by(
+            project_id=project_id
+        ).all()
+        assigned_ids = {row.training_id for row in assigned_rows}
+
+        # Get all trainings for this org
+        all_trainings = Training.query.filter_by(
+            org_id=g.user.org_id
+        ).all()
+
+        assigned_trainings = []
+        available_trainings = []
+        for t in all_trainings:
+            info = {
+                "id": t.id,
+                "title": t.title,
+                "training_type": t.training_type,
+                "difficulty": t.difficulty,
+            }
+            if t.id in assigned_ids:
+                assigned_trainings.append(info)
+            else:
+                available_trainings.append(info)
+
+        return {
+            "assigned_trainings": assigned_trainings,
+            "available_trainings": available_trainings,
+            "status": 200,
+        }
+
+    @requires_admin
+    def assign_project_training(self):
+        """Assign a training to a project."""
+        if not g.user:
+            return {"message": "Missing user info", "status": 304}
+
+        project_id = request.json.get("project_id")
+        training_id = request.json.get("training_id")
+        if not project_id or not training_id:
+            return {"message": "project_id and training_id required", "status": 400}
+
+        # Check project belongs to this org
+        project = Project.query.filter_by(
+            id=project_id, org_id=g.user.org_id
+        ).first()
+        if not project:
+            return {"message": "Project not found", "status": 404}
+
+        # Check training belongs to this org
+        training = Training.query.filter_by(
+            id=training_id, org_id=g.user.org_id
+        ).first()
+        if not training:
+            return {"message": "Training not found", "status": 404}
+
+        # Check if already assigned
+        existing = ProjectTraining.query.filter_by(
+            project_id=project_id, training_id=training_id
+        ).first()
+        if existing:
+            return {"message": "Training already assigned", "status": 200}
+
+        ProjectTraining.create(
+            project_id=project_id,
+            training_id=training_id,
+        )
+
+        return {"message": "Training assigned", "status": 200}
+
+    @requires_admin
+    def unassign_project_training(self):
+        """Remove a training from a project."""
+        if not g.user:
+            return {"message": "Missing user info", "status": 304}
+
+        project_id = request.json.get("project_id")
+        training_id = request.json.get("training_id")
+        if not project_id or not training_id:
+            return {"message": "project_id and training_id required", "status": 400}
+
+        row = ProjectTraining.query.filter_by(
+            project_id=project_id, training_id=training_id
+        ).first()
+        if not row:
+            return {"message": "Assignment not found", "status": 404}
+
+        row.delete(soft=False)
+        return {"message": "Training unassigned", "status": 200}
