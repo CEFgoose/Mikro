@@ -219,12 +219,8 @@ class MapRouletteSync:
             name = data.get("name", f"MR Challenge {challenge_id}")
             description = data.get("description", "")
 
-            # Task count may come from different fields depending on MR version
-            task_count = (
-                data.get("taskCount")
-                or data.get("completionPercentage", {}).get("total", 0)
-                or 0
-            )
+            # Task count: try various fields the MR API may return
+            task_count = data.get("taskCount") or data.get("tasksRemaining") or 0
 
             return {
                 "name": name,
