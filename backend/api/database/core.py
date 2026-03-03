@@ -785,6 +785,7 @@ class SyncJob(CRUDMixin, db.Model):
     org_id = Column(String(255), nullable=True, index=True)
     status = Column(String(50), nullable=False, default="queued")
     job_type = Column(String(50), nullable=False, default="task_sync", server_default="task_sync")
+    target_id = Column(BigInteger, nullable=True)  # e.g. project_id for project_sync jobs
     started_at = Column(DateTime, nullable=True)
     completed_at = Column(DateTime, nullable=True)
     progress = Column(String(500), nullable=True)

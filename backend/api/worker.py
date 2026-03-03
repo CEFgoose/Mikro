@@ -130,6 +130,86 @@ def run_sync_job(app, job):
             db.session.rollback()
 
 
+def run_project_sync_job(app, job):
+    """
+    Execute a project-scoped sync job.
+
+    Syncs a single project for all assigned users (plus all org users
+    if the project is visible). Runs in the background worker to avoid
+    gunicorn timeout.
+    """
+    from .database import db, SyncJob, User, Project, ProjectUser
+    from .views.Tasks import TaskAPI
+    from .views.MapRoulette import MapRouletteSync
+
+    task_api = TaskAPI()
+
+    try:
+        job.status = "running"
+        job.started_at = datetime.now(timezone.utc)
+        job.progress = "Starting project sync..."
+        db.session.commit()
+
+        project = Project.query.filter_by(id=job.target_id).first()
+        if not project:
+            job.status = "failed"
+            job.error = f"Project {job.target_id} not found"
+            job.completed_at = datetime.now(timezone.utc)
+            db.session.commit()
+            return
+
+        # Get assigned users
+        assigned_user_ids = [
+            pu.user_id
+            for pu in ProjectUser.query.filter_by(project_id=project.id).all()
+        ]
+        users = User.query.filter(User.id.in_(assigned_user_ids)).all() if assigned_user_ids else []
+
+        # Include all org users if project is visible
+        if project.visibility:
+            user_ids_set = set(assigned_user_ids)
+            all_org_users = User.query.filter_by(org_id=job.org_id).all()
+            for u in all_org_users:
+                if u.id not in user_ids_set:
+                    users.append(u)
+
+        total_users = len(users)
+        synced = 0
+        for i, user in enumerate(users, 1):
+            job.progress = f"Syncing {project.name}: user {i}/{total_users}"
+            db.session.commit()
+
+            try:
+                if project.source == "mr":
+                    MapRouletteSync().sync_challenge_tasks(project, user)
+                else:
+                    task_api.TM4_payment_call(project.id, user)
+                synced += 1
+            except Exception as e:
+                logger.error(
+                    f"Project sync error - project {project.id}, user {user.id}: {e}"
+                )
+
+        job.status = "completed"
+        job.completed_at = datetime.now(timezone.utc)
+        job.progress = f"Completed: {project.name} synced for {synced} users"
+        db.session.commit()
+
+        logger.info(f"Project sync job {job.id} completed: {project.name} ({synced} users)")
+
+    except Exception as e:
+        logger.error(f"Project sync job {job.id} failed: {e}")
+        db.session.rollback()
+        try:
+            job.status = "failed"
+            job.error = str(e)[:2000]
+            job.completed_at = datetime.now(timezone.utc)
+            db.session.commit()
+        except Exception:
+            logger.error(f"Failed to update job {job.id} error status")
+            db.session.rollback()
+
+
 def _classify_element(element):
     """Classify an OSM element into categories based on its tags.
 
@@ -448,6 +528,8 @@ def poll_for_jobs(app):
                 )
                 if job.job_type == "element_analysis":
                     run_element_analysis_job(app, job)
+                elif job.job_type == "project_sync":
+                    run_project_sync_job(app, job)
                 else:
                     run_sync_job(app, job)
 

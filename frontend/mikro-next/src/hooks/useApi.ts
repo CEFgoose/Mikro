@@ -332,7 +332,7 @@ export function useAdminSyncAllTasks() {
   return useApiMutation("/task/admin_update_all_user_tasks");
 }
 export function useSyncProject() {
-  return useApiMutation<{ message: string; synced_users: number; status: number }>(
+  return useApiMutation<{ message: string; job_id?: number; status: number }>(
     "/task/sync_project"
   );
 }

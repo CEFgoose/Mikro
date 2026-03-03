@@ -41,6 +41,7 @@ import {
   useAssignTeamToProject,
   useUnassignTeamFromProject,
   useSyncProject,
+  useCheckSyncStatus,
   useFilters,
   useFetchFilterOptions,
 } from "@/hooks";
@@ -101,7 +102,8 @@ export default function AdminProjectsPage() {
   const { mutate: fetchProjectTeams, loading: loadingTeams } = useFetchProjectTeams();
   const { mutate: assignTeamToProject } = useAssignTeamToProject();
   const { mutate: unassignTeamFromProject } = useUnassignTeamFromProject();
-  const { mutate: syncProject, loading: syncing } = useSyncProject();
+  const { mutate: syncProject } = useSyncProject();
+  const { mutate: checkSyncStatus } = useCheckSyncStatus();
   const [syncingProjectId, setSyncingProjectId] = useState<number | null>(null);
   const toast = useToastActions();
 
@@ -225,12 +227,35 @@ export default function AdminProjectsPage() {
     setSyncingProjectId(projectId);
     try {
       const result = await syncProject({ project_id: projectId });
-      toast.success(`${projectName} synced (${result.synced_users} users)`);
-      refetch(filtersBody ? { filters: filtersBody } : {});
+      const jobId = result.job_id;
+      if (!jobId) {
+        toast.success(result.message || "Sync started");
+        setSyncingProjectId(null);
+        return;
+      }
+      // Poll for completion
+      const poll = setInterval(async () => {
+        try {
+          const status = await checkSyncStatus({ job_id: jobId });
+          if (status.sync_status === "completed") {
+            clearInterval(poll);
+            setSyncingProjectId(null);
+            toast.success(status.progress || `${projectName} synced`);
+            refetch(filtersBody ? { filters: filtersBody } : {});
+          } else if (status.sync_status === "failed") {
+            clearInterval(poll);
+            setSyncingProjectId(null);
+            toast.error(status.error || `Sync failed for ${projectName}`);
+          }
+        } catch {
+          clearInterval(poll);
+          setSyncingProjectId(null);
+          toast.error("Failed to check sync status");
+        }
+      }, 3000);
     } catch (err) {
       const message = err instanceof Error ? err.message : "Sync failed";
       toast.error(message);
-    } finally {
       setSyncingProjectId(null);
     }
   };

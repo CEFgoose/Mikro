@@ -924,7 +924,7 @@ class TaskAPI(MethodView):
 
     @requires_admin
     def sync_project(self):
-        """Sync tasks for a single project across all its assigned users."""
+        """Queue a background sync for a single project."""
         if not g.user:
             return {"message": "User not found", "status": 304}
 
@@ -938,37 +938,29 @@ class TaskAPI(MethodView):
         if not project:
             return {"message": "Project not found", "status": 404}
 
-        # Get all users assigned to this project
-        assigned_user_ids = [
-            pu.user_id
-            for pu in ProjectUser.query.filter_by(project_id=project_id).all()
-        ]
-        users = User.query.filter(User.id.in_(assigned_user_ids)).all() if assigned_user_ids else []
+        # Check if a sync is already running for this org
+        running_job = SyncJob.query.filter_by(
+            org_id=g.user.org_id, status="running"
+        ).first()
+        if running_job:
+            return {
+                "message": "A sync is already in progress",
+                "job_id": running_job.id,
+                "progress": running_job.progress,
+                "status": 200,
+            }
 
-        # Also include any org users who may have contributed (visible projects)
-        if project.visibility:
-            all_org_users = User.query.filter_by(org_id=g.user.org_id).all()
-            user_ids_set = set(assigned_user_ids)
-            for u in all_org_users:
-                if u.id not in user_ids_set:
-                    users.append(u)
-
-        synced_count = 0
-        for user in users:
-            try:
-                if project.source == "mr":
-                    MapRouletteSync().sync_challenge_tasks(project, user)
-                else:
-                    self.TM4_payment_call(project.id, user)
-                synced_count += 1
-            except Exception as e:
-                current_app.logger.error(
-                    f"Error syncing project {project_id} for user {user.id}: {e}"
-                )
+        # Queue a project-scoped sync job
+        job = SyncJob.create(
+            org_id=g.user.org_id,
+            status="queued",
+            job_type="project_sync",
+            target_id=project_id,
+        )
 
         return {
-            "message": f"Project {project.name} synced for {synced_count} users",
-            "synced_users": synced_count,
+            "message": f"Sync queued for {project.name}",
+            "job_id": job.id,
             "status": 200,
         }
 
