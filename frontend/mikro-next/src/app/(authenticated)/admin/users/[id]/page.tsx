@@ -200,6 +200,7 @@ export default function UserProfilePage() {
 
   // Location edit modal state
   const [locationModalOpen, setLocationModalOpen] = useState(false);
+  const [mapillaryModalOpen, setMapillaryModalOpen] = useState(false);
   const [editCountryId, setEditCountryId] = useState<string>("");
   const [editTimezone, setEditTimezone] = useState<string>("");
   const [editMapillaryUsername, setEditMapillaryUsername] = useState("");
@@ -343,8 +344,14 @@ export default function UserProfilePage() {
     if (user) {
       setEditCountryId(user.country_id ? String(user.country_id) : "");
       setEditTimezone(user.timezone || "");
-      setEditMapillaryUsername(user.mapillary_username || "");
       setLocationModalOpen(true);
+    }
+  }, [user]);
+
+  const openMapillaryModal = useCallback(() => {
+    if (user) {
+      setEditMapillaryUsername(user.mapillary_username || "");
+      setMapillaryModalOpen(true);
     }
   }, [user]);
 
@@ -367,17 +374,30 @@ export default function UserProfilePage() {
         userId: userId,
         countryId: editCountryId ? Number(editCountryId) : null,
         timezone: editTimezone || null,
-        mapillary_username: editMapillaryUsername.trim() || null,
       });
-      toast.success("User details updated successfully");
+      toast.success("Location updated successfully");
       setLocationModalOpen(false);
-      // Refresh profile data
       const res = await fetchProfile({ userId });
       if (res?.user) setUser(res.user);
     } catch {
-      toast.error("Failed to update user details");
+      toast.error("Failed to update location");
     }
-  }, [userId, editCountryId, editTimezone, editMapillaryUsername, updateProfile, fetchProfile, toast]);
+  }, [userId, editCountryId, editTimezone, updateProfile, fetchProfile, toast]);
+
+  const handleSaveMapillary = useCallback(async () => {
+    try {
+      await updateProfile({
+        userId: userId,
+        mapillary_username: editMapillaryUsername.trim() || null,
+      });
+      toast.success("Mapillary username updated successfully");
+      setMapillaryModalOpen(false);
+      const res = await fetchProfile({ userId });
+      if (res?.user) setUser(res.user);
+    } catch {
+      toast.error("Failed to update Mapillary username");
+    }
+  }, [userId, editMapillaryUsername, updateProfile, fetchProfile, toast]);
 
   const countryOptions = useMemo(() => {
     const countries = countriesData?.countries || [];
@@ -498,20 +518,7 @@ export default function UserProfilePage() {
                     OSM: {user.osm_username}
                   </a>
                 )}
-                {user.osm_username && user.mapillary_username && (
-                  <span className="text-gray-300">|</span>
-                )}
-                {user.mapillary_username && (
-                  <a
-                    href={`https://www.mapillary.com/app/user/${user.mapillary_username}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-kaart-orange hover:underline"
-                  >
-                    Mapillary: {user.mapillary_username}
-                  </a>
-                )}
-                {(user.osm_username || user.mapillary_username) && locationParts && (
+                {user.osm_username && locationParts && (
                   <span className="text-gray-300">|</span>
                 )}
                 {locationParts && <span>{locationParts}</span>}
@@ -591,6 +598,37 @@ export default function UserProfilePage() {
               )}
             </div>
           </div>
+        </CardContent>
+      </Card>
+
+      {/* Section: Mapillary */}
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between pb-2">
+          <CardTitle className="text-base">Mapillary</CardTitle>
+          <Button size="sm" variant="outline" onClick={openMapillaryModal}>
+            {user.mapillary_username ? "Edit" : "Link Account"}
+          </Button>
+        </CardHeader>
+        <CardContent>
+          {user.mapillary_username ? (
+            <div className="flex items-center gap-3">
+              <div>
+                <p className="text-sm text-muted-foreground">Username</p>
+                <a
+                  href={`https://www.mapillary.com/app/user/${user.mapillary_username}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-kaart-orange hover:underline font-medium"
+                >
+                  {user.mapillary_username}
+                </a>
+              </div>
+            </div>
+          ) : (
+            <p className="text-sm text-muted-foreground">
+              No Mapillary account linked
+            </p>
+          )}
         </CardContent>
       </Card>
 
@@ -1386,8 +1424,8 @@ export default function UserProfilePage() {
       <Modal
         isOpen={locationModalOpen}
         onClose={() => setLocationModalOpen(false)}
-        title="Edit User Details"
-        description="Update the user's location, timezone, and linked accounts."
+        title="Edit Location"
+        description="Update the user's country and timezone."
         size="sm"
         footer={
           <>
@@ -1422,6 +1460,36 @@ export default function UserProfilePage() {
             onChange={(e) => setEditTimezone(e.target.value)}
             placeholder="e.g. America/Bogota"
           />
+        </div>
+      </Modal>
+
+      {/* Mapillary Edit Modal */}
+      <Modal
+        isOpen={mapillaryModalOpen}
+        onClose={() => setMapillaryModalOpen(false)}
+        title="Edit Mapillary Username"
+        description="Link or update this user's Mapillary account."
+        size="sm"
+        footer={
+          <>
+            <Button
+              variant="outline"
+              onClick={() => setMapillaryModalOpen(false)}
+              disabled={updateProfileLoading}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="primary"
+              onClick={handleSaveMapillary}
+              isLoading={updateProfileLoading}
+            >
+              Save
+            </Button>
+          </>
+        }
+      >
+        <div className="space-y-4">
           <Input
             label="Mapillary Username"
             value={editMapillaryUsername}
