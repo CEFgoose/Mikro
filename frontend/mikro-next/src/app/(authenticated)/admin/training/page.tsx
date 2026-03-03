@@ -554,24 +554,18 @@ export default function AdminTrainingPage() {
         description={`Editing ${selectedTraining?.title}`}
         size="lg"
         footer={
-          editTab === "settings" ? (
-            <>
-              <Button variant="outline" onClick={() => setShowEditModal(false)}>
-                Cancel
-              </Button>
-              <Button onClick={handleUpdateTraining} isLoading={updating}>
-                Save Changes
-              </Button>
-            </>
-          ) : (
+          <>
             <Button variant="outline" onClick={() => {
               setShowEditModal(false);
               setSelectedTraining(null);
               refetch();
             }}>
-              Close
+              Cancel
             </Button>
-          )
+            <Button onClick={handleUpdateTraining} isLoading={updating}>
+              Save Changes
+            </Button>
+          </>
         }
       >
         <Tabs defaultValue="settings" value={editTab} onValueChange={(v) => setEditTab(v as "settings" | "locations")}>

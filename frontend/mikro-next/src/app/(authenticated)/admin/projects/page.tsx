@@ -643,16 +643,7 @@ export default function AdminProjectsPage() {
         description={`Editing ${selectedProject?.name || "project"}`}
         size="lg"
         footer={
-          editTab === "settings" ? (
-            <>
-              <Button variant="outline" onClick={() => setShowEditModal(false)}>
-                Cancel
-              </Button>
-              <Button onClick={handleUpdateProject} isLoading={updating}>
-                Save Changes
-              </Button>
-            </>
-          ) : (
+          <>
             <Button variant="outline" onClick={() => {
               setShowEditModal(false);
               setSelectedProject(null);
@@ -660,9 +651,12 @@ export default function AdminProjectsPage() {
               setProjectTeams([]);
               refetch();
             }}>
-              Close
+              Cancel
             </Button>
-          )
+            <Button onClick={handleUpdateProject} isLoading={updating}>
+              Save Changes
+            </Button>
+          </>
         }
       >
         <Tabs defaultValue="settings" value={editTab} onValueChange={(v) => setEditTab(v as "settings" | "users" | "teams" | "locations")}>

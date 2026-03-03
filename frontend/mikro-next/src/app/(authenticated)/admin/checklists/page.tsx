@@ -770,33 +770,27 @@ export default function AdminChecklistsPage() {
         description={`Editing ${selectedChecklist?.name}`}
         size="lg"
         footer={
-          editTab === "settings" ? (
-            <>
-              <Button
-                variant="destructive"
-                onClick={() => {
-                  setShowEditModal(false);
-                  setShowDeleteModal(true);
-                }}
-              >
-                Delete
-              </Button>
-              <Button variant="outline" onClick={() => setShowEditModal(false)}>
-                Cancel
-              </Button>
-              <Button onClick={handleUpdateChecklist} isLoading={updating}>
-                Save Changes
-              </Button>
-            </>
-          ) : (
+          <>
+            <Button
+              variant="destructive"
+              onClick={() => {
+                setShowEditModal(false);
+                setShowDeleteModal(true);
+              }}
+            >
+              Delete
+            </Button>
             <Button variant="outline" onClick={() => {
               setShowEditModal(false);
               setSelectedChecklist(null);
               refetch();
             }}>
-              Close
+              Cancel
             </Button>
-          )
+            <Button onClick={handleUpdateChecklist} isLoading={updating}>
+              Save Changes
+            </Button>
+          </>
         }
       >
         <Tabs defaultValue="settings" value={editTab} onValueChange={(v) => setEditTab(v as "settings" | "locations")}>
