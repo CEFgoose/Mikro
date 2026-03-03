@@ -40,6 +40,7 @@ import {
   useFetchProjectTeams,
   useAssignTeamToProject,
   useUnassignTeamFromProject,
+  useSyncProject,
   useFilters,
   useFetchFilterOptions,
 } from "@/hooks";
@@ -100,6 +101,8 @@ export default function AdminProjectsPage() {
   const { mutate: fetchProjectTeams, loading: loadingTeams } = useFetchProjectTeams();
   const { mutate: assignTeamToProject } = useAssignTeamToProject();
   const { mutate: unassignTeamFromProject } = useUnassignTeamFromProject();
+  const { mutate: syncProject, loading: syncing } = useSyncProject();
+  const [syncingProjectId, setSyncingProjectId] = useState<number | null>(null);
   const toast = useToastActions();
 
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
@@ -215,6 +218,20 @@ export default function AdminProjectsPage() {
     } catch (err) {
       const message = err instanceof Error ? err.message : "Failed to delete project";
       toast.error(message);
+    }
+  };
+
+  const handleSyncProject = async (projectId: number, projectName: string) => {
+    setSyncingProjectId(projectId);
+    try {
+      const result = await syncProject({ project_id: projectId });
+      toast.success(`${projectName} synced (${result.synced_users} users)`);
+      refetch(filtersBody ? { filters: filtersBody } : {});
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Sync failed";
+      toast.error(message);
+    } finally {
+      setSyncingProjectId(null);
     }
   };
 
@@ -392,6 +409,15 @@ export default function AdminProjectsPage() {
             </TableCell>
             <TableCell className="text-right">
               <div className="flex justify-end gap-2">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => handleSyncProject(project.id, project.name)}
+                  isLoading={syncingProjectId === project.id}
+                  disabled={syncingProjectId !== null}
+                >
+                  Sync
+                </Button>
                 <Button size="sm" variant="outline" onClick={() => openEditModal(project)}>
                   Edit
                 </Button>

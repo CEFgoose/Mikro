@@ -126,6 +126,8 @@ class TaskAPI(MethodView):
             return self.update_task()
         elif path == "purge_all_task_stats":
             return self.purge_all_task_stats()
+        elif path == "sync_project":
+            return self.sync_project()
         return {
             "message": "Invalid path",
             "status": 405,
@@ -917,6 +919,56 @@ class TaskAPI(MethodView):
         return {
             "message": "Task sync queued — running in background",
             "job_id": job.id,
+            "status": 200,
+        }
+
+    @requires_admin
+    def sync_project(self):
+        """Sync tasks for a single project across all its assigned users."""
+        if not g.user:
+            return {"message": "User not found", "status": 304}
+
+        project_id = request.json.get("project_id")
+        if not project_id:
+            return {"message": "project_id required", "status": 400}
+
+        project = Project.query.filter_by(
+            id=project_id, org_id=g.user.org_id
+        ).first()
+        if not project:
+            return {"message": "Project not found", "status": 404}
+
+        # Get all users assigned to this project
+        assigned_user_ids = [
+            pu.user_id
+            for pu in ProjectUser.query.filter_by(project_id=project_id).all()
+        ]
+        users = User.query.filter(User.id.in_(assigned_user_ids)).all() if assigned_user_ids else []
+
+        # Also include any org users who may have contributed (visible projects)
+        if project.visibility:
+            all_org_users = User.query.filter_by(org_id=g.user.org_id).all()
+            user_ids_set = set(assigned_user_ids)
+            for u in all_org_users:
+                if u.id not in user_ids_set:
+                    users.append(u)
+
+        synced_count = 0
+        for user in users:
+            try:
+                if project.source == "mr":
+                    MapRouletteSync().sync_challenge_tasks(project, user)
+                else:
+                    self.TM4_payment_call(project.id, user)
+                synced_count += 1
+            except Exception as e:
+                current_app.logger.error(
+                    f"Error syncing project {project_id} for user {user.id}: {e}"
+                )
+
+        return {
+            "message": f"Project {project.name} synced for {synced_count} users",
+            "synced_users": synced_count,
             "status": 200,
         }
 
