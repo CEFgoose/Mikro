@@ -387,11 +387,31 @@ export default function AdminProjectsPage() {
             </TableCell>
             <TableCell>{project.total_tasks}</TableCell>
             <TableCell>
-              <div className="text-sm">
-                <p className="text-green-600">{project.total_mapped ?? 0} mapped</p>
-                <p className="text-blue-600">{project.total_validated ?? 0} validated</p>
-                <p className="text-red-600">{project.total_invalidated ?? 0} invalidated</p>
-              </div>
+              {project.source === "mr" && project.mr_status_breakdown && Object.keys(project.mr_status_breakdown).length > 0 ? (
+                <div className="text-sm space-y-0.5">
+                  {project.mr_status_breakdown["1"] != null && (
+                    <p className="text-green-600">{project.mr_status_breakdown["1"]} Fixed</p>
+                  )}
+                  {project.mr_status_breakdown["5"] != null && (
+                    <p className="text-emerald-500">{project.mr_status_breakdown["5"]} Already Fixed</p>
+                  )}
+                  {project.mr_status_breakdown["2"] != null && (
+                    <p className="text-amber-600">{project.mr_status_breakdown["2"]} Not an Issue</p>
+                  )}
+                  {project.mr_status_breakdown["6"] != null && (
+                    <p className="text-orange-500">{project.mr_status_breakdown["6"]} Can&apos;t Complete</p>
+                  )}
+                  {project.mr_status_breakdown["3"] != null && (
+                    <p className="text-gray-400">{project.mr_status_breakdown["3"]} Skipped</p>
+                  )}
+                </div>
+              ) : (
+                <div className="text-sm">
+                  <p className="text-green-600">{project.total_mapped ?? 0} mapped</p>
+                  <p className="text-blue-600">{project.total_validated ?? 0} validated</p>
+                  <p className="text-red-600">{project.total_invalidated ?? 0} invalidated</p>
+                </div>
+              )}
             </TableCell>
             <TableCell>
               <div className="text-sm">

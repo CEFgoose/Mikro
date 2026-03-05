@@ -61,6 +61,8 @@ export interface Project {
   status?: boolean;
   difficulty?: "Easy" | "Medium" | "Hard";
   completed?: boolean;
+  // MR status breakdown: {status_code: count} for MR projects
+  mr_status_breakdown?: Record<string, number>;
   // User-specific stats (for user/validator dashboards)
   tasks_mapped?: number;
   tasks_validated?: number;

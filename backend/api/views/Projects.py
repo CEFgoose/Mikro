@@ -590,6 +590,12 @@ class ProjectAPI(MethodView):
             if group["invalidated"] == actual_sibling_count:
                 split_invalidated += 1
 
+        # MR status breakdown (only meaningful for MR projects)
+        mr_status_counts = {}
+        for t in project_tasks:
+            if t.mr_status is not None:
+                mr_status_counts[t.mr_status] = mr_status_counts.get(t.mr_status, 0) + 1
+
         return {
             # Effective counts: normal tasks + completed split groups (all siblings done = 1)
             "effective_mapped": normal_mapped + split_mapped,
@@ -601,6 +607,8 @@ class ProjectAPI(MethodView):
             "raw_invalidated": normal_invalidated + len([t for t in split_tasks if t.invalidated]),
             "split_task_groups": len(split_groups),
             "split_task_count": len(split_tasks),
+            # MR status breakdown: {status_code: count} for MR projects
+            "mr_status_breakdown": mr_status_counts,
         }
 
     @requires_admin
@@ -691,6 +699,7 @@ class ProjectAPI(MethodView):
                     "raw_validated": task_counts["raw_validated"],
                     "raw_invalidated": task_counts["raw_invalidated"],
                     "split_task_groups": task_counts["split_task_groups"],
+                    "mr_status_breakdown": task_counts.get("mr_status_breakdown", {}),
                     "status": project.status,
                     "assigned_locations": _loc_counts.get(project.id, 0),
                     "assigned_trainings": _trn_counts.get(project.id, 0),
@@ -725,6 +734,7 @@ class ProjectAPI(MethodView):
                     "raw_validated": task_counts["raw_validated"],
                     "raw_invalidated": task_counts["raw_invalidated"],
                     "split_task_groups": task_counts["split_task_groups"],
+                    "mr_status_breakdown": task_counts.get("mr_status_breakdown", {}),
                     "status": project.status,
                     "assigned_locations": _loc_counts.get(project.id, 0),
                     "assigned_trainings": _trn_counts.get(project.id, 0),

@@ -213,6 +213,9 @@ class Task(ModelWithSoftDeleteAndCRUD, SurrogatePK):
     invalidated = db.Column(db.Boolean, nullable=True, default=False)
     self_validated = db.Column(db.Boolean, default=False)  # Flags tasks where mapper validated their own work
 
+    # MapRoulette status (NULL for TM4 tasks; 1=Fixed, 2=FalsePositive, 3=Skipped, 5=AlreadyFixed, 6=CantComplete)
+    mr_status = db.Column(db.Integer, nullable=True)
+
     # TM4 split tracking
     parent_task_id = db.Column(db.Integer, nullable=True)  # From TM4 for split tracking
     sibling_count = db.Column(db.Integer, nullable=True)  # Total siblings in split group (4 for TM4)

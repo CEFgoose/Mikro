@@ -58,6 +58,15 @@ MR_REVIEW_DISPUTED = 4
 MR_ACTION_STATUS_CHANGE = 1
 MR_ACTION_REVIEW = 2
 
+# All MR statuses that represent real user work (excludes Created=0)
+MR_TRACKABLE_STATUSES = {
+    MR_STATUS_FIXED,           # 1
+    MR_STATUS_FALSE_POSITIVE,  # 2
+    MR_STATUS_SKIPPED,         # 3
+    MR_STATUS_ALREADY_FIXED,   # 5
+    MR_STATUS_CANT_COMPLETE,   # 6
+}
+
 
 class MapRouletteSync:
     """
@@ -292,7 +301,7 @@ class MapRouletteSync:
         # -----------------------------------------------------------
         # Step 1: Paginate all tasks from the challenge
         # -----------------------------------------------------------
-        all_fixed_tasks = []
+        all_actionable_tasks = []
         page = 0
         limit = 50
 
@@ -315,11 +324,11 @@ class MapRouletteSync:
                 if not isinstance(tasks_page, list) or len(tasks_page) == 0:
                     break
 
-                # Filter to Fixed tasks (status=1)
+                # Filter to all trackable statuses (Fixed, FalsePositive, Skipped, AlreadyFixed, CantComplete)
                 for t in tasks_page:
                     try:
-                        if t.get("status") == MR_STATUS_FIXED:
-                            all_fixed_tasks.append(t)
+                        if t.get("status") in MR_TRACKABLE_STATUSES:
+                            all_actionable_tasks.append(t)
                     except (TypeError, AttributeError):
                         continue
 
@@ -343,22 +352,22 @@ class MapRouletteSync:
                 break
 
         current_app.logger.info(
-            f"MR challenge {challenge_id}: found {len(all_fixed_tasks)} "
-            f"Fixed tasks"
+            f"MR challenge {challenge_id}: found {len(all_actionable_tasks)} "
+            f"actionable tasks"
         )
 
-        if not all_fixed_tasks:
+        if not all_actionable_tasks:
             project.update(last_sync_cursor=datetime.now(timezone.utc))
-            return {"message": "No fixed tasks found", **stats}
+            return {"message": "No actionable tasks found", **stats}
 
         # -----------------------------------------------------------
-        # Step 2: Fetch history for each Fixed task in parallel
+        # Step 2: Fetch history for each actionable task in parallel
         # -----------------------------------------------------------
         task_histories = {}
 
         # Process in batches to respect rate limiting
         batch_size = 3  # Matches ThreadPoolExecutor max_workers
-        task_ids = [t.get("id") for t in all_fixed_tasks if t.get("id")]
+        task_ids = [t.get("id") for t in all_actionable_tasks if t.get("id")]
 
         for batch_start in range(0, len(task_ids), batch_size):
             batch = task_ids[batch_start : batch_start + batch_size]
@@ -385,9 +394,9 @@ class MapRouletteSync:
             time.sleep(0.05)
 
         # -----------------------------------------------------------
-        # Step 3: Process each Fixed task
+        # Step 3: Process each actionable task
         # -----------------------------------------------------------
-        for mr_task in all_fixed_tasks:
+        for mr_task in all_actionable_tasks:
             try:
                 mr_task_id = mr_task.get("id")
                 if not mr_task_id:
@@ -397,8 +406,9 @@ class MapRouletteSync:
                 stats["tasks_processed"] += 1
 
                 # Parse history to find mapper and reviewer
+                task_status = mr_task.get("status", MR_STATUS_FIXED)
                 mapper_username = self._extract_mapper_from_history(
-                    history, mr_task_id
+                    history, mr_task_id, target_status=task_status
                 )
                 reviewer_username, review_status = (
                     self._extract_review_from_history(history, mr_task_id)
@@ -421,14 +431,21 @@ class MapRouletteSync:
                 ).first()
 
                 if task_record is None:
+                    # Skipped tasks: tracked but not paid (rate=0)
+                    # All other statuses: paid at project rate
+                    is_skipped = task_status == MR_STATUS_SKIPPED
+                    effective_mapping_rate = 0 if is_skipped else project.mapping_rate_per_task
+                    effective_validation_rate = 0 if is_skipped else project.validation_rate_per_task
+
                     # Create new task -- no parent_task_id for MR
                     task_record = Task.create(
                         task_id=mr_task_id,
                         project_id=project.id,
                         org_id=project.org_id,
                         source="mr",
-                        mapping_rate=project.mapping_rate_per_task,
-                        validation_rate=project.validation_rate_per_task,
+                        mr_status=task_status,
+                        mapping_rate=effective_mapping_rate,
+                        validation_rate=effective_validation_rate,
                         paid_out=False,
                         mapped=True,
                         mapped_by=mapper_username or "unknown",
@@ -438,7 +455,8 @@ class MapRouletteSync:
                     )
                     stats["tasks_created"] += 1
 
-                    # Link mapper to task via UserTasks
+                    # Link mapper to task via UserTasks and update stats
+                    # Skipped tasks: link but don't increment mapped counts
                     mapper = self._resolve_user(mapper_username)
                     if mapper:
                         existing_link = UserTasks.query.filter_by(
@@ -448,16 +466,17 @@ class MapRouletteSync:
                             UserTasks.create(
                                 user_id=mapper.id, task_id=task_record.id
                             )
-                        mapper.update(
-                            total_tasks_mapped=mapper.total_tasks_mapped + 1
-                        )
-                        project.update(
-                            tasks_mapped=project.tasks_mapped + 1
-                        )
+                        if not is_skipped:
+                            mapper.update(
+                                total_tasks_mapped=mapper.total_tasks_mapped + 1
+                            )
+                            project.update(
+                                tasks_mapped=project.tasks_mapped + 1
+                            )
 
                     current_app.logger.info(
-                        f"Created MR task {mr_task_id} for challenge "
-                        f"{challenge_id}, mapper={mapper_username}"
+                        f"Created MR task {mr_task_id} (status={task_status}) "
+                        f"for challenge {challenge_id}, mapper={mapper_username}"
                     )
 
                 # -------------------------------------------------
@@ -503,17 +522,18 @@ class MapRouletteSync:
 
         return {"message": "sync complete", **stats}
 
-    def _extract_mapper_from_history(self, history, mr_task_id):
+    def _extract_mapper_from_history(self, history, mr_task_id, target_status=MR_STATUS_FIXED):
         """
-        Parse task history to find who set the task status to Fixed.
+        Parse task history to find who set the task to the given status.
 
         Looks for status change actions (actionType=1) where the resulting
-        status is Fixed (1). Returns the OSM display name of the user who
-        performed that action.
+        status matches target_status. Returns the OSM display name of the
+        user who performed that action.
 
         Args:
             history: List of history action dicts from the MR API.
             mr_task_id: The MR task ID (for logging).
+            target_status: The MR status code to look for (default: Fixed=1).
 
         Returns:
             str or None: OSM username of the mapper, or None if not found.
@@ -526,8 +546,8 @@ class MapRouletteSync:
                 action_type = action.get("actionType")
                 status = action.get("status")
 
-                # Look for status change to Fixed
-                if action_type == MR_ACTION_STATUS_CHANGE and status == MR_STATUS_FIXED:
+                # Look for status change to the target status
+                if action_type == MR_ACTION_STATUS_CHANGE and status == target_status:
                     user_obj = action.get("user", {})
                     if isinstance(user_obj, dict):
                         osm_profile = user_obj.get("osmProfile", {})
