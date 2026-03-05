@@ -45,6 +45,7 @@ export interface Project {
   url: string;
   total_tasks: number;
   source?: "tm4" | "mr";
+  created_by?: string;
   total_mapped?: number;
   total_validated?: number;
   total_invalidated?: number;
@@ -604,6 +605,7 @@ export interface EditingStatsResponse {
     total_invalidated: number;
     active_projects: number;
     completed_projects: number;
+    mr_status_summary?: Record<string, number> | null;
   };
   tasks_over_time: Array<{
     week: string;
@@ -611,6 +613,14 @@ export interface EditingStatsResponse {
     validated: number;
     invalidated: number;
   }>;
+  mr_status_over_time?: Array<{
+    week: string;
+    fixed: number;
+    already_fixed: number;
+    false_positive: number;
+    skipped: number;
+    cant_complete: number;
+  }> | null;
   projects: Array<{
     id: number;
     name: string;
@@ -625,6 +635,7 @@ export interface EditingStatsResponse {
     validation_rate: number;
     status: boolean;
     difficulty: string;
+    mr_status_breakdown?: Record<string, number>;
   }>;
   top_contributors: Array<{
     user_id: string | null;
@@ -634,6 +645,7 @@ export interface EditingStatsResponse {
     tasks_validated: number;
     tasks_invalidated: number;
     total_hours: number;
+    mr_status_breakdown?: Record<string, number>;
   }>;
   comparison?: {
     summary: {

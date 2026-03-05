@@ -117,11 +117,17 @@ export default function AdminProjectsPage() {
   const [projectUsers, setProjectUsers] = useState<ProjectUserItem[]>([]);
   const [projectTeams, setProjectTeams] = useState<ProjectTeamItem[]>([]);
   const [editTab, setEditTab] = useState<"settings" | "users" | "teams" | "training" | "locations">("settings");
+  const [showMyProjects, setShowMyProjects] = useState(false);
 
-  // Re-fetch projects when filters change
+  // Re-fetch projects when filters or "my projects" toggle change
   useEffect(() => {
-    if (refetch) refetch(filtersBody ? { filters: filtersBody } : {});
-  }, [filtersBody]);
+    if (refetch) {
+      const body: Record<string, unknown> = {};
+      if (filtersBody) body.filters = filtersBody;
+      if (showMyProjects) body.created_by_me = true;
+      refetch(Object.keys(body).length > 0 ? body : {});
+    }
+  }, [filtersBody, showMyProjects]);
 
   const activeProjects = projects?.org_active_projects ?? [];
   const inactiveProjects = projects?.org_inactive_projects ?? [];
@@ -556,22 +562,33 @@ export default function AdminProjectsPage() {
       </div>
 
       {/* Filters */}
-      <FilterBar
-        dimensions={filterOptions?.dimensions ? Object.entries(filterOptions.dimensions).map(([key, values]) => ({
-          key,
-          label: key.charAt(0).toUpperCase() + key.slice(1),
-          options: Array.isArray(values)
-            ? values.map((v) =>
-                typeof v === 'string'
-                  ? { value: v, label: v }
-                  : { value: String(v.id ?? v.name), label: v.name }
-              )
-            : [],
-        })) : []}
-        activeFilters={activeFilters}
-        onChange={setActiveFilters}
-        loading={filterOptionsLoading}
-      />
+      <div className="flex items-center gap-3">
+        <div className="flex-1">
+          <FilterBar
+            dimensions={filterOptions?.dimensions ? Object.entries(filterOptions.dimensions).map(([key, values]) => ({
+              key,
+              label: key.charAt(0).toUpperCase() + key.slice(1),
+              options: Array.isArray(values)
+                ? values.map((v) =>
+                    typeof v === 'string'
+                      ? { value: v, label: v }
+                      : { value: String(v.id ?? v.name), label: v.name }
+                  )
+                : [],
+            })) : []}
+            activeFilters={activeFilters}
+            onChange={setActiveFilters}
+            loading={filterOptionsLoading}
+          />
+        </div>
+        <Button
+          variant={showMyProjects ? "primary" : "outline"}
+          size="sm"
+          onClick={() => setShowMyProjects(!showMyProjects)}
+        >
+          My Projects
+        </Button>
+      </div>
 
       {/* Projects Tabs */}
       <Tabs defaultValue="active">

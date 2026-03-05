@@ -219,6 +219,7 @@ class ProjectAPI(MethodView):
             Project.create(
                 id=project_id,
                 org_id=g.user.org_id,
+                created_by=g.user.id,
                 name=project_name,
                 total_tasks=total_tasks,
                 max_payment=float(calculation),
@@ -276,6 +277,7 @@ class ProjectAPI(MethodView):
             Project.create(
                 id=challenge_id,
                 org_id=g.user.org_id,
+                created_by=g.user.id,
                 name=project_name,
                 total_tasks=total_tasks,
                 max_payment=float(calculation),
@@ -618,7 +620,9 @@ class ProjectAPI(MethodView):
             return {"message": "User not found", "status": 304}
 
         # Check for filters in the request body
-        filters = request.json.get("filters") if request.json else None
+        req_body = request.json if request.json else {}
+        filters = req_body.get("filters")
+        created_by_me = req_body.get("created_by_me", False)
         filtered_user_ids = resolve_filtered_user_ids(filters, g.user.org_id)
 
         # If filters produced a user-id set, restrict to projects that have
@@ -668,6 +672,14 @@ class ProjectAPI(MethodView):
             inactive_projects = [
                 p for p in inactive_projects if p.id in filtered_project_ids
             ]
+        # Filter to only projects created by the current admin
+        if created_by_me:
+            active_projects = [
+                p for p in active_projects if p.created_by == g.user.id
+            ]
+            inactive_projects = [
+                p for p in inactive_projects if p.created_by == g.user.id
+            ]
         # Add each project to the list
         for project in active_projects:
             # Get effective task counts that handle split tasks properly
@@ -690,6 +702,7 @@ class ProjectAPI(MethodView):
                     "url": project.url,
                     "difficulty": project.difficulty,
                     "source": project.source,
+                    "created_by": project.created_by,
                     # Use effective counts that handle split tasks
                     "total_mapped": task_counts["effective_mapped"],
                     "total_validated": task_counts["effective_validated"],
@@ -725,6 +738,7 @@ class ProjectAPI(MethodView):
                     "url": project.url,
                     "difficulty": project.difficulty,
                     "source": project.source,
+                    "created_by": project.created_by,
                     # Use effective counts that handle split tasks
                     "total_mapped": task_counts["effective_mapped"],
                     "total_validated": task_counts["effective_validated"],

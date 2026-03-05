@@ -160,6 +160,7 @@ class Project(ModelWithSoftDeleteAndCRUD, SurrogatePK):
     org_id = db.Column(db.String(255), nullable=True)  # Changed to String for Auth0
     url = db.Column(db.String(500), nullable=False)
     source = db.Column(db.String(20), nullable=False, server_default="tm4")  # "tm4" or "mr"
+    created_by = db.Column(db.String(255), nullable=True)  # Auth0 user ID of admin who created/imported
     last_sync_cursor = db.Column(db.DateTime, nullable=True)  # For incremental MR sync
 
     # Payment settings

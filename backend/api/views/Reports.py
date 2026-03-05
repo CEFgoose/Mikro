@@ -132,6 +132,28 @@ class ReportsAPI(MethodView):
             )
         total_invalidated = invalidated_query.count()
 
+        # --- MR status breakdown (only for MapRoulette source) ---
+        mr_status_summary = {}
+        if source == "mr":
+            status_counts = (
+                db.session.query(Task.mr_status, func.count())
+                .filter(
+                    Task.org_id == g.user.org_id,
+                    Task.source == "mr",
+                    Task.mapped == True,
+                    Task.date_mapped >= start_date,
+                    Task.date_mapped < end_date,
+                )
+            )
+            if osm_usernames:
+                status_counts = status_counts.filter(
+                    Task.mapped_by.in_(osm_usernames)
+                )
+            status_counts = status_counts.group_by(Task.mr_status).all()
+            for row in status_counts:
+                if row[0] is not None:
+                    mr_status_summary[row[0]] = row[1]
+
         active_projects = Project.query.filter_by(
             org_id=g.user.org_id, source=source, status=True, completed=False
         ).count()
@@ -217,6 +239,57 @@ class ReportsAPI(MethodView):
             weeks[key]["invalidated"] = row.count
         tasks_over_time = sorted(weeks.values(), key=lambda x: x["week"])
 
+        # --- MR status over time (weekly, by mr_status) ---
+        mr_status_over_time = []
+        if source == "mr":
+            week_by_status = (
+                db.session.query(
+                    func.date_trunc("week", Task.date_mapped).label("week"),
+                    Task.mr_status,
+                    func.count().label("count"),
+                )
+                .filter(
+                    Task.org_id == g.user.org_id,
+                    Task.source == "mr",
+                    Task.mapped == True,
+                    Task.mr_status != None,
+                    Task.date_mapped >= start_date,
+                    Task.date_mapped < end_date,
+                )
+            )
+            if osm_usernames:
+                week_by_status = week_by_status.filter(
+                    Task.mapped_by.in_(osm_usernames)
+                )
+            week_by_status = week_by_status.group_by("week", Task.mr_status).all()
+
+            weeks_mr = {}
+            for row in week_by_status:
+                key = row.week.strftime("%Y-%m-%d")
+                weeks_mr.setdefault(
+                    key,
+                    {
+                        "week": key,
+                        "fixed": 0,
+                        "already_fixed": 0,
+                        "false_positive": 0,
+                        "skipped": 0,
+                        "cant_complete": 0,
+                    },
+                )
+                status_key = {
+                    1: "fixed",
+                    2: "false_positive",
+                    3: "skipped",
+                    5: "already_fixed",
+                    6: "cant_complete",
+                }.get(row.mr_status)
+                if status_key:
+                    weeks_mr[key][status_key] = row.count
+            mr_status_over_time = sorted(
+                weeks_mr.values(), key=lambda x: x["week"]
+            )
+
         # --- Projects table ---
         projects_list = []
         org_projects = Project.query.filter_by(
@@ -227,26 +300,38 @@ class ReportsAPI(MethodView):
             mapped = proj.tasks_mapped or 0
             validated = proj.tasks_validated or 0
             invalidated = proj.tasks_invalidated or 0
-            projects_list.append(
-                {
-                    "id": proj.id,
-                    "name": proj.name,
-                    "url": proj.url or "",
-                    "source": proj.source,
-                    "total_tasks": total,
-                    "tasks_mapped": mapped,
-                    "tasks_validated": validated,
-                    "tasks_invalidated": invalidated,
-                    "percent_mapped": round(mapped / total * 100, 1) if total else 0,
-                    "percent_validated": (
-                        round(validated / total * 100, 1) if total else 0
-                    ),
-                    "mapping_rate": proj.mapping_rate_per_task or 0,
-                    "validation_rate": proj.validation_rate_per_task or 0,
-                    "status": proj.status,
-                    "difficulty": proj.difficulty or "Unknown",
+            proj_dict = {
+                "id": proj.id,
+                "name": proj.name,
+                "url": proj.url or "",
+                "source": proj.source,
+                "total_tasks": total,
+                "tasks_mapped": mapped,
+                "tasks_validated": validated,
+                "tasks_invalidated": invalidated,
+                "percent_mapped": round(mapped / total * 100, 1) if total else 0,
+                "percent_validated": (
+                    round(validated / total * 100, 1) if total else 0
+                ),
+                "mapping_rate": proj.mapping_rate_per_task or 0,
+                "validation_rate": proj.validation_rate_per_task or 0,
+                "status": proj.status,
+                "difficulty": proj.difficulty or "Unknown",
+            }
+            if source == "mr":
+                mr_proj_status = (
+                    db.session.query(Task.mr_status, func.count())
+                    .filter(
+                        Task.project_id == proj.id,
+                        Task.mr_status != None,
+                    )
+                    .group_by(Task.mr_status)
+                    .all()
+                )
+                proj_dict["mr_status_breakdown"] = {
+                    s: c for s, c in mr_proj_status if s is not None
                 }
-            )
+            projects_list.append(proj_dict)
 
         # --- Top contributors ---
         contrib_query = (
@@ -312,21 +397,37 @@ class ReportsAPI(MethodView):
                 )
                 hours = round((hours_result or 0) / 3600, 1)
 
-            top_contributors.append(
-                {
-                    "user_id": user.id if user else None,
-                    "user_name": (
-                        f"{user.first_name} {user.last_name}".strip()
-                        if user
-                        else osm_un
-                    ),
-                    "osm_username": osm_un,
-                    "tasks_mapped": row.mapped_count,
-                    "tasks_validated": val_count,
-                    "tasks_invalidated": inv_count,
-                    "total_hours": hours,
+            contributor_dict = {
+                "user_id": user.id if user else None,
+                "user_name": (
+                    f"{user.first_name} {user.last_name}".strip()
+                    if user
+                    else osm_un
+                ),
+                "osm_username": osm_un,
+                "tasks_mapped": row.mapped_count,
+                "tasks_validated": val_count,
+                "tasks_invalidated": inv_count,
+                "total_hours": hours,
+            }
+            if source == "mr":
+                mr_contrib_status = (
+                    db.session.query(Task.mr_status, func.count())
+                    .filter(
+                        Task.org_id == g.user.org_id,
+                        Task.source == "mr",
+                        Task.mapped_by == osm_un,
+                        Task.mr_status != None,
+                        Task.date_mapped >= start_date,
+                        Task.date_mapped < end_date,
+                    )
+                    .group_by(Task.mr_status)
+                    .all()
+                )
+                contributor_dict["mr_status_breakdown"] = {
+                    s: c for s, c in mr_contrib_status if s is not None
                 }
-            )
+            top_contributors.append(contributor_dict)
 
         # --- Comparison period (optional) ---
         comparison = None
@@ -390,8 +491,10 @@ class ReportsAPI(MethodView):
                 "total_invalidated": total_invalidated,
                 "active_projects": active_projects,
                 "completed_projects": completed_projects,
+                "mr_status_summary": mr_status_summary if source == "mr" else None,
             },
             "tasks_over_time": tasks_over_time,
+            "mr_status_over_time": mr_status_over_time if source == "mr" else None,
             "projects": projects_list,
             "top_contributors": top_contributors,
             "comparison": comparison,

@@ -73,6 +73,14 @@ const COLORS = {
   modified: "#3b82f6",
 };
 
+const MR_COLORS = {
+  fixed: "#22c55e",
+  already_fixed: "#10b981",
+  false_positive: "#f59e0b",
+  cant_complete: "#f97316",
+  skipped: "#9ca3af",
+};
+
 const CATEGORY_COLORS: Record<string, string> = {
   mapping: "#f97316",
   "editing / osm": "#f97316",
@@ -2119,42 +2127,49 @@ export default function AdminReportsPage() {
           ) : mrData ? (
             <div className="space-y-6">
               {/* Summary Cards */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                 <StatCard
-                  label="Tasks Fixed"
-                  value={mrData.summary.total_mapped.toLocaleString()}
-                  compareValue={mrData.comparison?.summary?.total_mapped}
+                  label="Fixed"
+                  value={(mrData.summary.mr_status_summary?.["1"] ?? 0).toLocaleString()}
                 />
                 <StatCard
-                  label="Tasks Validated"
+                  label="Already Fixed"
+                  value={(mrData.summary.mr_status_summary?.["5"] ?? 0).toLocaleString()}
+                />
+                <StatCard
+                  label="Not an Issue"
+                  value={(mrData.summary.mr_status_summary?.["2"] ?? 0).toLocaleString()}
+                />
+                <StatCard
+                  label="Can't Complete"
+                  value={(mrData.summary.mr_status_summary?.["6"] ?? 0).toLocaleString()}
+                />
+                <StatCard
+                  label="Skipped"
+                  value={(mrData.summary.mr_status_summary?.["3"] ?? 0).toLocaleString()}
+                />
+                <StatCard
+                  label="Reviewed"
                   value={mrData.summary.total_validated.toLocaleString()}
-                  compareValue={mrData.comparison?.summary?.total_validated}
-                />
-                <StatCard
-                  label="Tasks Invalidated"
-                  value={mrData.summary.total_invalidated.toLocaleString()}
-                  compareValue={mrData.comparison?.summary?.total_invalidated}
                 />
               </div>
 
-              {/* Tasks Over Time Bar Chart */}
+              {/* Tasks Over Time - MR Status Breakdown */}
               <Card>
                 <CardHeader>
                   <CardTitle>Tasks Over Time</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  {mrData.tasks_over_time.length > 0 ? (
+                  {mrData.mr_status_over_time && mrData.mr_status_over_time.length > 0 ? (
                     <div style={{ width: "100%", height: 300 }}>
                       <ResponsiveContainer>
-                        <BarChart data={mrData.tasks_over_time}>
+                        <BarChart data={mrData.mr_status_over_time}>
                           <CartesianGrid strokeDasharray="3 3" />
                           <XAxis
                             dataKey="week"
                             tick={{ fontSize: 12 }}
                             tickFormatter={(v: string) =>
-                              new Date(
-                                v + "T00:00:00"
-                              ).toLocaleDateString("en-US", {
+                              new Date(v + "T00:00:00").toLocaleDateString("en-US", {
                                 month: "short",
                                 day: "numeric",
                               })
@@ -2163,9 +2178,7 @@ export default function AdminReportsPage() {
                           <YAxis tick={{ fontSize: 12 }} />
                           <Tooltip
                             labelFormatter={(v) =>
-                              new Date(
-                                String(v) + "T00:00:00"
-                              ).toLocaleDateString("en-US", {
+                              new Date(String(v) + "T00:00:00").toLocaleDateString("en-US", {
                                 month: "short",
                                 day: "numeric",
                                 year: "numeric",
@@ -2173,21 +2186,11 @@ export default function AdminReportsPage() {
                             }
                           />
                           <Legend />
-                          <Bar
-                            dataKey="mapped"
-                            name="Fixed"
-                            fill={COLORS.mapped}
-                          />
-                          <Bar
-                            dataKey="validated"
-                            name="Validated"
-                            fill={COLORS.validated}
-                          />
-                          <Bar
-                            dataKey="invalidated"
-                            name="Invalidated"
-                            fill={COLORS.invalidated}
-                          />
+                          <Bar dataKey="fixed" name="Fixed" stackId="status" fill={MR_COLORS.fixed} />
+                          <Bar dataKey="already_fixed" name="Already Fixed" stackId="status" fill={MR_COLORS.already_fixed} />
+                          <Bar dataKey="false_positive" name="Not an Issue" stackId="status" fill={MR_COLORS.false_positive} />
+                          <Bar dataKey="cant_complete" name="Can't Complete" stackId="status" fill={MR_COLORS.cant_complete} />
+                          <Bar dataKey="skipped" name="Skipped" stackId="status" fill={MR_COLORS.skipped} />
                         </BarChart>
                       </ResponsiveContainer>
                     </div>
@@ -2199,7 +2202,7 @@ export default function AdminReportsPage() {
                 </CardContent>
               </Card>
 
-              {/* Detailed Challenge Table */}
+              {/* Challenges Table */}
               <Card>
                 <CardHeader>
                   <CardTitle>
@@ -2217,11 +2220,20 @@ export default function AdminReportsPage() {
                           <th className="px-6 py-3 text-left text-sm font-semibold text-foreground">
                             Status
                           </th>
-                          <th className="px-6 py-3 text-left text-sm font-semibold text-foreground">
-                            Progress
+                          <th className="px-6 py-3 text-right text-sm font-semibold text-foreground">
+                            Fixed
                           </th>
-                          <th className="px-6 py-3 text-left text-sm font-semibold text-foreground">
-                            % Validated
+                          <th className="px-6 py-3 text-right text-sm font-semibold text-foreground">
+                            Already Fixed
+                          </th>
+                          <th className="px-6 py-3 text-right text-sm font-semibold text-foreground">
+                            Not an Issue
+                          </th>
+                          <th className="px-6 py-3 text-right text-sm font-semibold text-foreground">
+                            Can&#39;t Complete
+                          </th>
+                          <th className="px-6 py-3 text-right text-sm font-semibold text-foreground">
+                            Skipped
                           </th>
                           <th className="px-6 py-3 text-left text-sm font-semibold text-foreground">
                             Fix Rate
@@ -2234,6 +2246,7 @@ export default function AdminReportsPage() {
                       <tbody className="divide-y divide-border bg-card">
                         {mrData.projects.map((proj) => {
                           const status = getProjectStatus(proj);
+                          const bd = proj.mr_status_breakdown || {};
                           return (
                             <tr key={proj.id}>
                               <td className="px-6 py-4">
@@ -2259,41 +2272,20 @@ export default function AdminReportsPage() {
                                   {status.label}
                                 </span>
                               </td>
-                              <td className="px-6 py-4">
-                                <div className="flex items-center gap-2">
-                                  <div
-                                    className="flex-1 h-2 bg-muted rounded-full overflow-hidden"
-                                    style={{ minWidth: 80 }}
-                                  >
-                                    <div
-                                      className="h-full bg-kaart-orange rounded-full transition-all"
-                                      style={{
-                                        width: `${Math.min(proj.percent_mapped, 100)}%`,
-                                      }}
-                                    />
-                                  </div>
-                                  <span className="text-xs text-muted-foreground w-10 text-right">
-                                    {proj.percent_mapped}%
-                                  </span>
-                                </div>
+                              <td className="px-6 py-4 text-right text-foreground">
+                                {bd["1"] || 0}
                               </td>
-                              <td className="px-6 py-4">
-                                <div className="flex items-center gap-2">
-                                  <div
-                                    className="flex-1 h-2 bg-muted rounded-full overflow-hidden"
-                                    style={{ minWidth: 60 }}
-                                  >
-                                    <div
-                                      className="h-full bg-blue-500 rounded-full transition-all"
-                                      style={{
-                                        width: `${Math.min(proj.percent_validated, 100)}%`,
-                                      }}
-                                    />
-                                  </div>
-                                  <span className="text-xs text-muted-foreground w-10 text-right">
-                                    {proj.percent_validated}%
-                                  </span>
-                                </div>
+                              <td className="px-6 py-4 text-right text-foreground">
+                                {bd["5"] || 0}
+                              </td>
+                              <td className="px-6 py-4 text-right text-foreground">
+                                {bd["2"] || 0}
+                              </td>
+                              <td className="px-6 py-4 text-right text-foreground">
+                                {bd["6"] || 0}
+                              </td>
+                              <td className="px-6 py-4 text-right text-foreground">
+                                {bd["3"] || 0}
                               </td>
                               <td className="px-6 py-4 text-foreground">
                                 ${proj.mapping_rate.toFixed(2)}
@@ -2326,14 +2318,20 @@ export default function AdminReportsPage() {
                           <th className="px-6 py-3 text-left text-sm font-semibold text-foreground">
                             OSM Username
                           </th>
-                          <th className="px-6 py-3 text-left text-sm font-semibold text-foreground">
+                          <th className="px-6 py-3 text-right text-sm font-semibold text-foreground">
                             Fixed
                           </th>
-                          <th className="px-6 py-3 text-left text-sm font-semibold text-foreground">
-                            Validated
+                          <th className="px-6 py-3 text-right text-sm font-semibold text-foreground">
+                            Already Fixed
                           </th>
-                          <th className="px-6 py-3 text-left text-sm font-semibold text-foreground">
-                            Invalidated
+                          <th className="px-6 py-3 text-right text-sm font-semibold text-foreground">
+                            Not an Issue
+                          </th>
+                          <th className="px-6 py-3 text-right text-sm font-semibold text-foreground">
+                            Can&#39;t Complete
+                          </th>
+                          <th className="px-6 py-3 text-right text-sm font-semibold text-foreground">
+                            Skipped
                           </th>
                           <th className="px-6 py-3 text-left text-sm font-semibold text-foreground">
                             Hours
@@ -2341,49 +2339,58 @@ export default function AdminReportsPage() {
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-border bg-card">
-                        {mrData.top_contributors.map((c) => (
-                          <tr
-                            key={c.osm_username}
-                            className={
-                              c.user_id
-                                ? "cursor-pointer hover:bg-muted/50 transition-colors"
-                                : ""
-                            }
-                            onClick={() =>
-                              c.user_id &&
-                              router.push(
-                                `/admin/users/${encodeURIComponent(c.user_id)}`
-                              )
-                            }
-                          >
-                            <td className="px-6 py-4">
-                              <span
-                                className={
-                                  c.user_id
-                                    ? "font-medium text-kaart-orange"
-                                    : "font-medium text-foreground"
-                                }
-                              >
-                                {c.user_name}
-                              </span>
-                            </td>
-                            <td className="px-6 py-4 text-foreground">
-                              {c.osm_username}
-                            </td>
-                            <td className="px-6 py-4 text-foreground">
-                              {c.tasks_mapped}
-                            </td>
-                            <td className="px-6 py-4 text-foreground">
-                              {c.tasks_validated}
-                            </td>
-                            <td className="px-6 py-4 text-foreground">
-                              {c.tasks_invalidated}
-                            </td>
-                            <td className="px-6 py-4 text-foreground">
-                              {c.total_hours}h
-                            </td>
-                          </tr>
-                        ))}
+                        {mrData.top_contributors.map((c) => {
+                          const bd = c.mr_status_breakdown || {};
+                          return (
+                            <tr
+                              key={c.osm_username}
+                              className={
+                                c.user_id
+                                  ? "cursor-pointer hover:bg-muted/50 transition-colors"
+                                  : ""
+                              }
+                              onClick={() =>
+                                c.user_id &&
+                                router.push(
+                                  `/admin/users/${encodeURIComponent(c.user_id)}`
+                                )
+                              }
+                            >
+                              <td className="px-6 py-4">
+                                <span
+                                  className={
+                                    c.user_id
+                                      ? "font-medium text-kaart-orange"
+                                      : "font-medium text-foreground"
+                                  }
+                                >
+                                  {c.user_name}
+                                </span>
+                              </td>
+                              <td className="px-6 py-4 text-foreground">
+                                {c.osm_username}
+                              </td>
+                              <td className="px-6 py-4 text-right text-foreground">
+                                {bd["1"] || 0}
+                              </td>
+                              <td className="px-6 py-4 text-right text-foreground">
+                                {bd["5"] || 0}
+                              </td>
+                              <td className="px-6 py-4 text-right text-foreground">
+                                {bd["2"] || 0}
+                              </td>
+                              <td className="px-6 py-4 text-right text-foreground">
+                                {bd["6"] || 0}
+                              </td>
+                              <td className="px-6 py-4 text-right text-foreground">
+                                {bd["3"] || 0}
+                              </td>
+                              <td className="px-6 py-4 text-foreground">
+                                {c.total_hours}h
+                              </td>
+                            </tr>
+                          );
+                        })}
                       </tbody>
                     </table>
                   </div>
