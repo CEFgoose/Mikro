@@ -10,6 +10,9 @@ import { User } from "@/types";
 interface CsvUser {
   email: string;
   name: string;
+  first_name: string;
+  last_name: string;
+  osm_username: string;
   role: string;
 }
 
@@ -176,6 +179,9 @@ export default function AdminUsersPage() {
         const header = lines[0].split(",").map((h) => h.trim().toLowerCase());
         const emailIdx = header.indexOf("email");
         const nameIdx = header.indexOf("name");
+        const firstNameIdx = header.indexOf("first_name");
+        const lastNameIdx = header.indexOf("last_name");
+        const osmUsernameIdx = header.indexOf("osm_username");
         const roleIdx = header.indexOf("role");
 
         if (emailIdx === -1) {
@@ -187,9 +193,15 @@ export default function AdminUsersPage() {
         for (let i = 1; i < lines.length; i++) {
           const values = lines[i].split(",").map((v) => v.trim());
           if (values[emailIdx]) {
+            const firstName = firstNameIdx !== -1 ? values[firstNameIdx] || "" : "";
+            const lastName = lastNameIdx !== -1 ? values[lastNameIdx] || "" : "";
+            const name = nameIdx !== -1 ? values[nameIdx] || "" : "";
             parsed.push({
               email: values[emailIdx],
-              name: nameIdx !== -1 ? values[nameIdx] || "" : "",
+              name: name,
+              first_name: firstName,
+              last_name: lastName,
+              osm_username: osmUsernameIdx !== -1 ? values[osmUsernameIdx] || "" : "",
               role: roleIdx !== -1 ? values[roleIdx] || "user" : "user",
             });
           }
@@ -571,7 +583,9 @@ export default function AdminUsersPage() {
                   <thead className="bg-muted">
                     <tr>
                       <th className="px-4 py-2 text-left font-medium">Email</th>
-                      <th className="px-4 py-2 text-left font-medium">Name</th>
+                      <th className="px-4 py-2 text-left font-medium">First Name</th>
+                      <th className="px-4 py-2 text-left font-medium">Last Name</th>
+                      <th className="px-4 py-2 text-left font-medium">OSM Username</th>
                       <th className="px-4 py-2 text-left font-medium">Role</th>
                     </tr>
                   </thead>
@@ -579,7 +593,9 @@ export default function AdminUsersPage() {
                     {csvUsers.map((user, idx) => (
                       <tr key={idx}>
                         <td className="px-4 py-2">{user.email}</td>
-                        <td className="px-4 py-2">{user.name || "-"}</td>
+                        <td className="px-4 py-2">{user.first_name || user.name?.split(" ")[0] || "-"}</td>
+                        <td className="px-4 py-2">{user.last_name || user.name?.split(" ").slice(1).join(" ") || "-"}</td>
+                        <td className="px-4 py-2">{user.osm_username || "-"}</td>
                         <td className="px-4 py-2">
                           <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
                             user.role === "admin"

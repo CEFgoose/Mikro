@@ -168,8 +168,8 @@ class UserAPI(MethodView):
 
             for user_data in users:
                 email = user_data.get("email", "").strip().lower()
-                name = user_data.get("name", "")
                 role = user_data.get("role", "user").strip().lower()
+                osm_username = user_data.get("osm_username", "").strip() or None
 
                 if not email:
                     results["failed"].append({"email": "unknown", "error": "No email provided"})
@@ -183,10 +183,14 @@ class UserAPI(MethodView):
                     })
                     continue
 
-                # Parse name into first/last
-                name_parts = name.strip().split(" ", 1) if name else ["", ""]
-                first_name = name_parts[0] if name_parts else ""
-                last_name = name_parts[1] if len(name_parts) > 1 else ""
+                # Use explicit first_name/last_name if provided, else parse from name
+                first_name = user_data.get("first_name", "").strip()
+                last_name = user_data.get("last_name", "").strip()
+                if not first_name:
+                    name = user_data.get("name", "")
+                    name_parts = name.strip().split(" ", 1) if name else ["", ""]
+                    first_name = name_parts[0] if name_parts else ""
+                    last_name = name_parts[1] if len(name_parts) > 1 else ""
 
                 try:
                     # Generate cryptographically random temp password
@@ -246,23 +250,23 @@ class UserAPI(MethodView):
                     if not existing_user:
                         existing_user = User.query.filter_by(id=auth0_user_id).first()
 
+                    update_fields = dict(
+                        first_name=first_name,
+                        last_name=last_name,
+                        role=role,
+                        org_id=g.user.org_id,
+                        auth0_sub=auth0_user_id,
+                    )
+                    if osm_username:
+                        update_fields["osm_username"] = osm_username
+
                     if existing_user:
-                        existing_user.update(
-                            first_name=first_name,
-                            last_name=last_name,
-                            role=role,
-                            org_id=g.user.org_id,
-                            auth0_sub=auth0_user_id,
-                        )
+                        existing_user.update(**update_fields)
                     else:
                         User.create(
                             id=auth0_user_id,
-                            auth0_sub=auth0_user_id,
                             email=email,
-                            first_name=first_name,
-                            last_name=last_name,
-                            role=role,
-                            org_id=g.user.org_id,
+                            **update_fields,
                         )
 
                     suffix = " (already in Auth0, synced locally)" if not auth0_created else ""
