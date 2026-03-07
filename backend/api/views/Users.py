@@ -184,13 +184,15 @@ class UserAPI(MethodView):
                     continue
 
                 # Use explicit first_name/last_name if provided, else parse from name
+                name = user_data.get("name", "")
                 first_name = user_data.get("first_name", "").strip()
                 last_name = user_data.get("last_name", "").strip()
                 if not first_name:
-                    name = user_data.get("name", "")
                     name_parts = name.strip().split(" ", 1) if name else ["", ""]
                     first_name = name_parts[0] if name_parts else ""
                     last_name = name_parts[1] if len(name_parts) > 1 else ""
+                if not name:
+                    name = f"{first_name} {last_name}".strip()
 
                 try:
                     # Generate cryptographically random temp password
