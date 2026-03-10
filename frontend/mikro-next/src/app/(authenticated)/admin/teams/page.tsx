@@ -590,7 +590,7 @@ export default function AdminTeamsPage() {
         }}
         title={`Team Members — ${membersTeam?.name}`}
         description="Assign or remove users from this team"
-        size="3xl"
+        size="5xl"
         footer={
           <Button
             variant="outline"
@@ -691,7 +691,7 @@ export default function AdminTeamsPage() {
         }}
         title={`Team Trainings — ${trainingsTeam?.name}`}
         description="Assign or remove trainings from this team"
-        size="3xl"
+        size="5xl"
         footer={
           <Button
             variant="outline"
@@ -800,7 +800,7 @@ export default function AdminTeamsPage() {
         }}
         title={`Team Checklists — ${checklistsTeam?.name}`}
         description="Assign or remove checklists from this team"
-        size="3xl"
+        size="5xl"
         footer={
           <Button
             variant="outline"
