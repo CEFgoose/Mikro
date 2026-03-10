@@ -943,10 +943,48 @@ class TaskAPI(MethodView):
             org_id=g.user.org_id, status="running"
         ).first()
         if running_job:
+            # If job has been running for >15 min, it's stale — mark it failed
+            from datetime import datetime, timezone, timedelta
+
+            if running_job.started_at:
+                age = datetime.now(timezone.utc) - running_job.started_at.replace(
+                    tzinfo=timezone.utc
+                )
+                if age > timedelta(minutes=15):
+                    current_app.logger.warning(
+                        f"Marking stale running job {running_job.id} as failed "
+                        f"(running for {age})"
+                    )
+                    running_job.status = "failed"
+                    running_job.error = "Timed out (stale after 15 minutes)"
+                    running_job.completed_at = datetime.now(timezone.utc)
+                    db.session.commit()
+                else:
+                    return {
+                        "message": "A sync is already in progress",
+                        "job_id": running_job.id,
+                        "progress": running_job.progress,
+                        "status": 200,
+                    }
+            else:
+                return {
+                    "message": "A sync is already in progress",
+                    "job_id": running_job.id,
+                    "progress": running_job.progress,
+                    "status": 200,
+                }
+
+        # Also check for queued jobs that haven't been picked up
+        queued_job = SyncJob.query.filter_by(
+            org_id=g.user.org_id, status="queued"
+        ).first()
+        if queued_job:
+            current_app.logger.info(
+                f"Sync already queued (job {queued_job.id}, type={queued_job.job_type})"
+            )
             return {
-                "message": "A sync is already in progress",
-                "job_id": running_job.id,
-                "progress": running_job.progress,
+                "message": "A sync is already queued",
+                "job_id": queued_job.id,
                 "status": 200,
             }
 
@@ -956,6 +994,10 @@ class TaskAPI(MethodView):
             status="queued",
             job_type="project_sync",
             target_id=project_id,
+        )
+
+        current_app.logger.info(
+            f"Project sync queued: job {job.id}, project {project_id} ({project.name})"
         )
 
         return {
@@ -969,11 +1011,21 @@ class TaskAPI(MethodView):
         if not g.user:
             return {"message": "User not found", "status": 304}
 
+        # Prefer active (queued/running) job, fall back to latest by ID
         job = (
-            SyncJob.query.filter_by(org_id=g.user.org_id)
+            SyncJob.query.filter(
+                SyncJob.org_id == g.user.org_id,
+                SyncJob.status.in_(["queued", "running"]),
+            )
             .order_by(SyncJob.id.desc())
             .first()
         )
+        if not job:
+            job = (
+                SyncJob.query.filter_by(org_id=g.user.org_id)
+                .order_by(SyncJob.id.desc())
+                .first()
+            )
 
         if not job:
             return {"message": "No sync jobs found", "status": 200}
@@ -982,6 +1034,7 @@ class TaskAPI(MethodView):
             "job_id": job.id,
             "status": 200,
             "sync_status": job.status,
+            "job_type": job.job_type,
             "progress": job.progress,
             "started_at": job.started_at.isoformat() if job.started_at else None,
             "completed_at": job.completed_at.isoformat() if job.completed_at else None,

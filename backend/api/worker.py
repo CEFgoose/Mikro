@@ -611,11 +611,33 @@ def poll_for_jobs(app):
                     org_id=job.org_id, status="running"
                 ).first()
                 if running:
-                    logger.info(
-                        f"Skipping job {job.id} — job {running.id} already "
-                        f"running for org {job.org_id}"
-                    )
-                    return
+                    # If running job is stale (>15 min), mark it failed
+                    if running.started_at:
+                        age = datetime.now(timezone.utc) - running.started_at.replace(
+                            tzinfo=timezone.utc
+                        )
+                        if age > timedelta(minutes=15):
+                            logger.warning(
+                                f"Marking stale job {running.id} as failed "
+                                f"(running for {age})"
+                            )
+                            running.status = "failed"
+                            running.error = "Timed out (stale after 15 minutes)"
+                            running.completed_at = datetime.now(timezone.utc)
+                            db.session.commit()
+                            # Fall through to process the queued job
+                        else:
+                            logger.info(
+                                f"Skipping job {job.id} — job {running.id} already "
+                                f"running for org {job.org_id}"
+                            )
+                            return
+                    else:
+                        logger.info(
+                            f"Skipping job {job.id} — job {running.id} already "
+                            f"running for org {job.org_id}"
+                        )
+                        return
 
                 logger.info(
                     f"Processing job {job.id} (type={job.job_type}) "
