@@ -23,6 +23,8 @@ import {
   useFetchUserTaskHistory,
   useFetchCountries,
   useAdminUpdateUserProfile,
+  useEditTimeEntry,
+  useVoidTimeEntry,
 } from "@/hooks/useApi";
 import {
   ComposedChart,
@@ -55,6 +57,21 @@ const MappingHeatmap = dynamic(() => import("@/components/MappingHeatmap"), {
 });
 
 type DatePreset = "daily" | "weekly" | "monthly" | "custom";
+
+const TIME_CATEGORY_OPTIONS = ["mapping", "validation", "review", "training", "other"];
+
+/** Convert ISO string to datetime-local input value (local timezone) */
+function toDatetimeLocal(iso: string): string {
+  const d = new Date(iso);
+  const offset = d.getTimezoneOffset();
+  const local = new Date(d.getTime() - offset * 60000);
+  return local.toISOString().slice(0, 16);
+}
+
+/** Convert datetime-local input value back to ISO string */
+function fromDatetimeLocal(value: string): string {
+  return new Date(value).toISOString();
+}
 
 function formatDate(iso: string | null): string {
   if (!iso) return "-";
@@ -146,6 +163,8 @@ export default function UserProfilePage() {
   const { data: countriesData } = useFetchCountries();
   const { mutate: updateProfile, loading: updateProfileLoading } =
     useAdminUpdateUserProfile();
+  const { mutate: editTimeEntry, loading: editingTimeEntry } = useEditTimeEntry();
+  const { mutate: voidTimeEntry } = useVoidTimeEntry();
   const toast = useToastActions();
 
   const [user, setUser] = useState<UserProfileData | null>(null);
@@ -204,6 +223,13 @@ export default function UserProfilePage() {
   const [editCountryId, setEditCountryId] = useState<string>("");
   const [editTimezone, setEditTimezone] = useState<string>("");
   const [editMapillaryUsername, setEditMapillaryUsername] = useState("");
+
+  // Time entry edit modal state
+  const [editingEntry, setEditingEntry] = useState<TimeEntry | null>(null);
+  const [editClockIn, setEditClockIn] = useState("");
+  const [editClockOut, setEditClockOut] = useState("");
+  const [editCategory, setEditCategory] = useState("");
+  const [editError, setEditError] = useState<string | null>(null);
 
   // Load profile on mount
   useEffect(() => {
@@ -319,6 +345,70 @@ export default function UserProfilePage() {
       loadChangesets(customStart, customEnd);
       loadActivity(customStart, customEnd);
       loadTaskHistory(customStart, customEnd);
+    }
+  };
+
+  // Time entry edit/void handlers
+  const handleOpenEditEntry = (entry: TimeEntry) => {
+    setEditingEntry(entry);
+    setEditClockIn(entry.clockIn ? toDatetimeLocal(entry.clockIn) : "");
+    setEditClockOut(entry.clockOut ? toDatetimeLocal(entry.clockOut) : "");
+    setEditCategory(entry.category.toLowerCase());
+    setEditError(null);
+  };
+
+  const handleSaveEditEntry = async () => {
+    if (!editingEntry) return;
+    setEditError(null);
+    if (!editClockIn) {
+      setEditError("Clock in time is required");
+      return;
+    }
+    try {
+      await editTimeEntry({
+        entry_id: editingEntry.id,
+        clockIn: fromDatetimeLocal(editClockIn),
+        clockOut: editClockOut ? fromDatetimeLocal(editClockOut) : undefined,
+        category: editCategory,
+      });
+      setEditingEntry(null);
+      toast.success("Time entry updated");
+      // Refresh the current date range
+      if (datePreset !== "custom") {
+        const now = new Date();
+        let start: string;
+        if (datePreset === "daily") {
+          start = now.toISOString().slice(0, 10) + "T00:00:00";
+        } else if (datePreset === "weekly") {
+          const d = new Date(now);
+          d.setDate(d.getDate() - 7);
+          start = d.toISOString().slice(0, 10) + "T00:00:00";
+        } else {
+          const d = new Date(now);
+          d.setMonth(d.getMonth() - 1);
+          start = d.toISOString().slice(0, 10) + "T00:00:00";
+        }
+        loadDateStats(start, now.toISOString());
+      } else if (customStart && customEnd) {
+        loadDateStats(
+          `${customStart}T${customStartTime}:00`,
+          `${customEnd}T${customEndTime}:00`
+        );
+      }
+    } catch (err) {
+      setEditError(err instanceof Error ? err.message : "Failed to update entry");
+    }
+  };
+
+  const handleVoidEntry = async (entry: TimeEntry) => {
+    try {
+      await voidTimeEntry({ entry_id: entry.id });
+      toast.success("Time entry voided");
+      setFilteredEntries((prev) =>
+        prev.map((e) => (e.id === entry.id ? { ...e, status: "voided" as const } : e))
+      );
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to void entry");
     }
   };
 
@@ -1019,6 +1109,9 @@ export default function UserProfilePage() {
                       <th className="px-4 py-2 text-left font-semibold text-muted-foreground">
                         Status
                       </th>
+                      <th className="px-4 py-2 text-right font-semibold text-muted-foreground">
+                        Actions
+                      </th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-border bg-card">
@@ -1054,6 +1147,24 @@ export default function UserProfilePage() {
                             <span className="text-yellow-600">Active</span>
                           ) : (
                             <span className="text-red-500">Voided</span>
+                          )}
+                        </td>
+                        <td className="px-4 py-2 text-right">
+                          {entry.status !== "voided" && (
+                            <div className="flex items-center justify-end gap-1">
+                              <button
+                                onClick={() => handleOpenEditEntry(entry)}
+                                className="px-2 py-1 text-xs font-medium rounded border border-border text-foreground hover:bg-muted transition-colors"
+                              >
+                                Edit
+                              </button>
+                              <button
+                                onClick={() => handleVoidEntry(entry)}
+                                className="px-2 py-1 text-xs font-medium rounded border border-red-300 dark:border-red-800 text-red-600 hover:bg-red-50 dark:hover:bg-red-950 transition-colors"
+                              >
+                                Void
+                              </button>
+                            </div>
                           )}
                         </td>
                       </tr>
@@ -1497,6 +1608,87 @@ export default function UserProfilePage() {
             placeholder="e.g. jorge_mapper"
           />
         </div>
+      </Modal>
+
+      {/* Edit Time Entry Modal */}
+      <Modal
+        isOpen={!!editingEntry}
+        onClose={() => setEditingEntry(null)}
+        title="Edit Time Entry"
+        description={
+          editingEntry
+            ? `${editingEntry.userName} — ${editingEntry.projectName || "No project"}`
+            : ""
+        }
+        size="sm"
+        footer={
+          <>
+            <Button variant="outline" onClick={() => setEditingEntry(null)}>
+              Cancel
+            </Button>
+            <Button
+              variant="primary"
+              onClick={handleSaveEditEntry}
+              isLoading={editingTimeEntry}
+            >
+              Save Changes
+            </Button>
+          </>
+        }
+      >
+        {editingEntry && (
+          <div className="space-y-4">
+            {editError && (
+              <p className="text-sm text-red-600">{editError}</p>
+            )}
+
+            {editingEntry.notes?.startsWith("[ADJUSTMENT REQUESTED]") && (
+              <div className="rounded-lg bg-yellow-50 dark:bg-yellow-950 border border-yellow-200 dark:border-yellow-800 p-3">
+                <p className="text-xs font-medium text-yellow-800 dark:text-yellow-200 mb-1">
+                  User Requested Adjustment
+                </p>
+                <p className="text-xs text-yellow-700 dark:text-yellow-300">
+                  {editingEntry.notes.replace("[ADJUSTMENT REQUESTED] ", "")}
+                </p>
+              </div>
+            )}
+
+            <div>
+              <label className="block text-sm font-medium mb-1">Clock In</label>
+              <input
+                type="datetime-local"
+                className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                value={editClockIn}
+                onChange={(e) => setEditClockIn(e.target.value)}
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium mb-1">Clock Out</label>
+              <input
+                type="datetime-local"
+                className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                value={editClockOut}
+                onChange={(e) => setEditClockOut(e.target.value)}
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium mb-1">Category</label>
+              <select
+                className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                value={editCategory}
+                onChange={(e) => setEditCategory(e.target.value)}
+              >
+                {TIME_CATEGORY_OPTIONS.map((cat) => (
+                  <option key={cat} value={cat}>
+                    {cat.charAt(0).toUpperCase() + cat.slice(1)}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+        )}
       </Modal>
     </div>
   );
