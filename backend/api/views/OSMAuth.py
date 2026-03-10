@@ -235,6 +235,10 @@ class OSMAuthAPI(MethodView):
 
         token_url = f"{osm_url}/oauth2/token"
 
+        current_app.logger.info(
+            f"OSM token exchange: url={token_url}, redirect_uri={redirect_uri}"
+        )
+
         try:
             response = requests.post(
                 token_url,
@@ -245,7 +249,10 @@ class OSMAuthAPI(MethodView):
                     "client_id": client_id,
                     "client_secret": client_secret,
                 },
-                headers={"Accept": "application/json"},
+                headers={
+                    "Accept": "application/json",
+                    "User-Agent": "Mikro/1.0 (https://mikro.kaart.com)",
+                },
                 timeout=30,
             )
 
@@ -276,6 +283,7 @@ class OSMAuthAPI(MethodView):
                 headers={
                     "Authorization": f"Bearer {access_token}",
                     "Accept": "application/json",
+                    "User-Agent": "Mikro/1.0 (https://mikro.kaart.com)",
                 },
                 timeout=30,
             )
