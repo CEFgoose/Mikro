@@ -1052,7 +1052,13 @@ export default function AdminReportsPage() {
                                 </div>
                               </td>
                               <td className="px-6 py-4 text-sm text-muted-foreground">
-                                \u2014
+                                {proj.avg_time_per_task
+                                  ? proj.avg_time_per_task >= 3600
+                                    ? `${Math.floor(proj.avg_time_per_task / 3600)}h ${Math.floor((proj.avg_time_per_task % 3600) / 60)}m`
+                                    : proj.avg_time_per_task >= 60
+                                      ? `${Math.floor(proj.avg_time_per_task / 60)}m`
+                                      : `${proj.avg_time_per_task}s`
+                                  : "\u2014"}
                               </td>
                               <td className="px-6 py-4 text-foreground">
                                 ${proj.mapping_rate.toFixed(2)}

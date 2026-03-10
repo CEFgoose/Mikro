@@ -291,6 +291,26 @@ class ReportsAPI(MethodView):
             )
 
         # --- Projects table ---
+        # Pre-compute avg time per task from time entries per project
+        time_per_project = {}
+        time_query = (
+            db.session.query(
+                TimeEntry.project_id,
+                func.sum(TimeEntry.duration_seconds),
+            )
+            .filter(
+                TimeEntry.org_id == g.user.org_id,
+                TimeEntry.status == "completed",
+                TimeEntry.project_id != None,
+                TimeEntry.duration_seconds != None,
+            )
+            .group_by(TimeEntry.project_id)
+            .all()
+        )
+        for proj_id, total_seconds in time_query:
+            if proj_id and total_seconds:
+                time_per_project[proj_id] = total_seconds
+
         projects_list = []
         org_projects = Project.query.filter_by(
             org_id=g.user.org_id, source=source
@@ -318,6 +338,15 @@ class ReportsAPI(MethodView):
                 "status": proj.status,
                 "difficulty": proj.difficulty or "Unknown",
             }
+            # Compute avg time per task: total time entries / completed tasks
+            completed_tasks = mapped + validated
+            total_secs = time_per_project.get(proj.id, 0)
+            if completed_tasks > 0 and total_secs > 0:
+                proj_dict["avg_time_per_task"] = round(
+                    total_secs / completed_tasks
+                )
+            else:
+                proj_dict["avg_time_per_task"] = None
             if source == "mr":
                 mr_proj_status = (
                     db.session.query(Task.mr_status, func.count())

@@ -633,6 +633,7 @@ export interface EditingStatsResponse {
     percent_validated: number;
     mapping_rate: number;
     validation_rate: number;
+    avg_time_per_task: number | null;
     status: boolean;
     difficulty: string;
     mr_status_breakdown?: Record<string, number>;
