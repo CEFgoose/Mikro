@@ -236,7 +236,13 @@ class ProjectAPI(MethodView):
             return {"message": "Rate per task insufficient", "status": 400}
 
     def _create_mr_project(self):
-        """Create a new MapRoulette project from a challenge URL."""
+        """Create a new MapRoulette project from a challenge URL.
+
+        Creates the project immediately with whatever metadata is available.
+        If the MR API is slow or times out, the project is still created with
+        a default name and 0 tasks, and a background job is queued to backfill
+        the metadata once the API responds.
+        """
         url = request.json.get("url")
         rate_type = request.json.get("rate_type")
         mapping_rate = float(request.json.get("mapping_rate"))
@@ -254,18 +260,29 @@ class ProjectAPI(MethodView):
         if project_exists:
             return {"message": "Project already exists", "status": 400}
 
-        # Fetch challenge metadata from MapRoulette API
+        if mapping_rate < 0.01 or validation_rate < 0.01:
+            return {"message": "Rate per task insufficient", "status": 400}
+
+        # Try to fetch challenge metadata, but don't block on failure
+        mr_data = None
+        needs_backfill = False
         try:
             mr_data = MapRouletteSync().fetch_challenge_metadata(challenge_id)
         except Exception as e:
-            current_app.logger.error(f"MapRoulette API error: {e}")
-            return {"message": "MapRoulette API error", "status": 500}
+            current_app.logger.error(f"MR API error during create (will backfill): {e}")
 
-        if not mr_data:
-            return {"message": "Could not fetch challenge metadata from MapRoulette", "status": 500}
-
-        project_name = mr_data.get("name", f"MR Challenge {challenge_id}")
-        total_tasks = mr_data.get("task_count", 0)
+        if mr_data:
+            project_name = mr_data.get("name", f"MR Challenge {challenge_id}")
+            total_tasks = mr_data.get("task_count", 0)
+        else:
+            # MR API timed out or failed — create with defaults, backfill later
+            project_name = f"MR Challenge {challenge_id}"
+            total_tasks = 0
+            needs_backfill = True
+            current_app.logger.info(
+                f"Creating MR project {challenge_id} with defaults — "
+                f"queuing metadata backfill"
+            )
 
         # Calculate budget
         if rate_type is True:
@@ -273,26 +290,37 @@ class ProjectAPI(MethodView):
         else:
             calculation = 0
 
-        if mapping_rate >= 0.01 and validation_rate >= 0.01:
-            Project.create(
-                id=challenge_id,
+        Project.create(
+            id=challenge_id,
+            org_id=g.user.org_id,
+            created_by=g.user.id,
+            name=project_name,
+            total_tasks=total_tasks,
+            max_payment=float(calculation),
+            url=url,
+            validation_rate_per_task=validation_rate,
+            mapping_rate_per_task=mapping_rate,
+            max_editors=max_editors,
+            max_validators=max_validators,
+            visibility=visibility,
+            status=True,
+            source="mr",
+        )
+
+        # Queue background metadata backfill if MR API failed
+        if needs_backfill:
+            from api.database import SyncJob
+            SyncJob.create(
                 org_id=g.user.org_id,
-                created_by=g.user.id,
-                name=project_name,
-                total_tasks=total_tasks,
-                max_payment=float(calculation),
-                url=url,
-                validation_rate_per_task=validation_rate,
-                mapping_rate_per_task=mapping_rate,
-                max_editors=max_editors,
-                max_validators=max_validators,
-                visibility=visibility,
-                status=True,
-                source="mr",
+                status="queued",
+                job_type="mr_metadata_backfill",
+                target_id=challenge_id,
             )
-            return {"message": "Project created", "status": 200}
-        else:
-            return {"message": "Rate per task insufficient", "status": 400}
+
+        msg = "Project created"
+        if needs_backfill:
+            msg += " (name and task count will update shortly)"
+        return {"message": msg, "status": 200}
 
     @requires_admin
     def update_project(self):

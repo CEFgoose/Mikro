@@ -194,7 +194,16 @@ export function useApiMutation<TResponse = { message: string; status: number }>(
 
         const result = await response.json();
 
-        if (result.status === 200 || response.ok) {
+        // Check JSON body status first (backend embeds status in response),
+        // then fall back to HTTP status
+        const jsonStatus = result.status;
+        const isJsonError = jsonStatus && jsonStatus >= 300;
+        if (isJsonError) {
+          const errorMsg = result.message || "An error occurred";
+          setError(errorMsg);
+          throw new Error(errorMsg);
+        }
+        if (response.ok || jsonStatus === 200) {
           return result as TResponse;
         } else {
           const errorMsg = result.message || "An error occurred";

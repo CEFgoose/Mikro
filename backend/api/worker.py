@@ -493,6 +493,101 @@ def run_element_analysis_job(app, job):
             db.session.rollback()
 
 
+def run_mr_metadata_backfill(app, job):
+    """
+    Backfill MapRoulette challenge metadata (name + task count) for a project
+    that was created while the MR API was unavailable.
+
+    Retries up to 3 times with increasing delays (10s, 30s, 60s).
+    """
+    from .database import db, SyncJob, Project
+    from .views.MapRoulette import MapRouletteSync
+
+    challenge_id = job.target_id
+    max_retries = 3
+    delays = [10, 30, 60]
+
+    try:
+        job.status = "running"
+        job.started_at = datetime.now(timezone.utc)
+        job.progress = f"Fetching metadata for MR challenge {challenge_id}..."
+        db.session.commit()
+
+        project = Project.query.filter_by(id=challenge_id).first()
+        if not project:
+            job.status = "failed"
+            job.error = f"Project {challenge_id} not found"
+            job.completed_at = datetime.now(timezone.utc)
+            db.session.commit()
+            return
+
+        mr_data = None
+        for attempt in range(max_retries):
+            try:
+                job.progress = f"Attempt {attempt + 1}/{max_retries} for challenge {challenge_id}"
+                db.session.commit()
+                mr_data = MapRouletteSync().fetch_challenge_metadata(challenge_id)
+                if mr_data:
+                    break
+            except Exception as e:
+                logger.warning(
+                    f"MR metadata backfill attempt {attempt + 1} failed for "
+                    f"{challenge_id}: {e}"
+                )
+
+            if attempt < max_retries - 1:
+                time.sleep(delays[attempt])
+
+        if not mr_data:
+            job.status = "failed"
+            job.error = (
+                f"Could not fetch MR metadata for challenge {challenge_id} "
+                f"after {max_retries} attempts"
+            )
+            job.completed_at = datetime.now(timezone.utc)
+            db.session.commit()
+            logger.error(f"MR metadata backfill failed for {challenge_id}")
+            return
+
+        # Update project with real metadata
+        old_name = project.name
+        project.name = mr_data.get("name", project.name)
+        project.total_tasks = mr_data.get("task_count", 0)
+
+        # Recalculate budget with real task count
+        if project.total_tasks > 0:
+            project.max_payment = (
+                project.mapping_rate_per_task + project.validation_rate_per_task
+            ) * project.total_tasks
+
+        db.session.commit()
+
+        job.status = "completed"
+        job.completed_at = datetime.now(timezone.utc)
+        job.progress = (
+            f"Updated: '{old_name}' → '{project.name}' "
+            f"({project.total_tasks} tasks)"
+        )
+        db.session.commit()
+
+        logger.info(
+            f"MR metadata backfill completed for {challenge_id}: "
+            f"{project.name} ({project.total_tasks} tasks)"
+        )
+
+    except Exception as e:
+        logger.error(f"MR metadata backfill job {job.id} failed: {e}")
+        db.session.rollback()
+        try:
+            job.status = "failed"
+            job.error = str(e)[:2000]
+            job.completed_at = datetime.now(timezone.utc)
+            db.session.commit()
+        except Exception:
+            logger.error(f"Failed to update job {job.id} error status")
+            db.session.rollback()
+
+
 def poll_for_jobs(app):
     """
     Check for queued sync jobs and process them.
@@ -530,6 +625,8 @@ def poll_for_jobs(app):
                     run_element_analysis_job(app, job)
                 elif job.job_type == "project_sync":
                     run_project_sync_job(app, job)
+                elif job.job_type == "mr_metadata_backfill":
+                    run_mr_metadata_backfill(app, job)
                 else:
                     run_sync_job(app, job)
 
