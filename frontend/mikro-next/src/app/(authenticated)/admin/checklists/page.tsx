@@ -33,7 +33,7 @@ import {
   usePurgeChecklists,
 } from "@/hooks";
 import type { Checklist } from "@/types";
-import { formatNumber, formatCurrency } from "@/lib/utils";
+import { formatNumber, formatCurrency, displayRole } from "@/lib/utils";
 
 function formatDate(dateString: string): string {
   return new Date(dateString).toLocaleDateString("en-US", {
@@ -1008,7 +1008,7 @@ export default function AdminChecklistsPage() {
                       >
                         <div>
                           <p className="font-medium">{user.name}</p>
-                          <p className="text-sm text-muted-foreground">{user.role}</p>
+                          <p className="text-sm text-muted-foreground">{displayRole(user.role)}</p>
                         </div>
                         <Button
                           size="sm"
@@ -1041,7 +1041,7 @@ export default function AdminChecklistsPage() {
                       >
                         <div>
                           <p className="font-medium">{user.name}</p>
-                          <p className="text-sm text-muted-foreground">{user.role}</p>
+                          <p className="text-sm text-muted-foreground">{displayRole(user.role)}</p>
                         </div>
                         <Button
                           size="sm"

@@ -46,7 +46,7 @@ import type {
   ActivityDataPoint,
   TaskHistoryEntry,
 } from "@/types";
-import { formatNumber, formatCurrency } from "@/lib/utils";
+import { formatNumber, formatCurrency, displayRole } from "@/lib/utils";
 
 const MappingHeatmap = dynamic(() => import("@/components/MappingHeatmap"), {
   ssr: false,
@@ -582,7 +582,7 @@ export default function UserProfilePage() {
                         : "bg-green-100 text-green-800"
                   }`}
                 >
-                  {user.role}
+                  {displayRole(user.role)}
                 </span>
                 {user.is_tracked_only && (
                   <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800">

@@ -11,6 +11,13 @@ export function cn(...inputs: ClassValue[]) {
 }
 
 /**
+ * Display-friendly role label. Maps "user" → "mapper" for context accuracy.
+ */
+export function displayRole(role: string): string {
+  return role === "user" ? "mapper" : role;
+}
+
+/**
  * Format a number with thousand separators (e.g., 1234 → "1,234").
  * Returns "0" for null/undefined/NaN.
  */

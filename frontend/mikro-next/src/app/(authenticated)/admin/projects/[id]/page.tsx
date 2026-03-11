@@ -12,7 +12,7 @@ import {
   Button,
 } from "@/components/ui";
 import { useFetchProjectProfile } from "@/hooks/useApi";
-import { formatNumber, formatCurrency } from "@/lib/utils";
+import { formatNumber, formatCurrency, displayRole } from "@/lib/utils";
 import type { ProjectProfileResponse } from "@/types";
 
 function StatCard({
@@ -372,7 +372,7 @@ export default function AdminProjectProfilePage() {
                           )}
                         </td>
                         <td className="px-4 py-3">
-                          <Badge variant="secondary">{user.role}</Badge>
+                          <Badge variant="secondary">{displayRole(user.role)}</Badge>
                         </td>
                         <td className="px-4 py-3 text-right">
                           {formatNumber(user.tasks_mapped)}

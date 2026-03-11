@@ -36,7 +36,7 @@ const validatorNavItems: NavItem[] = [
 const adminNavItems: NavItem[] = [
   { label: "Dashboard", href: "/admin/dashboard", icon: "home" },
   { label: "Projects", href: "/admin/projects", icon: "folder" },
-  { label: "Tasks", href: "/admin/tasks", icon: "tasks" },
+  // { label: "Tasks", href: "/admin/tasks", icon: "tasks" }, // Disabled until scope is clarified with project owner
   { label: "Time", href: "/admin/time", icon: "clock" },
   { label: "Training", href: "/admin/training", icon: "book" },
   { label: "Checklists", href: "/admin/checklists", icon: "list" },

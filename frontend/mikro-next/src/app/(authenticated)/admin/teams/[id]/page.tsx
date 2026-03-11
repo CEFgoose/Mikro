@@ -6,7 +6,7 @@ import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui";
 import { useFetchTeamProfile } from "@/hooks/useApi";
 import type { TeamProfileData } from "@/types";
-import { formatNumber, formatCurrency } from "@/lib/utils";
+import { formatNumber, formatCurrency, displayRole } from "@/lib/utils";
 
 function StatCard({
   label,
@@ -224,7 +224,7 @@ export default function AdminTeamProfilePage() {
                                 : "bg-green-100 text-green-800"
                           }`}
                         >
-                          {member.role}
+                          {displayRole(member.role)}
                         </span>
                       </td>
                       <td className="px-6 py-4 text-foreground">

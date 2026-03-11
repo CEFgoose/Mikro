@@ -5,7 +5,7 @@ import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle, Button } from "@/components/ui";
 import { FilterBar } from "@/components/filters";
 import { useFilters, useFetchFilterOptions } from "@/hooks";
-import { formatNumber, formatCurrency } from "@/lib/utils";
+import { formatNumber, formatCurrency, displayRole } from "@/lib/utils";
 import { User } from "@/types";
 
 interface CsvUser {
@@ -425,7 +425,7 @@ export default function AdminUsersPage() {
                               : "bg-green-100 text-green-800"
                           }`}
                         >
-                          {user.role}
+                          {displayRole(user.role)}
                         </span>
                         {user.is_tracked_only && (
                           <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-amber-100 text-amber-800">
@@ -608,7 +608,7 @@ export default function AdminUsersPage() {
                               ? "bg-blue-100 text-blue-800"
                               : "bg-green-100 text-green-800"
                           }`}>
-                            {user.role}
+                            {displayRole(user.role)}
                           </span>
                         </td>
                       </tr>

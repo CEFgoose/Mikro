@@ -23,7 +23,7 @@ import {
 } from "@/components/ui";
 import { useToastActions } from "@/components/ui";
 import { FilterBar } from "@/components/filters";
-import { formatNumber } from "@/lib/utils";
+import { formatNumber, displayRole } from "@/lib/utils";
 import {
   useFetchTeams,
   useCreateTeam,
@@ -645,7 +645,7 @@ export default function AdminTeamsPage() {
                         {user.email}
                       </TableCell>
                       <TableCell>
-                        <Badge variant="secondary">{user.role}</Badge>
+                        <Badge variant="secondary">{displayRole(user.role)}</Badge>
                       </TableCell>
                       <TableCell className="text-center">
                         <Badge
