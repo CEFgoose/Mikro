@@ -108,7 +108,7 @@ export default function UserProjectProfilePage() {
           href="/user/projects"
           className="text-kaart-orange hover:underline text-sm"
         >
-          &larr; Back to Projects
+          {"\u2190"} Back to Projects
         </Link>
         <Card>
           <CardContent className="p-8 text-center text-red-500">
@@ -141,7 +141,7 @@ export default function UserProjectProfilePage() {
           href="/user/projects"
           className="text-kaart-orange hover:underline text-sm"
         >
-          &larr; Back to Projects
+          {"\u2190"} Back to Projects
         </Link>
 
         <div className="flex items-start justify-between mt-2">
@@ -167,7 +167,7 @@ export default function UserProjectProfilePage() {
             title={`Open this project on ${sourceLabel}`}
           >
             <Button variant="outline" size="sm">
-              Open in {sourceLabel} &nearr;
+              Open in {sourceLabel} {"\u2197"}
             </Button>
           </a>
         </div>

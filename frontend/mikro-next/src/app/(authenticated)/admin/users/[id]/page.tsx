@@ -527,7 +527,7 @@ export default function UserProfilePage() {
           href="/admin/users"
           className="text-kaart-orange hover:underline text-sm"
         >
-          &larr; Back to Users
+          {"\u2190"} Back to Users
         </Link>
         <Card>
           <CardContent className="p-8 text-center text-red-500">
@@ -561,7 +561,7 @@ export default function UserProfilePage() {
             href="/admin/users"
             className="text-kaart-orange hover:underline text-sm mb-4 inline-block"
           >
-            &larr; Back to Users
+            {"\u2190"} Back to Users
           </Link>
           <div className="flex items-start gap-4">
             <div className="w-16 h-16 rounded-full bg-kaart-orange/20 flex items-center justify-center text-kaart-orange text-xl font-bold shrink-0">

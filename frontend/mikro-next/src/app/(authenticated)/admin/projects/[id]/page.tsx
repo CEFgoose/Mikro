@@ -134,7 +134,7 @@ export default function AdminProjectProfilePage() {
           href="/admin/projects"
           className="text-kaart-orange hover:underline text-sm"
         >
-          &larr; Back to Projects
+          {"\u2190"} Back to Projects
         </Link>
         <Card>
           <CardContent className="p-8 text-center text-red-500">
@@ -166,7 +166,7 @@ export default function AdminProjectProfilePage() {
           href="/admin/projects"
           className="text-kaart-orange hover:underline text-sm"
         >
-          &larr; Back to Projects
+          {"\u2190"} Back to Projects
         </Link>
 
         <div className="flex items-start justify-between mt-2">
@@ -199,7 +199,7 @@ export default function AdminProjectProfilePage() {
                 title={isMR ? "Open in MapRoulette" : "Open in Tasking Manager"}
               >
                 <Button variant="outline" size="sm">
-                  Open External &nearr;
+                  Open External {"\u2197"}
                 </Button>
               </a>
             )}
