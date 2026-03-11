@@ -429,6 +429,10 @@ export function useUpdateTraining() {
   return useApiMutation("/training/update_training");
 }
 
+export function useModifyTraining() {
+  return useApiMutation("/training/modify_training");
+}
+
 export function useUpdateChecklist() {
   return useApiMutation("/checklist/update_checklist");
 }

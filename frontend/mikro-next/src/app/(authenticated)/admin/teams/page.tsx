@@ -404,6 +404,7 @@ export default function AdminTeamsPage() {
                     <Link
                       href={`/admin/teams/${team.id}`}
                       className="font-medium text-kaart-orange hover:underline"
+                      title="View team details"
                     >
                       {team.name}
                     </Link>

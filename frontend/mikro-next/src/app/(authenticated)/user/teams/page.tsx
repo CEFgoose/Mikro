@@ -61,6 +61,7 @@ export default function UserTeamsPage() {
                       <Link
                         href={`/user/teams/${team.id}`}
                         className="font-medium text-kaart-orange hover:underline"
+                        title="View team details"
                       >
                         {team.name}
                       </Link>

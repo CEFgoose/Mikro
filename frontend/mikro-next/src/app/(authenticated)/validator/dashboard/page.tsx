@@ -395,9 +395,26 @@ export default function ValidatorDashboard() {
                     onClick={() => goToSource(getProjectExternalUrl(project.id, project.source))}
                   >
                     <div>
-                      <p className="font-medium">{project.name}</p>
+                      <Link
+                        href={`/user/projects/${project.id}`}
+                        className="font-medium text-kaart-orange hover:underline"
+                        title="View project details"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        {project.name}
+                      </Link>
                       <p className="text-sm text-muted-foreground">
-                        #{project.id} • {formatNumber(project.total_tasks)} tasks
+                        <a
+                          href={getProjectExternalUrl(project.id, project.source)}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="hover:text-kaart-orange hover:underline"
+                          title={project.source === "mr" ? "Open in MapRoulette" : "Open in Tasking Manager"}
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          #{project.id}
+                        </a>
+                        {" "}&bull; {formatNumber(project.total_tasks)} tasks
                       </p>
                     </div>
                     <div className="flex items-center gap-2">
@@ -477,24 +494,28 @@ export default function ValidatorDashboard() {
               <Link
                 href="/validator/projects"
                 className="inline-flex items-center rounded-lg bg-secondary px-4 py-2 text-sm font-medium hover:bg-secondary/80 transition-colors"
+                title="Browse all your assigned projects"
               >
                 View Projects
               </Link>
               <Link
                 href="/validator/payments"
                 className="inline-flex items-center rounded-lg bg-secondary px-4 py-2 text-sm font-medium hover:bg-secondary/80 transition-colors"
+                title="View your payment history"
               >
                 Payment History
               </Link>
               <Link
                 href="/validator/checklists"
                 className="inline-flex items-center rounded-lg bg-secondary px-4 py-2 text-sm font-medium hover:bg-secondary/80 transition-colors"
+                title="View your checklists"
               >
                 Checklists
               </Link>
               <Link
                 href="/account"
                 className="inline-flex items-center rounded-lg bg-secondary px-4 py-2 text-sm font-medium hover:bg-secondary/80 transition-colors"
+                title="Manage your account settings"
               >
                 Account Settings
               </Link>
@@ -530,7 +551,15 @@ export default function ValidatorDashboard() {
                     className="cursor-pointer hover:bg-muted/50 transition-colors"
                     onDoubleClick={() => goToSource(getProjectExternalUrl(project.id, project.source))}
                   >
-                    <td className="px-4 py-3 font-medium">{project.name}</td>
+                    <td className="px-4 py-3 font-medium">
+                      <Link
+                        href={`/user/projects/${project.id}`}
+                        className="text-kaart-orange hover:underline"
+                        title="View project details"
+                      >
+                        {project.name}
+                      </Link>
+                    </td>
                     <td className="px-4 py-3">{formatCurrency(project.mapping_rate_per_task)}</td>
                     <td className="px-4 py-3">{formatCurrency(project.validation_rate_per_task)}</td>
                     <td className="px-4 py-3">{formatNumber(project.total_tasks)}</td>

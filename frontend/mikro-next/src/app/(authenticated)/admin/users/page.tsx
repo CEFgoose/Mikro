@@ -407,6 +407,7 @@ export default function AdminUsersPage() {
                         href={`/admin/users/${user.id}`}
                         onClick={(e) => e.stopPropagation()}
                         className="font-medium text-kaart-orange hover:underline"
+                        title="View user profile"
                       >
                         {user.name?.trim() || user.email || "Unknown"}
                       </Link>

@@ -1,0 +1,333 @@
+"use client";
+
+import { useState, useEffect } from "react";
+import { useParams } from "next/navigation";
+import Link from "next/link";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  Badge,
+  Button,
+} from "@/components/ui";
+import { useFetchProjectProfile } from "@/hooks/useApi";
+import {
+  formatNumber,
+  formatCurrency,
+  getProjectExternalUrl,
+} from "@/lib/utils";
+import type { ProjectProfileResponse } from "@/types";
+
+function StatCard({
+  label,
+  value,
+  sub,
+}: {
+  label: string;
+  value: string | number;
+  sub?: string;
+}) {
+  return (
+    <Card>
+      <CardContent className="p-4 text-center">
+        <p className="text-sm text-muted-foreground">{label}</p>
+        <p className="text-2xl font-bold mt-1">{value}</p>
+        {sub && <p className="text-xs text-muted-foreground mt-1">{sub}</p>}
+      </CardContent>
+    </Card>
+  );
+}
+
+function ProgressBar({
+  value,
+  color = "bg-kaart-orange",
+}: {
+  value: number;
+  color?: string;
+}) {
+  return (
+    <div className="flex items-center gap-2">
+      <div className="flex-1 h-2 bg-muted rounded-full overflow-hidden">
+        <div
+          className={`h-full ${color} rounded-full transition-all`}
+          style={{ width: `${Math.min(value, 100)}%` }}
+        />
+      </div>
+      <span className="text-xs text-muted-foreground w-12 text-right">
+        {value.toFixed(1)}%
+      </span>
+    </div>
+  );
+}
+
+const MR_STATUS_LABELS: Record<number, string> = {
+  1: "Fixed",
+  2: "Not an Issue",
+  3: "Skipped",
+  5: "Already Fixed",
+  6: "Can't Complete",
+};
+
+export default function UserProjectProfilePage() {
+  const params = useParams();
+  const projectId = Number(params.id);
+
+  const {
+    mutate: fetchProfile,
+    loading: profileLoading,
+    error: profileError,
+  } = useFetchProjectProfile();
+
+  const [data, setData] = useState<ProjectProfileResponse | null>(null);
+  const [pageLoading, setPageLoading] = useState(true);
+
+  useEffect(() => {
+    if (projectId) {
+      fetchProfile({ project_id: projectId })
+        .then((res) => {
+          if (res?.project) setData(res);
+        })
+        .catch(() => {})
+        .finally(() => setPageLoading(false));
+    }
+  }, [projectId, fetchProfile]);
+
+  if (pageLoading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-kaart-orange" />
+      </div>
+    );
+  }
+
+  if (profileError && !data) {
+    return (
+      <div className="space-y-4">
+        <Link
+          href="/user/projects"
+          className="text-kaart-orange hover:underline text-sm"
+        >
+          &larr; Back to Projects
+        </Link>
+        <Card>
+          <CardContent className="p-8 text-center text-red-500">
+            Failed to load project profile: {profileError}
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  if (!data) return null;
+
+  const { project: proj } = data;
+  const totalTasks = proj.total_tasks || 0;
+  const pctMapped = totalTasks
+    ? (proj.effective_mapped / totalTasks) * 100
+    : 0;
+  const pctValidated = totalTasks
+    ? (proj.effective_validated / totalTasks) * 100
+    : 0;
+  const isMR = proj.source === "mr";
+  const sourceLabel = isMR ? "MapRoulette" : "Tasking Manager";
+  const externalUrl = getProjectExternalUrl(proj.id, proj.source);
+
+  return (
+    <div className="space-y-6">
+      {/* Breadcrumb + Header */}
+      <div>
+        <Link
+          href="/user/projects"
+          className="text-kaart-orange hover:underline text-sm"
+        >
+          &larr; Back to Projects
+        </Link>
+
+        <div className="flex items-start justify-between mt-2">
+          <div>
+            <div className="flex items-center gap-3">
+              <h1 className="text-2xl font-bold">{proj.name}</h1>
+              <Badge
+                variant={isMR ? "secondary" : "default"}
+                className="text-kaart-orange"
+              >
+                {isMR ? "MapRoulette" : "TM4"}
+              </Badge>
+              {proj.difficulty && (
+                <Badge variant="outline">{proj.difficulty}</Badge>
+              )}
+            </div>
+          </div>
+
+          <a
+            href={externalUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            title={`Open this project on ${sourceLabel}`}
+          >
+            <Button variant="outline" size="sm">
+              Open in {sourceLabel} &nearr;
+            </Button>
+          </a>
+        </div>
+      </div>
+
+      {/* Stats Cards */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <StatCard label="Total Tasks" value={formatNumber(totalTasks)} />
+        <StatCard
+          label="Mapped"
+          value={`${pctMapped.toFixed(1)}%`}
+          sub={`${formatNumber(proj.effective_mapped)} / ${formatNumber(totalTasks)}`}
+        />
+        <StatCard
+          label="Validated"
+          value={`${pctValidated.toFixed(1)}%`}
+          sub={`${formatNumber(proj.effective_validated)} / ${formatNumber(totalTasks)}`}
+        />
+        <StatCard
+          label="Difficulty"
+          value={proj.difficulty || "Unknown"}
+        />
+      </div>
+
+      {/* Your Progress */}
+      {data.assigned_users.length > 0 && (() => {
+        // Find the current user in the assigned users list.
+        // The backend returns the requesting user in the list when they are assigned.
+        // We pick the first user whose is_assigned is true — for user-role callers
+        // the backend typically only returns the caller themselves.
+        const me = data.assigned_users.find((u) => u.is_assigned);
+        if (!me) return null;
+        return (
+          <Card>
+            <CardHeader>
+              <CardTitle>Your Progress</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+                <div>
+                  <p className="text-sm text-muted-foreground">Tasks Mapped</p>
+                  <p className="text-xl font-semibold">
+                    {formatNumber(me.tasks_mapped)}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">Tasks Validated</p>
+                  <p className="text-xl font-semibold">
+                    {formatNumber(me.tasks_validated)}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">Your Earnings</p>
+                  <p className="text-xl font-semibold text-green-600">
+                    {formatCurrency(me.earnings)}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">Time Logged</p>
+                  <p className="text-xl font-semibold">
+                    {me.time_logged_seconds > 0
+                      ? me.time_logged_seconds >= 3600
+                        ? `${Math.floor(me.time_logged_seconds / 3600)}h ${Math.floor((me.time_logged_seconds % 3600) / 60)}m`
+                        : `${Math.floor(me.time_logged_seconds / 60)}m`
+                      : "\u2014"}
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        );
+      })()}
+
+      {/* Task Progress */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Task Progress</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <p className="text-sm text-muted-foreground mb-1">
+                Mapped ({formatNumber(proj.effective_mapped)} /{" "}
+                {formatNumber(totalTasks)})
+              </p>
+              <ProgressBar value={pctMapped} />
+            </div>
+            <div>
+              <p className="text-sm text-muted-foreground mb-1">
+                Validated ({formatNumber(proj.effective_validated)} /{" "}
+                {formatNumber(totalTasks)})
+              </p>
+              <ProgressBar value={pctValidated} color="bg-blue-500" />
+            </div>
+          </div>
+
+          {/* MR Status Breakdown */}
+          {isMR &&
+            proj.mr_status_breakdown &&
+            Object.keys(proj.mr_status_breakdown).length > 0 && (
+              <div className="mt-4">
+                <p className="text-sm font-medium mb-2">
+                  MapRoulette Status Breakdown
+                </p>
+                <div className="flex flex-wrap gap-3">
+                  {Object.entries(proj.mr_status_breakdown).map(
+                    ([status, count]) => (
+                      <div
+                        key={status}
+                        className="flex items-center gap-1.5 px-3 py-1.5 bg-muted rounded-md"
+                      >
+                        <span className="text-sm font-medium">
+                          {MR_STATUS_LABELS[Number(status)] ||
+                            `Status ${status}`}
+                        </span>
+                        <Badge variant="secondary">
+                          {formatNumber(count as number)}
+                        </Badge>
+                      </div>
+                    )
+                  )}
+                </div>
+              </div>
+            )}
+
+          {proj.split_task_groups > 0 && (
+            <p className="text-xs text-muted-foreground">
+              {proj.split_task_groups} split task group(s) detected — counts
+              reflect effective completions
+            </p>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Rates */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Rates</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-2 gap-6">
+            <div>
+              <p className="text-sm text-muted-foreground">
+                Mapping Rate per Task
+              </p>
+              <p className="text-xl font-semibold">
+                {formatCurrency(proj.mapping_rate_per_task || 0)}
+              </p>
+            </div>
+            <div>
+              <p className="text-sm text-muted-foreground">
+                Validation Rate per Task
+              </p>
+              <p className="text-xl font-semibold">
+                {formatCurrency(proj.validation_rate_per_task || 0)}
+              </p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}

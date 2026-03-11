@@ -999,6 +999,7 @@ export default function AdminReportsPage() {
                                   <Link
                                     href={`/admin/projects/${proj.id}`}
                                     className="font-medium text-kaart-orange hover:underline"
+                                    title="View project details"
                                   >
                                     {proj.name}
                                   </Link>
@@ -1008,7 +1009,7 @@ export default function AdminReportsPage() {
                                       target="_blank"
                                       rel="noopener noreferrer"
                                       className="text-muted-foreground hover:text-foreground"
-                                      title="Open external project"
+                                      title={proj.url?.includes("maproulette") ? "Open in MapRoulette" : "Open in Tasking Manager"}
                                     >
                                       ↗
                                     </a>
@@ -2267,6 +2268,7 @@ export default function AdminReportsPage() {
                                   <Link
                                     href={`/admin/projects/${proj.id}`}
                                     className="font-medium text-kaart-orange hover:underline"
+                                    title="View project details"
                                   >
                                     {proj.name}
                                   </Link>
@@ -2276,7 +2278,7 @@ export default function AdminReportsPage() {
                                       target="_blank"
                                       rel="noopener noreferrer"
                                       className="text-muted-foreground hover:text-foreground"
-                                      title="Open external project"
+                                      title="Open in MapRoulette"
                                     >
                                       ↗
                                     </a>

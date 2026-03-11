@@ -796,7 +796,6 @@ class ProjectAPI(MethodView):
             "status": 200,
         }
 
-    @requires_admin
     def fetch_project_profile(self):
         """Fetch comprehensive profile data for a single project."""
         if not g.user:

@@ -6,7 +6,7 @@ import { useUserDashboardStats, useUserProjects, useUserPayable, useSubmitPaymen
 import { TimeTrackingWidget } from "@/components/widgets/TimeTrackingWidget";
 import { UserTimeHistory } from "@/components/widgets/UserTimeHistory";
 import { useToastActions } from "@/components/ui";
-import { formatNumber, formatCurrency } from "@/lib/utils";
+import { formatNumber, formatCurrency, getProjectExternalUrl } from "@/lib/utils";
 import Link from "next/link";
 import { useState, useEffect } from "react";
 
@@ -322,9 +322,24 @@ export default function UserDashboard() {
                     className="flex items-center justify-between border-b border-border pb-2 last:border-0 last:pb-0"
                   >
                     <div>
-                      <p className="font-medium text-sm">{project.name}</p>
+                      <Link
+                        href={`/user/projects/${project.id}`}
+                        className="font-medium text-sm text-kaart-orange hover:underline cursor-pointer"
+                        title="View project details"
+                      >
+                        {project.name}
+                      </Link>
                       <p className="text-xs text-muted-foreground">
-                        #{project.id} • {formatNumber(project.total_tasks)} tasks
+                        <a
+                          href={getProjectExternalUrl(project.id, project.source)}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-xs text-muted-foreground hover:text-kaart-orange hover:underline cursor-pointer"
+                          title={project.source === "mr" ? "Open in MapRoulette" : "Open in Tasking Manager"}
+                        >
+                          #{project.id}
+                        </a>
+                        {" "}&bull; {formatNumber(project.total_tasks)} tasks
                       </p>
                     </div>
                     <Badge
@@ -394,24 +409,28 @@ export default function UserDashboard() {
               <Link
                 href="/user/projects"
                 className="inline-flex items-center rounded-lg bg-secondary px-3 py-1.5 text-xs font-medium hover:bg-secondary/80 transition-colors"
+                title="Browse all your assigned projects"
               >
                 View Projects
               </Link>
               <Link
                 href="/user/payments"
                 className="inline-flex items-center rounded-lg bg-secondary px-3 py-1.5 text-xs font-medium hover:bg-secondary/80 transition-colors"
+                title="View your payment history"
               >
                 Payment History
               </Link>
               <Link
                 href="/user/training"
                 className="inline-flex items-center rounded-lg bg-secondary px-3 py-1.5 text-xs font-medium hover:bg-secondary/80 transition-colors"
+                title="View your training modules"
               >
                 Training
               </Link>
               <Link
                 href="/account"
                 className="inline-flex items-center rounded-lg bg-secondary px-3 py-1.5 text-xs font-medium hover:bg-secondary/80 transition-colors"
+                title="Manage your account settings"
               >
                 Account
               </Link>

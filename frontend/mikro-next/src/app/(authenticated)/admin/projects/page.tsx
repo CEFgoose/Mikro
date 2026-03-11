@@ -368,7 +368,7 @@ export default function AdminProjectsPage() {
             <TableCell>
               <div>
                 <div className="font-medium">
-                  <Link href={`/admin/projects/${project.id}`} className="font-medium text-kaart-orange hover:underline">
+                  <Link href={`/admin/projects/${project.id}`} className="font-medium text-kaart-orange hover:underline" title="View project details">
                     {project.name}
                   </Link>
                   {project.source === "mr" ? (
@@ -382,6 +382,7 @@ export default function AdminProjectsPage() {
                   target="_blank"
                   rel="noopener noreferrer"
                   className="text-sm text-kaart-orange hover:underline"
+                  title={project.source === "mr" ? "Open in MapRoulette" : "Open in Tasking Manager"}
                 >
                   #{project.id}
                 </a>

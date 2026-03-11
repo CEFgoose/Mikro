@@ -30,6 +30,7 @@ import {
   useOrgTrainings,
   useCreateTraining,
   useUpdateTraining,
+  useModifyTraining,
   useDeleteTraining,
   usePurgeTrainings,
 } from "@/hooks";
@@ -63,6 +64,7 @@ export default function AdminTrainingPage() {
   const { data: trainings, loading, refetch } = useOrgTrainings();
   const { mutate: createTraining, loading: creating } = useCreateTraining();
   const { mutate: updateTraining, loading: updating } = useUpdateTraining();
+  const { mutate: modifyTraining, loading: modifying } = useModifyTraining();
   const { mutate: deleteTraining, loading: deleting } = useDeleteTraining();
   const { mutate: purgeTrainings, loading: purging } = usePurgeTrainings();
   const toast = useToastActions();
@@ -71,11 +73,11 @@ export default function AdminTrainingPage() {
   const [showAddModal, setShowAddModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
-  const [showQuestionsModal, setShowQuestionsModal] = useState(false);
   const [showPurgeModal, setShowPurgeModal] = useState(false);
   const [formData, setFormData] = useState<TrainingFormData>(defaultFormData);
   const [questions, setQuestions] = useState<QuestionFormData[]>([]);
-  const [editTab, setEditTab] = useState<"settings" | "locations">("settings");
+  const [editQuestions, setEditQuestions] = useState<QuestionFormData[]>([]);
+  const [editTab, setEditTab] = useState<"settings" | "locations" | "questions">("settings");
 
   const mappingTrainings = trainings?.org_mapping_trainings ?? [];
   const validationTrainings = trainings?.org_validation_trainings ?? [];
@@ -169,7 +171,49 @@ export default function AdminTrainingPage() {
     }
   };
 
-  const openEditModal = (training: Training) => {
+  const handleModifyTraining = async () => {
+    if (!selectedTraining) return;
+
+    try {
+      // Transform editQuestions to backend format
+      const formattedQuestions = editQuestions.map((q) => {
+        const correctAnswer = q.answers.find((a) => a.correct);
+        const incorrectAnswers = q.answers.filter((a) => !a.correct);
+        return {
+          question: q.question,
+          correct: correctAnswer?.answer || "",
+          incorrect: incorrectAnswers.map((a) => ({ answer: a.answer })),
+        };
+      });
+
+      await modifyTraining({
+        training_id: selectedTraining.id,
+        title: formData.title,
+        training_url: formData.training_url,
+        point_value: parseInt(formData.point_value),
+        difficulty: formData.difficulty,
+        training_type: formData.training_type,
+        questions: formattedQuestions,
+      });
+      toast.success("Training questions updated successfully");
+      setShowEditModal(false);
+      setSelectedTraining(null);
+      refetch();
+    } catch {
+      toast.error("Failed to update training questions");
+    }
+  };
+
+  const loadEditQuestions = (training: Training) => {
+    setEditQuestions(
+      training.questions?.map((q) => ({
+        question: q.question,
+        answers: q.answers.map((a) => ({ answer: a.answer, correct: a.correct })),
+      })) ?? []
+    );
+  };
+
+  const openEditModal = (training: Training, tab: "settings" | "locations" | "questions" = "settings") => {
     setSelectedTraining(training);
     setFormData({
       title: training.title,
@@ -179,19 +223,58 @@ export default function AdminTrainingPage() {
       training_type: training.training_type ?? "Mapping",
       project_id: training.project_id?.toString() ?? "",
     });
-    setEditTab("settings");
+    loadEditQuestions(training);
+    setEditTab(tab);
     setShowEditModal(true);
   };
 
-  const openQuestionsModal = (training: Training) => {
-    setSelectedTraining(training);
-    setQuestions(
-      training.questions?.map((q) => ({
-        question: q.question,
-        answers: q.answers.map((a) => ({ answer: a.answer, correct: a.correct })),
-      })) ?? []
-    );
-    setShowQuestionsModal(true);
+  const addEditQuestion = () => {
+    setEditQuestions([
+      ...editQuestions,
+      {
+        question: "",
+        answers: [
+          { answer: "", correct: true },
+          { answer: "", correct: false },
+          { answer: "", correct: false },
+          { answer: "", correct: false },
+        ],
+      },
+    ]);
+  };
+
+  const updateEditQuestion = (index: number, field: string, value: string) => {
+    const updated = [...editQuestions];
+    updated[index] = { ...updated[index], [field]: value };
+    setEditQuestions(updated);
+  };
+
+  const updateEditAnswer = (qIndex: number, aIndex: number, field: string, value: string | boolean) => {
+    const updated = [...editQuestions];
+    updated[qIndex].answers[aIndex] = { ...updated[qIndex].answers[aIndex], [field]: value };
+    if (field === "correct" && value === true) {
+      updated[qIndex].answers = updated[qIndex].answers.map((a, i) => ({
+        ...a,
+        correct: i === aIndex,
+      }));
+    }
+    setEditQuestions(updated);
+  };
+
+  const removeEditQuestion = (index: number) => {
+    setEditQuestions(editQuestions.filter((_, i) => i !== index));
+  };
+
+  const addEditAnswer = (qIndex: number) => {
+    const updated = [...editQuestions];
+    updated[qIndex].answers = [...updated[qIndex].answers, { answer: "", correct: false }];
+    setEditQuestions(updated);
+  };
+
+  const removeEditAnswer = (qIndex: number, aIndex: number) => {
+    const updated = [...editQuestions];
+    updated[qIndex].answers = updated[qIndex].answers.filter((_, i) => i !== aIndex);
+    setEditQuestions(updated);
   };
 
   const addQuestion = () => {
@@ -282,7 +365,7 @@ export default function AdminTrainingPage() {
             </TableCell>
             <TableCell className="text-right">
               <div className="flex justify-end gap-2">
-                <Button size="sm" variant="outline" onClick={() => openQuestionsModal(training)}>
+                <Button size="sm" variant="outline" onClick={() => openEditModal(training, "questions")}>
                   Questions
                 </Button>
                 <Button size="sm" variant="outline" onClick={() => openEditModal(training)}>
@@ -563,16 +646,25 @@ export default function AdminTrainingPage() {
             }}>
               Cancel
             </Button>
-            <Button onClick={handleUpdateTraining} isLoading={updating}>
-              Save Changes
-            </Button>
+            {editTab === "questions" ? (
+              <Button onClick={handleModifyTraining} isLoading={modifying}>
+                Save Questions
+              </Button>
+            ) : editTab === "settings" ? (
+              <Button onClick={handleUpdateTraining} isLoading={updating}>
+                Save Changes
+              </Button>
+            ) : null}
           </>
         }
       >
-        <Tabs defaultValue="settings" value={editTab} onValueChange={(v) => setEditTab(v as "settings" | "locations")}>
+        <Tabs defaultValue="settings" value={editTab} onValueChange={(v) => setEditTab(v as "settings" | "locations" | "questions")}>
           <TabsList className="mb-4">
             <TabsTrigger value="settings">Settings</TabsTrigger>
             <TabsTrigger value="locations">Locations</TabsTrigger>
+            <TabsTrigger value="questions">
+              Questions ({formatNumber(editQuestions.length)})
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="settings">
@@ -613,48 +705,81 @@ export default function AdminTrainingPage() {
               <LocationsTab resourceId={selectedTraining.id} resourceType="training" />
             )}
           </TabsContent>
-        </Tabs>
-      </Modal>
 
-      {/* Questions Modal */}
-      <Modal
-        isOpen={showQuestionsModal}
-        onClose={() => {
-          setShowQuestionsModal(false);
-          setSelectedTraining(null);
-        }}
-        title="Quiz Questions"
-        description={`Questions for ${selectedTraining?.title}`}
-        size="lg"
-        footer={
-          <Button onClick={() => setShowQuestionsModal(false)}>Close</Button>
-        }
-      >
-        <div className="space-y-4">
-          {selectedTraining?.questions?.map((q, qIndex) => (
-            <div key={q.id} className="border border-border rounded-lg p-4">
-              <p className="font-medium mb-2">
-                {qIndex + 1}. {q.question}
-              </p>
-              <div className="space-y-1 ml-4">
-                {q.answers.map((a) => (
-                  <div
-                    key={a.id}
-                    className={`text-sm ${a.correct ? "text-green-600 font-medium" : ""}`}
-                  >
-                    {a.correct ? "✓ " : "○ "}
-                    {a.answer}
-                  </div>
-                ))}
+          <TabsContent value="questions">
+            <div className="space-y-4">
+              <div className="flex justify-between items-center">
+                <h3 className="font-medium">Quiz Questions</h3>
+                <Button size="sm" variant="outline" onClick={addEditQuestion}>
+                  Add Question
+                </Button>
               </div>
+              {editQuestions.map((q, qIndex) => (
+                <div key={qIndex} className="border border-border rounded-lg p-4">
+                  <div className="flex justify-between items-start mb-2">
+                    <span className="text-sm font-medium">Question {qIndex + 1}</span>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => removeEditQuestion(qIndex)}
+                      className="text-red-600"
+                    >
+                      Remove
+                    </Button>
+                  </div>
+                  <Input
+                    placeholder="Enter question"
+                    value={q.question}
+                    onChange={(e) => updateEditQuestion(qIndex, "question", e.target.value)}
+                    className="mb-2"
+                  />
+                  <div className="space-y-2">
+                    {q.answers.map((a, aIndex) => (
+                      <div key={aIndex} className="flex gap-2 items-center">
+                        <input
+                          type="radio"
+                          name={`edit-correct-${qIndex}`}
+                          checked={a.correct}
+                          onChange={() => updateEditAnswer(qIndex, aIndex, "correct", true)}
+                          className="h-4 w-4"
+                        />
+                        <Input
+                          placeholder={`Answer ${aIndex + 1}`}
+                          value={a.answer}
+                          onChange={(e) => updateEditAnswer(qIndex, aIndex, "answer", e.target.value)}
+                          className="flex-1"
+                        />
+                        {q.answers.length > 2 && (
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => removeEditAnswer(qIndex, aIndex)}
+                            className="text-red-600 shrink-0"
+                          >
+                            X
+                          </Button>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                  <div className="flex justify-between items-center mt-2">
+                    <p className="text-xs text-muted-foreground">
+                      Select the radio button to mark the correct answer
+                    </p>
+                    <Button size="sm" variant="ghost" onClick={() => addEditAnswer(qIndex)}>
+                      Add Answer
+                    </Button>
+                  </div>
+                </div>
+              ))}
+              {editQuestions.length === 0 && (
+                <p className="text-muted-foreground text-center py-4">
+                  No questions yet. Click &quot;Add Question&quot; to create one.
+                </p>
+              )}
             </div>
-          ))}
-          {(!selectedTraining?.questions || selectedTraining.questions.length === 0) && (
-            <p className="text-muted-foreground text-center py-4">
-              No questions for this training
-            </p>
-          )}
-        </div>
+          </TabsContent>
+        </Tabs>
       </Modal>
 
       {/* Delete Confirmation */}

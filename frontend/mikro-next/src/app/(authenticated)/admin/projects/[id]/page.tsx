@@ -196,6 +196,7 @@ export default function AdminProjectProfilePage() {
                 href={proj.url}
                 target="_blank"
                 rel="noopener noreferrer"
+                title={isMR ? "Open in MapRoulette" : "Open in Tasking Manager"}
               >
                 <Button variant="outline" size="sm">
                   Open External &nearr;
@@ -360,6 +361,7 @@ export default function AdminProjectProfilePage() {
                           <Link
                             href={`/admin/users/${user.id}`}
                             className="text-kaart-orange hover:underline font-medium"
+                            title="View user profile"
                           >
                             {user.name}
                           </Link>
@@ -406,6 +408,7 @@ export default function AdminProjectProfilePage() {
                   key={team.id}
                   href={`/admin/teams/${team.id}`}
                   className="inline-flex items-center gap-2 px-4 py-2 bg-muted rounded-lg hover:bg-muted/80 transition-colors"
+                  title="View team details"
                 >
                   <span className="font-medium">{team.name}</span>
                   <Badge variant="secondary">

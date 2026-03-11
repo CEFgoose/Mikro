@@ -241,12 +241,11 @@ class TrainingAPI(MethodView):
                 answer=question["correct"],
             )
             for incorrect in question["incorrect"]:
-                print(incorrect)
                 new_training_incorrect = TrainingQuestionAnswer.create(
                     training_id=target_training.id,
                     training_question_id=new_training_question.id,
                     value=False,
-                    answer=incorrect,
+                    answer=incorrect["answer"],
                 )
 
         # Return response

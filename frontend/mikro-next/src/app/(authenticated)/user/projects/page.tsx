@@ -12,6 +12,7 @@ import {
 } from "@/components/ui";
 import { useUserProjects } from "@/hooks";
 import { getProjectExternalUrl, formatNumber, formatCurrency } from "@/lib/utils";
+import Link from "next/link";
 import type { Project } from "@/types";
 
 function ProjectCard({ project }: { project: Project }) {
@@ -39,10 +40,16 @@ function ProjectCard({ project }: { project: Project }) {
         <div>
           <div className="group relative">
             <CardTitle
-              className="text-lg truncate cursor-default"
+              className="text-lg truncate"
               style={{ maxHeight: "3.5rem", overflow: "hidden" }}
             >
-              {project.name}
+              <Link
+                href={`/user/projects/${project.id}`}
+                className="text-kaart-orange hover:underline cursor-pointer"
+                title="View project details"
+              >
+                {project.name}
+              </Link>
             </CardTitle>
             {/* Tooltip on hover */}
             <div className="absolute left-0 top-full mt-1 z-50 hidden group-hover:block max-w-xs">
@@ -56,8 +63,9 @@ function ProjectCard({ project }: { project: Project }) {
             target="_blank"
             rel="noopener noreferrer"
             className="text-sm text-kaart-orange hover:underline"
+            title={project.source === "mr" ? "Open in MapRoulette" : "Open in Tasking Manager"}
           >
-            #{project.id} - Open in TM4
+            #{project.id} - {project.source === "mr" ? "Open in MapRoulette" : "Open in TM4"}
           </a>
         </div>
       </CardHeader>
@@ -127,6 +135,7 @@ function ProjectCard({ project }: { project: Project }) {
           target="_blank"
           rel="noopener noreferrer"
           className="block w-full text-center py-2 px-4 bg-kaart-orange text-white rounded-lg hover:bg-kaart-orange-dark transition-colors font-medium"
+          title={project.source === "mr" ? "Open this project on MapRoulette" : "Open this project on Tasking Manager"}
         >
           Start Mapping
         </a>
