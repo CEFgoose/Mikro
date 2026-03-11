@@ -360,6 +360,18 @@ export interface TimeTrackingSessionResponse {
 export interface TimeTrackingHistoryResponse {
   status: number;
   entries: TimeEntry[];
+  total?: number;
+}
+
+export interface TimeHistoryFilterParams {
+  startDate?: string;
+  endDate?: string;
+  userId?: string;
+  teamId?: number;
+  category?: string;
+  filters?: Record<string, string[]>;
+  limit?: number;
+  offset?: number;
 }
 
 export interface TimeTrackingActiveSessionsResponse {

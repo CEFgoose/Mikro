@@ -16,6 +16,7 @@ interface NavItem {
 const userNavItems: NavItem[] = [
   { label: "Dashboard", href: "/user/dashboard", icon: "home" },
   { label: "Projects", href: "/user/projects", icon: "folder" },
+  { label: "Time", href: "/user/time", icon: "clock" },
   { label: "Training", href: "/user/training", icon: "book" },
   { label: "Checklists", href: "/user/checklists", icon: "list" },
   { label: "Payments", href: "/user/payments", icon: "dollar" },
@@ -25,6 +26,7 @@ const userNavItems: NavItem[] = [
 const validatorNavItems: NavItem[] = [
   { label: "Dashboard", href: "/validator/dashboard", icon: "home" },
   { label: "Projects", href: "/user/projects", icon: "folder" },
+  { label: "Time", href: "/user/time", icon: "clock" },
   { label: "Training", href: "/user/training", icon: "book" },
   { label: "Checklists", href: "/validator/checklists", icon: "list" },
   { label: "Payments", href: "/user/payments", icon: "dollar" },
@@ -35,6 +37,7 @@ const adminNavItems: NavItem[] = [
   { label: "Dashboard", href: "/admin/dashboard", icon: "home" },
   { label: "Projects", href: "/admin/projects", icon: "folder" },
   { label: "Tasks", href: "/admin/tasks", icon: "tasks" },
+  { label: "Time", href: "/admin/time", icon: "clock" },
   { label: "Training", href: "/admin/training", icon: "book" },
   { label: "Checklists", href: "/admin/checklists", icon: "list" },
   { label: "Users", href: "/admin/users", icon: "users" },
@@ -45,6 +48,11 @@ const adminNavItems: NavItem[] = [
 ];
 
 const iconMap: Record<string, React.ReactNode> = {
+  clock: (
+    <svg style={{ width: 20, height: 20 }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+    </svg>
+  ),
   home: (
     <svg style={{ width: 20, height: 20 }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />

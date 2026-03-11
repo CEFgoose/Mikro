@@ -14,6 +14,7 @@ import type {
   TimeTrackingSessionResponse,
   TimeTrackingHistoryResponse,
   TimeTrackingActiveSessionsResponse,
+  TimeHistoryFilterParams,
   UserProfileResponse,
   UserStatsDateResponse,
   ChangesetsResponse,
@@ -587,9 +588,11 @@ export function useActiveTimeSession() {
   return useApiCall<TimeTrackingSessionResponse>("/timetracking/my_active_session");
 }
 
-// User: get history
+// User: get history (auto-fetches on mount; call refetch(params) with filters)
 export function useMyTimeHistory() {
-  return useApiCall<TimeTrackingHistoryResponse>("/timetracking/my_history");
+  const result = useApiCall<TimeTrackingHistoryResponse>("/timetracking/my_history");
+  const refetch = result.refetch as (params?: TimeHistoryFilterParams) => Promise<TimeTrackingHistoryResponse>;
+  return { ...result, refetch };
 }
 
 // Admin: get all active sessions
@@ -597,9 +600,11 @@ export function useAdminActiveSessions() {
   return useApiCall<TimeTrackingActiveSessionsResponse>("/timetracking/active_sessions");
 }
 
-// Admin: get history for org
+// Admin: get history for org (auto-fetches on mount; call refetch(params) with filters)
 export function useAdminTimeHistory() {
-  return useApiCall<TimeTrackingHistoryResponse>("/timetracking/history");
+  const result = useApiCall<TimeTrackingHistoryResponse>("/timetracking/history");
+  const refetch = result.refetch as (params?: TimeHistoryFilterParams) => Promise<TimeTrackingHistoryResponse>;
+  return { ...result, refetch };
 }
 
 // Admin: force clock out
@@ -630,6 +635,70 @@ export function useAdminAddTimeEntry() {
 // Admin: add 8-hour test entry (dev only)
 export function useAdminAddTestEntry() {
   return useApiMutation<{ message: string; status: number; entry: TimeTrackingSessionResponse }>("/timetracking/admin_add_test_entry");
+}
+
+// Admin/User: export time entries as CSV/XLSX file download
+export function useExportTimeEntries() {
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const exportEntries = useCallback(
+    async (params: TimeHistoryFilterParams & { format?: "csv" | "json" | "pdf" }) => {
+      setLoading(true);
+      setError(null);
+
+      try {
+        const response = await fetch("/backend/timetracking/export", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(params),
+        });
+
+        if (!response.ok) {
+          // Try to parse error JSON from the response body
+          let errorMsg = `Export failed (${response.status})`;
+          try {
+            const errJson = await response.json();
+            errorMsg = errJson.message || errorMsg;
+          } catch {
+            // response wasn't JSON, use status text
+          }
+          setError(errorMsg);
+          throw new Error(errorMsg);
+        }
+
+        // Extract filename from Content-Disposition header, or fall back to default
+        const disposition = response.headers.get("Content-Disposition");
+        let filename = `time_entries.${params.format || "csv"}`;
+        if (disposition) {
+          const match = disposition.match(/filename[^;=\n]*=["']?([^"';\n]+)/);
+          if (match?.[1]) {
+            filename = match[1];
+          }
+        }
+
+        // Download the blob
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = filename;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        window.URL.revokeObjectURL(url);
+      } catch (err) {
+        const errorMsg = err instanceof Error ? err.message : "Export failed";
+        setError(errorMsg);
+        throw err;
+      } finally {
+        setLoading(false);
+      }
+    },
+    []
+  );
+
+  return { exportEntries, loading, error };
 }
 
 // Admin: fetch full user profile by ID

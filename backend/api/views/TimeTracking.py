@@ -6,15 +6,18 @@ Handles clock in/out, session management, and admin oversight
 for contractor time tracking with OSM changeset correlation.
 """
 
+import csv
+import io
 import logging
 from datetime import datetime, timedelta
 
 import requests as http_requests
 from flask.views import MethodView
-from flask import g, request, jsonify
+from flask import g, request, jsonify, Response
 
 from ..utils import requires_admin
-from ..database import TimeEntry, User, Project, db
+from ..database import TimeEntry, User, Project, TeamUser, db
+from ..filters import resolve_filtered_user_ids
 
 logger = logging.getLogger(__name__)
 
@@ -53,6 +56,8 @@ class TimeTrackingAPI(MethodView):
             return self.purge_all_time_entries()
         elif path == "request_adjustment":
             return self.request_adjustment()
+        elif path == "export":
+            return self.admin_export()
 
         return jsonify({"message": "Endpoint not found", "status": 404}), 404
 
@@ -136,6 +141,82 @@ class TimeTrackingAPI(MethodView):
 
         logger.error(f"OSM changeset fetch failed after 3 attempts for {osm_username}")
         return 0, 0
+
+    @staticmethod
+    def _parse_date(date_str):
+        """Parse an ISO date or datetime string. Returns naive datetime or None."""
+        if not date_str:
+            return None
+        try:
+            dt = datetime.fromisoformat(date_str.replace("Z", "+00:00"))
+            return dt.replace(tzinfo=None)
+        except (ValueError, AttributeError):
+            try:
+                return datetime.strptime(date_str, "%Y-%m-%d")
+            except (ValueError, AttributeError):
+                return None
+
+    @staticmethod
+    def _build_filtered_query(org_id, data, restrict_user_id=None):
+        """
+        Build a filtered TimeEntry query from request data.
+
+        Args:
+            org_id: Organization ID to scope entries
+            data: Request JSON dict with optional filter params
+            restrict_user_id: If set, always filter to this user only
+
+        Returns:
+            SQLAlchemy query object (not yet executed)
+        """
+        conditions = [
+            TimeEntry.org_id == org_id,
+            TimeEntry.status.in_(["completed", "voided"]),
+        ]
+
+        # Always restrict to a single user if specified
+        if restrict_user_id:
+            conditions.append(TimeEntry.user_id == restrict_user_id)
+        else:
+            # Admin-level filters
+            filters = data.get("filters")
+            user_id = data.get("userId")
+            team_id = data.get("teamId")
+
+            if filters:
+                filtered_ids = resolve_filtered_user_ids(filters, org_id)
+                if filtered_ids is not None:
+                    conditions.append(TimeEntry.user_id.in_(filtered_ids))
+            elif user_id:
+                conditions.append(TimeEntry.user_id == user_id)
+            elif team_id:
+                member_ids = [
+                    tu.user_id
+                    for tu in TeamUser.query.filter_by(team_id=team_id).all()
+                ]
+                if member_ids:
+                    conditions.append(TimeEntry.user_id.in_(member_ids))
+                else:
+                    # Team has no members — return empty result
+                    conditions.append(TimeEntry.user_id == None)  # noqa: E711
+
+        # Date filters
+        start_date = TimeTrackingAPI._parse_date(data.get("startDate"))
+        end_date = TimeTrackingAPI._parse_date(data.get("endDate"))
+        if start_date:
+            conditions.append(TimeEntry.clock_in >= start_date)
+        if end_date:
+            # If only a date (midnight), add a day for exclusive upper bound
+            if end_date.hour == 0 and end_date.minute == 0 and end_date.second == 0:
+                end_date = end_date + timedelta(days=1)
+            conditions.append(TimeEntry.clock_in < end_date)
+
+        # Category filter
+        category = data.get("category")
+        if category:
+            conditions.append(TimeEntry.category == category.lower())
+
+        return TimeEntry.query.filter(*conditions).order_by(TimeEntry.clock_in.desc())
 
     # ─── User Endpoints ───────────────────────────────────────
 
@@ -254,24 +335,25 @@ class TimeTrackingAPI(MethodView):
         }), 200
 
     def my_history(self):
-        """Get the current user's time entry history."""
+        """Get the current user's time entry history with optional filters."""
         if not hasattr(g, "user") or not g.user:
             return jsonify({"message": "Unauthorized", "status": 401}), 401
 
-        entries = (
-            TimeEntry.query
-            .filter(
-                TimeEntry.user_id == g.user.id,
-                TimeEntry.status.in_(["completed", "voided"]),
-            )
-            .order_by(TimeEntry.clock_in.desc())
-            .limit(100)
-            .all()
+        data = request.get_json() or {}
+        limit = data.get("limit", 500)
+        offset = data.get("offset", 0)
+
+        query = self._build_filtered_query(
+            g.user.org_id, data, restrict_user_id=g.user.id
         )
+
+        total = query.count()
+        entries = query.limit(limit).offset(offset).all()
 
         return jsonify({
             "status": 200,
             "entries": [self._format_entry(e) for e in entries],
+            "total": total,
         }), 200
 
     def request_adjustment(self):
@@ -338,21 +420,20 @@ class TimeTrackingAPI(MethodView):
 
     @requires_admin
     def admin_history(self):
-        """Get time entry history for the admin's org."""
-        entries = (
-            TimeEntry.query
-            .filter(
-                TimeEntry.org_id == g.user.org_id,
-                TimeEntry.status.in_(["completed", "voided"]),
-            )
-            .order_by(TimeEntry.clock_in.desc())
-            .limit(100)
-            .all()
-        )
+        """Get time entry history for the admin's org with optional filters."""
+        data = request.get_json() or {}
+        limit = data.get("limit", 500)
+        offset = data.get("offset", 0)
+
+        query = self._build_filtered_query(g.user.org_id, data)
+
+        total = query.count()
+        entries = query.limit(limit).offset(offset).all()
 
         return jsonify({
             "status": 200,
             "entries": [self._format_entry(e) for e in entries],
+            "total": total,
         }), 200
 
     @requires_admin
@@ -641,6 +722,218 @@ class TimeTrackingAPI(MethodView):
             "status": 200,
             "entry": self._format_entry(entry),
         }), 200
+
+    @requires_admin
+    def admin_export(self):
+        """Export time entries as CSV, JSON, or PDF with the same filters as history."""
+        data = request.get_json() or {}
+        export_format = (data.get("format") or "csv").lower()
+
+        if export_format not in ("csv", "json", "pdf"):
+            return jsonify({
+                "message": "Invalid format. Must be csv, json, or pdf.",
+                "status": 400,
+            }), 400
+
+        # Build filtered query (no limit/offset for export — get all matching)
+        query = self._build_filtered_query(g.user.org_id, data)
+        entries = query.all()
+
+        today_str = datetime.utcnow().strftime("%Y-%m-%d")
+
+        if export_format == "csv":
+            return self._export_csv(entries, today_str)
+        elif export_format == "json":
+            return self._export_json(entries, today_str)
+        elif export_format == "pdf":
+            return self._export_pdf(entries, data, today_str)
+
+    @staticmethod
+    def _format_duration_hours(duration_seconds):
+        """Format duration in seconds to a human-readable hours string."""
+        if duration_seconds is None:
+            return ""
+        hours = duration_seconds / 3600
+        return f"{hours:.2f}"
+
+    def _export_csv(self, entries, today_str):
+        """Generate a CSV export of time entries."""
+        output = io.StringIO()
+        writer = csv.writer(output)
+        writer.writerow([
+            "User", "OSM Username", "Project", "Category",
+            "Clock In", "Clock Out", "Duration (hours)", "Status",
+            "Changesets", "Changes", "Notes",
+        ])
+
+        for entry in entries:
+            user = User.query.get(entry.user_id)
+            project = Project.query.get(entry.project_id) if entry.project_id else None
+            writer.writerow([
+                user.full_name if user else "Unknown",
+                user.osm_username if user else "",
+                project.name if project else "",
+                entry.category.capitalize() if entry.category else "",
+                entry.clock_in.isoformat() + "Z" if entry.clock_in else "",
+                entry.clock_out.isoformat() + "Z" if entry.clock_out else "",
+                self._format_duration_hours(entry.duration_seconds),
+                entry.status or "",
+                entry.changeset_count or 0,
+                entry.changes_count or 0,
+                entry.notes or "",
+            ])
+
+        csv_data = output.getvalue()
+        output.close()
+
+        return Response(
+            csv_data,
+            mimetype="text/csv",
+            headers={
+                "Content-Disposition": f'attachment; filename="time-report-{today_str}.csv"'
+            },
+        )
+
+    def _export_json(self, entries, today_str):
+        """Generate a JSON export of time entries."""
+        formatted = [self._format_entry(e) for e in entries]
+        resp = jsonify(formatted)
+        resp.headers["Content-Disposition"] = (
+            f'attachment; filename="time-report-{today_str}.json"'
+        )
+        return resp
+
+    def _export_pdf(self, entries, data, today_str):
+        """Generate a PDF export of time entries."""
+        try:
+            from reportlab.lib.pagesizes import letter, landscape
+            from reportlab.lib import colors
+            from reportlab.platypus import (
+                SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer,
+            )
+            from reportlab.lib.styles import getSampleStyleSheet
+            from reportlab.lib.units import inch
+        except ImportError:
+            return jsonify({
+                "message": "PDF export requires the reportlab library. Install with: pip install reportlab",
+                "status": 500,
+            }), 500
+
+        buffer = io.BytesIO()
+        doc = SimpleDocTemplate(
+            buffer, pagesize=landscape(letter),
+            leftMargin=0.5 * inch, rightMargin=0.5 * inch,
+            topMargin=0.5 * inch, bottomMargin=0.5 * inch,
+        )
+        styles = getSampleStyleSheet()
+        elements = []
+
+        # Title
+        elements.append(Paragraph("Mikro Time Report", styles["Title"]))
+
+        # Filter summary
+        summary_parts = []
+        if data.get("startDate"):
+            summary_parts.append(f"From: {data['startDate']}")
+        if data.get("endDate"):
+            summary_parts.append(f"To: {data['endDate']}")
+        if data.get("category"):
+            summary_parts.append(f"Category: {data['category']}")
+        if data.get("teamId"):
+            summary_parts.append(f"Team ID: {data['teamId']}")
+        if data.get("userId"):
+            summary_parts.append(f"User ID: {data['userId']}")
+        if summary_parts:
+            elements.append(Paragraph(
+                " | ".join(summary_parts), styles["Normal"]
+            ))
+        elements.append(Spacer(1, 12))
+
+        # Build table data
+        headers = [
+            "User", "OSM Username", "Project", "Category",
+            "Clock In", "Clock Out", "Duration (h)", "Status",
+            "Changesets", "Changes",
+        ]
+        table_data = [headers]
+
+        total_seconds = 0
+        total_changesets = 0
+        total_changes = 0
+
+        for entry in entries:
+            user = User.query.get(entry.user_id)
+            project = (
+                Project.query.get(entry.project_id) if entry.project_id else None
+            )
+            dur_secs = entry.duration_seconds or 0
+            total_seconds += dur_secs
+            total_changesets += entry.changeset_count or 0
+            total_changes += entry.changes_count or 0
+
+            table_data.append([
+                (user.full_name if user else "Unknown")[:20],
+                (user.osm_username if user else "")[:20],
+                (project.name if project else "")[:20],
+                (entry.category.capitalize() if entry.category else ""),
+                (entry.clock_in.strftime("%Y-%m-%d %H:%M") if entry.clock_in else ""),
+                (entry.clock_out.strftime("%Y-%m-%d %H:%M") if entry.clock_out else ""),
+                self._format_duration_hours(dur_secs),
+                entry.status or "",
+                str(entry.changeset_count or 0),
+                str(entry.changes_count or 0),
+            ])
+
+        # Totals row
+        table_data.append([
+            "TOTALS", "", "", "", "", "",
+            self._format_duration_hours(total_seconds),
+            f"{len(entries)} entries",
+            str(total_changesets),
+            str(total_changes),
+        ])
+
+        # Create and style table
+        col_widths = [
+            1.1 * inch, 1.1 * inch, 1.1 * inch, 0.8 * inch,
+            1.2 * inch, 1.2 * inch, 0.8 * inch, 0.7 * inch,
+            0.7 * inch, 0.7 * inch,
+        ]
+        table = Table(table_data, colWidths=col_widths, repeatRows=1)
+        table.setStyle(TableStyle([
+            ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#2563eb")),
+            ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
+            ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+            ("FONTSIZE", (0, 0), (-1, -1), 7),
+            ("ALIGN", (0, 0), (-1, -1), "LEFT"),
+            ("GRID", (0, 0), (-1, -1), 0.5, colors.grey),
+            ("ROWBACKGROUNDS", (0, 1), (-1, -2), [colors.white, colors.HexColor("#f0f4ff")]),
+            ("BACKGROUND", (0, -1), (-1, -1), colors.HexColor("#e2e8f0")),
+            ("FONTNAME", (0, -1), (-1, -1), "Helvetica-Bold"),
+            ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+            ("TOPPADDING", (0, 0), (-1, -1), 3),
+            ("BOTTOMPADDING", (0, 0), (-1, -1), 3),
+        ]))
+        elements.append(table)
+
+        # Footer
+        elements.append(Spacer(1, 12))
+        elements.append(Paragraph(
+            f"Generated: {datetime.utcnow().strftime('%Y-%m-%d %H:%M UTC')}",
+            styles["Normal"],
+        ))
+
+        doc.build(elements)
+        pdf_data = buffer.getvalue()
+        buffer.close()
+
+        return Response(
+            pdf_data,
+            mimetype="application/pdf",
+            headers={
+                "Content-Disposition": f'attachment; filename="time-report-{today_str}.pdf"'
+            },
+        )
 
     @requires_admin
     def purge_all_time_entries(self):
