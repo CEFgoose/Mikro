@@ -350,25 +350,25 @@ export default function AdminProjectsPage() {
   };
 
   const ProjectTable = ({ projectList }: { projectList: Project[] }) => (
-    <Table>
+    <Table className="table-fixed">
       <TableHeader>
         <TableRow>
-          <TableHead>Project</TableHead>
-          <TableHead>Tasks</TableHead>
-          <TableHead>Progress</TableHead>
-          <TableHead>Rates</TableHead>
-          <TableHead>Budget</TableHead>
-          <TableHead>Difficulty</TableHead>
-          <TableHead className="text-right">Actions</TableHead>
+          <TableHead className="w-[28%]">Project</TableHead>
+          <TableHead className="w-[7%]">Tasks</TableHead>
+          <TableHead className="w-[15%]">Progress</TableHead>
+          <TableHead className="w-[12%]">Rates</TableHead>
+          <TableHead className="w-[12%]">Budget</TableHead>
+          <TableHead className="w-[10%]">Difficulty</TableHead>
+          <TableHead className="w-[16%] text-right">Actions</TableHead>
         </TableRow>
       </TableHeader>
       <TableBody>
         {projectList.map((project) => (
           <TableRow key={project.id}>
-            <TableCell>
-              <div>
-                <div className="font-medium">
-                  <Link href={`/admin/projects/${project.id}`} className="font-medium text-kaart-orange hover:underline" title="View project details">
+            <TableCell className="max-w-0">
+              <div className="min-w-0">
+                <div className="font-medium truncate">
+                  <Link href={`/admin/projects/${project.id}`} className="font-medium text-kaart-orange hover:underline" title={`View project details: ${project.name}`}>
                     {project.name}
                   </Link>
                   {project.source === "mr" ? (
@@ -455,8 +455,8 @@ export default function AdminProjectsPage() {
                 ) : null}
               </div>
             </TableCell>
-            <TableCell className="text-right">
-              <div className="flex justify-end gap-2">
+            <TableCell className="text-right pr-2">
+              <div className="flex justify-end gap-1">
                 <Button
                   size="sm"
                   variant="outline"

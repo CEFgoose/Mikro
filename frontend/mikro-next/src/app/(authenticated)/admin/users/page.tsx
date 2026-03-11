@@ -398,8 +398,10 @@ export default function AdminUsersPage() {
                   <tr
                     key={user.id}
                     onClick={() => handleSelectUser(user.id)}
-                    className={`cursor-pointer hover:bg-muted/50 transition-colors ${
-                      selectedUser === user.id ? "bg-kaart-orange/10" : ""
+                    className={`cursor-pointer transition-colors ${
+                      selectedUser === user.id
+                        ? "bg-kaart-orange/15 dark:bg-kaart-orange/25 hover:bg-kaart-orange/20 dark:hover:bg-kaart-orange/30"
+                        : "hover:bg-muted/50"
                     }`}
                   >
                     <td className="px-6 py-5">
