@@ -45,6 +45,7 @@ import {
   useFilters,
   useFetchFilterOptions,
 } from "@/hooks";
+import Link from "next/link";
 import { getProjectExternalUrl } from "@/lib/utils";
 import type { Project, ProjectTeamItem } from "@/types";
 
@@ -374,7 +375,9 @@ export default function AdminProjectsPage() {
             <TableCell>
               <div>
                 <div className="font-medium">
-                  {project.name}
+                  <Link href={`/admin/projects/${project.id}`} className="font-medium text-kaart-orange hover:underline">
+                    {project.name}
+                  </Link>
                   {project.source === "mr" ? (
                     <Badge variant="default" className="ml-2 text-[10px] bg-blue-500">MR</Badge>
                   ) : (

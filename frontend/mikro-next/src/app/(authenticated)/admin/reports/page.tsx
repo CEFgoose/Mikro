@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef, Fragment } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import {
   Card,
   CardContent,
@@ -993,20 +994,25 @@ export default function AdminReportsPage() {
                           return (
                             <tr key={proj.id}>
                               <td className="px-6 py-4">
-                                {proj.url ? (
-                                  <a
-                                    href={proj.url}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
+                                <div className="flex items-center gap-2">
+                                  <Link
+                                    href={`/admin/projects/${proj.id}`}
                                     className="font-medium text-kaart-orange hover:underline"
                                   >
                                     {proj.name}
-                                  </a>
-                                ) : (
-                                  <span className="font-medium text-foreground">
-                                    {proj.name}
-                                  </span>
-                                )}
+                                  </Link>
+                                  {proj.url && (
+                                    <a
+                                      href={proj.url}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="text-muted-foreground hover:text-foreground"
+                                      title="Open external project"
+                                    >
+                                      ↗
+                                    </a>
+                                  )}
+                                </div>
                               </td>
                               <td className="px-6 py-4">
                                 <span
@@ -2256,20 +2262,25 @@ export default function AdminReportsPage() {
                           return (
                             <tr key={proj.id}>
                               <td className="px-6 py-4">
-                                {proj.url ? (
-                                  <a
-                                    href={proj.url}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
+                                <div className="flex items-center gap-2">
+                                  <Link
+                                    href={`/admin/projects/${proj.id}`}
                                     className="font-medium text-kaart-orange hover:underline"
                                   >
                                     {proj.name}
-                                  </a>
-                                ) : (
-                                  <span className="font-medium text-foreground">
-                                    {proj.name}
-                                  </span>
-                                )}
+                                  </Link>
+                                  {proj.url && (
+                                    <a
+                                      href={proj.url}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="text-muted-foreground hover:text-foreground"
+                                      title="Open external project"
+                                    >
+                                      ↗
+                                    </a>
+                                  )}
+                                </div>
                               </td>
                               <td className="px-6 py-4">
                                 <span

@@ -18,6 +18,7 @@ from ..utils import requires_admin
 from ..filters import resolve_filtered_user_ids, get_user_country_ids, is_visible_by_location
 from .MapRoulette import MapRouletteSync
 from ..database import (
+    db,
     Project,
     Task,
     PayRequests,
@@ -28,6 +29,10 @@ from ..database import (
     Training,
     UserTasks,
     User,
+    TimeEntry,
+    Team,
+    ProjectTeam,
+    TeamUser,
 )
 
 
@@ -127,6 +132,8 @@ class ProjectAPI(MethodView):
             return self.assign_project_training()
         elif path == "unassign_project_training":
             return self.unassign_project_training()
+        elif path == "fetch_project_profile":
+            return self.fetch_project_profile()
 
         return {
             "message": "Only /project/{fetch_users,fetch_user_projects} is permitted with GET",  # noqa: E501
@@ -787,6 +794,266 @@ class ProjectAPI(MethodView):
             "org_inactive_projects": org_inactive_projects,
             "message": "Projects found",
             "status": 200,
+        }
+
+    @requires_admin
+    def fetch_project_profile(self):
+        """Fetch comprehensive profile data for a single project."""
+        if not g.user:
+            return {"message": "User not found", "status": 304}
+
+        project_id = request.json.get("project_id")
+        if not project_id:
+            return {"message": "project_id required", "status": 400}
+
+        project = Project.query.filter_by(
+            id=project_id, org_id=g.user.org_id
+        ).first()
+        if not project:
+            return {"message": "Project not found", "status": 404}
+
+        # Task counts (reuse existing helper)
+        task_counts = self._get_effective_task_counts(project.id)
+
+        # Created-by user name
+        created_by_name = None
+        if project.created_by:
+            creator = User.query.get(project.created_by)
+            if creator:
+                created_by_name = f"{creator.first_name or ''} {creator.last_name or ''}".strip() or creator.email
+
+        # --- Assigned users with per-user stats ---
+        assigned_pu = ProjectUser.query.filter_by(project_id=project.id).all()
+        assigned_user_ids = [pu.user_id for pu in assigned_pu]
+
+        # Also include org users if project is visible (they can see & work on it)
+        if project.visibility:
+            all_org_users = User.query.filter_by(org_id=g.user.org_id).all()
+            all_user_ids = list(set(assigned_user_ids + [u.id for u in all_org_users]))
+        else:
+            all_user_ids = assigned_user_ids
+
+        # Per-user task aggregates
+        user_task_stats = {}
+        if all_user_ids:
+            # Mapping stats
+            map_rows = (
+                db.session.query(Task.mapped_by, func.count())
+                .filter(
+                    Task.project_id == project.id,
+                    Task.mapped == True,
+                )
+                .group_by(Task.mapped_by)
+                .all()
+            )
+            for osm_un, cnt in map_rows:
+                if osm_un:
+                    user_task_stats.setdefault(osm_un, {"mapped": 0, "validated": 0})
+                    user_task_stats[osm_un]["mapped"] = cnt
+
+            # Validation stats
+            val_rows = (
+                db.session.query(Task.validated_by, func.count())
+                .filter(
+                    Task.project_id == project.id,
+                    Task.validated == True,
+                )
+                .group_by(Task.validated_by)
+                .all()
+            )
+            for osm_un, cnt in val_rows:
+                if osm_un:
+                    user_task_stats.setdefault(osm_un, {"mapped": 0, "validated": 0})
+                    user_task_stats[osm_un]["validated"] = cnt
+
+        # Per-user time entries
+        user_time = {}
+        if all_user_ids:
+            time_rows = (
+                db.session.query(
+                    TimeEntry.user_id,
+                    func.sum(TimeEntry.duration_seconds),
+                )
+                .filter(
+                    TimeEntry.project_id == project.id,
+                    TimeEntry.status == "completed",
+                    TimeEntry.duration_seconds != None,
+                )
+                .group_by(TimeEntry.user_id)
+                .all()
+            )
+            for uid, secs in time_rows:
+                if uid and secs:
+                    user_time[uid] = secs
+
+        # Build user list
+        users_data = []
+        users = User.query.filter(User.id.in_(all_user_ids)).all() if all_user_ids else []
+        for u in users:
+            osm_un = u.osm_username or ""
+            stats = user_task_stats.get(osm_un, {"mapped": 0, "validated": 0})
+            mapping_earnings = stats["mapped"] * (project.mapping_rate_per_task or 0)
+            validation_earnings = stats["validated"] * (project.validation_rate_per_task or 0)
+            users_data.append({
+                "id": u.id,
+                "name": f"{u.first_name or ''} {u.last_name or ''}".strip() or u.email,
+                "email": u.email,
+                "role": u.role,
+                "osm_username": u.osm_username,
+                "tasks_mapped": stats["mapped"],
+                "tasks_validated": stats["validated"],
+                "time_logged_seconds": user_time.get(u.id, 0),
+                "earnings": round(mapping_earnings + validation_earnings, 2),
+                "is_assigned": u.id in assigned_user_ids,
+            })
+
+        # --- Assigned teams ---
+        team_rows = (
+            db.session.query(Team.id, Team.name, func.count(TeamUser.id))
+            .join(ProjectTeam, ProjectTeam.team_id == Team.id)
+            .outerjoin(TeamUser, TeamUser.team_id == Team.id)
+            .filter(ProjectTeam.project_id == project.id)
+            .group_by(Team.id, Team.name)
+            .all()
+        )
+        teams_data = [
+            {"id": t_id, "name": t_name, "member_count": cnt}
+            for t_id, t_name, cnt in team_rows
+        ]
+
+        # --- Time tracking summary ---
+        time_cat_rows = (
+            db.session.query(
+                TimeEntry.category,
+                func.sum(TimeEntry.duration_seconds),
+            )
+            .filter(
+                TimeEntry.project_id == project.id,
+                TimeEntry.status == "completed",
+                TimeEntry.duration_seconds != None,
+            )
+            .group_by(TimeEntry.category)
+            .all()
+        )
+        time_by_category = {}
+        total_time_seconds = 0
+        for cat, secs in time_cat_rows:
+            if cat and secs:
+                time_by_category[cat] = secs
+                total_time_seconds += secs
+
+        # Recent time entries (last 20)
+        recent_entries = (
+            TimeEntry.query.filter(
+                TimeEntry.project_id == project.id,
+                TimeEntry.status == "completed",
+            )
+            .order_by(TimeEntry.clock_out.desc())
+            .limit(20)
+            .all()
+        )
+        recent_entries_data = []
+        # Build a quick user ID->name lookup
+        entry_user_ids = list(set(e.user_id for e in recent_entries))
+        entry_users = {u.id: u for u in User.query.filter(User.id.in_(entry_user_ids)).all()} if entry_user_ids else {}
+        for e in recent_entries:
+            eu = entry_users.get(e.user_id)
+            recent_entries_data.append({
+                "user_name": (f"{eu.first_name or ''} {eu.last_name or ''}".strip() or eu.email) if eu else "Unknown",
+                "category": e.category,
+                "clock_in": e.clock_in.isoformat() if e.clock_in else None,
+                "clock_out": e.clock_out.isoformat() if e.clock_out else None,
+                "duration_seconds": e.duration_seconds,
+            })
+
+        # --- Assigned trainings ---
+        pt_rows = ProjectTraining.query.filter_by(project_id=project.id).all()
+        training_ids = [pt.training_id for pt in pt_rows]
+        trainings_data = []
+        if training_ids:
+            trainings = Training.query.filter(Training.id.in_(training_ids)).all()
+            for t in trainings:
+                trainings_data.append({
+                    "id": t.id,
+                    "title": t.title,
+                    "difficulty": t.difficulty,
+                    "point_value": t.point_value,
+                    "training_type": t.training_type,
+                })
+
+        # --- Assigned locations ---
+        loc_rows = (
+            db.session.query(ProjectCountry.country_id)
+            .filter(ProjectCountry.project_id == project.id)
+            .all()
+        )
+        country_ids = [r[0] for r in loc_rows]
+        locations_data = []
+        if country_ids:
+            from ..database import Country
+            countries = Country.query.filter(Country.id.in_(country_ids)).all()
+            locations_data = [
+                {"id": c.id, "name": c.name, "code": c.code}
+                for c in countries
+            ]
+
+        # --- Recent tasks (last 50) ---
+        recent_tasks = (
+            Task.query.filter_by(project_id=project.id)
+            .order_by(Task.date_mapped.desc().nullslast())
+            .limit(50)
+            .all()
+        )
+        tasks_data = [
+            {
+                "task_id": t.task_id,
+                "mapped_by": t.mapped_by,
+                "validated_by": t.validated_by,
+                "date_mapped": t.date_mapped.isoformat() if t.date_mapped else None,
+                "date_validated": t.date_validated.isoformat() if t.date_validated else None,
+                "paid_out": t.paid_out,
+                "mr_status": t.mr_status,
+            }
+            for t in recent_tasks
+        ]
+
+        # Avg time per task
+        completed_tasks = task_counts["effective_mapped"] + task_counts["effective_validated"]
+        avg_time_per_task = round(total_time_seconds / completed_tasks) if completed_tasks > 0 and total_time_seconds > 0 else None
+
+        return {
+            "status": 200,
+            "project": {
+                "id": project.id,
+                "name": project.name,
+                "url": project.url,
+                "source": project.source,
+                "status": project.status,
+                "visibility": project.visibility,
+                "difficulty": project.difficulty,
+                "created_by": project.created_by,
+                "created_by_name": created_by_name,
+                "total_tasks": project.total_tasks,
+                "mapping_rate_per_task": project.mapping_rate_per_task,
+                "validation_rate_per_task": project.validation_rate_per_task,
+                "max_payment": project.max_payment,
+                "payment_due": project.payment_due,
+                "total_payout": project.total_payout,
+                "max_editors": project.max_editors,
+                "total_editors": project.total_editors,
+                **task_counts,
+            },
+            "assigned_users": users_data,
+            "assigned_teams": teams_data,
+            "tasks": tasks_data,
+            "time_summary": {
+                "total_seconds": total_time_seconds,
+                "by_category": time_by_category,
+            },
+            "recent_time_entries": recent_entries_data,
+            "assigned_trainings": trainings_data,
+            "assigned_locations": locations_data,
+            "avg_time_per_task": avg_time_per_task,
         }
 
     @requires_admin

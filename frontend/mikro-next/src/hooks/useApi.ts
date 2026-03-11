@@ -33,6 +33,7 @@ import type {
   RegionsResponse,
   CountriesResponse,
   MapillaryStatsResponse,
+  ProjectProfileResponse,
 } from "@/types";
 
 /**
@@ -855,4 +856,9 @@ export function useAssignProjectTraining() {
 }
 export function useUnassignProjectTraining() {
   return useApiMutation("/project/unassign_project_training");
+}
+
+// Project Profile
+export function useFetchProjectProfile() {
+  return useApiMutation<ProjectProfileResponse>("/project/fetch_project_profile");
 }

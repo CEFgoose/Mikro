@@ -657,6 +657,86 @@ export interface EditingStatsResponse {
   } | null;
 }
 
+// ─── Project Profile Types ──────────────────────────────────
+
+export interface ProjectProfileUser {
+  id: string;
+  name: string;
+  email: string;
+  role: string;
+  osm_username: string | null;
+  tasks_mapped: number;
+  tasks_validated: number;
+  time_logged_seconds: number;
+  earnings: number;
+  is_assigned: boolean;
+}
+
+export interface ProjectProfileTeam {
+  id: number;
+  name: string;
+  member_count: number;
+}
+
+export interface ProjectProfileTask {
+  task_id: number;
+  mapped_by: string;
+  validated_by: string | null;
+  date_mapped: string | null;
+  date_validated: string | null;
+  paid_out: boolean;
+  mr_status: number | null;
+}
+
+export interface ProjectProfileTimeEntry {
+  user_name: string;
+  category: string;
+  clock_in: string | null;
+  clock_out: string | null;
+  duration_seconds: number | null;
+}
+
+export interface ProjectProfileTraining {
+  id: number;
+  title: string;
+  difficulty: string;
+  point_value: number;
+  training_type: string;
+}
+
+export interface ProjectProfileLocation {
+  id: number;
+  name: string;
+  code: string;
+}
+
+export interface ProjectProfileResponse {
+  status: number;
+  project: Project & {
+    created_by_name: string | null;
+    effective_mapped: number;
+    effective_validated: number;
+    effective_invalidated: number;
+    raw_mapped: number;
+    raw_validated: number;
+    raw_invalidated: number;
+    split_task_groups: number;
+    split_task_count: number;
+    mr_status_breakdown: Record<string, number>;
+  };
+  assigned_users: ProjectProfileUser[];
+  assigned_teams: ProjectProfileTeam[];
+  tasks: ProjectProfileTask[];
+  time_summary: {
+    total_seconds: number;
+    by_category: Record<string, number>;
+  };
+  recent_time_entries: ProjectProfileTimeEntry[];
+  assigned_trainings: ProjectProfileTraining[];
+  assigned_locations: ProjectProfileLocation[];
+  avg_time_per_task: number | null;
+}
+
 export interface TimekeepingStatsResponse {
   status: number;
   snapshot_timestamp: string;
