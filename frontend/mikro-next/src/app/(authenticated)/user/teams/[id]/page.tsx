@@ -6,6 +6,7 @@ import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui";
 import { useFetchUserTeamProfile } from "@/hooks/useApi";
 import type { TeamProfileData } from "@/types";
+import { formatNumber, formatCurrency } from "@/lib/utils";
 
 function StatCard({
   label,
@@ -115,7 +116,7 @@ export default function UserTeamProfilePage() {
                   </span>
                 )}
                 <span>
-                  Members: <span className="font-medium text-foreground">{team.member_count}</span>
+                  Members: <span className="font-medium text-foreground">{formatNumber(team.member_count)}</span>
                 </span>
                 {team.created_at && (
                   <span>Created: {formatDate(team.created_at)}</span>
@@ -128,10 +129,10 @@ export default function UserTeamProfilePage() {
 
       {/* Aggregated Stats — NO financials */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <StatCard label="Tasks Mapped" value={aggregated_stats.total_tasks_mapped} />
-        <StatCard label="Tasks Validated" value={aggregated_stats.total_tasks_validated} />
-        <StatCard label="Tasks Invalidated" value={aggregated_stats.total_tasks_invalidated} />
-        <StatCard label="Checklists Completed" value={aggregated_stats.total_checklists_completed} />
+        <StatCard label="Tasks Mapped" value={formatNumber(aggregated_stats.total_tasks_mapped)} />
+        <StatCard label="Tasks Validated" value={formatNumber(aggregated_stats.total_tasks_validated)} />
+        <StatCard label="Tasks Invalidated" value={formatNumber(aggregated_stats.total_tasks_invalidated)} />
+        <StatCard label="Checklists Completed" value={formatNumber(aggregated_stats.total_checklists_completed)} />
       </div>
 
       {/* Members Table — NO earnings, NO links to profiles */}
@@ -170,8 +171,8 @@ export default function UserTeamProfilePage() {
                         </span>
                       </td>
                       <td className="px-6 py-4 text-foreground">{member.osm_username || "-"}</td>
-                      <td className="px-6 py-4 text-foreground">{member.total_tasks_mapped}</td>
-                      <td className="px-6 py-4 text-foreground">{member.total_tasks_validated}</td>
+                      <td className="px-6 py-4 text-foreground">{formatNumber(member.total_tasks_mapped)}</td>
+                      <td className="px-6 py-4 text-foreground">{formatNumber(member.total_tasks_validated)}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -207,8 +208,8 @@ export default function UserTeamProfilePage() {
                       <td className="px-6 py-4">
                         <span className="font-medium text-kaart-orange">{proj.name}</span>
                       </td>
-                      <td className="px-6 py-4 text-foreground">{proj.team_tasks_mapped}</td>
-                      <td className="px-6 py-4 text-foreground">{proj.team_tasks_validated}</td>
+                      <td className="px-6 py-4 text-foreground">{formatNumber(proj.team_tasks_mapped)}</td>
+                      <td className="px-6 py-4 text-foreground">{formatNumber(proj.team_tasks_validated)}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -261,7 +262,7 @@ export default function UserTeamProfilePage() {
                           {training.difficulty}
                         </span>
                       </td>
-                      <td className="px-6 py-4 text-foreground">{training.point_value}</td>
+                      <td className="px-6 py-4 text-foreground">{formatNumber(training.point_value)}</td>
                     </tr>
                   ))}
                 </tbody>

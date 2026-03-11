@@ -11,15 +11,8 @@ import {
   useToastActions,
 } from "@/components/ui";
 import { useUserProjects } from "@/hooks";
-import { getProjectExternalUrl } from "@/lib/utils";
+import { getProjectExternalUrl, formatNumber, formatCurrency } from "@/lib/utils";
 import type { Project } from "@/types";
-
-function formatCurrency(amount: number): string {
-  return new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: "USD",
-  }).format(amount);
-}
 
 function ProjectCard({ project }: { project: Project }) {
   const progressPercent = project.total_tasks > 0
@@ -87,24 +80,24 @@ function ProjectCard({ project }: { project: Project }) {
         <div className="grid grid-cols-2 gap-4 text-sm">
           <div>
             <p className="text-muted-foreground">Total Tasks</p>
-            <p className="font-semibold text-lg">{project.total_tasks}</p>
+            <p className="font-semibold text-lg">{formatNumber(project.total_tasks)}</p>
           </div>
           <div>
             <p className="text-muted-foreground">Mapped</p>
             <p className="font-semibold text-lg text-green-600">
-              {project.total_mapped ?? 0}
+              {formatNumber(project.total_mapped ?? 0)}
             </p>
           </div>
           <div>
             <p className="text-muted-foreground">Validated</p>
             <p className="font-semibold text-lg text-blue-600">
-              {project.total_validated ?? 0}
+              {formatNumber(project.total_validated ?? 0)}
             </p>
           </div>
           <div>
             <p className="text-muted-foreground">Invalidated</p>
             <p className="font-semibold text-lg text-red-600">
-              {project.total_invalidated ?? 0}
+              {formatNumber(project.total_invalidated ?? 0)}
             </p>
           </div>
         </div>
@@ -183,14 +176,14 @@ export default function UserProjectsPage() {
         <Card style={{ padding: 0 }}>
           <div style={{ padding: "12px 16px" }}>
             <p style={{ fontSize: 12, color: "#6b7280", marginBottom: 4 }}>Active Projects</p>
-            <div style={{ fontSize: 20, fontWeight: 700 }}>{activeProjects.length}</div>
+            <div style={{ fontSize: 20, fontWeight: 700 }}>{formatNumber(activeProjects.length)}</div>
           </div>
         </Card>
         <Card style={{ padding: 0 }}>
           <div style={{ padding: "12px 16px" }}>
             <p style={{ fontSize: 12, color: "#6b7280", marginBottom: 4 }}>Total Tasks</p>
             <div style={{ fontSize: 20, fontWeight: 700 }}>
-              {activeProjects.reduce((sum, p) => sum + p.total_tasks, 0)}
+              {formatNumber(activeProjects.reduce((sum, p) => sum + p.total_tasks, 0))}
             </div>
           </div>
         </Card>
@@ -198,7 +191,7 @@ export default function UserProjectsPage() {
           <div style={{ padding: "12px 16px" }}>
             <p style={{ fontSize: 12, color: "#6b7280", marginBottom: 4 }}>Tasks Completed</p>
             <div style={{ fontSize: 20, fontWeight: 700, color: "#16a34a" }}>
-              {activeProjects.reduce((sum, p) => sum + (p.total_mapped ?? 0), 0)}
+              {formatNumber(activeProjects.reduce((sum, p) => sum + (p.total_mapped ?? 0), 0))}
             </div>
           </div>
         </Card>

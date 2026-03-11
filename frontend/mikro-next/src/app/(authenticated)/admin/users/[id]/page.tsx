@@ -46,6 +46,7 @@ import type {
   ActivityDataPoint,
   TaskHistoryEntry,
 } from "@/types";
+import { formatNumber, formatCurrency } from "@/lib/utils";
 
 const MappingHeatmap = dynamic(() => import("@/components/MappingHeatmap"), {
   ssr: false,
@@ -724,18 +725,18 @@ export default function UserProfilePage() {
 
       {/* Section 2: All-time Task Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <StatCard label="Tasks Mapped" value={user.total_tasks_mapped ?? 0} />
+        <StatCard label="Tasks Mapped" value={formatNumber(user.total_tasks_mapped ?? 0)} />
         <StatCard
           label="Tasks Validated"
-          value={user.total_tasks_validated ?? 0}
+          value={formatNumber(user.total_tasks_validated ?? 0)}
         />
         <StatCard
           label="Tasks Invalidated"
-          value={user.total_tasks_invalidated ?? 0}
+          value={formatNumber(user.total_tasks_invalidated ?? 0)}
         />
         <StatCard
           label="Total Earnings"
-          value={`$${(user.payable_total ?? 0).toFixed(2)}`}
+          value={formatCurrency(user.payable_total ?? 0)}
         />
       </div>
 
@@ -744,19 +745,19 @@ export default function UserProfilePage() {
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <StatCard
             label="Validated by User"
-            value={user.validator_tasks_validated ?? 0}
+            value={formatNumber(user.validator_tasks_validated ?? 0)}
           />
           <StatCard
             label="Invalidated by User"
-            value={user.validator_tasks_invalidated ?? 0}
+            value={formatNumber(user.validator_tasks_invalidated ?? 0)}
           />
           <StatCard
             label="Checklists Completed"
-            value={user.total_checklists_completed ?? 0}
+            value={formatNumber(user.total_checklists_completed ?? 0)}
           />
           <StatCard
             label="Checklists Confirmed"
-            value={user.validator_total_checklists_confirmed ?? 0}
+            value={formatNumber(user.validator_total_checklists_confirmed ?? 0)}
           />
         </div>
       )}
@@ -772,37 +773,37 @@ export default function UserProfilePage() {
               <div className="text-center">
                 <p className="text-sm text-muted-foreground">Mapping</p>
                 <p className="text-lg font-semibold">
-                  ${(user.mapping_payable_total ?? 0).toFixed(2)}
+                  {formatCurrency(user.mapping_payable_total ?? 0)}
                 </p>
               </div>
               <div className="text-center">
                 <p className="text-sm text-muted-foreground">Validation</p>
                 <p className="text-lg font-semibold">
-                  ${(user.validation_payable_total ?? 0).toFixed(2)}
+                  {formatCurrency(user.validation_payable_total ?? 0)}
                 </p>
               </div>
               <div className="text-center">
                 <p className="text-sm text-muted-foreground">Checklists</p>
                 <p className="text-lg font-semibold">
-                  ${(user.checklist_payable_total ?? 0).toFixed(2)}
+                  {formatCurrency(user.checklist_payable_total ?? 0)}
                 </p>
               </div>
               <div className="text-center">
                 <p className="text-sm text-muted-foreground">Payable</p>
                 <p className="text-lg font-semibold text-green-600">
-                  ${(user.payable_total ?? 0).toFixed(2)}
+                  {formatCurrency(user.payable_total ?? 0)}
                 </p>
               </div>
               <div className="text-center">
                 <p className="text-sm text-muted-foreground">Requested</p>
                 <p className="text-lg font-semibold text-yellow-600">
-                  ${(user.requested_total ?? 0).toFixed(2)}
+                  {formatCurrency(user.requested_total ?? 0)}
                 </p>
               </div>
               <div className="text-center">
                 <p className="text-sm text-muted-foreground">Paid</p>
                 <p className="text-lg font-semibold text-blue-600">
-                  ${(user.paid_total ?? 0).toFixed(2)}
+                  {formatCurrency(user.paid_total ?? 0)}
                 </p>
               </div>
             </div>
@@ -858,19 +859,18 @@ export default function UserProfilePage() {
                         )}
                       </td>
                       <td className="px-6 py-4 text-muted-foreground">
-                        {proj.tasks_mapped}
+                        {formatNumber(proj.tasks_mapped)}
                       </td>
                       <td className="px-6 py-4 text-muted-foreground">
-                        {proj.tasks_validated}
+                        {formatNumber(proj.tasks_validated)}
                       </td>
                       <td className="px-6 py-4 text-muted-foreground">
-                        {proj.tasks_invalidated}
+                        {formatNumber(proj.tasks_invalidated)}
                       </td>
                       <td className="px-6 py-4 text-muted-foreground">
-                        $
-                        {(
+                        {formatCurrency(
                           proj.mapping_earnings + proj.validation_earnings
-                        ).toFixed(2)}
+                        )}
                       </td>
                     </tr>
                   ))}
@@ -956,23 +956,23 @@ export default function UserProfilePage() {
 
         {/* Task Stats for Period */}
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-6">
-          <StatCard label="Mapped" value={periodTaskStats.tasks_mapped} />
-          <StatCard label="Validated" value={periodTaskStats.tasks_validated} />
+          <StatCard label="Mapped" value={formatNumber(periodTaskStats.tasks_mapped)} />
+          <StatCard label="Validated" value={formatNumber(periodTaskStats.tasks_validated)} />
           <StatCard
             label="Invalidated"
-            value={periodTaskStats.tasks_invalidated}
+            value={formatNumber(periodTaskStats.tasks_invalidated)}
           />
           <StatCard
             label="Val. by User"
-            value={periodTaskStats.validator_validated}
+            value={formatNumber(periodTaskStats.validator_validated)}
           />
           <StatCard
             label="Map Earnings"
-            value={`$${periodTaskStats.mapping_earnings.toFixed(2)}`}
+            value={formatCurrency(periodTaskStats.mapping_earnings)}
           />
           <StatCard
             label="Val Earnings"
-            value={`$${periodTaskStats.validation_earnings.toFixed(2)}`}
+            value={formatCurrency(periodTaskStats.validation_earnings)}
           />
         </div>
 
@@ -1286,7 +1286,7 @@ export default function UserProfilePage() {
                           </td>
                           <td className="px-4 py-2">{t.status}</td>
                           <td className="px-4 py-2 text-right font-mono">
-                            ${(t.mappingRate || t.validationRate || 0).toFixed(2)}
+                            {formatCurrency(t.mappingRate || t.validationRate || 0)}
                           </td>
                         </tr>
                       ))}

@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle, Button, Modal } from "@/compo
 import { useToastActions } from "@/components/ui";
 import { useAddChecklistComment } from "@/hooks";
 import { Checklist } from "@/types";
+import { formatNumber, formatCurrency } from "@/lib/utils";
 
 export default function ValidatorChecklistsPage() {
   const [completedChecklists, setCompletedChecklists] = useState<Checklist[]>([]);
@@ -113,7 +114,7 @@ export default function ValidatorChecklistsPage() {
               : "text-muted-foreground hover:text-foreground"
           }`}
         >
-          Ready for Confirmation ({completedChecklists.length})
+          Ready for Confirmation ({formatNumber(completedChecklists.length)})
         </button>
         <button
           onClick={() => {
@@ -126,7 +127,7 @@ export default function ValidatorChecklistsPage() {
               : "text-muted-foreground hover:text-foreground"
           }`}
         >
-          Completed & Confirmed ({confirmedChecklists.length})
+          Completed & Confirmed ({formatNumber(confirmedChecklists.length)})
         </button>
       </div>
 
@@ -163,7 +164,7 @@ export default function ValidatorChecklistsPage() {
                     {checklist.difficulty}
                   </span>
                   <span className="text-sm text-muted-foreground">
-                    ${checklist.validation_rate.toFixed(2)}
+                    {formatCurrency(checklist.validation_rate)}
                   </span>
                 </div>
               </div>

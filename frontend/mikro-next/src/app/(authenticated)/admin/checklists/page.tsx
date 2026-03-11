@@ -33,13 +33,7 @@ import {
   usePurgeChecklists,
 } from "@/hooks";
 import type { Checklist } from "@/types";
-
-function formatCurrency(amount: number): string {
-  return new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: "USD",
-  }).format(amount);
-}
+import { formatNumber, formatCurrency } from "@/lib/utils";
 
 function formatDate(dateString: string): string {
   return new Date(dateString).toLocaleDateString("en-US", {
@@ -494,7 +488,7 @@ export default function AdminChecklistsPage() {
             <CardTitle className="text-sm font-medium">Total Checklists</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats.total}</div>
+            <div className="text-2xl font-bold">{formatNumber(stats.total)}</div>
           </CardContent>
         </Card>
         <Card>
@@ -502,7 +496,7 @@ export default function AdminChecklistsPage() {
             <CardTitle className="text-sm font-medium">Active</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-kaart-orange">{stats.active}</div>
+            <div className="text-2xl font-bold text-kaart-orange">{formatNumber(stats.active)}</div>
           </CardContent>
         </Card>
         <Card>
@@ -510,7 +504,7 @@ export default function AdminChecklistsPage() {
             <CardTitle className="text-sm font-medium">Pending Confirmation</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-yellow-600">{stats.pendingConfirmation}</div>
+            <div className="text-2xl font-bold text-yellow-600">{formatNumber(stats.pendingConfirmation)}</div>
           </CardContent>
         </Card>
         <Card>
@@ -526,11 +520,11 @@ export default function AdminChecklistsPage() {
       {/* Tabs */}
       <Tabs defaultValue="active">
         <TabsList>
-          <TabsTrigger value="active">Active ({activeChecklists.length})</TabsTrigger>
-          <TabsTrigger value="pending">Pending Confirmation ({completedChecklists.length})</TabsTrigger>
-          <TabsTrigger value="confirmed">Confirmed ({confirmedChecklists.length})</TabsTrigger>
-          <TabsTrigger value="inactive">Inactive ({inactiveChecklists.length})</TabsTrigger>
-          <TabsTrigger value="stale">Stale ({staleChecklists.length})</TabsTrigger>
+          <TabsTrigger value="active">Active ({formatNumber(activeChecklists.length)})</TabsTrigger>
+          <TabsTrigger value="pending">Pending Confirmation ({formatNumber(completedChecklists.length)})</TabsTrigger>
+          <TabsTrigger value="confirmed">Confirmed ({formatNumber(confirmedChecklists.length)})</TabsTrigger>
+          <TabsTrigger value="inactive">Inactive ({formatNumber(inactiveChecklists.length)})</TabsTrigger>
+          <TabsTrigger value="stale">Stale ({formatNumber(staleChecklists.length)})</TabsTrigger>
         </TabsList>
 
         <TabsContent value="active">

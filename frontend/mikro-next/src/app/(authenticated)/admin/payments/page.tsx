@@ -37,14 +37,8 @@ import {
   PaymentRequestDetailsResponse,
   PaymentRequestProjectDetail,
 } from "@/hooks";
+import { formatNumber, formatCurrency } from "@/lib/utils";
 import type { PayRequest, Payment } from "@/types";
-
-function formatCurrency(amount: number): string {
-  return new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: "USD",
-  }).format(amount);
-}
 
 function formatDate(dateString: string): string {
   return new Date(dateString).toLocaleDateString("en-US", {
@@ -391,7 +385,7 @@ export default function AdminPaymentsPage() {
             <CardTitle className="text-sm font-medium">Pending Requests</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-yellow-600">{requests.length}</div>
+            <div className="text-2xl font-bold text-yellow-600">{formatNumber(requests.length)}</div>
             <p className="text-xs text-muted-foreground">
               Total: {formatCurrency(totalPending)}
             </p>
@@ -402,7 +396,7 @@ export default function AdminPaymentsPage() {
             <CardTitle className="text-sm font-medium">Completed Payouts</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-green-600">{payments.length}</div>
+            <div className="text-2xl font-bold text-green-600">{formatNumber(payments.length)}</div>
             <p className="text-xs text-muted-foreground">
               Total: {formatCurrency(totalPaid)}
             </p>
@@ -417,7 +411,7 @@ export default function AdminPaymentsPage() {
               {formatCurrency(monthlyStats.thisMonth)}
             </div>
             <p className="text-xs text-muted-foreground">
-              {monthlyStats.count} payments
+              {formatNumber(monthlyStats.count)} payments
             </p>
           </CardContent>
         </Card>

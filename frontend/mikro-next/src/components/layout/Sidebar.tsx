@@ -15,8 +15,8 @@ interface NavItem {
 
 const userNavItems: NavItem[] = [
   { label: "Dashboard", href: "/user/dashboard", icon: "home" },
-  { label: "Training", href: "/user/training", icon: "book" },
   { label: "Projects", href: "/user/projects", icon: "folder" },
+  { label: "Training", href: "/user/training", icon: "book" },
   { label: "Checklists", href: "/user/checklists", icon: "list" },
   { label: "Payments", href: "/user/payments", icon: "dollar" },
   { label: "Teams", href: "/user/teams", icon: "team" },
@@ -24,8 +24,8 @@ const userNavItems: NavItem[] = [
 
 const validatorNavItems: NavItem[] = [
   { label: "Dashboard", href: "/validator/dashboard", icon: "home" },
-  { label: "Training", href: "/user/training", icon: "book" },
   { label: "Projects", href: "/user/projects", icon: "folder" },
+  { label: "Training", href: "/user/training", icon: "book" },
   { label: "Checklists", href: "/validator/checklists", icon: "list" },
   { label: "Payments", href: "/user/payments", icon: "dollar" },
   { label: "Teams", href: "/user/teams", icon: "team" },
@@ -33,9 +33,9 @@ const validatorNavItems: NavItem[] = [
 
 const adminNavItems: NavItem[] = [
   { label: "Dashboard", href: "/admin/dashboard", icon: "home" },
-  { label: "Training", href: "/admin/training", icon: "book" },
   { label: "Projects", href: "/admin/projects", icon: "folder" },
   { label: "Tasks", href: "/admin/tasks", icon: "tasks" },
+  { label: "Training", href: "/admin/training", icon: "book" },
   { label: "Checklists", href: "/admin/checklists", icon: "list" },
   { label: "Users", href: "/admin/users", icon: "users" },
   { label: "Teams", href: "/admin/teams", icon: "team" },

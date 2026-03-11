@@ -8,15 +8,8 @@ import { TimeTrackingWidget } from "@/components/widgets/TimeTrackingWidget";
 import { UserTimeHistory } from "@/components/widgets/UserTimeHistory";
 import { useSyncUserTasks, useValidatorProjects, useUserPayable, useSubmitPaymentRequest } from "@/hooks";
 import { ValidatorDashboardStats, Project } from "@/types";
-import { getProjectExternalUrl } from "@/lib/utils";
+import { formatNumber, formatCurrency, getProjectExternalUrl } from "@/lib/utils";
 import Link from "next/link";
-
-function formatCurrency(amount: number): string {
-  return new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: "USD",
-  }).format(amount);
-}
 
 export default function ValidatorDashboard() {
   const { user, isLoading: userLoading } = useUser();
@@ -148,7 +141,7 @@ export default function ValidatorDashboard() {
             </p>
           </div>
           <p className="text-sm text-yellow-700 dark:text-yellow-300">
-            {stats.self_validated_count} task(s) you validated were mapped by you and are not eligible for payment.
+            {formatNumber(stats.self_validated_count)} task(s) you validated were mapped by you and are not eligible for payment.
           </p>
         </div>
       )}
@@ -168,7 +161,7 @@ export default function ValidatorDashboard() {
             ) : (
               <>
                 <div className="text-2xl font-bold text-kaart-orange">
-                  {stats?.tasks_mapped ?? 0}
+                  {formatNumber(stats?.tasks_mapped ?? 0)}
                 </div>
                 <p className="text-xs text-muted-foreground">
                   Your mapping contributions
@@ -191,10 +184,10 @@ export default function ValidatorDashboard() {
             ) : (
               <>
                 <div className="text-2xl font-bold text-green-600">
-                  {stats?.tasks_validated ?? 0}
+                  {formatNumber(stats?.tasks_validated ?? 0)}
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  {stats?.tasks_invalidated ?? 0} invalidated
+                  {formatNumber(stats?.tasks_invalidated ?? 0)} invalidated
                 </p>
               </>
             )}
@@ -265,7 +258,7 @@ export default function ValidatorDashboard() {
               ) : (
                 <>
                   <div className="text-2xl font-bold text-blue-600">
-                    {stats?.validator_validated ?? 0}
+                    {formatNumber(stats?.validator_validated ?? 0)}
                   </div>
                   <p className="text-xs text-muted-foreground">
                     Tasks approved by you
@@ -288,7 +281,7 @@ export default function ValidatorDashboard() {
               ) : (
                 <>
                   <div className="text-2xl font-bold text-purple-600">
-                    {stats?.validator_invalidated ?? 0}
+                    {formatNumber(stats?.validator_invalidated ?? 0)}
                   </div>
                   <p className="text-xs text-muted-foreground">
                     Sent back for fixes
@@ -404,7 +397,7 @@ export default function ValidatorDashboard() {
                     <div>
                       <p className="font-medium">{project.name}</p>
                       <p className="text-sm text-muted-foreground">
-                        #{project.id} • {project.total_tasks} tasks
+                        #{project.id} • {formatNumber(project.total_tasks)} tasks
                       </p>
                     </div>
                     <div className="flex items-center gap-2">
@@ -540,9 +533,9 @@ export default function ValidatorDashboard() {
                     <td className="px-4 py-3 font-medium">{project.name}</td>
                     <td className="px-4 py-3">{formatCurrency(project.mapping_rate_per_task)}</td>
                     <td className="px-4 py-3">{formatCurrency(project.validation_rate_per_task)}</td>
-                    <td className="px-4 py-3">{project.total_tasks}</td>
-                    <td className="px-4 py-3">{project.tasks_mapped ?? 0}</td>
-                    <td className="px-4 py-3">{project.tasks_validated ?? 0}</td>
+                    <td className="px-4 py-3">{formatNumber(project.total_tasks)}</td>
+                    <td className="px-4 py-3">{formatNumber(project.tasks_mapped ?? 0)}</td>
+                    <td className="px-4 py-3">{formatNumber(project.tasks_validated ?? 0)}</td>
                     <td className="px-4 py-3 text-kaart-orange font-medium">
                       {formatCurrency(project.user_earnings ?? 0)}
                     </td>

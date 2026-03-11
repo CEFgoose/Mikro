@@ -12,6 +12,7 @@ import {
   Button,
 } from "@/components/ui";
 import { useFetchProjectProfile } from "@/hooks/useApi";
+import { formatNumber, formatCurrency } from "@/lib/utils";
 import type { ProjectProfileResponse } from "@/types";
 
 function StatCard({
@@ -207,16 +208,16 @@ export default function AdminProjectProfilePage() {
 
       {/* Section 1: Stats Cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <StatCard label="Total Tasks" value={totalTasks.toLocaleString()} />
+        <StatCard label="Total Tasks" value={formatNumber(totalTasks)} />
         <StatCard
           label="Mapped"
           value={`${pctMapped.toFixed(1)}%`}
-          sub={`${proj.effective_mapped} / ${totalTasks}`}
+          sub={`${formatNumber(proj.effective_mapped)} / ${formatNumber(totalTasks)}`}
         />
         <StatCard
           label="Validated"
           value={`${pctValidated.toFixed(1)}%`}
-          sub={`${proj.effective_validated} / ${totalTasks}`}
+          sub={`${formatNumber(proj.effective_validated)} / ${formatNumber(totalTasks)}`}
         />
         <StatCard
           label="Avg Time / Task"
@@ -234,27 +235,27 @@ export default function AdminProjectProfilePage() {
             <div>
               <p className="text-sm text-muted-foreground">Budget</p>
               <p className="text-xl font-semibold">
-                ${(proj.max_payment || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                {formatCurrency(proj.max_payment || 0)}
               </p>
             </div>
             <div>
               <p className="text-sm text-muted-foreground">Paid Out</p>
               <p className="text-xl font-semibold text-green-600">
-                ${(proj.total_payout || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                {formatCurrency(proj.total_payout || 0)}
               </p>
             </div>
             <div>
               <p className="text-sm text-muted-foreground">Remaining</p>
               <p className="text-xl font-semibold">
-                ${remaining.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                {formatCurrency(remaining)}
               </p>
             </div>
             <div>
               <p className="text-sm text-muted-foreground">Rates</p>
               <p className="text-sm">
-                Map: <span className="font-medium">${(proj.mapping_rate_per_task || 0).toFixed(2)}</span>
+                Map: <span className="font-medium">{formatCurrency(proj.mapping_rate_per_task || 0)}</span>
                 {" / "}
-                Val: <span className="font-medium">${(proj.validation_rate_per_task || 0).toFixed(2)}</span>
+                Val: <span className="font-medium">{formatCurrency(proj.validation_rate_per_task || 0)}</span>
               </p>
             </div>
           </div>
@@ -270,13 +271,13 @@ export default function AdminProjectProfilePage() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <p className="text-sm text-muted-foreground mb-1">
-                Mapped ({proj.effective_mapped} / {totalTasks})
+                Mapped ({formatNumber(proj.effective_mapped)} / {formatNumber(totalTasks)})
               </p>
               <ProgressBar value={pctMapped} />
             </div>
             <div>
               <p className="text-sm text-muted-foreground mb-1">
-                Validated ({proj.effective_validated} / {totalTasks})
+                Validated ({formatNumber(proj.effective_validated)} / {formatNumber(totalTasks)})
               </p>
               <ProgressBar value={pctValidated} color="bg-blue-500" />
             </div>
@@ -300,7 +301,7 @@ export default function AdminProjectProfilePage() {
                         <span className="text-sm font-medium">
                           {MR_STATUS_LABELS[Number(status)] || `Status ${status}`}
                         </span>
-                        <Badge variant="secondary">{count}</Badge>
+                        <Badge variant="secondary">{formatNumber(count as number)}</Badge>
                       </div>
                     )
                   )}
@@ -372,16 +373,16 @@ export default function AdminProjectProfilePage() {
                           <Badge variant="secondary">{user.role}</Badge>
                         </td>
                         <td className="px-4 py-3 text-right">
-                          {user.tasks_mapped}
+                          {formatNumber(user.tasks_mapped)}
                         </td>
                         <td className="px-4 py-3 text-right">
-                          {user.tasks_validated}
+                          {formatNumber(user.tasks_validated)}
                         </td>
                         <td className="px-4 py-3 text-right text-muted-foreground">
                           {formatDuration(user.time_logged_seconds)}
                         </td>
                         <td className="px-4 py-3 text-right font-medium">
-                          ${user.earnings.toFixed(2)}
+                          {formatCurrency(user.earnings)}
                         </td>
                       </tr>
                     ))}

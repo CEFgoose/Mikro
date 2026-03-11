@@ -5,14 +5,8 @@ import { Card, CardContent, CardHeader, CardTitle, Skeleton, Badge, Button, useT
 import { useAdminDashboardStats, useOrgTransactions, useUsersList, useOrgProjects, usePurgeTaskStats, useAdminSyncAllTasks, useCheckSyncStatus } from "@/hooks";
 import { TimeTrackingWidget } from "@/components/widgets/TimeTrackingWidget";
 import { AdminTimeManagement } from "@/components/widgets/AdminTimeManagement";
+import { formatNumber, formatCurrency } from "@/lib/utils";
 import Link from "next/link";
-
-function formatCurrency(amount: number): string {
-  return new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: "USD",
-  }).format(amount);
-}
 
 function formatDate(dateString: string): string {
   return new Date(dateString).toLocaleDateString("en-US", {
@@ -167,9 +161,9 @@ export default function AdminDashboard() {
               <Skeleton className="h-8 w-16" />
             ) : (
               <>
-                <div className="text-2xl font-bold">{stats?.active_projects ?? 0}</div>
+                <div className="text-2xl font-bold">{formatNumber(stats?.active_projects ?? 0)}</div>
                 <p className="text-xs text-muted-foreground">
-                  {stats?.inactive_projects ?? 0} inactive, {stats?.completed_projects ?? 0} completed
+                  {formatNumber(stats?.inactive_projects ?? 0)} inactive, {formatNumber(stats?.completed_projects ?? 0)} completed
                 </p>
               </>
             )}
@@ -199,7 +193,7 @@ export default function AdminDashboard() {
               <Skeleton className="h-8 w-16" />
             ) : (
               <>
-                <div className="text-2xl font-bold">{users?.users?.length ?? 0}</div>
+                <div className="text-2xl font-bold">{formatNumber(users?.users?.length ?? 0)}</div>
                 <p className="text-xs text-muted-foreground">
                   In organization
                 </p>
@@ -234,7 +228,7 @@ export default function AdminDashboard() {
                   {formatCurrency(stats?.requests_total ?? 0)}
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  {transactions?.requests?.length ?? 0} pending requests
+                  {formatNumber(transactions?.requests?.length ?? 0)} pending requests
                 </p>
               </>
             )}
@@ -263,11 +257,11 @@ export default function AdminDashboard() {
             ) : (
               <>
                 <div className="text-2xl font-bold">
-                  {stats?.total_contributions_for_month ?? 0}
+                  {formatNumber(stats?.total_contributions_for_month ?? 0)}
                 </div>
                 <p className="text-xs text-muted-foreground">
                   {stats?.month_contribution_change !== undefined && stats.month_contribution_change >= 0 ? "+" : ""}
-                  {stats?.month_contribution_change ?? 0} from last month
+                  {formatNumber(stats?.month_contribution_change ?? 0)} from last month
                 </p>
               </>
             )}
@@ -286,7 +280,7 @@ export default function AdminDashboard() {
               <Skeleton className="h-10 w-20" />
             ) : (
               <div className="text-3xl font-bold text-kaart-orange">
-                {stats?.mapped_tasks ?? 0}
+                {formatNumber(stats?.mapped_tasks ?? 0)}
               </div>
             )}
           </CardContent>
@@ -301,7 +295,7 @@ export default function AdminDashboard() {
               <Skeleton className="h-10 w-20" />
             ) : (
               <div className="text-3xl font-bold text-green-600">
-                {stats?.validated_tasks ?? 0}
+                {formatNumber(stats?.validated_tasks ?? 0)}
               </div>
             )}
           </CardContent>
@@ -316,7 +310,7 @@ export default function AdminDashboard() {
               <Skeleton className="h-10 w-20" />
             ) : (
               <div className="text-3xl font-bold text-red-600">
-                {stats?.invalidated_tasks ?? 0}
+                {formatNumber(stats?.invalidated_tasks ?? 0)}
               </div>
             )}
           </CardContent>
@@ -333,7 +327,7 @@ export default function AdminDashboard() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-yellow-700">
-              {stats.self_validated_count}
+              {formatNumber(stats.self_validated_count)}
             </div>
             <p className="text-xs text-yellow-600 mt-1">
               Tasks flagged as self-validated (not payable)

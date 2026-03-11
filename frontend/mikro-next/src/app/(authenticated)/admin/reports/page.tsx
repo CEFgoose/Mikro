@@ -48,6 +48,7 @@ import {
   PieChart,
   Pie,
 } from "recharts";
+import { formatNumber, formatCurrency } from "@/lib/utils";
 import dynamic from "next/dynamic";
 
 const MappingHeatmap = dynamic(() => import("@/components/MappingHeatmap"), {
@@ -783,11 +784,11 @@ export default function AdminReportsPage() {
                     </div>
                     <div className="text-center mt-2 space-y-1">
                       <p className="text-sm text-muted-foreground">
-                        {overallProgress?.totalMapped.toLocaleString()} /{" "}
-                        {overallProgress?.totalTasks.toLocaleString()} tasks
+                        {formatNumber(overallProgress?.totalMapped)} /{" "}
+                        {formatNumber(overallProgress?.totalTasks)} tasks
                       </p>
                       <p className="text-sm font-medium">
-                        {editingData.summary.active_projects} active projects
+                        {formatNumber(editingData.summary.active_projects)} active projects
                       </p>
                     </div>
                   </CardContent>
@@ -802,7 +803,7 @@ export default function AdminReportsPage() {
                       {heatmapSummary && !heatmapLoading && (
                         <span className="text-xs text-muted-foreground">
                           {heatmapSummary.usersWithData} users &middot;{" "}
-                          {heatmapSummary.totalChangesets.toLocaleString()} changesets
+                          {formatNumber(heatmapSummary.totalChangesets)} changesets
                         </span>
                       )}
                     </div>
@@ -832,26 +833,26 @@ export default function AdminReportsPage() {
                     <p className="text-foreground leading-relaxed mt-2">
                       During this time period, a total of{" "}
                       <span className="font-bold text-foreground">
-                        {editingData.summary.total_mapped.toLocaleString()}
+                        {formatNumber(editingData.summary.total_mapped)}
                       </span>{" "}
                       tasks were mapped across{" "}
                       <span className="font-bold text-foreground">
-                        {editingData.summary.active_projects}
+                        {formatNumber(editingData.summary.active_projects)}
                       </span>{" "}
                       active projects, with{" "}
                       <span className="font-bold text-foreground">
-                        {editingData.summary.total_validated.toLocaleString()}
+                        {formatNumber(editingData.summary.total_validated)}
                       </span>{" "}
                       tasks validated and{" "}
                       <span className="font-bold text-foreground">
-                        {editingData.summary.total_invalidated.toLocaleString()}
+                        {formatNumber(editingData.summary.total_invalidated)}
                       </span>{" "}
                       invalidated.
                     </p>
                     <div className="grid grid-cols-2 gap-3 mt-4">
                       <div className="bg-muted rounded-lg p-3 text-center">
                         <p className="text-xl font-bold text-foreground">
-                          {editingData.summary.total_mapped.toLocaleString()}
+                          {formatNumber(editingData.summary.total_mapped)}
                         </p>
                         <p className="text-xs text-muted-foreground">
                           Tasks Mapped
@@ -869,7 +870,7 @@ export default function AdminReportsPage() {
                       </div>
                       <div className="bg-muted rounded-lg p-3 text-center">
                         <p className="text-xl font-bold text-foreground">
-                          {editingData.summary.total_validated.toLocaleString()}
+                          {formatNumber(editingData.summary.total_validated)}
                         </p>
                         <p className="text-xs text-muted-foreground">
                           Validated
@@ -1067,10 +1068,10 @@ export default function AdminReportsPage() {
                                   : "\u2014"}
                               </td>
                               <td className="px-6 py-4 text-foreground">
-                                ${proj.mapping_rate.toFixed(2)}
+                                {formatCurrency(proj.mapping_rate)}
                               </td>
                               <td className="px-6 py-4 text-foreground">
-                                ${proj.validation_rate.toFixed(2)}
+                                {formatCurrency(proj.validation_rate)}
                               </td>
                             </tr>
                           );
@@ -1142,16 +1143,16 @@ export default function AdminReportsPage() {
                               {c.osm_username}
                             </td>
                             <td className="px-6 py-4 text-foreground">
-                              {c.tasks_mapped}
+                              {formatNumber(c.tasks_mapped)}
                             </td>
                             <td className="px-6 py-4 text-foreground">
-                              {c.tasks_validated}
+                              {formatNumber(c.tasks_validated)}
                             </td>
                             <td className="px-6 py-4 text-foreground">
-                              {c.tasks_invalidated}
+                              {formatNumber(c.tasks_invalidated)}
                             </td>
                             <td className="px-6 py-4 text-foreground">
-                              {c.total_hours}h
+                              {formatNumber(c.total_hours)}h
                             </td>
                           </tr>
                         ))}
@@ -1515,7 +1516,7 @@ export default function AdminReportsPage() {
                     </p>
                     <div className="flex items-baseline gap-3">
                       <p className="text-3xl font-bold">
-                        {timekeepingData.summary.total_hours.toLocaleString()}h
+                        {formatNumber(timekeepingData.summary.total_hours)}h
                       </p>
                       <span
                         className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
@@ -1534,14 +1535,14 @@ export default function AdminReportsPage() {
                       </span>
                     </div>
                     <p className="text-sm text-muted-foreground mt-1">
-                      {timekeepingData.summary.total_entries.toLocaleString()}{" "}
+                      {formatNumber(timekeepingData.summary.total_entries)}{" "}
                       entries
                     </p>
                     <div className="mt-4 p-3 bg-muted rounded-lg">
                       <p className="text-sm text-foreground leading-relaxed">
                         During this time period, a total of{" "}
                         <span className="font-bold">
-                          {timekeepingData.summary.total_hours.toLocaleString()}{" "}
+                          {formatNumber(timekeepingData.summary.total_hours)}{" "}
                           hours
                         </span>{" "}
                         were logged. This is{" "}
@@ -1552,7 +1553,7 @@ export default function AdminReportsPage() {
                     <div className="grid grid-cols-2 gap-3 mt-4">
                       <div className="text-center">
                         <p className="text-xl font-bold text-foreground">
-                          {timekeepingData.summary.total_changesets.toLocaleString()}
+                          {formatNumber(timekeepingData.summary.total_changesets)}
                         </p>
                         <p className="text-xs text-muted-foreground">
                           Changesets
@@ -1570,7 +1571,7 @@ export default function AdminReportsPage() {
                       </div>
                       <div className="text-center">
                         <p className="text-xl font-bold text-foreground">
-                          {timekeepingData.summary.total_changes.toLocaleString()}
+                          {formatNumber(timekeepingData.summary.total_changes)}
                         </p>
                         <p className="text-xs text-muted-foreground">
                           Changes
@@ -1930,16 +1931,16 @@ export default function AdminReportsPage() {
                                   </div>
                                 </td>
                                 <td className="px-6 py-4 text-foreground">
-                                  {u.total_hours}h
+                                  {formatNumber(u.total_hours)}h
                                 </td>
                                 <td className="px-6 py-4 text-foreground">
-                                  {u.entries_count}
+                                  {formatNumber(u.entries_count)}
                                 </td>
                                 <td className="px-6 py-4 text-foreground">
-                                  {u.changeset_count}
+                                  {formatNumber(u.changeset_count)}
                                 </td>
                                 <td className="px-6 py-4 text-foreground">
-                                  {u.changes_count.toLocaleString()}
+                                  {formatNumber(u.changes_count)}
                                 </td>
                                 <td className="px-6 py-4 text-foreground">
                                   {u.osm_username || "\u2014"}
@@ -2025,25 +2026,25 @@ export default function AdminReportsPage() {
                 <Card>
                   <CardContent className="pt-6">
                     <p className="text-sm text-gray-500">Total Images</p>
-                    <p className="text-3xl font-bold">{mapillaryData.summary.total_images.toLocaleString()}</p>
+                    <p className="text-3xl font-bold">{formatNumber(mapillaryData.summary.total_images)}</p>
                   </CardContent>
                 </Card>
                 <Card>
                   <CardContent className="pt-6">
                     <p className="text-sm text-gray-500">Total Trips</p>
-                    <p className="text-3xl font-bold">{mapillaryData.summary.total_trips.toLocaleString()}</p>
+                    <p className="text-3xl font-bold">{formatNumber(mapillaryData.summary.total_trips)}</p>
                   </CardContent>
                 </Card>
                 <Card>
                   <CardContent className="pt-6">
                     <p className="text-sm text-gray-500">Active Contributors</p>
-                    <p className="text-3xl font-bold">{mapillaryData.summary.active_contributors}</p>
+                    <p className="text-3xl font-bold">{formatNumber(mapillaryData.summary.active_contributors)}</p>
                   </CardContent>
                 </Card>
                 <Card>
                   <CardContent className="pt-6">
                     <p className="text-sm text-gray-500">Total Sequences</p>
-                    <p className="text-3xl font-bold">{mapillaryData.summary.total_sequences.toLocaleString()}</p>
+                    <p className="text-3xl font-bold">{formatNumber(mapillaryData.summary.total_sequences)}</p>
                   </CardContent>
                 </Card>
               </div>
@@ -2112,8 +2113,8 @@ export default function AdminReportsPage() {
                               <td className="py-2">{trip.user_name}</td>
                               <td className="py-2 text-gray-500">{trip.mapillary_username}</td>
                               <td className="py-2">{trip.date}</td>
-                              <td className="py-2 text-right">{trip.image_count.toLocaleString()}</td>
-                              <td className="py-2 text-right">{trip.sequence_count}</td>
+                              <td className="py-2 text-right">{formatNumber(trip.image_count)}</td>
+                              <td className="py-2 text-right">{formatNumber(trip.sequence_count)}</td>
                             </tr>
                           ))}
                         </tbody>
@@ -2142,27 +2143,27 @@ export default function AdminReportsPage() {
               <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                 <StatCard
                   label="Fixed"
-                  value={(mrData.summary.mr_status_summary?.["1"] ?? 0).toLocaleString()}
+                  value={formatNumber(mrData.summary.mr_status_summary?.["1"] ?? 0)}
                 />
                 <StatCard
                   label="Already Fixed"
-                  value={(mrData.summary.mr_status_summary?.["5"] ?? 0).toLocaleString()}
+                  value={formatNumber(mrData.summary.mr_status_summary?.["5"] ?? 0)}
                 />
                 <StatCard
                   label="Not an Issue"
-                  value={(mrData.summary.mr_status_summary?.["2"] ?? 0).toLocaleString()}
+                  value={formatNumber(mrData.summary.mr_status_summary?.["2"] ?? 0)}
                 />
                 <StatCard
                   label="Can't Complete"
-                  value={(mrData.summary.mr_status_summary?.["6"] ?? 0).toLocaleString()}
+                  value={formatNumber(mrData.summary.mr_status_summary?.["6"] ?? 0)}
                 />
                 <StatCard
                   label="Skipped"
-                  value={(mrData.summary.mr_status_summary?.["3"] ?? 0).toLocaleString()}
+                  value={formatNumber(mrData.summary.mr_status_summary?.["3"] ?? 0)}
                 />
                 <StatCard
                   label="Reviewed"
-                  value={mrData.summary.total_validated.toLocaleString()}
+                  value={formatNumber(mrData.summary.total_validated)}
                 />
               </div>
 
@@ -2290,25 +2291,25 @@ export default function AdminReportsPage() {
                                 </span>
                               </td>
                               <td className="px-6 py-4 text-right text-foreground">
-                                {bd["1"] || 0}
+                                {formatNumber(bd["1"] || 0)}
                               </td>
                               <td className="px-6 py-4 text-right text-foreground">
-                                {bd["5"] || 0}
+                                {formatNumber(bd["5"] || 0)}
                               </td>
                               <td className="px-6 py-4 text-right text-foreground">
-                                {bd["2"] || 0}
+                                {formatNumber(bd["2"] || 0)}
                               </td>
                               <td className="px-6 py-4 text-right text-foreground">
-                                {bd["6"] || 0}
+                                {formatNumber(bd["6"] || 0)}
                               </td>
                               <td className="px-6 py-4 text-right text-foreground">
-                                {bd["3"] || 0}
+                                {formatNumber(bd["3"] || 0)}
                               </td>
                               <td className="px-6 py-4 text-foreground">
-                                ${proj.mapping_rate.toFixed(2)}
+                                {formatCurrency(proj.mapping_rate)}
                               </td>
                               <td className="px-6 py-4 text-foreground">
-                                ${proj.validation_rate.toFixed(2)}
+                                {formatCurrency(proj.validation_rate)}
                               </td>
                             </tr>
                           );
@@ -2388,22 +2389,22 @@ export default function AdminReportsPage() {
                                 {c.osm_username}
                               </td>
                               <td className="px-6 py-4 text-right text-foreground">
-                                {bd["1"] || 0}
+                                {formatNumber(bd["1"] || 0)}
                               </td>
                               <td className="px-6 py-4 text-right text-foreground">
-                                {bd["5"] || 0}
+                                {formatNumber(bd["5"] || 0)}
                               </td>
                               <td className="px-6 py-4 text-right text-foreground">
-                                {bd["2"] || 0}
+                                {formatNumber(bd["2"] || 0)}
                               </td>
                               <td className="px-6 py-4 text-right text-foreground">
-                                {bd["6"] || 0}
+                                {formatNumber(bd["6"] || 0)}
                               </td>
                               <td className="px-6 py-4 text-right text-foreground">
-                                {bd["3"] || 0}
+                                {formatNumber(bd["3"] || 0)}
                               </td>
                               <td className="px-6 py-4 text-foreground">
-                                {c.total_hours}h
+                                {formatNumber(c.total_hours)}h
                               </td>
                             </tr>
                           );

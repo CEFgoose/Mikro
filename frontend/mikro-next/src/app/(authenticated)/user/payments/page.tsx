@@ -27,13 +27,7 @@ import {
   useUserPayable,
   useSubmitPaymentRequest,
 } from "@/hooks";
-
-function formatCurrency(amount: number): string {
-  return new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: "USD",
-  }).format(amount);
-}
+import { formatNumber, formatCurrency } from "@/lib/utils";
 
 function formatDate(dateString: string): string {
   return new Date(dateString).toLocaleDateString("en-US", {
@@ -145,7 +139,7 @@ export default function UserPaymentsPage() {
               {formatCurrency(pendingTotal)}
             </div>
             <p style={{ fontSize: 11, color: "#6b7280", marginTop: 4 }}>
-              {requests.length} awaiting approval
+              {formatNumber(requests.length)} awaiting approval
             </p>
           </div>
         </Card>
@@ -163,7 +157,7 @@ export default function UserPaymentsPage() {
         <Card style={{ padding: 0 }}>
           <div style={{ padding: "12px 16px" }}>
             <p style={{ fontSize: 12, color: "#6b7280", marginBottom: 4 }}>Total Payments</p>
-            <div style={{ fontSize: 20, fontWeight: 700 }}>{payments.length}</div>
+            <div style={{ fontSize: 20, fontWeight: 700 }}>{formatNumber(payments.length)}</div>
             <p style={{ fontSize: 11, color: "#6b7280", marginTop: 4 }}>Completed payouts</p>
           </div>
         </Card>
@@ -206,8 +200,8 @@ export default function UserPaymentsPage() {
       {/* Tabs for Requests and History */}
       <Tabs defaultValue="pending">
         <TabsList>
-          <TabsTrigger value="pending">Pending Requests ({requests.length})</TabsTrigger>
-          <TabsTrigger value="history">Payment History ({payments.length})</TabsTrigger>
+          <TabsTrigger value="pending">Pending Requests ({formatNumber(requests.length)})</TabsTrigger>
+          <TabsTrigger value="history">Payment History ({formatNumber(payments.length)})</TabsTrigger>
         </TabsList>
 
         <TabsContent value="pending">

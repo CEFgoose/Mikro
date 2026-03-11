@@ -34,6 +34,7 @@ import {
   usePurgeTrainings,
 } from "@/hooks";
 import type { Training, TrainingQuestion } from "@/types";
+import { formatNumber } from "@/lib/utils";
 
 interface TrainingFormData {
   title: string;
@@ -268,7 +269,7 @@ export default function AdminTrainingPage() {
               </div>
             </TableCell>
             <TableCell>{training.point_value}</TableCell>
-            <TableCell>{training.questions?.length ?? 0}</TableCell>
+            <TableCell>{formatNumber(training.questions?.length ?? 0)}</TableCell>
             <TableCell>
               <a
                 href={training.training_url}
@@ -346,7 +347,7 @@ export default function AdminTrainingPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {mappingTrainings.length + validationTrainings.length + projectTrainings.length}
+              {formatNumber(mappingTrainings.length + validationTrainings.length + projectTrainings.length)}
             </div>
           </CardContent>
         </Card>
@@ -355,7 +356,7 @@ export default function AdminTrainingPage() {
             <CardTitle className="text-sm font-medium">Mapping</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-kaart-orange">{mappingTrainings.length}</div>
+            <div className="text-2xl font-bold text-kaart-orange">{formatNumber(mappingTrainings.length)}</div>
           </CardContent>
         </Card>
         <Card>
@@ -363,7 +364,7 @@ export default function AdminTrainingPage() {
             <CardTitle className="text-sm font-medium">Validation</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-blue-600">{validationTrainings.length}</div>
+            <div className="text-2xl font-bold text-blue-600">{formatNumber(validationTrainings.length)}</div>
           </CardContent>
         </Card>
         <Card>
@@ -371,7 +372,7 @@ export default function AdminTrainingPage() {
             <CardTitle className="text-sm font-medium">Project Specific</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-purple-600">{projectTrainings.length}</div>
+            <div className="text-2xl font-bold text-purple-600">{formatNumber(projectTrainings.length)}</div>
           </CardContent>
         </Card>
       </div>
@@ -379,10 +380,10 @@ export default function AdminTrainingPage() {
       {/* Trainings Tabs */}
       <Tabs defaultValue="all">
         <TabsList>
-          <TabsTrigger value="all">All ({allTrainings.length})</TabsTrigger>
-          <TabsTrigger value="mapping">Mapping ({mappingTrainings.length})</TabsTrigger>
-          <TabsTrigger value="validation">Validation ({validationTrainings.length})</TabsTrigger>
-          <TabsTrigger value="project">Project Specific ({projectTrainings.length})</TabsTrigger>
+          <TabsTrigger value="all">All ({formatNumber(allTrainings.length)})</TabsTrigger>
+          <TabsTrigger value="mapping">Mapping ({formatNumber(mappingTrainings.length)})</TabsTrigger>
+          <TabsTrigger value="validation">Validation ({formatNumber(validationTrainings.length)})</TabsTrigger>
+          <TabsTrigger value="project">Project Specific ({formatNumber(projectTrainings.length)})</TabsTrigger>
         </TabsList>
         <TabsContent value="all">
           <Card>
@@ -490,7 +491,7 @@ export default function AdminTrainingPage() {
           {/* Questions Section */}
           <div className="border-t border-border pt-4">
             <div className="flex justify-between items-center mb-4">
-              <h3 className="font-medium">Quiz Questions ({questions.length})</h3>
+              <h3 className="font-medium">Quiz Questions ({formatNumber(questions.length)})</h3>
               <Button size="sm" variant="outline" onClick={addQuestion}>
                 Add Question
               </Button>

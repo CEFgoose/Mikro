@@ -6,15 +6,9 @@ import { useUserDashboardStats, useUserProjects, useUserPayable, useSubmitPaymen
 import { TimeTrackingWidget } from "@/components/widgets/TimeTrackingWidget";
 import { UserTimeHistory } from "@/components/widgets/UserTimeHistory";
 import { useToastActions } from "@/components/ui";
+import { formatNumber, formatCurrency } from "@/lib/utils";
 import Link from "next/link";
 import { useState, useEffect } from "react";
-
-function formatCurrency(amount: number): string {
-  return new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: "USD",
-  }).format(amount);
-}
 
 export default function UserDashboard() {
   const { user } = useUser();
@@ -122,10 +116,10 @@ export default function UserDashboard() {
             ) : (
               <>
                 <div className="text-2xl font-bold text-kaart-orange">
-                  {stats?.mapped_tasks ?? 0}
+                  {formatNumber(stats?.mapped_tasks ?? 0)}
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  {stats?.total_contributions_for_month ?? 0} this month
+                  {formatNumber(stats?.total_contributions_for_month ?? 0)} this month
                 </p>
               </>
             )}
@@ -155,10 +149,10 @@ export default function UserDashboard() {
             ) : (
               <>
                 <div className="text-2xl font-bold text-green-600">
-                  {stats?.validated_tasks ?? 0}
+                  {formatNumber(stats?.validated_tasks ?? 0)}
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  {stats?.invalidated_tasks ?? 0} invalidated
+                  {formatNumber(stats?.invalidated_tasks ?? 0)} invalidated
                 </p>
               </>
             )}
@@ -330,7 +324,7 @@ export default function UserDashboard() {
                     <div>
                       <p className="font-medium text-sm">{project.name}</p>
                       <p className="text-xs text-muted-foreground">
-                        #{project.id} • {project.total_tasks} tasks
+                        #{project.id} • {formatNumber(project.total_tasks)} tasks
                       </p>
                     </div>
                     <Badge
@@ -441,16 +435,16 @@ export default function UserDashboard() {
                   Contributions this month
                 </p>
                 <div className="text-3xl font-bold">
-                  {stats?.total_contributions_for_month ?? 0}
+                  {formatNumber(stats?.total_contributions_for_month ?? 0)}
                 </div>
                 <p className="text-xs mt-1">
                   {stats?.month_contribution_change !== undefined && stats.month_contribution_change >= 0 ? (
                     <span className="text-green-600">
-                      +{stats.month_contribution_change} from last month
+                      +{formatNumber(stats.month_contribution_change)} from last month
                     </span>
                   ) : (
                     <span className="text-red-600">
-                      {stats?.month_contribution_change ?? 0} from last month
+                      {formatNumber(stats?.month_contribution_change ?? 0)} from last month
                     </span>
                   )}
                 </p>

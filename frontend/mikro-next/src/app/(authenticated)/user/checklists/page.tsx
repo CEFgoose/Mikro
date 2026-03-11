@@ -23,13 +23,7 @@ import {
   useStartChecklist,
 } from "@/hooks";
 import type { Checklist, ChecklistItem } from "@/types";
-
-function formatCurrency(amount: number): string {
-  return new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: "USD",
-  }).format(amount);
-}
+import { formatNumber, formatCurrency } from "@/lib/utils";
 
 function formatDate(dateString: string): string {
   return new Date(dateString).toLocaleDateString("en-US", {
@@ -274,19 +268,19 @@ export default function UserChecklistsPage() {
         <Card style={{ padding: 0 }}>
           <div style={{ padding: "12px 16px" }}>
             <p style={{ fontSize: 12, color: "#6b7280", marginBottom: 4 }}>Active</p>
-            <div style={{ fontSize: 20, fontWeight: 700, color: "#ff6b35" }}>{stats.active}</div>
+            <div style={{ fontSize: 20, fontWeight: 700, color: "#ff6b35" }}>{formatNumber(stats.active)}</div>
           </div>
         </Card>
         <Card style={{ padding: 0 }}>
           <div style={{ padding: "12px 16px" }}>
             <p style={{ fontSize: 12, color: "#6b7280", marginBottom: 4 }}>Pending Review</p>
-            <div style={{ fontSize: 20, fontWeight: 700, color: "#eab308" }}>{stats.pending}</div>
+            <div style={{ fontSize: 20, fontWeight: 700, color: "#eab308" }}>{formatNumber(stats.pending)}</div>
           </div>
         </Card>
         <Card style={{ padding: 0 }}>
           <div style={{ padding: "12px 16px" }}>
             <p style={{ fontSize: 12, color: "#6b7280", marginBottom: 4 }}>Confirmed</p>
-            <div style={{ fontSize: 20, fontWeight: 700, color: "#16a34a" }}>{stats.confirmed}</div>
+            <div style={{ fontSize: 20, fontWeight: 700, color: "#16a34a" }}>{formatNumber(stats.confirmed)}</div>
           </div>
         </Card>
         <Card style={{ padding: 0 }}>
@@ -300,10 +294,10 @@ export default function UserChecklistsPage() {
       {/* Tabs */}
       <Tabs defaultValue="active">
         <TabsList>
-          <TabsTrigger value="available">Available ({availableChecklists.length})</TabsTrigger>
-          <TabsTrigger value="active">In Progress ({activeChecklists.length})</TabsTrigger>
-          <TabsTrigger value="pending">Pending Review ({completedChecklists.length})</TabsTrigger>
-          <TabsTrigger value="confirmed">Confirmed ({confirmedChecklists.length})</TabsTrigger>
+          <TabsTrigger value="available">Available ({formatNumber(availableChecklists.length)})</TabsTrigger>
+          <TabsTrigger value="active">In Progress ({formatNumber(activeChecklists.length)})</TabsTrigger>
+          <TabsTrigger value="pending">Pending Review ({formatNumber(completedChecklists.length)})</TabsTrigger>
+          <TabsTrigger value="confirmed">Confirmed ({formatNumber(confirmedChecklists.length)})</TabsTrigger>
         </TabsList>
 
         <TabsContent value="available">

@@ -23,6 +23,7 @@ import {
 } from "@/components/ui";
 import { useToastActions } from "@/components/ui";
 import { FilterBar } from "@/components/filters";
+import { formatNumber } from "@/lib/utils";
 import {
   useFetchTeams,
   useCreateTeam,
@@ -325,7 +326,7 @@ export default function AdminTeamsPage() {
             <CardTitle className="text-sm font-medium">Total Teams</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{teams.length}</div>
+            <div className="text-2xl font-bold">{formatNumber(teams.length)}</div>
           </CardContent>
         </Card>
         <Card>
@@ -336,7 +337,7 @@ export default function AdminTeamsPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {teams.reduce((sum, t) => sum + t.member_count, 0)}
+              {formatNumber(teams.reduce((sum, t) => sum + t.member_count, 0))}
             </div>
           </CardContent>
         </Card>
@@ -348,7 +349,7 @@ export default function AdminTeamsPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {teams.filter((t) => t.lead_id).length}
+              {formatNumber(teams.filter((t) => t.lead_id).length)}
             </div>
           </CardContent>
         </Card>
@@ -424,7 +425,7 @@ export default function AdminTeamsPage() {
                       size="sm"
                       onClick={() => openMembersModal(team)}
                     >
-                      <Badge variant="secondary">{team.member_count}</Badge>
+                      <Badge variant="secondary">{formatNumber(team.member_count)}</Badge>
                     </Button>
                   </TableCell>
                   <TableCell className="text-muted-foreground">
@@ -752,7 +753,7 @@ export default function AdminTeamsPage() {
                         </Badge>
                       </TableCell>
                       <TableCell className="text-center">
-                        {training.point_value ?? 0}
+                        {formatNumber(training.point_value ?? 0)}
                       </TableCell>
                       <TableCell className="text-center">
                         <Badge

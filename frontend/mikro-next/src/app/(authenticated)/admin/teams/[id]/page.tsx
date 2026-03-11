@@ -6,6 +6,7 @@ import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui";
 import { useFetchTeamProfile } from "@/hooks/useApi";
 import type { TeamProfileData } from "@/types";
+import { formatNumber, formatCurrency } from "@/lib/utils";
 
 function StatCard({
   label,
@@ -128,10 +129,10 @@ export default function AdminTeamProfilePage() {
 
       {/* Section 2: Aggregated All-Time Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <StatCard label="Tasks Mapped" value={aggregated_stats.total_tasks_mapped} />
-        <StatCard label="Tasks Validated" value={aggregated_stats.total_tasks_validated} />
-        <StatCard label="Tasks Invalidated" value={aggregated_stats.total_tasks_invalidated} />
-        <StatCard label="Checklists Completed" value={aggregated_stats.total_checklists_completed} />
+        <StatCard label="Tasks Mapped" value={formatNumber(aggregated_stats.total_tasks_mapped)} />
+        <StatCard label="Tasks Validated" value={formatNumber(aggregated_stats.total_tasks_validated)} />
+        <StatCard label="Tasks Invalidated" value={formatNumber(aggregated_stats.total_tasks_invalidated)} />
+        <StatCard label="Checklists Completed" value={formatNumber(aggregated_stats.total_checklists_completed)} />
       </div>
 
       {/* Section 3: Payment Summary */}
@@ -144,37 +145,37 @@ export default function AdminTeamProfilePage() {
             <div className="text-center">
               <p className="text-sm text-muted-foreground">Mapping</p>
               <p className="text-lg font-semibold">
-                ${(aggregated_stats.mapping_payable_total ?? 0).toFixed(2)}
+                {formatCurrency(aggregated_stats.mapping_payable_total ?? 0)}
               </p>
             </div>
             <div className="text-center">
               <p className="text-sm text-muted-foreground">Validation</p>
               <p className="text-lg font-semibold">
-                ${(aggregated_stats.validation_payable_total ?? 0).toFixed(2)}
+                {formatCurrency(aggregated_stats.validation_payable_total ?? 0)}
               </p>
             </div>
             <div className="text-center">
               <p className="text-sm text-muted-foreground">Checklists</p>
               <p className="text-lg font-semibold">
-                ${(aggregated_stats.checklist_payable_total ?? 0).toFixed(2)}
+                {formatCurrency(aggregated_stats.checklist_payable_total ?? 0)}
               </p>
             </div>
             <div className="text-center">
               <p className="text-sm text-muted-foreground">Payable</p>
               <p className="text-lg font-semibold text-green-600">
-                ${(aggregated_stats.payable_total ?? 0).toFixed(2)}
+                {formatCurrency(aggregated_stats.payable_total ?? 0)}
               </p>
             </div>
             <div className="text-center">
               <p className="text-sm text-muted-foreground">Requested</p>
               <p className="text-lg font-semibold text-yellow-600">
-                ${(aggregated_stats.requested_total ?? 0).toFixed(2)}
+                {formatCurrency(aggregated_stats.requested_total ?? 0)}
               </p>
             </div>
             <div className="text-center">
               <p className="text-sm text-muted-foreground">Paid</p>
               <p className="text-lg font-semibold text-blue-600">
-                ${(aggregated_stats.paid_total ?? 0).toFixed(2)}
+                {formatCurrency(aggregated_stats.paid_total ?? 0)}
               </p>
             </div>
           </div>
@@ -185,7 +186,7 @@ export default function AdminTeamProfilePage() {
       {members.length > 0 && (
         <Card>
           <CardHeader>
-            <CardTitle>Members ({members.length})</CardTitle>
+            <CardTitle>Members ({formatNumber(members.length)})</CardTitle>
           </CardHeader>
           <CardContent className="p-0">
             <div className="overflow-x-auto">
@@ -229,11 +230,11 @@ export default function AdminTeamProfilePage() {
                       <td className="px-6 py-4 text-foreground">
                         {member.osm_username || "-"}
                       </td>
-                      <td className="px-6 py-4 text-foreground">{member.total_tasks_mapped}</td>
-                      <td className="px-6 py-4 text-foreground">{member.total_tasks_validated}</td>
-                      <td className="px-6 py-4 text-foreground">{member.total_tasks_invalidated ?? 0}</td>
+                      <td className="px-6 py-4 text-foreground">{formatNumber(member.total_tasks_mapped)}</td>
+                      <td className="px-6 py-4 text-foreground">{formatNumber(member.total_tasks_validated)}</td>
+                      <td className="px-6 py-4 text-foreground">{formatNumber(member.total_tasks_invalidated ?? 0)}</td>
                       <td className="px-6 py-4 text-foreground">
-                        ${(member.payable_total ?? 0).toFixed(2)}
+                        {formatCurrency(member.payable_total ?? 0)}
                       </td>
                     </tr>
                   ))}
@@ -248,7 +249,7 @@ export default function AdminTeamProfilePage() {
       {projects.length > 0 && (
         <Card>
           <CardHeader>
-            <CardTitle>Projects ({projects.length})</CardTitle>
+            <CardTitle>Projects ({formatNumber(projects.length)})</CardTitle>
           </CardHeader>
           <CardContent className="p-0">
             <div className="overflow-x-auto">
@@ -271,10 +272,10 @@ export default function AdminTeamProfilePage() {
                       <td className="px-6 py-4">
                         <span className="font-medium text-kaart-orange">{proj.name}</span>
                       </td>
-                      <td className="px-6 py-4 text-foreground">{proj.team_tasks_mapped}</td>
-                      <td className="px-6 py-4 text-foreground">{proj.team_tasks_validated}</td>
+                      <td className="px-6 py-4 text-foreground">{formatNumber(proj.team_tasks_mapped)}</td>
+                      <td className="px-6 py-4 text-foreground">{formatNumber(proj.team_tasks_validated)}</td>
                       <td className="px-6 py-4 text-foreground">
-                        ${(proj.team_earnings ?? 0).toFixed(2)}
+                        {formatCurrency(proj.team_earnings ?? 0)}
                       </td>
                     </tr>
                   ))}
@@ -289,7 +290,7 @@ export default function AdminTeamProfilePage() {
       {assigned_trainings.length > 0 && (
         <Card>
           <CardHeader>
-            <CardTitle>Assigned Trainings ({assigned_trainings.length})</CardTitle>
+            <CardTitle>Assigned Trainings ({formatNumber(assigned_trainings.length)})</CardTitle>
           </CardHeader>
           <CardContent className="p-0">
             <div className="overflow-x-auto">
@@ -342,7 +343,7 @@ export default function AdminTeamProfilePage() {
       {assigned_checklists.length > 0 && (
         <Card>
           <CardHeader>
-            <CardTitle>Assigned Checklists ({assigned_checklists.length})</CardTitle>
+            <CardTitle>Assigned Checklists ({formatNumber(assigned_checklists.length)})</CardTitle>
           </CardHeader>
           <CardContent className="p-0">
             <div className="overflow-x-auto">

@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle, Button } from "@/components/ui";
 import { Task } from "@/types";
-import { getProjectExternalUrl } from "@/lib/utils";
+import { formatNumber, formatCurrency, getProjectExternalUrl } from "@/lib/utils";
 
 export default function AdminTasksPage() {
   const [externalValidations, setExternalValidations] = useState<Task[]>([]);

@@ -46,7 +46,7 @@ import {
   useFetchFilterOptions,
 } from "@/hooks";
 import Link from "next/link";
-import { getProjectExternalUrl } from "@/lib/utils";
+import { formatNumber, formatCurrency, getProjectExternalUrl } from "@/lib/utils";
 import type { Project, ProjectTeamItem } from "@/types";
 
 interface ProjectUserItem {
@@ -54,13 +54,6 @@ interface ProjectUserItem {
   name: string;
   email: string;
   assigned: string;
-}
-
-function formatCurrency(amount: number): string {
-  return new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: "USD",
-  }).format(amount);
 }
 
 interface ProjectFormData {
@@ -394,31 +387,31 @@ export default function AdminProjectsPage() {
                 </a>
               </div>
             </TableCell>
-            <TableCell>{project.total_tasks}</TableCell>
+            <TableCell>{formatNumber(project.total_tasks)}</TableCell>
             <TableCell>
               {project.source === "mr" && project.mr_status_breakdown && Object.keys(project.mr_status_breakdown).length > 0 ? (
                 <div className="text-sm space-y-0.5">
                   {project.mr_status_breakdown["1"] != null && (
-                    <p className="text-green-600">{project.mr_status_breakdown["1"]} Fixed</p>
+                    <p className="text-green-600">{formatNumber(project.mr_status_breakdown["1"])} Fixed</p>
                   )}
                   {project.mr_status_breakdown["5"] != null && (
-                    <p className="text-emerald-500">{project.mr_status_breakdown["5"]} Already Fixed</p>
+                    <p className="text-emerald-500">{formatNumber(project.mr_status_breakdown["5"])} Already Fixed</p>
                   )}
                   {project.mr_status_breakdown["2"] != null && (
-                    <p className="text-amber-600">{project.mr_status_breakdown["2"]} Not an Issue</p>
+                    <p className="text-amber-600">{formatNumber(project.mr_status_breakdown["2"])} Not an Issue</p>
                   )}
                   {project.mr_status_breakdown["6"] != null && (
-                    <p className="text-orange-500">{project.mr_status_breakdown["6"]} Can&apos;t Complete</p>
+                    <p className="text-orange-500">{formatNumber(project.mr_status_breakdown["6"])} Can&apos;t Complete</p>
                   )}
                   {project.mr_status_breakdown["3"] != null && (
-                    <p className="text-gray-400">{project.mr_status_breakdown["3"]} Skipped</p>
+                    <p className="text-gray-400">{formatNumber(project.mr_status_breakdown["3"])} Skipped</p>
                   )}
                 </div>
               ) : (
                 <div className="text-sm">
-                  <p className="text-green-600">{project.total_mapped ?? 0} mapped</p>
-                  <p className="text-blue-600">{project.total_validated ?? 0} validated</p>
-                  <p className="text-red-600">{project.total_invalidated ?? 0} invalidated</p>
+                  <p className="text-green-600">{formatNumber(project.total_mapped)} mapped</p>
+                  <p className="text-blue-600">{formatNumber(project.total_validated)} validated</p>
+                  <p className="text-red-600">{formatNumber(project.total_invalidated)} invalidated</p>
                 </div>
               )}
             </TableCell>
@@ -526,7 +519,7 @@ export default function AdminProjectsPage() {
             <CardTitle className="text-sm font-medium">Active Projects</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-green-600">{activeProjects.length}</div>
+            <div className="text-2xl font-bold text-green-600">{formatNumber(activeProjects.length)}</div>
           </CardContent>
         </Card>
         <Card>
@@ -534,7 +527,7 @@ export default function AdminProjectsPage() {
             <CardTitle className="text-sm font-medium">Inactive Projects</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-yellow-600">{inactiveProjects.length}</div>
+            <div className="text-2xl font-bold text-yellow-600">{formatNumber(inactiveProjects.length)}</div>
           </CardContent>
         </Card>
         <Card>
@@ -543,7 +536,7 @@ export default function AdminProjectsPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {[...activeProjects, ...inactiveProjects].reduce((sum, p) => sum + p.total_tasks, 0)}
+              {formatNumber([...activeProjects, ...inactiveProjects].reduce((sum, p) => sum + p.total_tasks, 0))}
             </div>
           </CardContent>
         </Card>

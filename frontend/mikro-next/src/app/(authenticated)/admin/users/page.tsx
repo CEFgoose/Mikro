@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle, Button } from "@/components/ui";
 import { FilterBar } from "@/components/filters";
 import { useFilters, useFetchFilterOptions } from "@/hooks";
+import { formatNumber, formatCurrency } from "@/lib/utils";
 import { User } from "@/types";
 
 interface CsvUser {
@@ -433,15 +434,15 @@ export default function AdminUsersPage() {
                     <td className="px-6 py-5 text-foreground">{user.country_name || "\u2014"}</td>
                     <td className="px-6 py-5 text-foreground">{user.region_name || "\u2014"}</td>
                     <td className="px-6 py-5 text-foreground">{user.timezone || "\u2014"}</td>
-                    <td className="px-6 py-5 text-foreground">{user.assigned_projects ?? 0}</td>
-                    <td className="px-6 py-5 text-foreground">{user.total_tasks_mapped ?? 0}</td>
-                    <td className="px-6 py-5 text-foreground">{user.total_tasks_validated ?? 0}</td>
-                    <td className="px-6 py-5 text-foreground">{user.total_tasks_invalidated ?? 0}</td>
+                    <td className="px-6 py-5 text-foreground">{formatNumber(user.assigned_projects)}</td>
+                    <td className="px-6 py-5 text-foreground">{formatNumber(user.total_tasks_mapped)}</td>
+                    <td className="px-6 py-5 text-foreground">{formatNumber(user.total_tasks_validated)}</td>
+                    <td className="px-6 py-5 text-foreground">{formatNumber(user.total_tasks_invalidated)}</td>
                     <td className="px-6 py-5 text-foreground">
-                      ${user.awaiting_payment?.toFixed(2) ?? "0.00"}
+                      {formatCurrency(user.awaiting_payment)}
                     </td>
                     <td className="px-6 py-5 text-foreground">
-                      ${user.total_payout?.toFixed(2) ?? "0.00"}
+                      {formatCurrency(user.total_payout)}
                     </td>
                   </tr>
                 ))}
