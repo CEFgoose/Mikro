@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { SidebarClock } from "./SidebarClock";
 
 interface SidebarProps {
   role: "user" | "validator" | "admin";
@@ -168,7 +169,7 @@ export function Sidebar({ role }: SidebarProps) {
           padding: "16px 0",
         }}
       >
-        <nav style={{ flex: 1, padding: "0 12px" }}>
+        <nav style={{ flex: 1, padding: "0 12px", overflowY: "auto" }}>
           <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
             {navItems.map((item) => {
               const isExternal = item.href.startsWith("http");
@@ -202,6 +203,7 @@ export function Sidebar({ role }: SidebarProps) {
             })}
           </div>
         </nav>
+        <SidebarClock />
       </div>
     </aside>
   );

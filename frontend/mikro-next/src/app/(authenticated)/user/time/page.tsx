@@ -15,8 +15,9 @@ import {
   Skeleton,
 } from "@/components/ui";
 import { useToastActions } from "@/components/ui";
-import { useMyTimeHistory, useRequestTimeAdjustment } from "@/hooks";
+import { useMyTimeHistory, useRequestTimeAdjustment, useUserProjects } from "@/hooks";
 import { formatNumber } from "@/lib/utils";
+import { TimeTrackingWidget } from "@/components/widgets/TimeTrackingWidget";
 import type { TimeEntry } from "@/types";
 
 // --- Date range presets ---
@@ -106,6 +107,7 @@ const PAGE_SIZE = 50;
 
 export default function UserTimePage() {
   const toast = useToastActions();
+  const { data: projects } = useUserProjects();
 
   // Filters
   const [datePreset, setDatePreset] = useState<DatePreset>("this_month");
@@ -138,6 +140,15 @@ export default function UserTimePage() {
 
   useEffect(() => {
     fetchWithFilters();
+  }, [fetchWithFilters]);
+
+  // Refresh history when clock state changes (clock in/out from sidebar or widget)
+  useEffect(() => {
+    const handler = () => {
+      setTimeout(() => fetchWithFilters(), 500);
+    };
+    window.addEventListener("clock-state-changed", handler);
+    return () => window.removeEventListener("clock-state-changed", handler);
   }, [fetchWithFilters]);
 
   // Reset page when filters change
@@ -243,8 +254,15 @@ export default function UserTimePage() {
       <div style={{ marginBottom: 8 }}>
         <h1 className="text-3xl font-bold tracking-tight">Time Tracking</h1>
         <p className="text-muted-foreground" style={{ marginTop: 8 }}>
-          View your time history and request adjustments
+          Clock in, view your time history, and request adjustments
         </p>
+      </div>
+
+      {/* Clock Widget */}
+      <div style={{ maxWidth: 320 }}>
+        <TimeTrackingWidget
+          projects={projects?.user_projects?.map((p: { id: number; name: string }) => ({ id: p.id, name: p.name })) ?? []}
+        />
       </div>
 
       {/* Stat Cards */}

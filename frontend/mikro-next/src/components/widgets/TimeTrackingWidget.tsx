@@ -40,9 +40,18 @@ export function TimeTrackingWidget({
   const [activeSessionProjectName, setActiveSessionProjectName] = useState<string>("");
   const [activeSessionCategory, setActiveSessionCategory] = useState<string>("");
 
-  const { data: activeSession, loading: sessionLoading } = useActiveTimeSession();
+  const { data: activeSession, loading: sessionLoading, refetch: refetchSession } = useActiveTimeSession();
   const { mutate: clockIn, loading: clockingIn } = useClockIn();
   const { mutate: clockOut, loading: clockingOut } = useClockOut();
+
+  // Listen for sync events from sidebar clock or other instances
+  useEffect(() => {
+    const handler = () => {
+      refetchSession().catch(() => {});
+    };
+    window.addEventListener("clock-state-changed", handler);
+    return () => window.removeEventListener("clock-state-changed", handler);
+  }, [refetchSession]);
 
   // Restore active session on mount
   useEffect(() => {
@@ -95,6 +104,7 @@ export function TimeTrackingWidget({
       setActiveSessionCategory(
         TASK_CATEGORIES.find((c) => c.value === selectedCategory)?.label || ""
       );
+      window.dispatchEvent(new Event("clock-state-changed"));
     } catch (err) {
       setApiError(err instanceof Error ? err.message : "Failed to clock in");
     }
@@ -108,6 +118,7 @@ export function TimeTrackingWidget({
 
       setIsClockedIn(false);
       setShowConfirmation(true);
+      window.dispatchEvent(new Event("clock-state-changed"));
 
       // Hide confirmation after 3 seconds
       setTimeout(() => {
