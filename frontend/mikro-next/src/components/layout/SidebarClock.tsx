@@ -122,7 +122,7 @@ export function SidebarClock() {
 
   if (sessionLoading) {
     return (
-      <div style={{ width: "100%", boxSizing: "border-box", padding: "10px 12px", borderTop: "1px solid var(--border)" }}>
+      <div style={{ padding: "10px 12px", borderTop: "1px solid var(--border)" }}>
         <div style={{ fontSize: 11, color: "var(--muted-foreground)", textAlign: "center" }}>
           Loading...
         </div>
@@ -133,7 +133,7 @@ export function SidebarClock() {
   // Confirmation flash
   if (showConfirmation) {
     return (
-      <div style={{ width: "100%", boxSizing: "border-box", padding: "10px 12px", borderTop: "1px solid var(--border)" }}>
+      <div style={{ padding: "10px 12px", borderTop: "1px solid var(--border)" }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
           <svg
             style={{ width: 16, height: 16, color: "#2563eb", flexShrink: 0 }}
@@ -156,8 +156,6 @@ export function SidebarClock() {
     return (
       <div
         style={{
-          width: "100%",
-          boxSizing: "border-box",
           padding: "10px 12px",
           borderTop: "2px solid #22c55e",
           backgroundColor: "rgba(34, 197, 94, 0.05)",
@@ -222,7 +220,7 @@ export function SidebarClock() {
 
   // Not clocked in — show project/category selects + clock in button
   return (
-    <div style={{ width: "100%", boxSizing: "border-box", padding: "10px 12px", borderTop: "1px solid var(--border)" }}>
+    <div style={{ padding: "10px 12px", borderTop: "1px solid var(--border)" }}>
       <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
         <select
           style={selectStyle}

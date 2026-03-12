@@ -165,6 +165,7 @@ export function Sidebar({ role }: SidebarProps) {
         style={{
           display: "flex",
           flexDirection: "column",
+          width: "100%",
           height: "100%",
           padding: "16px 0",
         }}
