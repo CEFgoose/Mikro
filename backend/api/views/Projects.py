@@ -811,6 +811,19 @@ class ProjectAPI(MethodView):
         if not project:
             return {"message": "Project not found", "status": 404}
 
+        try:
+            return self._build_project_profile(project)
+        except Exception as e:
+            current_app.logger.exception(
+                f"Error building profile for project {project_id}: {e}"
+            )
+            return {
+                "message": f"Error loading project profile: {str(e)}",
+                "status": 500,
+            }
+
+    def _build_project_profile(self, project):
+        """Build the full profile response for a project."""
         # Task counts (reuse existing helper)
         task_counts = self._get_effective_task_counts(project.id)
 
