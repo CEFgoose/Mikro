@@ -612,6 +612,7 @@ class RegionAPI(MethodView):
                 ("Bangladesh", "BGD", "Asia/Dhaka"),
                 ("Nepal", "NPL", "Asia/Kathmandu"),
                 ("Sri Lanka", "LKA", "Asia/Colombo"),
+                ("Pakistan", "PAK", "Asia/Karachi"),
             ],
             "Central Asia": [
                 ("Uzbekistan", "UZB", "Asia/Tashkent"),

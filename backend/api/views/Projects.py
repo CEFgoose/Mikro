@@ -992,7 +992,7 @@ class ProjectAPI(MethodView):
             from ..database import Country
             countries = Country.query.filter(Country.id.in_(country_ids)).all()
             locations_data = [
-                {"id": c.id, "name": c.name, "code": c.code}
+                {"id": c.id, "name": c.name, "code": c.iso_code}
                 for c in countries
             ]
 
