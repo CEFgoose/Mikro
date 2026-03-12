@@ -112,6 +112,9 @@ export default function AdminProjectsPage() {
   const [projectTeams, setProjectTeams] = useState<ProjectTeamItem[]>([]);
   const [editTab, setEditTab] = useState<"settings" | "users" | "teams" | "training" | "locations">("settings");
   const [showMyProjects, setShowMyProjects] = useState(false);
+  const [newProjectId, setNewProjectId] = useState<number | null>(null);
+  const [addTab, setAddTab] = useState<"details" | "locations" | "teams">("details");
+  const [addProjectTeams, setAddProjectTeams] = useState<ProjectTeamItem[]>([]);
 
   // Re-fetch projects when filters or "my projects" toggle change
   useEffect(() => {
@@ -162,7 +165,7 @@ export default function AdminProjectsPage() {
     }
 
     try {
-      await createProject({
+      const result = await createProject({
         url: formData.url,
         source: formData.source,
         rate_type: true,
@@ -172,11 +175,15 @@ export default function AdminProjectsPage() {
         max_validators: parseInt(formData.max_validators),
         visibility: formData.visibility,
       });
-      toast.success("Project created successfully");
-      setShowAddModal(false);
-      setFormData(defaultFormData);
-      setBudgetCalculation("");
-      refetch(filtersBody ? { filters: filtersBody } : {});
+      toast.success("Project created — you can now assign locations and teams");
+      setNewProjectId(result.project_id);
+      // Fetch teams for the new project
+      try {
+        const teamsResponse = await fetchProjectTeams({ projectId: result.project_id });
+        setAddProjectTeams(teamsResponse?.teams ?? []);
+      } catch {
+        setAddProjectTeams([]);
+      }
     } catch (err) {
       const message = err instanceof Error ? err.message : "Failed to create project";
       toast.error(message);
@@ -328,6 +335,25 @@ export default function AdminProjectsPage() {
       ]);
       setProjectUsers(usersResponse?.users ?? []);
       setProjectTeams(teamsResponse?.teams ?? []);
+    } catch {
+      toast.error("Failed to update team assignment");
+    }
+  };
+
+  const handleToggleAddTeamAssignment = async (teamId: number, currentStatus: string) => {
+    if (!newProjectId) return;
+    try {
+      if (currentStatus === "Assigned") {
+        const result = await unassignTeamFromProject({ teamId, projectId: newProjectId });
+        toast.success(`Team removed — ${result.removed} user(s) unassigned`);
+      } else {
+        const result = await assignTeamToProject({ teamId, projectId: newProjectId });
+        toast.success(
+          `Team assigned — ${result.assigned} user(s) added${result.skipped ? `, ${result.skipped} already assigned` : ""}`
+        );
+      }
+      const teamsResponse = await fetchProjectTeams({ projectId: newProjectId });
+      setAddProjectTeams(teamsResponse?.teams ?? []);
     } catch {
       toast.error("Failed to update team assignment");
     }
@@ -616,108 +642,208 @@ export default function AdminProjectsPage() {
           setShowAddModal(false);
           setFormData(defaultFormData);
           setBudgetCalculation("");
+          if (newProjectId) refetch(filtersBody ? { filters: filtersBody } : {});
+          setNewProjectId(null);
+          setAddTab("details");
+          setAddProjectTeams([]);
         }}
-        title="Add New Project"
-        description="Add a TM4 or MapRoulette project to Mikro for payment tracking"
+        title={newProjectId ? "Project Created — Assign Locations & Teams" : "Add New Project"}
+        description={newProjectId ? "Optionally assign locations and teams before closing" : "Add a TM4 or MapRoulette project to Mikro for payment tracking"}
         size="lg"
         footer={
-          <>
-            <Button variant="outline" onClick={() => setShowAddModal(false)}>
-              Cancel
+          newProjectId ? (
+            <Button onClick={() => {
+              setShowAddModal(false);
+              setFormData(defaultFormData);
+              setBudgetCalculation("");
+              refetch(filtersBody ? { filters: filtersBody } : {});
+              setNewProjectId(null);
+              setAddTab("details");
+              setAddProjectTeams([]);
+            }}>
+              Done
             </Button>
-            <Button onClick={handleCreateProject} isLoading={creating}>
-              Create Project
-            </Button>
-          </>
+          ) : (
+            <>
+              <Button variant="outline" onClick={() => setShowAddModal(false)}>
+                Cancel
+              </Button>
+              <Button onClick={handleCreateProject} isLoading={creating}>
+                Create Project
+              </Button>
+            </>
+          )
         }
       >
-        <div className="space-y-4">
-          <div>
-            <label className="text-sm font-medium mb-2 block">Project Source</label>
-            <div className="flex gap-4">
-              <label className="flex items-center gap-2 cursor-pointer">
-                <input
-                  type="radio"
-                  name="source"
-                  value="tm4"
-                  checked={formData.source === "tm4"}
-                  onChange={() => handleInputChange("source", "tm4")}
-                  className="accent-kaart-orange"
+        <Tabs defaultValue="details" value={addTab} onValueChange={(v) => setAddTab(v as "details" | "locations" | "teams")}>
+          <TabsList className="mb-4">
+            <TabsTrigger value="details">Project Details</TabsTrigger>
+            <TabsTrigger value="locations" disabled={!newProjectId}>
+              Locations
+            </TabsTrigger>
+            <TabsTrigger value="teams" disabled={!newProjectId}>
+              Teams{newProjectId ? ` (${addProjectTeams.filter(t => t.assigned === "Assigned").length})` : ""}
+            </TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="details">
+            {newProjectId ? (
+              <div className="text-center py-8">
+                <Badge variant="success" className="text-sm px-3 py-1 mb-3">Created</Badge>
+                <p className="text-muted-foreground">
+                  Project created successfully. Use the Locations and Teams tabs to assign before closing, or click Done.
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                <div>
+                  <label className="text-sm font-medium mb-2 block">Project Source</label>
+                  <div className="flex gap-4">
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="radio"
+                        name="add-source"
+                        value="tm4"
+                        checked={formData.source === "tm4"}
+                        onChange={() => handleInputChange("source", "tm4")}
+                        className="accent-kaart-orange"
+                      />
+                      <span className="text-sm">TM4 (Tasking Manager)</span>
+                    </label>
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="radio"
+                        name="add-source"
+                        value="mr"
+                        checked={formData.source === "mr"}
+                        onChange={() => handleInputChange("source", "mr")}
+                        className="accent-kaart-orange"
+                      />
+                      <span className="text-sm">MapRoulette</span>
+                    </label>
+                  </div>
+                </div>
+                <Input
+                  label={formData.source === "mr" ? "MapRoulette Challenge URL" : "TM4 Project URL"}
+                  placeholder={formData.source === "mr" ? "https://maproulette.org/browse/challenges/123" : "https://tasks.kaart.com/projects/123"}
+                  value={formData.url}
+                  onChange={(e) => handleInputChange("url", e.target.value)}
                 />
-                <span className="text-sm">TM4 (Tasking Manager)</span>
-              </label>
-              <label className="flex items-center gap-2 cursor-pointer">
-                <input
-                  type="radio"
-                  name="source"
-                  value="mr"
-                  checked={formData.source === "mr"}
-                  onChange={() => handleInputChange("source", "mr")}
-                  className="accent-kaart-orange"
-                />
-                <span className="text-sm">MapRoulette</span>
-              </label>
-            </div>
-          </div>
-          <Input
-            label={formData.source === "mr" ? "MapRoulette Challenge URL" : "TM4 Project URL"}
-            placeholder={formData.source === "mr" ? "https://maproulette.org/browse/challenges/123" : "https://tasks.kaart.com/projects/123"}
-            value={formData.url}
-            onChange={(e) => handleInputChange("url", e.target.value)}
-          />
-          <div className="grid grid-cols-2 gap-4">
-            <Input
-              label="Mapping Rate ($)"
-              type="number"
-              step="0.01"
-              value={formData.mapping_rate}
-              onChange={(e) => handleInputChange("mapping_rate", e.target.value)}
-            />
-            <Input
-              label="Validation Rate ($)"
-              type="number"
-              step="0.01"
-              value={formData.validation_rate}
-              onChange={(e) => handleInputChange("validation_rate", e.target.value)}
-            />
-          </div>
-          <div className="grid grid-cols-2 gap-4">
-            <Input
-              label="Max Editors"
-              type="number"
-              value={formData.max_editors}
-              onChange={(e) => handleInputChange("max_editors", e.target.value)}
-            />
-            <Input
-              label="Max Validators"
-              type="number"
-              value={formData.max_validators}
-              onChange={(e) => handleInputChange("max_validators", e.target.value)}
-            />
-          </div>
-          <div className="flex items-center gap-2">
-            <input
-              type="checkbox"
-              id="visibility"
-              checked={formData.visibility}
-              onChange={(e) => handleInputChange("visibility", e.target.checked)}
-              className="rounded border-input"
-            />
-            <label htmlFor="visibility" className="text-sm">
-              Visible to users
-            </label>
-          </div>
-          <div className="border-t border-border pt-4">
-            <Button variant="outline" onClick={handleCalculateBudget} className="w-full">
-              Calculate Budget
-            </Button>
-            {budgetCalculation && (
-              <p className="mt-2 text-sm text-muted-foreground bg-muted p-3 rounded-lg">
-                {budgetCalculation}
-              </p>
+                <div className="grid grid-cols-2 gap-4">
+                  <Input
+                    label="Mapping Rate ($)"
+                    type="number"
+                    step="0.01"
+                    value={formData.mapping_rate}
+                    onChange={(e) => handleInputChange("mapping_rate", e.target.value)}
+                  />
+                  <Input
+                    label="Validation Rate ($)"
+                    type="number"
+                    step="0.01"
+                    value={formData.validation_rate}
+                    onChange={(e) => handleInputChange("validation_rate", e.target.value)}
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <Input
+                    label="Max Editors"
+                    type="number"
+                    value={formData.max_editors}
+                    onChange={(e) => handleInputChange("max_editors", e.target.value)}
+                  />
+                  <Input
+                    label="Max Validators"
+                    type="number"
+                    value={formData.max_validators}
+                    onChange={(e) => handleInputChange("max_validators", e.target.value)}
+                  />
+                </div>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    id="add-visibility"
+                    checked={formData.visibility}
+                    onChange={(e) => handleInputChange("visibility", e.target.checked)}
+                    className="rounded border-input"
+                  />
+                  <label htmlFor="add-visibility" className="text-sm">
+                    Visible to users
+                  </label>
+                </div>
+                <div className="border-t border-border pt-4">
+                  <Button variant="outline" onClick={handleCalculateBudget} className="w-full">
+                    Calculate Budget
+                  </Button>
+                  {budgetCalculation && (
+                    <p className="mt-2 text-sm text-muted-foreground bg-muted p-3 rounded-lg">
+                      {budgetCalculation}
+                    </p>
+                  )}
+                </div>
+              </div>
             )}
-          </div>
-        </div>
+          </TabsContent>
+
+          <TabsContent value="locations">
+            {newProjectId && (
+              <LocationsTab resourceId={newProjectId} resourceType="project" />
+            )}
+          </TabsContent>
+
+          <TabsContent value="teams">
+            {!newProjectId ? null : loadingTeams ? (
+              <div className="space-y-2">
+                {[1, 2, 3].map((i) => (
+                  <Skeleton key={i} className="h-12 w-full" />
+                ))}
+              </div>
+            ) : addProjectTeams.length === 0 ? (
+              <p className="text-muted-foreground text-center py-8">No teams in organization</p>
+            ) : (
+              <div className="max-h-80 overflow-y-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Team</TableHead>
+                      <TableHead className="text-center">Members</TableHead>
+                      <TableHead>Lead</TableHead>
+                      <TableHead className="text-center">Status</TableHead>
+                      <TableHead className="text-right">Action</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {addProjectTeams.map((team) => (
+                      <TableRow key={team.id}>
+                        <TableCell className="font-medium">{team.name}</TableCell>
+                        <TableCell className="text-center">
+                          <Badge variant="secondary">{team.member_count}</Badge>
+                        </TableCell>
+                        <TableCell className="text-muted-foreground">
+                          {team.lead_name || "None"}
+                        </TableCell>
+                        <TableCell className="text-center">
+                          <Badge variant={team.assigned === "Assigned" ? "success" : "secondary"}>
+                            {team.assigned}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <Button
+                            size="sm"
+                            variant={team.assigned === "Assigned" ? "destructive" : "primary"}
+                            onClick={() => handleToggleAddTeamAssignment(team.id, team.assigned)}
+                          >
+                            {team.assigned === "Assigned" ? "Unassign" : "Assign"}
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            )}
+          </TabsContent>
+        </Tabs>
       </Modal>
 
       {/* Edit Project Modal */}

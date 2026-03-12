@@ -303,7 +303,7 @@ export function useCompleteTraining() {
 }
 
 export function useCreateProject() {
-  return useApiMutation("/project/create_project");
+  return useApiMutation<{ message: string; project_id: number; status: number }>("/project/create_project");
 }
 
 export function useUpdateProject() {

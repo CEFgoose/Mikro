@@ -238,7 +238,7 @@ class ProjectAPI(MethodView):
                 visibility=visibility,
                 status=True,  # New projects are active by default
             )
-            return {"message": "Project created", "status": 200}
+            return {"message": "Project created", "project_id": project_id, "status": 200}
         else:
             return {"message": "Rate per task insufficient", "status": 400}
 
@@ -327,7 +327,7 @@ class ProjectAPI(MethodView):
         msg = "Project created"
         if needs_backfill:
             msg += " (name and task count will update shortly)"
-        return {"message": msg, "status": 200}
+        return {"message": msg, "project_id": challenge_id, "status": 200}
 
     @requires_admin
     def update_project(self):
