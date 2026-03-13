@@ -90,6 +90,18 @@ export function AdminTimeManagement() {
   const sessions = activeSessions?.sessions || [];
   const historyEntries = historyData?.entries || [];
 
+  // Refetch when sidebar clock or time widget triggers a state change
+  useEffect(() => {
+    const handler = () => {
+      setTimeout(() => {
+        refetchSessions();
+        refetchHistory();
+      }, 500);
+    };
+    window.addEventListener("clock-state-changed", handler);
+    return () => window.removeEventListener("clock-state-changed", handler);
+  }, [refetchSessions, refetchHistory]);
+
   // Live duration ticker for active sessions
   useEffect(() => {
     if (activeTab !== "active" || sessions.length === 0) return;
