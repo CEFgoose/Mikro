@@ -11,6 +11,7 @@ import {
   Badge,
   Button,
 } from "@/components/ui";
+import { useUser } from "@auth0/nextjs-auth0/client";
 import { useFetchProjectProfile } from "@/hooks/useApi";
 import {
   formatNumber,
@@ -72,6 +73,7 @@ const MR_STATUS_LABELS: Record<number, string> = {
 export default function UserProjectProfilePage() {
   const params = useParams();
   const projectId = Number(params.id);
+  const { user: auth0User } = useUser();
 
   const {
     mutate: fetchProfile,
@@ -194,11 +196,8 @@ export default function UserProjectProfilePage() {
 
       {/* Your Progress */}
       {data.assigned_users.length > 0 && (() => {
-        // Find the current user in the assigned users list.
-        // The backend returns the requesting user in the list when they are assigned.
-        // We pick the first user whose is_assigned is true — for user-role callers
-        // the backend typically only returns the caller themselves.
-        const me = data.assigned_users.find((u) => u.is_assigned);
+        // Find the current logged-in user by matching their Auth0 email
+        const me = data.assigned_users.find((u) => u.email === auth0User?.email);
         if (!me) return null;
         return (
           <Card>
