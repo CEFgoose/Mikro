@@ -46,6 +46,22 @@ async function handleRequest(
       body,
     });
 
+    // Check content type to handle non-JSON responses (CSV, PDF exports)
+    const contentType = response.headers.get("content-type") || "";
+    if (!contentType.includes("application/json")) {
+      const responseHeaders = new Headers();
+      responseHeaders.set("Content-Type", contentType);
+      const disposition = response.headers.get("content-disposition");
+      if (disposition) {
+        responseHeaders.set("Content-Disposition", disposition);
+      }
+      const blob = await response.arrayBuffer();
+      return new NextResponse(blob, {
+        status: response.status,
+        headers: responseHeaders,
+      });
+    }
+
     const data = await response.json();
 
     return NextResponse.json(data, { status: response.status });
