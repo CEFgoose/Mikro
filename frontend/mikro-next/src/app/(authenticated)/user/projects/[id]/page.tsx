@@ -218,12 +218,14 @@ export default function UserProjectProfilePage() {
                     {formatNumber(me.tasks_validated)}
                   </p>
                 </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">Your Earnings</p>
-                  <p className="text-xl font-semibold text-green-600">
-                    {formatCurrency(me.earnings)}
-                  </p>
-                </div>
+                {proj.payments_enabled !== false && (
+                  <div>
+                    <p className="text-sm text-muted-foreground">Your Earnings</p>
+                    <p className="text-xl font-semibold text-green-600">
+                      {formatCurrency(me.earnings)}
+                    </p>
+                  </div>
+                )}
                 <div>
                   <p className="text-sm text-muted-foreground">Time Logged</p>
                   <p className="text-xl font-semibold">
@@ -302,31 +304,33 @@ export default function UserProjectProfilePage() {
       </Card>
 
       {/* Rates */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Rates</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-2 gap-6">
-            <div>
-              <p className="text-sm text-muted-foreground">
-                Mapping Rate per Task
-              </p>
-              <p className="text-xl font-semibold">
-                {formatCurrency(proj.mapping_rate_per_task || 0)}
-              </p>
+      {proj.payments_enabled !== false && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Rates</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-2 gap-6">
+              <div>
+                <p className="text-sm text-muted-foreground">
+                  Mapping Rate per Task
+                </p>
+                <p className="text-xl font-semibold">
+                  {formatCurrency(proj.mapping_rate_per_task || 0)}
+                </p>
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">
+                  Validation Rate per Task
+                </p>
+                <p className="text-xl font-semibold">
+                  {formatCurrency(proj.validation_rate_per_task || 0)}
+                </p>
+              </div>
             </div>
-            <div>
-              <p className="text-sm text-muted-foreground">
-                Validation Rate per Task
-              </p>
-              <p className="text-xl font-semibold">
-                {formatCurrency(proj.validation_rate_per_task || 0)}
-              </p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }

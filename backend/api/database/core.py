@@ -169,6 +169,7 @@ class Project(ModelWithSoftDeleteAndCRUD, SurrogatePK):
     total_payout = db.Column(db.Float, nullable=True, default=0)
     validation_rate_per_task = db.Column(db.Float, nullable=True, default=100)
     mapping_rate_per_task = db.Column(db.Float, nullable=True, default=100)
+    payments_enabled = db.Column(db.Boolean, nullable=False, default=True, server_default="true")
 
     # Capacity
     max_editors = db.Column(db.Integer, nullable=True, default=5)

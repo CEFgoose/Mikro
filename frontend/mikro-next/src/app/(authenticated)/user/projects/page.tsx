@@ -111,23 +111,25 @@ function ProjectCard({ project }: { project: Project }) {
         </div>
 
         {/* Payment Rates */}
-        <div className="border-t border-border pt-4">
-          <p className="text-sm text-muted-foreground mb-2">Payment Rates</p>
-          <div className="flex gap-4">
-            <div className="flex-1 bg-green-50 dark:bg-green-950 rounded-lg p-3 text-center">
-              <p className="text-xs text-green-700 dark:text-green-300">Mapping</p>
-              <p className="font-bold text-green-800 dark:text-green-200">
-                {formatCurrency(project.mapping_rate_per_task)}
-              </p>
-            </div>
-            <div className="flex-1 bg-blue-50 dark:bg-blue-950 rounded-lg p-3 text-center">
-              <p className="text-xs text-blue-700 dark:text-blue-300">Validation</p>
-              <p className="font-bold text-blue-800 dark:text-blue-200">
-                {formatCurrency(project.validation_rate_per_task)}
-              </p>
+        {project.payments_enabled !== false && (
+          <div className="border-t border-border pt-4">
+            <p className="text-sm text-muted-foreground mb-2">Payment Rates</p>
+            <div className="flex gap-4">
+              <div className="flex-1 bg-green-50 dark:bg-green-950 rounded-lg p-3 text-center">
+                <p className="text-xs text-green-700 dark:text-green-300">Mapping</p>
+                <p className="font-bold text-green-800 dark:text-green-200">
+                  {formatCurrency(project.mapping_rate_per_task)}
+                </p>
+              </div>
+              <div className="flex-1 bg-blue-50 dark:bg-blue-950 rounded-lg p-3 text-center">
+                <p className="text-xs text-blue-700 dark:text-blue-300">Validation</p>
+                <p className="font-bold text-blue-800 dark:text-blue-200">
+                  {formatCurrency(project.validation_rate_per_task)}
+                </p>
+              </div>
             </div>
           </div>
-        </div>
+        )}
 
         {/* Action */}
         <a
@@ -209,12 +211,14 @@ export default function UserProjectsPage() {
             <p style={{ fontSize: 12, color: "#6b7280", marginBottom: 4 }}>Potential Earnings</p>
             <div style={{ fontSize: 20, fontWeight: 700, color: "#ff6b35" }}>
               {formatCurrency(
-                activeProjects.reduce(
-                  (sum, p) =>
-                    sum +
-                    (p.total_tasks - (p.total_mapped ?? 0)) * p.mapping_rate_per_task,
-                  0
-                )
+                activeProjects
+                  .filter((p) => p.payments_enabled !== false)
+                  .reduce(
+                    (sum, p) =>
+                      sum +
+                      (p.total_tasks - (p.total_mapped ?? 0)) * p.mapping_rate_per_task,
+                    0
+                  )
               )}
             </div>
           </div>

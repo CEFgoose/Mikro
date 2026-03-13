@@ -724,30 +724,42 @@ class MapRouletteSync:
                 stats["tasks_validated"] += 1
                 return
 
-            # Update mapper payment (only if mapper is a Mikro user)
+            # Update mapper stats (always) and payment (only if payments enabled)
             mapper = self._resolve_user(mapper_username)
             if mapper:
-                new_mapping_payable = (
-                    (mapper.mapping_payable_total or 0)
-                    + (task_record.mapping_rate or 0)
-                )
-                mapper.update(
-                    mapping_payable_total=new_mapping_payable,
-                    total_tasks_validated=mapper.total_tasks_validated + 1,
-                )
+                if project.payments_enabled:
+                    new_mapping_payable = (
+                        (mapper.mapping_payable_total or 0)
+                        + (task_record.mapping_rate or 0)
+                    )
+                    mapper.update(
+                        mapping_payable_total=new_mapping_payable,
+                        total_tasks_validated=mapper.total_tasks_validated + 1,
+                    )
+                else:
+                    mapper.update(
+                        total_tasks_validated=mapper.total_tasks_validated + 1,
+                    )
 
-            # Update validator payment (always, if validator is Mikro user)
+            # Update validator stats (always) and payment (only if payments enabled)
             if validator:
-                new_validation_payable = (
-                    (validator.validation_payable_total or 0)
-                    + (task_record.validation_rate or 0)
-                )
-                validator.update(
-                    validator_tasks_validated=(
-                        validator.validator_tasks_validated + 1
-                    ),
-                    validation_payable_total=new_validation_payable,
-                )
+                if project.payments_enabled:
+                    new_validation_payable = (
+                        (validator.validation_payable_total or 0)
+                        + (task_record.validation_rate or 0)
+                    )
+                    validator.update(
+                        validator_tasks_validated=(
+                            validator.validator_tasks_validated + 1
+                        ),
+                        validation_payable_total=new_validation_payable,
+                    )
+                else:
+                    validator.update(
+                        validator_tasks_validated=(
+                            validator.validator_tasks_validated + 1
+                        ),
+                    )
 
             # Update project stats
             project.update(

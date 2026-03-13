@@ -60,6 +60,7 @@ export interface Project {
   total_validators?: number;
   visibility?: boolean;
   status?: boolean;
+  payments_enabled?: boolean;
   difficulty?: "Easy" | "Medium" | "Hard";
   completed?: boolean;
   // MR status breakdown: {status_code: count} for MR projects

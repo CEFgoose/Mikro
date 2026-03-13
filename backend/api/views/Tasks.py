@@ -265,46 +265,56 @@ class TaskAPI(MethodView):
                             )
                             continue
 
-                        # Update mapper payment totals only if mapper is a Mikro user
+                        # Update mapper stats (always) and payment (only if payments enabled)
                         if mapper:
                             old_validated_total = int(mapper.total_tasks_validated)
                             new_tasks_validated = old_validated_total + 1
 
-                            # For split tasks, calculate total mapping rate for all siblings
-                            if self._is_split_task(task_exists):
-                                siblings = self._get_split_siblings(task_exists)
-                                new_awaiting_payment = sum(s.mapping_rate or 0 for s in siblings)
+                            if target_project.payments_enabled:
+                                # For split tasks, calculate total mapping rate for all siblings
+                                if self._is_split_task(task_exists):
+                                    siblings = self._get_split_siblings(task_exists)
+                                    new_awaiting_payment = sum(s.mapping_rate or 0 for s in siblings)
+                                else:
+                                    new_awaiting_payment = task_exists.mapping_rate or 0
+
+                                old_awaiting_payment = mapper.mapping_payable_total or 0
+                                current_awaiting_payment = old_awaiting_payment + new_awaiting_payment
+
+                                mapper.update(
+                                    mapping_payable_total=current_awaiting_payment,
+                                    total_tasks_validated=new_tasks_validated,
+                                )
                             else:
-                                new_awaiting_payment = task_exists.mapping_rate or 0
+                                mapper.update(
+                                    total_tasks_validated=new_tasks_validated,
+                                )
 
-                            old_awaiting_payment = mapper.mapping_payable_total or 0
-                            current_awaiting_payment = old_awaiting_payment + new_awaiting_payment
-
-                            mapper.update(
-                                mapping_payable_total=current_awaiting_payment,
-                                total_tasks_validated=new_tasks_validated,
+                        # Update validator stats (always) and payment (only if payments enabled)
+                        if target_project.payments_enabled:
+                            old_validations_payment = float(
+                                validator_exists.validation_payable_total or 0
                             )
 
-                        # Update validator payment totals (always — regardless of mapper)
-                        old_validations_payment = float(
-                            validator_exists.validation_payable_total or 0
-                        )
+                            # For split tasks, calculate total validation rate for all siblings
+                            if self._is_split_task(task_exists):
+                                siblings = self._get_split_siblings(task_exists)
+                                new_validations_payment = sum(s.validation_rate or 0 for s in siblings)
+                            else:
+                                new_validations_payment = task_exists.validation_rate or 0
 
-                        # For split tasks, calculate total validation rate for all siblings
-                        if self._is_split_task(task_exists):
-                            siblings = self._get_split_siblings(task_exists)
-                            new_validations_payment = sum(s.validation_rate or 0 for s in siblings)
+                            current_validations_payment = (
+                                old_validations_payment + new_validations_payment
+                            )
+
+                            validator_exists.update(
+                                validator_tasks_validated=validator_exists.validator_tasks_validated + 1,
+                                validation_payable_total=current_validations_payment,
+                            )
                         else:
-                            new_validations_payment = task_exists.validation_rate or 0
-
-                        current_validations_payment = (
-                            old_validations_payment + new_validations_payment
-                        )
-
-                        validator_exists.update(
-                            validator_tasks_validated=validator_exists.validator_tasks_validated + 1,
-                            validation_payable_total=current_validations_payment,
-                        )
+                            validator_exists.update(
+                                validator_tasks_validated=validator_exists.validator_tasks_validated + 1,
+                            )
 
                         target_project.update(
                             tasks_validated=target_project.tasks_validated + 1

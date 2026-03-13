@@ -76,6 +76,9 @@ class ProjectAPI(MethodView):
         if not project:
             return 0
 
+        if not project.payments_enabled:
+            return 0
+
         rate = project.mapping_rate_per_task if is_mapping else project.validation_rate_per_task
 
         # Check for split task
@@ -222,25 +225,27 @@ class ProjectAPI(MethodView):
             calculation = 0
 
         # Create new project
-        if mapping_rate >= 0.01 and validation_rate >= 0.01:
-            Project.create(
-                id=project_id,
-                org_id=g.user.org_id,
-                created_by=g.user.id,
-                name=project_name,
-                total_tasks=total_tasks,
-                max_payment=float(calculation),
-                url=url,
-                validation_rate_per_task=validation_rate,
-                mapping_rate_per_task=mapping_rate,
-                max_editors=max_editors,
-                max_validators=max_validators,
-                visibility=visibility,
-                status=True,  # New projects are active by default
-            )
-            return {"message": "Project created", "project_id": project_id, "status": 200}
-        else:
-            return {"message": "Rate per task insufficient", "status": 400}
+        payments_enabled = request.json.get("payments_enabled", True)
+        if payments_enabled:
+            if mapping_rate < 0.01 or validation_rate < 0.01:
+                return {"message": "Rate per task insufficient when payments enabled", "status": 400}
+        Project.create(
+            id=project_id,
+            org_id=g.user.org_id,
+            created_by=g.user.id,
+            name=project_name,
+            total_tasks=total_tasks,
+            max_payment=float(calculation),
+            url=url,
+            validation_rate_per_task=validation_rate,
+            mapping_rate_per_task=mapping_rate,
+            max_editors=max_editors,
+            max_validators=max_validators,
+            visibility=visibility,
+            status=True,  # New projects are active by default
+            payments_enabled=payments_enabled,
+        )
+        return {"message": "Project created", "project_id": project_id, "status": 200}
 
     def _create_mr_project(self):
         """Create a new MapRoulette project from a challenge URL.
@@ -267,8 +272,10 @@ class ProjectAPI(MethodView):
         if project_exists:
             return {"message": "Project already exists", "status": 400}
 
-        if mapping_rate < 0.01 or validation_rate < 0.01:
-            return {"message": "Rate per task insufficient", "status": 400}
+        payments_enabled = request.json.get("payments_enabled", True)
+        if payments_enabled:
+            if mapping_rate < 0.01 or validation_rate < 0.01:
+                return {"message": "Rate per task insufficient when payments enabled", "status": 400}
 
         # Try to fetch challenge metadata, but don't block on failure
         mr_data = None
@@ -312,6 +319,7 @@ class ProjectAPI(MethodView):
             visibility=visibility,
             status=True,
             source="mr",
+            payments_enabled=payments_enabled,
         )
 
         # Queue background metadata backfill if MR API failed
@@ -367,6 +375,9 @@ class ProjectAPI(MethodView):
             response["message"] = "Project %s not found" % (project_id)
             response["status"] = 400
             return response
+        # Accept payments_enabled toggle
+        payments_enabled = request.json.get("payments_enabled", target_project.payments_enabled)
+
         # Calculate payment rate and rate based on rate type
         if mapping_rate != 0 and validation_rate != 0:
             if rate_type is True:
@@ -377,7 +388,8 @@ class ProjectAPI(MethodView):
                 validation_rate_per_task=validation_rate,
             )
         target_project.update(
-            visibility=visibility, difficulty=difficulty, status=project_status
+            visibility=visibility, difficulty=difficulty, status=project_status,
+            payments_enabled=payments_enabled,
         )
         if max_editors and max_editors != 0:
             target_project.update(
@@ -749,6 +761,7 @@ class ProjectAPI(MethodView):
                     "split_task_groups": task_counts["split_task_groups"],
                     "mr_status_breakdown": task_counts.get("mr_status_breakdown", {}),
                     "status": project.status,
+                    "payments_enabled": project.payments_enabled,
                     "assigned_locations": _loc_counts.get(project.id, 0),
                     "assigned_trainings": _trn_counts.get(project.id, 0),
                 }
@@ -785,6 +798,7 @@ class ProjectAPI(MethodView):
                     "split_task_groups": task_counts["split_task_groups"],
                     "mr_status_breakdown": task_counts.get("mr_status_breakdown", {}),
                     "status": project.status,
+                    "payments_enabled": project.payments_enabled,
                     "assigned_locations": _loc_counts.get(project.id, 0),
                     "assigned_trainings": _trn_counts.get(project.id, 0),
                 }
@@ -1051,6 +1065,7 @@ class ProjectAPI(MethodView):
                 "max_payment": project.max_payment,
                 "payment_due": project.payment_due,
                 "total_payout": project.total_payout,
+                "payments_enabled": project.payments_enabled,
                 "max_editors": project.max_editors,
                 "total_editors": project.total_editors,
                 **task_counts,
@@ -1508,6 +1523,7 @@ class ProjectAPI(MethodView):
                     "url": project.url,
                     "difficulty": project.difficulty,
                     "source": project.source,
+                    "payments_enabled": project.payments_enabled,
                     "tasks_mapped": user_project_mapped_tasks,
                     "tasks_approved": user_project_approved_tasks,
                     "tasks_unapproved": user_project_unapproved_tasks,
@@ -1818,6 +1834,7 @@ class ProjectAPI(MethodView):
                     "url": project.url,
                     "difficulty": project.difficulty,
                     "source": project.source,
+                    "payments_enabled": project.payments_enabled,
                     "tasks_mapped": user_project_mapped_tasks,
                     "tasks approved": user_project_approved_tasks,
                     "tasks unapproved": user_project_unapproved_tasks,
@@ -1847,6 +1864,7 @@ class ProjectAPI(MethodView):
                     "url": project.url,
                     "difficulty": project.difficulty,
                     "source": project.source,
+                    "payments_enabled": project.payments_enabled,
                     # "tasks_mapped": user_project_mapped_tasks,
                     # "tasks approved": user_project_approved_tasks,
                     # "tasks unapproved": user_project_unapproved_tasks,
@@ -1923,6 +1941,7 @@ class ProjectAPI(MethodView):
                     "url": project.url,
                     "difficulty": project.difficulty,
                     "source": project.source,
+                    "payments_enabled": project.payments_enabled,
                     "tasks_mapped": 0,  # Not assigned, so no mapping
                     "tasks approved": 0,
                     "tasks unapproved": 0,

@@ -66,6 +66,7 @@ interface ProjectFormData {
   visibility: boolean;
   difficulty: string;
   status: boolean;
+  payments_enabled: boolean;
 }
 
 const defaultFormData: ProjectFormData = {
@@ -78,6 +79,7 @@ const defaultFormData: ProjectFormData = {
   visibility: true,
   difficulty: "Medium",
   status: true,
+  payments_enabled: true,
 };
 
 export default function AdminProjectsPage() {
@@ -169,11 +171,12 @@ export default function AdminProjectsPage() {
         url: formData.url,
         source: formData.source,
         rate_type: true,
-        mapping_rate: parseFloat(formData.mapping_rate),
-        validation_rate: parseFloat(formData.validation_rate),
+        mapping_rate: formData.payments_enabled ? parseFloat(formData.mapping_rate) : 0,
+        validation_rate: formData.payments_enabled ? parseFloat(formData.validation_rate) : 0,
         max_editors: parseInt(formData.max_editors),
         max_validators: parseInt(formData.max_validators),
         visibility: formData.visibility,
+        payments_enabled: formData.payments_enabled,
       });
       toast.success("Project created — you can now assign locations and teams");
       setNewProjectId(result.project_id);
@@ -198,12 +201,13 @@ export default function AdminProjectsPage() {
         project_id: selectedProject.id,
         difficulty: formData.difficulty,
         rate_type: true,
-        mapping_rate: parseFloat(formData.mapping_rate),
-        validation_rate: parseFloat(formData.validation_rate),
+        mapping_rate: formData.payments_enabled ? parseFloat(formData.mapping_rate) : 0,
+        validation_rate: formData.payments_enabled ? parseFloat(formData.validation_rate) : 0,
         max_editors: parseInt(formData.max_editors),
         max_validators: parseInt(formData.max_validators),
         visibility: formData.visibility,
         project_status: formData.status,
+        payments_enabled: formData.payments_enabled,
       });
       toast.success("Project updated successfully");
       setShowEditModal(false);
@@ -279,6 +283,7 @@ export default function AdminProjectsPage() {
       visibility: project.visibility ?? true,
       difficulty: project.difficulty ?? "Medium",
       status: project.status ?? true,
+      payments_enabled: project.payments_enabled ?? true,
     });
     setEditTab("settings");
     setShowEditModal(true);
@@ -443,10 +448,14 @@ export default function AdminProjectsPage() {
               )}
             </TableCell>
             <TableCell>
-              <div className="text-sm">
-                <p>Map: {formatCurrency(project.mapping_rate_per_task)}</p>
-                <p>Val: {formatCurrency(project.validation_rate_per_task)}</p>
-              </div>
+              {project.payments_enabled === false ? (
+                <Badge variant="secondary">Stats Only</Badge>
+              ) : (
+                <div className="text-sm">
+                  <p>Map: {formatCurrency(project.mapping_rate_per_task)}</p>
+                  <p>Val: {formatCurrency(project.validation_rate_per_task)}</p>
+                </div>
+              )}
             </TableCell>
             <TableCell>
               <div className="text-sm">
@@ -729,22 +738,39 @@ export default function AdminProjectsPage() {
                   value={formData.url}
                   onChange={(e) => handleInputChange("url", e.target.value)}
                 />
-                <div className="grid grid-cols-2 gap-4">
-                  <Input
-                    label="Mapping Rate ($)"
-                    type="number"
-                    step="0.01"
-                    value={formData.mapping_rate}
-                    onChange={(e) => handleInputChange("mapping_rate", e.target.value)}
+                <div className="flex items-center gap-2 mb-4">
+                  <input
+                    type="checkbox"
+                    id="add-payments-enabled"
+                    checked={formData.payments_enabled}
+                    onChange={(e) => handleInputChange("payments_enabled", e.target.checked)}
+                    className="rounded border-input"
                   />
-                  <Input
-                    label="Validation Rate ($)"
-                    type="number"
-                    step="0.01"
-                    value={formData.validation_rate}
-                    onChange={(e) => handleInputChange("validation_rate", e.target.value)}
-                  />
+                  <label htmlFor="add-payments-enabled" className="text-sm font-medium">
+                    Enable Payments
+                  </label>
+                  <span className="text-xs text-muted-foreground">
+                    (uncheck for stats-only tracking)
+                  </span>
                 </div>
+                {formData.payments_enabled && (
+                  <div className="grid grid-cols-2 gap-4">
+                    <Input
+                      label="Mapping Rate ($)"
+                      type="number"
+                      step="0.01"
+                      value={formData.mapping_rate}
+                      onChange={(e) => handleInputChange("mapping_rate", e.target.value)}
+                    />
+                    <Input
+                      label="Validation Rate ($)"
+                      type="number"
+                      step="0.01"
+                      value={formData.validation_rate}
+                      onChange={(e) => handleInputChange("validation_rate", e.target.value)}
+                    />
+                  </div>
+                )}
                 <div className="grid grid-cols-2 gap-4">
                   <Input
                     label="Max Editors"
@@ -891,22 +917,44 @@ export default function AdminProjectsPage() {
 
           <TabsContent value="settings">
             <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <Input
-                  label="Mapping Rate ($)"
-                  type="number"
-                  step="0.01"
-                  value={formData.mapping_rate}
-                  onChange={(e) => handleInputChange("mapping_rate", e.target.value)}
+              <div className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  id="edit-payments-enabled"
+                  checked={formData.payments_enabled}
+                  onChange={(e) => handleInputChange("payments_enabled", e.target.checked)}
+                  className="rounded border-input"
                 />
-                <Input
-                  label="Validation Rate ($)"
-                  type="number"
-                  step="0.01"
-                  value={formData.validation_rate}
-                  onChange={(e) => handleInputChange("validation_rate", e.target.value)}
-                />
+                <label htmlFor="edit-payments-enabled" className="text-sm font-medium">
+                  Enable Payments
+                </label>
+                <span className="text-xs text-muted-foreground">
+                  (uncheck for stats-only tracking)
+                </span>
               </div>
+              {!formData.payments_enabled && (
+                <p className="text-xs text-amber-600">
+                  Disabling payments will not reverse already-accumulated earnings
+                </p>
+              )}
+              {formData.payments_enabled && (
+                <div className="grid grid-cols-2 gap-4">
+                  <Input
+                    label="Mapping Rate ($)"
+                    type="number"
+                    step="0.01"
+                    value={formData.mapping_rate}
+                    onChange={(e) => handleInputChange("mapping_rate", e.target.value)}
+                  />
+                  <Input
+                    label="Validation Rate ($)"
+                    type="number"
+                    step="0.01"
+                    value={formData.validation_rate}
+                    onChange={(e) => handleInputChange("validation_rate", e.target.value)}
+                  />
+                </div>
+              )}
               <div className="grid grid-cols-2 gap-4">
                 <Input
                   label="Max Editors"
