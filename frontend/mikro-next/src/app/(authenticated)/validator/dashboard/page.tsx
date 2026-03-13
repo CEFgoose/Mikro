@@ -376,7 +376,7 @@ export default function ValidatorDashboard() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle>Your Projects</CardTitle>
-            <Link href="/validator/projects" className="text-sm text-kaart-orange hover:underline">
+            <Link href="/user/projects" className="text-sm text-kaart-orange hover:underline">
               View all
             </Link>
           </CardHeader>
@@ -492,14 +492,14 @@ export default function ValidatorDashboard() {
 
             <div className="flex flex-wrap gap-2 pt-2">
               <Link
-                href="/validator/projects"
+                href="/user/projects"
                 className="inline-flex items-center rounded-lg bg-secondary px-4 py-2 text-sm font-medium hover:bg-secondary/80 transition-colors"
                 title="Browse all your assigned projects"
               >
                 View Projects
               </Link>
               <Link
-                href="/validator/payments"
+                href="/user/payments"
                 className="inline-flex items-center rounded-lg bg-secondary px-4 py-2 text-sm font-medium hover:bg-secondary/80 transition-colors"
                 title="View your payment history"
               >
