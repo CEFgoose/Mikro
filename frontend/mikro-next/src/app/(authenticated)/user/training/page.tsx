@@ -38,6 +38,7 @@ export default function UserTrainingPage() {
   const [answers, setAnswers] = useState<Record<number, number>>({});
   const [quizSubmitted, setQuizSubmitted] = useState(false);
   const [quizResult, setQuizResult] = useState<{ score: number; passed: boolean } | null>(null);
+  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
 
   const mappingTrainings = (trainings?.mapping_trainings ?? []) as UserTraining[];
   const validationTrainings = (trainings?.validation_trainings ?? []) as UserTraining[];
@@ -61,6 +62,7 @@ export default function UserTrainingPage() {
     setAnswers({});
     setQuizSubmitted(false);
     setQuizResult(null);
+    setCurrentQuestionIndex(0);
     setShowQuizModal(true);
   };
 
@@ -109,6 +111,7 @@ export default function UserTrainingPage() {
     setAnswers({});
     setQuizSubmitted(false);
     setQuizResult(null);
+    setCurrentQuestionIndex(0);
   };
 
   const TrainingCard = ({ training }: { training: UserTraining }) => (
@@ -320,44 +323,98 @@ export default function UserTrainingPage() {
         isOpen={showQuizModal}
         onClose={closeQuizModal}
         title={selectedTraining?.title ?? "Quiz"}
-        description={`${selectedTraining?.questions?.length ?? 0} questions • ${selectedTraining?.point_value ?? 0} points`}
+        description={
+          quizSubmitted
+            ? `${selectedTraining?.questions?.length ?? 0} questions \u2022 ${selectedTraining?.point_value ?? 0} points`
+            : `Question ${currentQuestionIndex + 1} of ${selectedTraining?.questions?.length ?? 0}`
+        }
         size="lg"
         footer={
           quizSubmitted ? (
             <Button onClick={closeQuizModal}>Close</Button>
           ) : (
-            <>
-              <Button variant="outline" onClick={closeQuizModal}>
+            <div className="flex w-full items-center justify-between">
+              <div>
+                {currentQuestionIndex > 0 && (
+                  <Button
+                    variant="outline"
+                    onClick={() => setCurrentQuestionIndex((i) => i - 1)}
+                  >
+                    Previous
+                  </Button>
+                )}
+              </div>
+              <Button variant="ghost" onClick={closeQuizModal}>
                 Cancel
               </Button>
-              <Button
-                onClick={handleSubmitQuiz}
-                isLoading={submitting}
-                disabled={Object.keys(answers).length !== (selectedTraining?.questions?.length ?? 0)}
-              >
-                Submit Quiz
-              </Button>
-            </>
+              <div>
+                {(selectedTraining?.questions?.length ?? 0) > 1 &&
+                currentQuestionIndex < (selectedTraining?.questions?.length ?? 1) - 1 ? (
+                  <Button
+                    onClick={() => setCurrentQuestionIndex((i) => i + 1)}
+                    disabled={
+                      !selectedTraining?.questions?.[currentQuestionIndex] ||
+                      !answers[selectedTraining.questions[currentQuestionIndex].id]
+                    }
+                  >
+                    Next Question
+                  </Button>
+                ) : (
+                  <Button
+                    onClick={handleSubmitQuiz}
+                    isLoading={submitting}
+                    disabled={
+                      !selectedTraining?.questions?.[currentQuestionIndex] ||
+                      !answers[selectedTraining.questions[currentQuestionIndex].id]
+                    }
+                  >
+                    Submit Quiz
+                  </Button>
+                )}
+              </div>
+            </div>
           )
         }
       >
         <div className="space-y-6">
-          {/* Training Material Link */}
-          <div className="rounded-lg bg-muted p-4">
-            <p className="text-sm text-muted-foreground mb-2">
-              Make sure you review the training material before taking the quiz:
-            </p>
-            <a
-              href={selectedTraining?.training_url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-kaart-orange hover:underline font-medium"
-            >
-              Open Training Material
-            </a>
-          </div>
+          {/* Progress Step Bar (quiz phase only) */}
+          {!quizSubmitted && selectedTraining?.questions && (
+            <div className="flex items-center gap-1">
+              {selectedTraining.questions.map((q, i) => (
+                <div
+                  key={i}
+                  className={`h-1.5 flex-1 rounded-full ${
+                    i < currentQuestionIndex
+                      ? "bg-kaart-orange"
+                      : i === currentQuestionIndex
+                      ? "bg-kaart-orange/60"
+                      : answers[q.id]
+                      ? "bg-kaart-orange/30"
+                      : "bg-muted"
+                  }`}
+                />
+              ))}
+            </div>
+          )}
 
-          {/* Quiz Result */}
+          {/* Training Material Link (show on first question only during quiz, always in review) */}
+          {(quizSubmitted || currentQuestionIndex === 0) && (
+            <div className="rounded-lg bg-muted p-4">
+              <p className="text-sm text-muted-foreground mb-2">
+                Make sure you review the training material before taking the quiz:
+              </p>
+              <a
+                href={selectedTraining?.training_url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-kaart-orange hover:underline font-medium"
+              >
+                Open Training Material
+              </a>
+            </div>
+          )}
+
+          {/* Quiz Result (review phase) */}
           {quizSubmitted && quizResult && (
             <div
               className={`rounded-lg p-4 ${
@@ -382,76 +439,75 @@ export default function UserTrainingPage() {
             </div>
           )}
 
-          {/* Questions */}
+          {/* Questions — single question during quiz, all questions during review */}
           <div className="space-y-6">
-            {selectedTraining?.questions?.map((question, qIndex) => {
-              const selectedAnswer = answers[question.id];
-              const isCorrect = quizSubmitted && question.answers.find((a) => a.id === selectedAnswer)?.correct;
-              const correctAnswer = question.answers.find((a) => a.correct);
+            {(() => {
+              const questions = selectedTraining?.questions ?? [];
+              const questionsToShow = quizSubmitted
+                ? questions
+                : questions.slice(currentQuestionIndex, currentQuestionIndex + 1);
 
-              return (
-                <div key={question.id} className="border border-border rounded-lg p-4">
-                  <p className="font-medium mb-3">
-                    {qIndex + 1}. {question.question}
-                  </p>
-                  <div className="space-y-2">
-                    {question.answers.map((answer) => {
-                      const isSelected = selectedAnswer === answer.id;
-                      let className = "flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-colors ";
+              return questionsToShow.map((question, idx) => {
+                const qIndex = quizSubmitted ? idx : currentQuestionIndex;
+                const selectedAnswer = answers[question.id];
 
-                      if (quizSubmitted) {
-                        if (answer.correct) {
-                          className += "border-green-500 bg-green-50 dark:bg-green-950";
-                        } else if (isSelected && !answer.correct) {
-                          className += "border-red-500 bg-red-50 dark:bg-red-950";
+                return (
+                  <div key={question.id} className="border border-border rounded-lg p-4">
+                    <p className="font-medium mb-3">
+                      {qIndex + 1}. {question.question}
+                    </p>
+                    <div className="space-y-2">
+                      {question.answers.map((answer) => {
+                        const isSelected = selectedAnswer === answer.id;
+                        let answerClassName = "flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-colors ";
+
+                        if (quizSubmitted) {
+                          if (answer.correct) {
+                            answerClassName += "border-green-500 bg-green-50 dark:bg-green-950";
+                          } else if (isSelected && !answer.correct) {
+                            answerClassName += "border-red-500 bg-red-50 dark:bg-red-950";
+                          } else {
+                            answerClassName += "border-border opacity-50";
+                          }
                         } else {
-                          className += "border-border opacity-50";
+                          answerClassName += isSelected
+                            ? "border-kaart-orange bg-kaart-orange/10"
+                            : "border-border hover:border-muted-foreground";
                         }
-                      } else {
-                        className += isSelected
-                          ? "border-kaart-orange bg-kaart-orange/10"
-                          : "border-border hover:border-muted-foreground";
-                      }
 
-                      return (
-                        <div
-                          key={answer.id}
-                          className={className}
-                          onClick={() => handleAnswerSelect(question.id, answer.id)}
-                        >
+                        return (
                           <div
-                            className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${
-                              isSelected ? "border-kaart-orange" : "border-muted-foreground"
-                            }`}
+                            key={answer.id}
+                            className={answerClassName}
+                            onClick={() => handleAnswerSelect(question.id, answer.id)}
                           >
-                            {isSelected && (
-                              <div className="w-2 h-2 rounded-full bg-kaart-orange" />
+                            <div
+                              className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${
+                                isSelected ? "border-kaart-orange" : "border-muted-foreground"
+                              }`}
+                            >
+                              {isSelected && (
+                                <div className="w-2 h-2 rounded-full bg-kaart-orange" />
+                              )}
+                            </div>
+                            <span className={quizSubmitted && answer.correct ? "font-medium text-green-700 dark:text-green-300" : ""}>
+                              {answer.answer}
+                            </span>
+                            {quizSubmitted && answer.correct && (
+                              <span className="ml-auto text-green-600 text-sm">Correct</span>
+                            )}
+                            {quizSubmitted && isSelected && !answer.correct && (
+                              <span className="ml-auto text-red-600 text-sm">Incorrect</span>
                             )}
                           </div>
-                          <span className={quizSubmitted && answer.correct ? "font-medium text-green-700 dark:text-green-300" : ""}>
-                            {answer.answer}
-                          </span>
-                          {quizSubmitted && answer.correct && (
-                            <span className="ml-auto text-green-600 text-sm">Correct</span>
-                          )}
-                          {quizSubmitted && isSelected && !answer.correct && (
-                            <span className="ml-auto text-red-600 text-sm">Incorrect</span>
-                          )}
-                        </div>
-                      );
-                    })}
+                        );
+                      })}
+                    </div>
                   </div>
-                </div>
-              );
-            })}
+                );
+              });
+            })()}
           </div>
-
-          {/* Progress indicator */}
-          {!quizSubmitted && selectedTraining?.questions && (
-            <div className="text-sm text-muted-foreground text-center">
-              {Object.keys(answers).length} of {selectedTraining.questions.length} questions answered
-            </div>
-          )}
         </div>
       </Modal>
     </div>
