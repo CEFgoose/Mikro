@@ -12,6 +12,7 @@ from .TimeTracking import TimeTrackingAPI
 from .Teams import TeamAPI
 from .Reports import ReportsAPI
 from .Regions import RegionAPI
+from .Webhook import WebhookAPI
 
 __all__ = {
     "UserAPI",
@@ -26,4 +27,5 @@ __all__ = {
     "TeamAPI",
     "ReportsAPI",
     "RegionAPI",
+    "WebhookAPI",
 }

@@ -73,6 +73,9 @@ class BaseConfig:
     # Mapillary API v4
     MAPILLARY_ACCESS_TOKEN = os.environ.get("MAPILLARY_ACCESS_TOKEN")
 
+    # Webhook Integration
+    MIKRO_WEBHOOK_SECRET = os.environ.get("MIKRO_WEBHOOK_SECRET")
+
     # Frontend URL for OAuth redirect after completion
     FRONTEND_URL = os.environ.get("FRONTEND_URL", "http://localhost:3000")
 

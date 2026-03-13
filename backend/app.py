@@ -121,6 +121,7 @@ def _register_views(app):
         TeamAPI,
         ReportsAPI,
         RegionAPI,
+        WebhookAPI,
     )
 
     # Authentication
@@ -165,6 +166,11 @@ def _register_views(app):
 
     # Regions & Countries
     app.add_url_rule("/api/region/<path>", view_func=RegionAPI.as_view("region"))
+
+    # Webhooks (HMAC-authenticated, not JWT)
+    app.add_url_rule(
+        "/api/webhook/<path>", view_func=WebhookAPI.as_view("webhook")
+    )
 
 
 # Create application instance for gunicorn

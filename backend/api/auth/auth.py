@@ -91,6 +91,10 @@ def authenticate_request():
     if request.path == "/api/osm/callback":
         return None
 
+    # Skip JWT auth for webhook endpoints — they use HMAC verification instead
+    if request.path.startswith("/api/webhook/"):
+        return None
+
     # Only authenticate /api/* routes - let other routes pass through
     if not request.path.startswith("/api/"):
         return None

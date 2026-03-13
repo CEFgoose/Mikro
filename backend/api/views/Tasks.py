@@ -26,91 +26,29 @@ from ..database import (
 )
 
 
+from .split_task_helpers import (
+    is_split_task,
+    get_split_siblings,
+    should_count_validation,
+    should_count_invalidation,
+)
+
+
 class TaskAPI(MethodView):
     """Task management API endpoints for TM4 integration."""
 
+    # Delegate split-task helpers to shared module (SSOT)
     def _is_split_task(self, task):
-        """Check if a task is a split task segment."""
-        return task.parent_task_id is not None
+        return is_split_task(task)
 
     def _get_split_siblings(self, task):
-        """
-        Get all sibling tasks for a split task.
-
-        Returns list of sibling tasks (including the task itself),
-        or empty list if not a split task.
-        """
-        if not self._is_split_task(task):
-            return []
-        return Task.query.filter_by(
-            project_id=task.project_id,
-            parent_task_id=task.parent_task_id
-        ).all()
-
-    def _all_siblings_validated(self, task):
-        """
-        Check if ALL siblings of a split task are validated.
-
-        For non-split tasks, always returns True.
-        For split tasks, returns True only when ALL siblings are validated.
-        """
-        if not self._is_split_task(task):
-            return True
-
-        siblings = self._get_split_siblings(task)
-        expected_count = task.sibling_count or 4  # Default to 4 for TM4
-
-        # Need all siblings present and all validated
-        if len(siblings) != expected_count:
-            return False
-
-        return all(s.validated for s in siblings)
-
-    def _all_siblings_invalidated(self, task):
-        """
-        Check if ALL siblings of a split task are invalidated.
-
-        For non-split tasks, always returns True.
-        For split tasks, returns True only when ALL siblings are invalidated.
-        """
-        if not self._is_split_task(task):
-            return True
-
-        siblings = self._get_split_siblings(task)
-        expected_count = task.sibling_count or 4  # Default to 4 for TM4
-
-        # Need all siblings present and all invalidated
-        if len(siblings) != expected_count:
-            return False
-
-        return all(s.invalidated for s in siblings)
+        return get_split_siblings(task)
 
     def _should_count_validation(self, task):
-        """
-        Determine if this validation should be counted toward stats.
-
-        For normal tasks: always count
-        For split tasks: only count when this is the LAST sibling to be validated
-        (i.e., when all siblings including this one are now validated)
-        """
-        if not self._is_split_task(task):
-            return True
-
-        # For split tasks, only count when ALL siblings are validated
-        # Since we just validated this task, we check if all siblings are now validated
-        return self._all_siblings_validated(task)
+        return should_count_validation(task)
 
     def _should_count_invalidation(self, task):
-        """
-        Determine if this invalidation should be counted toward stats.
-
-        For normal tasks: always count
-        For split tasks: only count when this is the LAST sibling to be invalidated
-        """
-        if not self._is_split_task(task):
-            return True
-
-        return self._all_siblings_invalidated(task)
+        return should_count_invalidation(task)
 
     def post(self, path: str):
         """Route POST requests to appropriate handler."""
