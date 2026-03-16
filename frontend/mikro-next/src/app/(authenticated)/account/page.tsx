@@ -18,6 +18,7 @@ interface UserProfile {
   payment_email: string;
   city: string;
   country: string;
+  timezone: string | null;
   role: string;
 }
 
@@ -47,6 +48,7 @@ export default function AccountPage() {
   const [paymentEmail, setPaymentEmail] = useState("");
   const [city, setCity] = useState("");
   const [country, setCountry] = useState("");
+  const [timezone, setTimezone] = useState("");
   const [countries, setCountries] = useState<CountryOption[]>([]);
 
   useEffect(() => {
@@ -90,6 +92,7 @@ export default function AccountPage() {
         setPaymentEmail(data.payment_email || "");
         setCity(data.city || "");
         setCountry(data.country || "");
+        setTimezone(data.timezone || "");
       }
     } catch (error) {
       console.error("Failed to fetch profile:", error);
@@ -124,6 +127,7 @@ export default function AccountPage() {
           payment_email: paymentEmail,
           city,
           country,
+          timezone,
         }),
       });
       if (response.ok) {
@@ -638,6 +642,33 @@ export default function AccountPage() {
                 )}
               </div>
             </div>
+            <div>
+              <label style={{ display: "block", fontSize: 14, fontWeight: 500, marginBottom: 6 }}>Timezone</label>
+              {isEditing ? (
+                <select
+                  value={timezone}
+                  onChange={(e) => setTimezone(e.target.value)}
+                  style={{
+                    width: "100%",
+                    padding: "8px 12px",
+                    borderRadius: 8,
+                    border: "1px solid var(--border)",
+                    backgroundColor: "var(--background)",
+                    color: "var(--foreground)",
+                    fontSize: 14,
+                  }}
+                >
+                  <option value="">Select a timezone</option>
+                  {Intl.supportedValuesOf("timeZone").map((tz) => (
+                    <option key={tz} value={tz}>
+                      {tz.replace(/_/g, " ")}
+                    </option>
+                  ))}
+                </select>
+              ) : (
+                <p style={{ fontSize: 15, color: "var(--foreground)" }}>{profile?.timezone?.replace(/_/g, " ") || "-"}</p>
+              )}
+            </div>
           </div>
 
           {/* Save/Cancel Buttons */}
@@ -650,6 +681,7 @@ export default function AccountPage() {
                   setPaymentEmail(profile?.payment_email || "");
                   setCity(profile?.city || "");
                   setCountry(profile?.country || "");
+                  setTimezone(profile?.timezone || "");
                 }}
               >
                 Cancel
