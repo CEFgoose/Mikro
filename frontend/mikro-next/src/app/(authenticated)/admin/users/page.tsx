@@ -25,6 +25,8 @@ export default function AdminUsersPage() {
   const [showEditModal, setShowEditModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [editRole, setEditRole] = useState<string>("user");
+  const [editFirstName, setEditFirstName] = useState("");
+  const [editLastName, setEditLastName] = useState("");
   const [isSaving, setIsSaving] = useState(false);
   const [inviteEmail, setInviteEmail] = useState("");
   const [showImportModal, setShowImportModal] = useState(false);
@@ -73,6 +75,8 @@ export default function AdminUsersPage() {
     if (selectedUser) {
       const user = users.find((u) => u.id === selectedUser);
       setEditRole(user?.role || "user");
+      setEditFirstName(user?.first_name || "");
+      setEditLastName(user?.last_name || "");
       setShowEditModal(true);
     }
   };
@@ -106,27 +110,32 @@ export default function AdminUsersPage() {
     }
   };
 
-  const handleSaveRole = async () => {
+  const handleSaveUser = async () => {
     if (!selectedUser) return;
     setIsSaving(true);
     try {
       const response = await fetch("/backend/user/modify_users", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ user_id: selectedUser, role: editRole }),
+        body: JSON.stringify({
+          user_id: selectedUser,
+          role: editRole,
+          first_name: editFirstName,
+          last_name: editLastName,
+        }),
       });
       const data = await response.json();
       if (response.ok && data.status === 200) {
-        alert("User role updated successfully");
+        alert("User updated successfully");
         setShowEditModal(false);
         setSelectedUser(null);
         fetchUsers();
       } else {
-        alert(data.message || "Failed to update user role");
+        alert(data.message || "Failed to update user");
       }
     } catch (error) {
-      console.error("Failed to update user role:", error);
-      alert("Failed to update user role");
+      console.error("Failed to update user:", error);
+      alert("Failed to update user");
     } finally {
       setIsSaving(false);
     }
@@ -501,9 +510,29 @@ export default function AdminUsersPage() {
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
           <Card className="w-full max-w-md">
             <CardHeader>
-              <CardTitle>Edit User Role</CardTitle>
+              <CardTitle>Edit User</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium mb-1">First Name</label>
+                <input
+                  type="text"
+                  className="w-full px-3 py-2 border border-input rounded-lg focus:outline-none focus:ring-2 focus:ring-ring"
+                  value={editFirstName}
+                  onChange={(e) => setEditFirstName(e.target.value)}
+                  placeholder="First name"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">Last Name</label>
+                <input
+                  type="text"
+                  className="w-full px-3 py-2 border border-input rounded-lg focus:outline-none focus:ring-2 focus:ring-ring"
+                  value={editLastName}
+                  onChange={(e) => setEditLastName(e.target.value)}
+                  placeholder="Last name"
+                />
+              </div>
               <div>
                 <label className="block text-sm font-medium mb-1">Role</label>
                 <select
@@ -520,7 +549,7 @@ export default function AdminUsersPage() {
                 <Button variant="outline" onClick={() => setShowEditModal(false)}>
                   Cancel
                 </Button>
-                <Button onClick={handleSaveRole} disabled={isSaving}>
+                <Button onClick={handleSaveUser} disabled={isSaving}>
                   {isSaving ? "Saving..." : "Save Changes"}
                 </Button>
               </div>

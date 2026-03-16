@@ -698,23 +698,34 @@ class UserAPI(MethodView):
             return_obj["message"] = "User_id required"
             return_obj["status"] = 400
             return return_obj
-        # Get the new role from the request JSON
-        new_role = request.json.get("role")
-        if not new_role:
-            return_obj["message"] = "new role required"
-            return_obj["status"] = 400
-            return return_obj
+
         # Query the database for the user
         user = User.query.filter_by(id=user_id).first()
-        if user:
-            # Update the user's role
-            user.update(role=new_role)
-            return_obj["message"] = "Role Changed"
-            return_obj["status"] = 200
-            return return_obj
-        else:
-            # Return an error if the user was not found
+        if not user:
             return {"message": "User Entry not found "}, 400
+
+        updates = {}
+
+        # Handle role update
+        new_role = request.json.get("role")
+        if new_role:
+            updates["role"] = new_role
+
+        # Handle name updates
+        if "first_name" in request.json:
+            updates["first_name"] = (request.json["first_name"] or "").strip()
+        if "last_name" in request.json:
+            updates["last_name"] = (request.json["last_name"] or "").strip()
+
+        if not updates:
+            return_obj["message"] = "No changes provided"
+            return_obj["status"] = 400
+            return return_obj
+
+        user.update(**updates)
+        return_obj["message"] = "User updated"
+        return_obj["status"] = 200
+        return return_obj
 
     # # ADMIN ONLY ROUTE - ASSIGN CURRENT SELECTED USER TO CURRENT SELECTED TEAM # noqa: E501
     @requires_admin
