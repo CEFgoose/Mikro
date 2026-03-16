@@ -21,6 +21,12 @@ interface UserProfile {
   role: string;
 }
 
+interface CountryOption {
+  id: number;
+  name: string;
+  region_name: string;
+}
+
 export default function AccountPage() {
   const { user: auth0User, isLoading: userLoading } = useUser();
   const searchParams = useSearchParams();
@@ -41,9 +47,11 @@ export default function AccountPage() {
   const [paymentEmail, setPaymentEmail] = useState("");
   const [city, setCity] = useState("");
   const [country, setCountry] = useState("");
+  const [countries, setCountries] = useState<CountryOption[]>([]);
 
   useEffect(() => {
     fetchProfile();
+    fetchCountries();
 
     // Check URL params for OSM OAuth result
     const osmLinked = searchParams.get("osm_linked");
@@ -87,6 +95,22 @@ export default function AccountPage() {
       console.error("Failed to fetch profile:", error);
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const fetchCountries = async () => {
+    try {
+      const response = await fetch("/backend/region/list_countries", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({}),
+      });
+      const data = await response.json();
+      if (data.status === 200 && data.countries) {
+        setCountries(data.countries);
+      }
+    } catch (error) {
+      console.error("Failed to fetch countries:", error);
     }
   };
 
@@ -573,11 +597,42 @@ export default function AccountPage() {
               <div>
                 <label style={{ display: "block", fontSize: 14, fontWeight: 500, marginBottom: 6 }}>Country</label>
                 {isEditing ? (
-                  <Input
+                  <select
                     value={country}
                     onChange={(e) => setCountry(e.target.value)}
-                    placeholder="Country"
-                  />
+                    style={{
+                      width: "100%",
+                      padding: "8px 12px",
+                      borderRadius: 8,
+                      border: "1px solid var(--border)",
+                      backgroundColor: "var(--background)",
+                      color: "var(--foreground)",
+                      fontSize: 14,
+                    }}
+                  >
+                    <option value="">Select a country</option>
+                    {(() => {
+                      const grouped: Record<string, CountryOption[]> = {};
+                      countries.forEach((c) => {
+                        const region = c.region_name || "Other";
+                        if (!grouped[region]) grouped[region] = [];
+                        grouped[region].push(c);
+                      });
+                      return Object.entries(grouped)
+                        .sort(([a], [b]) => a.localeCompare(b))
+                        .map(([region, items]) => (
+                          <optgroup key={region} label={region}>
+                            {items
+                              .sort((a, b) => a.name.localeCompare(b.name))
+                              .map((c) => (
+                                <option key={c.id} value={c.name}>
+                                  {c.name}
+                                </option>
+                              ))}
+                          </optgroup>
+                        ));
+                    })()}
+                  </select>
                 ) : (
                   <p style={{ fontSize: 15, color: "var(--foreground)" }}>{profile?.country || "-"}</p>
                 )}

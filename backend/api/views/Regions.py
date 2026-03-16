@@ -76,6 +76,9 @@ class RegionAPI(MethodView):
         # Seed
         elif path == "seed_defaults":
             return self.seed_defaults()
+        # Public (non-admin) endpoints
+        elif path == "list_countries":
+            return self.list_countries()
         return {"message": "Unknown path", "status": 404}
 
     # ─── Regions ──────────────────────────────────────────
@@ -545,6 +548,22 @@ class RegionAPI(MethodView):
             return {"message": "resourceId is required", "status": 400}
         return self._fetch_locations(ChecklistCountry, "checklist_id", resource_id)
 
+    # ─── Public Endpoints (no admin required) ──────────────
+
+    def list_countries(self):
+        """List all countries grouped by region. Available to all authenticated users."""
+        countries = Country.query.order_by(Country.name).all()
+        result = []
+        for c in countries:
+            region = Region.query.get(c.region_id) if c.region_id else None
+            result.append({
+                "id": c.id,
+                "name": c.name,
+                "region_name": region.name if region else None,
+                "default_timezone": c.default_timezone,
+            })
+        return {"status": 200, "countries": result}
+
     # ─── Seed Defaults ────────────────────────────────────
 
     @requires_admin
@@ -555,11 +574,39 @@ class RegionAPI(MethodView):
         logger = logging.getLogger(__name__)
 
         defaults = {
+            # ─── Americas ────────────────────────────────────
+            "North America": [
+                ("United States", "USA", "America/New_York"),
+                ("Canada", "CAN", "America/Toronto"),
+            ],
+            "Central America & Caribbean": [
+                ("Mexico", "MEX", "America/Mexico_City"),
+                ("Guatemala", "GTM", "America/Guatemala"),
+                ("Belize", "BLZ", "America/Belize"),
+                ("Honduras", "HND", "America/Tegucigalpa"),
+                ("El Salvador", "SLV", "America/El_Salvador"),
+                ("Nicaragua", "NIC", "America/Managua"),
+                ("Costa Rica", "CRI", "America/Costa_Rica"),
+                ("Panama", "PAN", "America/Panama"),
+                ("Cuba", "CUB", "America/Havana"),
+                ("Jamaica", "JAM", "America/Jamaica"),
+                ("Haiti", "HTI", "America/Port-au-Prince"),
+                ("Dominican Republic", "DOM", "America/Santo_Domingo"),
+                ("Trinidad and Tobago", "TTO", "America/Port_of_Spain"),
+                ("Barbados", "BRB", "America/Barbados"),
+                ("Bahamas", "BHS", "America/Nassau"),
+                ("Grenada", "GRD", "America/Grenada"),
+                ("Saint Lucia", "LCA", "America/St_Lucia"),
+                ("Dominica", "DMA", "America/Dominica"),
+                ("Saint Vincent and the Grenadines", "VCT", "America/St_Vincent"),
+                ("Antigua and Barbuda", "ATG", "America/Antigua"),
+                ("Saint Kitts and Nevis", "KNA", "America/St_Kitts"),
+                ("Puerto Rico", "PRI", "America/Puerto_Rico"),
+            ],
             "Latin America": [
                 ("Colombia", "COL", "America/Bogota"),
                 ("Peru", "PER", "America/Lima"),
                 ("Brazil", "BRA", "America/Sao_Paulo"),
-                ("Mexico", "MEX", "America/Mexico_City"),
                 ("Chile", "CHL", "America/Santiago"),
                 ("Argentina", "ARG", "America/Argentina/Buenos_Aires"),
                 ("Ecuador", "ECU", "America/Guayaquil"),
@@ -567,12 +614,76 @@ class RegionAPI(MethodView):
                 ("Paraguay", "PRY", "America/Asuncion"),
                 ("Uruguay", "URY", "America/Montevideo"),
                 ("Venezuela", "VEN", "America/Caracas"),
-                ("Panama", "PAN", "America/Panama"),
-                ("Costa Rica", "CRI", "America/Costa_Rica"),
-                ("Guatemala", "GTM", "America/Guatemala"),
-                ("Honduras", "HND", "America/Tegucigalpa"),
-                ("El Salvador", "SLV", "America/El_Salvador"),
-                ("Nicaragua", "NIC", "America/Managua"),
+                ("Guyana", "GUY", "America/Guyana"),
+                ("Suriname", "SUR", "America/Paramaribo"),
+            ],
+            # ─── Europe ──────────────────────────────────────
+            "Western Europe": [
+                ("United Kingdom", "GBR", "Europe/London"),
+                ("France", "FRA", "Europe/Paris"),
+                ("Germany", "DEU", "Europe/Berlin"),
+                ("Netherlands", "NLD", "Europe/Amsterdam"),
+                ("Belgium", "BEL", "Europe/Brussels"),
+                ("Luxembourg", "LUX", "Europe/Luxembourg"),
+                ("Ireland", "IRL", "Europe/Dublin"),
+                ("Switzerland", "CHE", "Europe/Zurich"),
+                ("Austria", "AUT", "Europe/Vienna"),
+                ("Liechtenstein", "LIE", "Europe/Vaduz"),
+                ("Monaco", "MCO", "Europe/Monaco"),
+            ],
+            "Northern Europe": [
+                ("Sweden", "SWE", "Europe/Stockholm"),
+                ("Norway", "NOR", "Europe/Oslo"),
+                ("Denmark", "DNK", "Europe/Copenhagen"),
+                ("Finland", "FIN", "Europe/Helsinki"),
+                ("Iceland", "ISL", "Atlantic/Reykjavik"),
+                ("Estonia", "EST", "Europe/Tallinn"),
+                ("Latvia", "LVA", "Europe/Riga"),
+                ("Lithuania", "LTU", "Europe/Vilnius"),
+            ],
+            "Southern Europe": [
+                ("Spain", "ESP", "Europe/Madrid"),
+                ("Portugal", "PRT", "Europe/Lisbon"),
+                ("Italy", "ITA", "Europe/Rome"),
+                ("Greece", "GRC", "Europe/Athens"),
+                ("Croatia", "HRV", "Europe/Zagreb"),
+                ("Slovenia", "SVN", "Europe/Ljubljana"),
+                ("Malta", "MLT", "Europe/Malta"),
+                ("Cyprus", "CYP", "Asia/Nicosia"),
+                ("Albania", "ALB", "Europe/Tirane"),
+                ("Montenegro", "MNE", "Europe/Podgorica"),
+                ("North Macedonia", "MKD", "Europe/Skopje"),
+                ("Bosnia and Herzegovina", "BIH", "Europe/Sarajevo"),
+                ("Serbia", "SRB", "Europe/Belgrade"),
+                ("Andorra", "AND", "Europe/Andorra"),
+                ("San Marino", "SMR", "Europe/San_Marino"),
+                ("Vatican City", "VAT", "Europe/Vatican"),
+            ],
+            "Eastern Europe": [
+                ("Poland", "POL", "Europe/Warsaw"),
+                ("Czech Republic", "CZE", "Europe/Prague"),
+                ("Slovakia", "SVK", "Europe/Bratislava"),
+                ("Hungary", "HUN", "Europe/Budapest"),
+                ("Romania", "ROU", "Europe/Bucharest"),
+                ("Bulgaria", "BGR", "Europe/Sofia"),
+                ("Ukraine", "UKR", "Europe/Kiev"),
+                ("Moldova", "MDA", "Europe/Chisinau"),
+                ("Belarus", "BLR", "Europe/Minsk"),
+                ("Russia", "RUS", "Europe/Moscow"),
+                ("Georgia", "GEO", "Asia/Tbilisi"),
+                ("Armenia", "ARM", "Asia/Yerevan"),
+                ("Azerbaijan", "AZE", "Asia/Baku"),
+                ("Turkey", "TUR", "Europe/Istanbul"),
+            ],
+            # ─── Africa ──────────────────────────────────────
+            "North Africa": [
+                ("Egypt", "EGY", "Africa/Cairo"),
+                ("Libya", "LBY", "Africa/Tripoli"),
+                ("Tunisia", "TUN", "Africa/Tunis"),
+                ("Algeria", "DZA", "Africa/Algiers"),
+                ("Morocco", "MAR", "Africa/Casablanca"),
+                ("Sudan", "SDN", "Africa/Khartoum"),
+                ("South Sudan", "SSD", "Africa/Juba"),
             ],
             "East Africa": [
                 ("Kenya", "KEN", "Africa/Nairobi"),
@@ -582,6 +693,14 @@ class RegionAPI(MethodView):
                 ("Ethiopia", "ETH", "Africa/Addis_Ababa"),
                 ("Mozambique", "MOZ", "Africa/Maputo"),
                 ("Madagascar", "MDG", "Indian/Antananarivo"),
+                ("Burundi", "BDI", "Africa/Bujumbura"),
+                ("Eritrea", "ERI", "Africa/Asmara"),
+                ("Djibouti", "DJI", "Africa/Djibouti"),
+                ("Somalia", "SOM", "Africa/Mogadishu"),
+                ("Comoros", "COM", "Indian/Comoro"),
+                ("Mauritius", "MUS", "Indian/Mauritius"),
+                ("Seychelles", "SYC", "Indian/Mahe"),
+                ("Malawi", "MWI", "Africa/Blantyre"),
             ],
             "West Africa": [
                 ("Nigeria", "NGA", "Africa/Lagos"),
@@ -590,6 +709,24 @@ class RegionAPI(MethodView):
                 ("Mali", "MLI", "Africa/Bamako"),
                 ("Cameroon", "CMR", "Africa/Douala"),
                 ("Ivory Coast", "CIV", "Africa/Abidjan"),
+                ("Guinea", "GIN", "Africa/Conakry"),
+                ("Burkina Faso", "BFA", "Africa/Ouagadougou"),
+                ("Niger", "NER", "Africa/Niamey"),
+                ("Benin", "BEN", "Africa/Porto-Novo"),
+                ("Togo", "TGO", "Africa/Lome"),
+                ("Sierra Leone", "SLE", "Africa/Freetown"),
+                ("Liberia", "LBR", "Africa/Monrovia"),
+                ("Mauritania", "MRT", "Africa/Nouakchott"),
+                ("Gambia", "GMB", "Africa/Banjul"),
+                ("Guinea-Bissau", "GNB", "Africa/Bissau"),
+                ("Cape Verde", "CPV", "Atlantic/Cape_Verde"),
+                ("Chad", "TCD", "Africa/Ndjamena"),
+                ("Central African Republic", "CAF", "Africa/Bangui"),
+                ("Republic of the Congo", "COG", "Africa/Brazzaville"),
+                ("Democratic Republic of the Congo", "COD", "Africa/Kinshasa"),
+                ("Equatorial Guinea", "GNQ", "Africa/Malabo"),
+                ("Gabon", "GAB", "Africa/Libreville"),
+                ("Sao Tome and Principe", "STP", "Africa/Sao_Tome"),
             ],
             "Southern Africa": [
                 ("South Africa", "ZAF", "Africa/Johannesburg"),
@@ -597,6 +734,36 @@ class RegionAPI(MethodView):
                 ("Zimbabwe", "ZWE", "Africa/Harare"),
                 ("Zambia", "ZMB", "Africa/Lusaka"),
                 ("Namibia", "NAM", "Africa/Windhoek"),
+                ("Angola", "AGO", "Africa/Luanda"),
+                ("Lesotho", "LSO", "Africa/Maseru"),
+                ("Eswatini", "SWZ", "Africa/Mbabane"),
+            ],
+            # ─── Middle East ─────────────────────────────────
+            "Middle East": [
+                ("Saudi Arabia", "SAU", "Asia/Riyadh"),
+                ("United Arab Emirates", "ARE", "Asia/Dubai"),
+                ("Qatar", "QAT", "Asia/Qatar"),
+                ("Kuwait", "KWT", "Asia/Kuwait"),
+                ("Bahrain", "BHR", "Asia/Bahrain"),
+                ("Oman", "OMN", "Asia/Muscat"),
+                ("Yemen", "YEM", "Asia/Aden"),
+                ("Iraq", "IRQ", "Asia/Baghdad"),
+                ("Iran", "IRN", "Asia/Tehran"),
+                ("Jordan", "JOR", "Asia/Amman"),
+                ("Lebanon", "LBN", "Asia/Beirut"),
+                ("Syria", "SYR", "Asia/Damascus"),
+                ("Israel", "ISR", "Asia/Jerusalem"),
+                ("Palestine", "PSE", "Asia/Gaza"),
+            ],
+            # ─── Asia ────────────────────────────────────────
+            "East Asia": [
+                ("China", "CHN", "Asia/Shanghai"),
+                ("Japan", "JPN", "Asia/Tokyo"),
+                ("South Korea", "KOR", "Asia/Seoul"),
+                ("North Korea", "PRK", "Asia/Pyongyang"),
+                ("Mongolia", "MNG", "Asia/Ulaanbaatar"),
+                ("Taiwan", "TWN", "Asia/Taipei"),
+                ("Hong Kong", "HKG", "Asia/Hong_Kong"),
             ],
             "Southeast Asia": [
                 ("Philippines", "PHL", "Asia/Manila"),
@@ -606,6 +773,10 @@ class RegionAPI(MethodView):
                 ("Thailand", "THA", "Asia/Bangkok"),
                 ("Myanmar", "MMR", "Asia/Yangon"),
                 ("Malaysia", "MYS", "Asia/Kuala_Lumpur"),
+                ("Singapore", "SGP", "Asia/Singapore"),
+                ("Laos", "LAO", "Asia/Vientiane"),
+                ("Brunei", "BRN", "Asia/Brunei"),
+                ("Timor-Leste", "TLS", "Asia/Dili"),
             ],
             "South Asia": [
                 ("India", "IND", "Asia/Kolkata"),
@@ -613,12 +784,33 @@ class RegionAPI(MethodView):
                 ("Nepal", "NPL", "Asia/Kathmandu"),
                 ("Sri Lanka", "LKA", "Asia/Colombo"),
                 ("Pakistan", "PAK", "Asia/Karachi"),
+                ("Afghanistan", "AFG", "Asia/Kabul"),
+                ("Bhutan", "BTN", "Asia/Thimphu"),
+                ("Maldives", "MDV", "Indian/Maldives"),
             ],
             "Central Asia": [
                 ("Uzbekistan", "UZB", "Asia/Tashkent"),
                 ("Kazakhstan", "KAZ", "Asia/Almaty"),
                 ("Kyrgyzstan", "KGZ", "Asia/Bishkek"),
                 ("Tajikistan", "TJK", "Asia/Dushanbe"),
+                ("Turkmenistan", "TKM", "Asia/Ashgabat"),
+            ],
+            # ─── Oceania ─────────────────────────────────────
+            "Oceania": [
+                ("Australia", "AUS", "Australia/Sydney"),
+                ("New Zealand", "NZL", "Pacific/Auckland"),
+                ("Papua New Guinea", "PNG", "Pacific/Port_Moresby"),
+                ("Fiji", "FJI", "Pacific/Fiji"),
+                ("Solomon Islands", "SLB", "Pacific/Guadalcanal"),
+                ("Vanuatu", "VUT", "Pacific/Efate"),
+                ("Samoa", "WSM", "Pacific/Apia"),
+                ("Tonga", "TON", "Pacific/Tongatapu"),
+                ("Micronesia", "FSM", "Pacific/Pohnpei"),
+                ("Palau", "PLW", "Pacific/Palau"),
+                ("Marshall Islands", "MHL", "Pacific/Majuro"),
+                ("Kiribati", "KIR", "Pacific/Tarawa"),
+                ("Nauru", "NRU", "Pacific/Nauru"),
+                ("Tuvalu", "TUV", "Pacific/Funafuti"),
             ],
         }
 
