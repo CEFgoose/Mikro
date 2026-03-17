@@ -30,6 +30,7 @@ from ..database import (
     db,
 )
 from ..filters import resolve_filtered_user_ids
+from ..stats import get_user_task_stats, get_batch_user_task_stats, get_user_payment_balances, get_batch_user_payment_balances
 
 
 def _auto_assign_country(user, country_text):
@@ -400,8 +401,9 @@ class UserAPI(MethodView):
         response["mapillary_username"] = user.mapillary_username
 
         # Stats for display
-        response["total_tasks_mapped"] = user.total_tasks_mapped or 0
-        response["total_tasks_validated"] = user.total_tasks_validated or 0
+        _stats = get_user_task_stats(user)
+        response["total_tasks_mapped"] = _stats["total_tasks_mapped"]
+        response["total_tasks_validated"] = _stats["total_tasks_validated"]
         response["total_payout"] = user.paid_total or 0
 
         response["status"] = 200
@@ -430,6 +432,10 @@ class UserAPI(MethodView):
         # Build country/region lookup caches
         country_cache = {}
         region_cache = {}
+
+        # Batch-compute live task stats for all users (avoids N+1 queries)
+        batch_stats = get_batch_user_task_stats(users_in_org, g.user.org_id)
+        batch_pay = get_batch_user_payment_balances(users_in_org, g.user.org_id)
 
         # Initialize an empty list to store information about the users
         org_users = []
@@ -462,6 +468,7 @@ class UserAPI(MethodView):
                         if region_obj:
                             region_name = region_obj.name
 
+            _ustats = batch_stats.get(user.id, {})
             # Append the user information to the org_users list
             org_users.append(
                 {
@@ -471,11 +478,11 @@ class UserAPI(MethodView):
                     "joined": user.create_time,
                     "total_payout": user.paid_total,
                     "awaiting_payment": user.requested_total,
-                    "validated_tasks_amounts": user.mapping_payable_total
-                    + user.validation_payable_total,
-                    "total_tasks_mapped": user.total_tasks_mapped,
-                    "total_tasks_validated": user.total_tasks_validated,
-                    "total_tasks_invalidated": user.total_tasks_invalidated,
+                    "validated_tasks_amounts": batch_pay.get(user.id, {}).get("mapping_payable_total", 0)
+                    + batch_pay.get(user.id, {}).get("validation_payable_total", 0),
+                    "total_tasks_mapped": _ustats.get("total_tasks_mapped", 0),
+                    "total_tasks_validated": _ustats.get("total_tasks_validated", 0),
+                    "total_tasks_invalidated": _ustats.get("total_tasks_invalidated", 0),
                     "requesting_payment": user.requesting_payment,
                     "assigned_projects": assigned_projects_count,
                     "country_name": country_name,
@@ -520,6 +527,9 @@ class UserAPI(MethodView):
         unassigned_users = [
             u for u in users_in_org if u.id not in assigned_user_ids
         ]
+        # Batch-compute live task stats for all users (avoids N+1 queries)
+        batch_stats = get_batch_user_task_stats(users_in_org, g.user.org_id)
+
         # Initialize an empty list to store information about the users
         org_users = []
         # Loop over each user and extract relevant information
@@ -536,6 +546,7 @@ class UserAPI(MethodView):
                 assigned_projects_count = len(user.assigned_projects)
             else:
                 assigned_projects_count = 0
+            _ustats = batch_stats.get(user.id, {})
             # Append the user information to the org_users list
             org_users.append(
                 {
@@ -545,9 +556,9 @@ class UserAPI(MethodView):
                     "joined": user.create_time,
                     "total_payout": user.paid_total,
                     "awaiting_payment": user.requested_total,
-                    "total_tasks_mapped": user.total_tasks_mapped,
-                    "total_tasks_validated": user.total_tasks_validated,
-                    "total_tasks_invalidated": user.total_tasks_invalidated,
+                    "total_tasks_mapped": _ustats.get("total_tasks_mapped", 0),
+                    "total_tasks_validated": _ustats.get("total_tasks_validated", 0),
+                    "total_tasks_invalidated": _ustats.get("total_tasks_invalidated", 0),
                     "requesting_payment": user.requesting_payment,
                     "assigned_projects": assigned_projects_count,
                     "assigned": assigned,
@@ -945,6 +956,8 @@ class UserAPI(MethodView):
                     if region_obj:
                         region_name = region_obj.name
 
+        _stats = get_user_task_stats(user)
+        _pay = get_user_payment_balances(user)
         return {
             "status": 200,
             "user": {
@@ -966,14 +979,14 @@ class UserAPI(MethodView):
                 "is_tracked_only": user.is_tracked_only or False,
                 "joined": user.create_time.isoformat() if user.create_time else None,
                 # Task stats
-                "total_tasks_mapped": user.total_tasks_mapped or 0,
-                "total_tasks_validated": user.total_tasks_validated or 0,
-                "total_tasks_invalidated": user.total_tasks_invalidated or 0,
-                "validator_tasks_validated": user.validator_tasks_validated or 0,
-                "validator_tasks_invalidated": user.validator_tasks_invalidated or 0,
+                "total_tasks_mapped": _stats["total_tasks_mapped"],
+                "total_tasks_validated": _stats["total_tasks_validated"],
+                "total_tasks_invalidated": _stats["total_tasks_invalidated"],
+                "validator_tasks_validated": _stats["validator_tasks_validated"],
+                "validator_tasks_invalidated": _stats["validator_tasks_invalidated"],
                 # Payment stats
-                "mapping_payable_total": round(user.mapping_payable_total or 0, 2),
-                "validation_payable_total": round(user.validation_payable_total or 0, 2),
+                "mapping_payable_total": _pay["mapping_payable_total"],
+                "validation_payable_total": _pay["validation_payable_total"],
                 "checklist_payable_total": round(user.checklist_payable_total or 0, 2),
                 "payable_total": round(user.payable_total or 0, 2),
                 "requested_total": round(user.requested_total or 0, 2),

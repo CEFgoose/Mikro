@@ -150,19 +150,6 @@ class TaskAPI(MethodView):
                             osm_username=task_exists.mapped_by
                         ).first()
 
-                        # Handle previously invalidated tasks
-                        if task_exists.invalidated is True:
-                            if mapper:
-                                mapper.update(
-                                    total_tasks_validated=mapper.total_tasks_validated - 1,
-                                )
-                            validator_exists.update(
-                                validator_tasks_invalidated=validator_exists.validator_tasks_invalidated - 1
-                            )
-                            target_project.update(
-                                tasks_invalidated=target_project.tasks_invalidated - 1
-                            )
-
                         # Detect self-validation (mapper validated their own work)
                         is_self_validated = task_exists.mapped_by == c["username"]
 
@@ -183,80 +170,13 @@ class TaskAPI(MethodView):
                         if not validator_task_link:
                             UserTasks.create(user_id=validator_exists.id, task_id=task_exists.id)
 
-                        # Skip payment updates for self-validated tasks
+                        # Skip self-validated tasks (just log it)
                         if is_self_validated:
                             current_app.logger.warning(
                                 f"Self-validation detected: {c['username']} validated their own task {task}"
                             )
-                            # For split tasks, only count when all siblings are validated
-                            if self._should_count_validation(task_exists):
-                                target_project.update(
-                                    tasks_validated=target_project.tasks_validated + 1
-                                )
                             continue
 
-                        # For split tasks, only update stats/payments when ALL siblings are validated
-                        # This prevents counting each segment separately
-                        if not self._should_count_validation(task_exists):
-                            current_app.logger.info(
-                                f"Split task {task} validated but not all siblings complete yet - deferring stats update"
-                            )
-                            continue
-
-                        # Update mapper stats (always) and payment (only if payments enabled)
-                        if mapper:
-                            old_validated_total = int(mapper.total_tasks_validated)
-                            new_tasks_validated = old_validated_total + 1
-
-                            if target_project.payments_enabled:
-                                # For split tasks, calculate total mapping rate for all siblings
-                                if self._is_split_task(task_exists):
-                                    siblings = self._get_split_siblings(task_exists)
-                                    new_awaiting_payment = sum(s.mapping_rate or 0 for s in siblings)
-                                else:
-                                    new_awaiting_payment = task_exists.mapping_rate or 0
-
-                                old_awaiting_payment = mapper.mapping_payable_total or 0
-                                current_awaiting_payment = old_awaiting_payment + new_awaiting_payment
-
-                                mapper.update(
-                                    mapping_payable_total=current_awaiting_payment,
-                                    total_tasks_validated=new_tasks_validated,
-                                )
-                            else:
-                                mapper.update(
-                                    total_tasks_validated=new_tasks_validated,
-                                )
-
-                        # Update validator stats (always) and payment (only if payments enabled)
-                        if target_project.payments_enabled:
-                            old_validations_payment = float(
-                                validator_exists.validation_payable_total or 0
-                            )
-
-                            # For split tasks, calculate total validation rate for all siblings
-                            if self._is_split_task(task_exists):
-                                siblings = self._get_split_siblings(task_exists)
-                                new_validations_payment = sum(s.validation_rate or 0 for s in siblings)
-                            else:
-                                new_validations_payment = task_exists.validation_rate or 0
-
-                            current_validations_payment = (
-                                old_validations_payment + new_validations_payment
-                            )
-
-                            validator_exists.update(
-                                validator_tasks_validated=validator_exists.validator_tasks_validated + 1,
-                                validation_payable_total=current_validations_payment,
-                            )
-                        else:
-                            validator_exists.update(
-                                validator_tasks_validated=validator_exists.validator_tasks_validated + 1,
-                            )
-
-                        target_project.update(
-                            tasks_validated=target_project.tasks_validated + 1
-                        )
                         tasks_validated += 1
                     else:
                         tasks_skipped += 1
@@ -399,35 +319,8 @@ class TaskAPI(MethodView):
                                 )
                                 continue
 
-                            # Update validator stats (only when all split siblings are invalidated)
-                            if validator_username:
-                                validator_exists = User.query.filter_by(
-                                    osm_username=validator_username
-                                ).first()
-
-                                if validator_exists:
-                                    # For split tasks, calculate total validation rate for all siblings
-                                    if self._is_split_task(target_task):
-                                        siblings = self._get_split_siblings(target_task)
-                                        validation_payment = sum(s.validation_rate or 0 for s in siblings)
-                                    else:
-                                        validation_payment = target_task.validation_rate or 0
-
-                                    validator_exists.update(
-                                        validator_tasks_invalidated=validator_exists.validator_tasks_invalidated + 1,
-                                        validation_payable_total=validator_exists.validation_payable_total
-                                        + validation_payment,
-                                    )
-
-                            # Update user and project stats
-                            invalidated_count = target_user.total_tasks_invalidated + 1
-                            target_user.update(total_tasks_invalidated=invalidated_count)
-                            target_project.update(
-                                tasks_invalidated=target_project.tasks_invalidated + 1
-                            )
                             current_app.logger.info(
-                                f"Marked task {tm4_task_id} as INVALIDATED. "
-                                f"User {target_user.id} total_tasks_invalidated now: {invalidated_count}"
+                                f"Marked task {tm4_task_id} as INVALIDATED for user {target_user.id}"
                             )
                     else:
                         current_app.logger.warning(
@@ -488,7 +381,6 @@ class TaskAPI(MethodView):
                     task_exists = Task.query.filter_by(
                         task_id=task,
                         project_id=project_id,
-                        mapped_by=mapper.osm_username,
                     ).first()
 
                     if task_exists is None:
@@ -506,10 +398,6 @@ class TaskAPI(MethodView):
                             date_mapped=func.now(),
                         )
                         UserTasks.create(user_id=mapper.id, task_id=new_task.id)
-                        mapper.update(total_tasks_mapped=mapper.total_tasks_mapped + 1)
-                        target_project.update(
-                            tasks_mapped=target_project.tasks_mapped + 1
-                        )
                         tasks_created += 1
                         current_app.logger.info(
                             f"Created task {task} for mapper {contrib_username}, "
@@ -518,6 +406,12 @@ class TaskAPI(MethodView):
                         target_task = new_task
                     else:
                         tasks_skipped += 1
+                        # Update mapped_by if task was reassigned in TM4
+                        if task_exists.mapped_by != contrib_username:
+                            current_app.logger.info(
+                                f"Task {task} reassigned: {task_exists.mapped_by} -> {contrib_username}"
+                            )
+                            task_exists.update(mapped_by=contrib_username)
                         # Ensure UserTasks link exists (may have been missing)
                         user_task_link = UserTasks.query.filter_by(
                             user_id=mapper.id, task_id=task_exists.id
@@ -614,14 +508,6 @@ class TaskAPI(MethodView):
                             validated=False,
                             date_validated=func.now(),
                         )
-                        # For split tasks, only count when ALL siblings are invalidated
-                        if self._should_count_invalidation(task_exists):
-                            mapper.update(
-                                total_tasks_invalidated=mapper.total_tasks_invalidated + 1
-                            )
-                            target_project.update(
-                                tasks_invalidated=target_project.tasks_invalidated + 1
-                            )
                 else:
                     # Task doesn't exist - create it as an invalidated task
                     current_app.logger.info(
@@ -643,18 +529,6 @@ class TaskAPI(MethodView):
                         date_validated=func.now(),
                     )
                     UserTasks.create(user_id=mapper.id, task_id=new_task.id)
-                    # For new tasks, always count mapped (it's a new task)
-                    # For invalidated, only count if all siblings would be invalidated
-                    # Note: For newly created tasks, we don't have sibling info yet,
-                    # so we count it and will reconcile later when siblings are synced
-                    mapper.update(
-                        total_tasks_mapped=mapper.total_tasks_mapped + 1,
-                        total_tasks_invalidated=mapper.total_tasks_invalidated + 1,
-                    )
-                    target_project.update(
-                        tasks_mapped=target_project.tasks_mapped + 1,
-                        tasks_invalidated=target_project.tasks_invalidated + 1,
-                    )
 
         return {"message": "complete"}
 
@@ -716,14 +590,6 @@ class TaskAPI(MethodView):
                                 invalidated=True,
                                 validated=False,
                             )
-                            # For split tasks, only count when ALL siblings are invalidated
-                            if self._should_count_invalidation(existing_task):
-                                user.update(
-                                    total_tasks_invalidated=user.total_tasks_invalidated + 1
-                                )
-                                target_project.update(
-                                    tasks_invalidated=target_project.tasks_invalidated + 1
-                                )
                     else:
                         # Task doesn't exist - create it as invalidated
                         current_app.logger.info(
@@ -745,16 +611,6 @@ class TaskAPI(MethodView):
                             date_validated=func.now(),
                         )
                         UserTasks.create(user_id=user.id, task_id=new_task.id)
-                        # For new tasks, always count mapped (it's a new task)
-                        # For invalidated, count it since we can't know sibling state yet
-                        user.update(
-                            total_tasks_mapped=user.total_tasks_mapped + 1,
-                            total_tasks_invalidated=user.total_tasks_invalidated + 1,
-                        )
-                        target_project.update(
-                            tasks_mapped=target_project.tasks_mapped + 1,
-                            tasks_invalidated=target_project.tasks_invalidated + 1,
-                        )
 
                 return {"response": "complete", "count": len(invalidated_tasks)}
             else:
@@ -1066,28 +922,6 @@ class TaskAPI(MethodView):
                 unknown_validator=False,
             )
 
-            # For split tasks, only update stats when ALL siblings are validated
-            if self._should_count_validation(target_task):
-                # Calculate payment: for split tasks, sum all siblings' rates
-                if self._is_split_task(target_task):
-                    siblings = self._get_split_siblings(target_task)
-                    mapping_payment = sum(s.mapping_rate or 0 for s in siblings)
-                else:
-                    mapping_payment = target_task.mapping_rate or 0
-
-                target_mapper.update(
-                    total_tasks_validated=target_mapper.total_tasks_validated + 1,
-                    mapping_payable_total=target_mapper.mapping_payable_total + mapping_payment,
-                )
-                if target_project:
-                    target_project.update(
-                        tasks_validated=target_project.tasks_validated + 1
-                    )
-            else:
-                current_app.logger.info(
-                    f"Split task {task_id} validated but not all siblings validated yet - deferring stats update"
-                )
-
         elif task_action == "Invalidate":
             # Update task status first (always happens)
             target_task.update(
@@ -1097,19 +931,6 @@ class TaskAPI(MethodView):
                 unknown_validator=False,
             )
 
-            # For split tasks, only update stats when ALL siblings are invalidated
-            if self._should_count_invalidation(target_task):
-                target_mapper.update(
-                    total_tasks_invalidated=target_mapper.total_tasks_invalidated + 1
-                )
-                if target_project:
-                    target_project.update(
-                        tasks_invalidated=target_project.tasks_invalidated + 1
-                    )
-            else:
-                current_app.logger.info(
-                    f"Split task {task_id} invalidated but not all siblings invalidated yet - deferring stats update"
-                )
         else:
             return {"message": f"Invalid task_action: {task_action}", "status": 400}
 
@@ -1151,39 +972,14 @@ class TaskAPI(MethodView):
             # Delete all tasks for org
             Task.query.filter_by(org_id=org_id).delete(synchronize_session=False)
 
-            # Reset user task stats
-            users = User.query.filter_by(org_id=org_id).all()
-            for user in users:
-                user.update(
-                    total_tasks_mapped=0,
-                    total_tasks_validated=0,
-                    total_tasks_invalidated=0,
-                    validator_tasks_invalidated=0,
-                    validator_tasks_validated=0,
-                    mapping_payable_total=0,
-                    validation_payable_total=0,
-                    payable_total=0,
-                )
-
-            # Reset project task stats
-            projects = Project.query.filter_by(org_id=org_id).all()
-            for project in projects:
-                project.update(
-                    tasks_mapped=0,
-                    tasks_validated=0,
-                    tasks_invalidated=0,
-                )
-
             db.session.commit()
 
             current_app.logger.warning(
-                f"PURGE: All task stats purged by admin {g.user.email} for org {org_id}"
+                f"PURGE: All task data purged by admin {g.user.email} for org {org_id}"
             )
 
             return {
-                "message": "All task stats purged successfully",
-                "users_reset": len(users),
-                "projects_reset": len(projects),
+                "message": "All task data purged successfully",
                 "status": 200,
             }
 

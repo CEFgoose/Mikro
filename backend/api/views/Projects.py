@@ -16,6 +16,7 @@ from sqlalchemy import func
 
 from ..utils import requires_admin
 from ..filters import resolve_filtered_user_ids, get_user_country_ids, is_visible_by_location
+from ..stats import count_tasks_split_aware, get_project_stats, get_project_stats_from_tasks, get_batch_project_stats, get_user_task_stats, get_user_payment_balances
 from .MapRoulette import MapRouletteSync
 from ..database import (
     db,
@@ -524,54 +525,7 @@ class ProjectAPI(MethodView):
         return {"message": "rate_type must be true", "status": 400}
 
     def _count_tasks_split_aware(self, tasks, condition_fn=None):
-        """
-        Count tasks with split-awareness.
-
-        Split task groups (siblings with same parent_task_id) only count as 1
-        when ALL siblings are present AND ALL meet the condition.
-
-        For TM4 splits, there are always exactly 4 siblings. A split group
-        only counts as 1 when we have all 4 siblings and all meet the condition.
-
-        Args:
-            tasks: List of Task objects to count
-            condition_fn: Optional function that takes a task and returns True
-                         if it should be counted. If None, counts all tasks.
-
-        Returns:
-            Effective count where split groups count as 1 only when ALL siblings
-            are present and meet condition
-        """
-        if condition_fn is None:
-            condition_fn = lambda t: True
-
-        # Separate normal tasks from split tasks
-        normal_tasks = [t for t in tasks if not t.parent_task_id]
-        split_tasks = [t for t in tasks if t.parent_task_id]
-
-        # Count normal tasks that meet condition
-        normal_count = len([t for t in normal_tasks if condition_fn(t)])
-
-        # Group split tasks by parent_task_id
-        split_groups = {}
-        for task in split_tasks:
-            if task.parent_task_id not in split_groups:
-                split_groups[task.parent_task_id] = []
-            split_groups[task.parent_task_id].append(task)
-
-        # Count split groups where:
-        # 1. We have ALL expected siblings (sibling_count, default 4 for TM4)
-        # 2. ALL siblings meet the condition
-        split_count = 0
-        for parent_id, siblings in split_groups.items():
-            # Get expected sibling count (default to 4 for TM4 splits)
-            expected_count = siblings[0].sibling_count if siblings[0].sibling_count else 4
-
-            # Only count if we have ALL siblings AND all meet condition
-            if len(siblings) == expected_count and all(condition_fn(t) for t in siblings):
-                split_count += 1
-
-        return normal_count + split_count
+        return count_tasks_split_aware(tasks, condition_fn)
 
     def _get_effective_task_counts(self, project_id):
         """
@@ -1280,7 +1234,9 @@ class ProjectAPI(MethodView):
             request.amount_requested for request in all_user_requests
         )
         payouts_total = sum(payment.amount_paid for payment in all_user_payments)
-        payable_total = g.user.mapping_payable_total
+        _user_stats = get_user_task_stats(g.user, all_org_tasks=all_tasks)
+        _pay = get_user_payment_balances(g.user, all_org_tasks=all_tasks)
+        payable_total = _pay["mapping_payable_total"] or 0
         # Construct response dictionary
         response = {
             "month_contribution_change": month_contribution_change,
@@ -1292,10 +1248,10 @@ class ProjectAPI(MethodView):
             "mapped_tasks": user_mapped_tasks_count,
             "validated_tasks": user_validated_tasks_count,
             "invalidated_tasks": user_invalidated_tasks_count,
-            "validator_validated": g.user.validator_tasks_validated,
-            "validator_invalidated": g.user.validator_tasks_invalidated,
-            "mapping_payable_total": g.user.mapping_payable_total,
-            "validation_payable_total": g.user.validation_payable_total,
+            "validator_validated": _user_stats["validator_tasks_validated"],
+            "validator_invalidated": _user_stats["validator_tasks_invalidated"],
+            "mapping_payable_total": _pay["mapping_payable_total"],
+            "validation_payable_total": _pay["validation_payable_total"],
             "payable_total": payable_total,
             "requests_total": all_requests_total,
             "payouts_total": payouts_total,
@@ -1411,8 +1367,10 @@ class ProjectAPI(MethodView):
             request.amount_requested for request in all_user_requests
         )
         payouts_total = sum(payment.amount_paid for payment in all_user_payments)
+        _val_stats = get_user_task_stats(g.user, all_org_tasks=all_tasks)
+        _pay = get_user_payment_balances(g.user, all_org_tasks=all_tasks)
         payable_total = float(
-            float(g.user.mapping_payable_total) + float(g.user.validation_payable_total)
+            _pay["mapping_payable_total"] + _pay["validation_payable_total"]
         )
         # Construct response dictionary
         # Use snake_case field names to match frontend types
@@ -1433,8 +1391,8 @@ class ProjectAPI(MethodView):
             "validator_invalidated": validator_invalidated_tasks,
             "self_validated_count": self_validated_tasks_count,  # For frontend warning display
             # Payment totals
-            "mapping_payable_total": g.user.mapping_payable_total,
-            "validation_payable_total": g.user.validation_payable_total,
+            "mapping_payable_total": _pay["mapping_payable_total"],
+            "validation_payable_total": _pay["validation_payable_total"],
             "calculated_validation_earnings": validation_earnings + invalidation_earnings,
             "payable_total": payable_total,
             "paid_total": payouts_total,  # Alias for frontend
@@ -1477,6 +1435,7 @@ class ProjectAPI(MethodView):
                 for relation in UserTasks.query.filter_by(user_id=g.user.id).all()
             ]
             all_project_tasks = Task.query.filter_by(project_id=project.id).all()
+            _proj_stats = get_project_stats_from_tasks(all_project_tasks)
             user_project_task_ids = [
                 task.id for task in all_project_tasks if task.id in user_task_ids
             ]
@@ -1527,9 +1486,9 @@ class ProjectAPI(MethodView):
                     "tasks_mapped": user_project_mapped_tasks,
                     "tasks_approved": user_project_approved_tasks,
                     "tasks_unapproved": user_project_unapproved_tasks,
-                    "total_mapped": project.tasks_mapped,
-                    "total_validated": project.tasks_validated,
-                    "total_invalidated": project.tasks_invalidated,
+                    "total_mapped": _proj_stats["tasks_mapped"],
+                    "total_validated": _proj_stats["tasks_validated"],
+                    "total_invalidated": _proj_stats["tasks_invalidated"],
                     "user_earnings": user_project_earnings,
                     "status": project.status,
                 }

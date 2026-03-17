@@ -10,6 +10,7 @@ from flask import g, request
 
 from ..utils import requires_admin
 from ..database import User, PayRequests, Payments, UserTasks, Task, Project
+from ..stats import get_user_payment_balances
 
 
 class TransactionAPI(MethodView):
@@ -318,9 +319,10 @@ class TransactionAPI(MethodView):
             g.user.first_name.capitalize(),
             g.user.last_name.capitalize(),
         )
+        _pay = get_user_payment_balances(g.user)
         if g.user.role == "validator":
             request_amount = (
-                g.user.mapping_payable_total + g.user.validation_payable_total
+                _pay["mapping_payable_total"] + _pay["validation_payable_total"]
             )
             request_task_ids = (
                 user_validated_task_ids
@@ -328,7 +330,7 @@ class TransactionAPI(MethodView):
                 + validator_invalidated_task_ids
             )
         else:
-            request_amount = g.user.mapping_payable_total
+            request_amount = _pay["mapping_payable_total"]
             request_task_ids = user_validated_task_ids
         new_request = PayRequests.create(
             org_id=g.user.org_id,
@@ -343,8 +345,6 @@ class TransactionAPI(MethodView):
             new_request.update(notes=notes)
         g.user.update(
             requested_total=request_amount,
-            mapping_payable_total=0.0,
-            validation_payable_total=0.0,
         )
         return {
             "message": f"Payment Request {new_request.id} has been submitted",
@@ -357,14 +357,15 @@ class TransactionAPI(MethodView):
         target_user = User.query.filter_by(id=g.user.id).first()
         if not target_user:
             return {"message": "User not found", "status": 400}
-        payable_total = (
-            target_user.mapping_payable_total
-            + target_user.validation_payable_total
-            + target_user.checklist_payable_total
-        )
-        mapping_payable_total = target_user.mapping_payable_total
-        validation_payable_total = target_user.validation_payable_total
+        _pay = get_user_payment_balances(target_user)
+        mapping_payable_total = _pay["mapping_payable_total"]
+        validation_payable_total = _pay["validation_payable_total"]
         checklist_payable_total = target_user.checklist_payable_total
+        payable_total = (
+            mapping_payable_total
+            + validation_payable_total
+            + checklist_payable_total
+        )
         return {
             "message": "payable total fetched",
             "checklist_earnings": checklist_payable_total,
@@ -606,8 +607,6 @@ class TransactionAPI(MethodView):
         users_reset = 0
         for user in users:
             user.update(
-                mapping_payable_total=0,
-                validation_payable_total=0,
                 checklist_payable_total=0,
                 requested_total=0,
                 total_payout=0,

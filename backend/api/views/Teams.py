@@ -11,6 +11,7 @@ from flask import g, request
 from ..utils import requires_admin, requires_auth
 from ..database import Team, TeamUser, User, ProjectTeam, ProjectUser, Project, TeamTraining, Training, TeamChecklist, Checklist, Task
 from ..filters import resolve_filtered_user_ids
+from ..stats import get_batch_user_task_stats, get_batch_user_payment_balances
 
 
 class TeamAPI(MethodView):
@@ -601,20 +602,24 @@ class TeamAPI(MethodView):
             "paid_total": 0.0,
         }
 
-        for uid in member_ids:
-            u = User.query.get(uid)
-            if not u:
-                continue
+        members = [User.query.get(uid) for uid in member_ids]
+        members = [u for u in members if u is not None]
+        _batch_stats = get_batch_user_task_stats(members, g.user.org_id)
+        _batch_pay = get_batch_user_payment_balances(members, g.user.org_id)
+
+        for u in members:
             name = f"{u.first_name or ''} {u.last_name or ''}".strip() or u.email
             if u.osm_username:
                 osm_usernames.add(u.osm_username)
 
-            agg["total_tasks_mapped"] += u.total_tasks_mapped or 0
-            agg["total_tasks_validated"] += u.total_tasks_validated or 0
-            agg["total_tasks_invalidated"] += u.total_tasks_invalidated or 0
+            _ustats = _batch_stats.get(u.id, {})
+            _upay = _batch_pay.get(u.id, {})
+            agg["total_tasks_mapped"] += _ustats.get("total_tasks_mapped", 0)
+            agg["total_tasks_validated"] += _ustats.get("total_tasks_validated", 0)
+            agg["total_tasks_invalidated"] += _ustats.get("total_tasks_invalidated", 0)
             agg["total_checklists_completed"] += u.total_checklists_completed or 0
-            agg["mapping_payable_total"] += u.mapping_payable_total or 0
-            agg["validation_payable_total"] += u.validation_payable_total or 0
+            agg["mapping_payable_total"] += _upay.get("mapping_payable_total", 0)
+            agg["validation_payable_total"] += _upay.get("validation_payable_total", 0)
             agg["checklist_payable_total"] += u.checklist_payable_total or 0
             agg["payable_total"] += u.payable_total or 0
             agg["requested_total"] += u.requested_total or 0
@@ -626,9 +631,9 @@ class TeamAPI(MethodView):
                 "email": u.email,
                 "role": u.role,
                 "osm_username": u.osm_username,
-                "total_tasks_mapped": u.total_tasks_mapped or 0,
-                "total_tasks_validated": u.total_tasks_validated or 0,
-                "total_tasks_invalidated": u.total_tasks_invalidated or 0,
+                "total_tasks_mapped": _ustats.get("total_tasks_mapped", 0),
+                "total_tasks_validated": _ustats.get("total_tasks_validated", 0),
+                "total_tasks_invalidated": _ustats.get("total_tasks_invalidated", 0),
                 "payable_total": round(u.payable_total or 0, 2),
             })
 
@@ -781,17 +786,19 @@ class TeamAPI(MethodView):
             "total_checklists_completed": 0,
         }
 
-        for uid in member_ids:
-            u = User.query.get(uid)
-            if not u:
-                continue
+        members = [User.query.get(uid) for uid in member_ids]
+        members = [u for u in members if u is not None]
+        _batch_stats = get_batch_user_task_stats(members, g.user.org_id)
+
+        for u in members:
             name = f"{u.first_name or ''} {u.last_name or ''}".strip() or u.email
             if u.osm_username:
                 osm_usernames.add(u.osm_username)
 
-            agg["total_tasks_mapped"] += u.total_tasks_mapped or 0
-            agg["total_tasks_validated"] += u.total_tasks_validated or 0
-            agg["total_tasks_invalidated"] += u.total_tasks_invalidated or 0
+            _ustats = _batch_stats.get(u.id, {})
+            agg["total_tasks_mapped"] += _ustats.get("total_tasks_mapped", 0)
+            agg["total_tasks_validated"] += _ustats.get("total_tasks_validated", 0)
+            agg["total_tasks_invalidated"] += _ustats.get("total_tasks_invalidated", 0)
             agg["total_checklists_completed"] += u.total_checklists_completed or 0
 
             members_data.append({
@@ -799,8 +806,8 @@ class TeamAPI(MethodView):
                 "name": name,
                 "role": u.role,
                 "osm_username": u.osm_username,
-                "total_tasks_mapped": u.total_tasks_mapped or 0,
-                "total_tasks_validated": u.total_tasks_validated or 0,
+                "total_tasks_mapped": _ustats.get("total_tasks_mapped", 0),
+                "total_tasks_validated": _ustats.get("total_tasks_validated", 0),
             })
 
         # Get projects via ProjectTeam (no earnings)

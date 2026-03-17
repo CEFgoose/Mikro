@@ -685,7 +685,7 @@ def main():
     signal.signal(signal.SIGINT, shutdown_handler)
 
     logger.info("Worker running — polling for sync jobs every 5 seconds")
-    logger.info("Nightly element analysis scheduled at midnight MST (07:00 UTC)")
+    logger.info("Nightly task sync + element analysis scheduled at midnight MST (07:00 UTC)")
 
     heartbeat_counter = 0
     last_nightly_date = None  # Track last auto-schedule date
@@ -713,13 +713,30 @@ def main():
                         .all()
                     )
                     for (org_id,) in orgs:
-                        # Check no element_analysis job already queued/running
-                        existing = SyncJob.query.filter(
+                        # Auto-schedule nightly task sync
+                        existing_sync = SyncJob.query.filter(
+                            SyncJob.org_id == org_id,
+                            SyncJob.job_type == "task_sync",
+                            SyncJob.status.in_(["queued", "running"]),
+                        ).first()
+                        if not existing_sync:
+                            new_job = SyncJob(
+                                org_id=org_id,
+                                status="queued",
+                                job_type="task_sync",
+                            )
+                            db.session.add(new_job)
+                            logger.info(
+                                f"Auto-scheduled nightly task sync for org {org_id}"
+                            )
+
+                        # Auto-schedule nightly element analysis
+                        existing_ea = SyncJob.query.filter(
                             SyncJob.org_id == org_id,
                             SyncJob.job_type == "element_analysis",
                             SyncJob.status.in_(["queued", "running"]),
                         ).first()
-                        if not existing:
+                        if not existing_ea:
                             new_job = SyncJob(
                                 org_id=org_id,
                                 status="queued",
@@ -731,7 +748,7 @@ def main():
                             )
                     db.session.commit()
             except Exception as e:
-                logger.error(f"Failed to auto-schedule nightly analysis: {e}")
+                logger.error(f"Failed to auto-schedule nightly jobs: {e}")
 
         # Heartbeat every 10 minutes (120 * 5s)
         heartbeat_counter += 1

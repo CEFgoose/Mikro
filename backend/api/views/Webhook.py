@@ -22,12 +22,6 @@ from ..database import (
     ValidatorTaskAction,
     db,
 )
-from .split_task_helpers import (
-    is_split_task,
-    get_split_siblings,
-    should_count_validation,
-    should_count_invalidation,
-)
 
 logger = logging.getLogger(__name__)
 
@@ -171,9 +165,6 @@ class WebhookAPI(MethodView):
             ).first()
             if not existing_link:
                 db.session.add(UserTasks(user_id=mapper.id, task_id=task.id))
-            mapper.total_tasks_mapped = (mapper.total_tasks_mapped or 0) + 1
-
-        project.tasks_mapped = (project.tasks_mapped or 0) + 1
 
     def _process_validated_event(self, project, event):
         """Handle a VALIDATED task event."""
@@ -213,20 +204,6 @@ class WebhookAPI(MethodView):
         # Check for self-validation
         is_self_validated = task.mapped_by == username
 
-        # Handle previously invalidated tasks — reverse invalidation counters
-        if task.invalidated:
-            if self._should_count_invalidation(task):
-                mapper = User.query.filter_by(
-                    osm_username=task.mapped_by
-                ).first()
-                if mapper:
-                    mapper.total_tasks_invalidated = max(
-                        0, (mapper.total_tasks_invalidated or 0) - 1
-                    )
-                project.tasks_invalidated = max(
-                    0, (project.tasks_invalidated or 0) - 1
-                )
-
         # Update task status
         task.validated = True
         task.invalidated = False
@@ -241,58 +218,6 @@ class WebhookAPI(MethodView):
             ).first()
             if not existing_link:
                 db.session.add(UserTasks(user_id=validator.id, task_id=task.id))
-
-        # For self-validated tasks, skip payment updates but still count project stats
-        if is_self_validated:
-            if self._should_count_validation(task):
-                project.tasks_validated = (project.tasks_validated or 0) + 1
-            return
-
-        # Only update stats/payments when counting is appropriate (split-aware)
-        if self._should_count_validation(task):
-            # Update mapper stats
-            mapper = User.query.filter_by(
-                osm_username=task.mapped_by
-            ).first()
-            if mapper:
-                mapper.total_tasks_validated = (
-                    mapper.total_tasks_validated or 0
-                ) + 1
-                if project.payments_enabled:
-                    if self._is_split_task(task):
-                        siblings = self._get_split_siblings(task)
-                        mapping_sum = sum(
-                            s.mapping_rate or 0 for s in siblings
-                        )
-                        mapper.mapping_payable_total = (
-                            mapper.mapping_payable_total or 0
-                        ) + mapping_sum
-                    else:
-                        mapper.mapping_payable_total = (
-                            mapper.mapping_payable_total or 0
-                        ) + (task.mapping_rate or 0)
-
-            # Update validator stats
-            if validator:
-                validator.validator_tasks_validated = (
-                    validator.validator_tasks_validated or 0
-                ) + 1
-                if project.payments_enabled:
-                    if self._is_split_task(task):
-                        siblings = self._get_split_siblings(task)
-                        validation_sum = sum(
-                            s.validation_rate or 0 for s in siblings
-                        )
-                        validator.validation_payable_total = (
-                            validator.validation_payable_total or 0
-                        ) + validation_sum
-                    else:
-                        validator.validation_payable_total = (
-                            validator.validation_payable_total or 0
-                        ) + (task.validation_rate or 0)
-
-            # Update project stats
-            project.tasks_validated = (project.tasks_validated or 0) + 1
 
     def _process_invalidated_event(self, project, event):
         """Handle an INVALIDATED task event."""
@@ -325,26 +250,6 @@ class WebhookAPI(MethodView):
             )
             db.session.add(action)
 
-        # Only update stats when counting is appropriate (split-aware)
-        if self._should_count_invalidation(task):
-            # Update mapper stats
-            mapper = User.query.filter_by(
-                osm_username=task.mapped_by
-            ).first()
-            if mapper:
-                mapper.total_tasks_invalidated = (
-                    mapper.total_tasks_invalidated or 0
-                ) + 1
-
-            # Update validator stats
-            if validator:
-                validator.validator_tasks_invalidated = (
-                    validator.validator_tasks_invalidated or 0
-                ) + 1
-
-            # Update project stats
-            project.tasks_invalidated = (project.tasks_invalidated or 0) + 1
-
     def _process_split_event(self, project, event):
         """Handle a SPLIT task event — record parent linkage."""
 
@@ -358,18 +263,3 @@ class WebhookAPI(MethodView):
             task.parent_task_id = event.get("parent_task_id")
             task.sibling_count = 4
 
-    # ------------------------------------------------------------------ #
-    #  Split-task helpers — delegated to shared module (SSOT)
-    # ------------------------------------------------------------------ #
-
-    def _is_split_task(self, task):
-        return is_split_task(task)
-
-    def _get_split_siblings(self, task):
-        return get_split_siblings(task)
-
-    def _should_count_validation(self, task):
-        return should_count_validation(task)
-
-    def _should_count_invalidation(self, task):
-        return should_count_invalidation(task)

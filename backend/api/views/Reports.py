@@ -17,6 +17,7 @@ from sqlalchemy import func
 from ..utils import requires_admin
 from ..database import db, Task, Project, User, TimeEntry, TeamUser, SyncJob, ElementAnalysisCache
 from ..filters import resolve_filtered_user_ids, resolve_filtered_osm_usernames
+from ..stats import get_batch_project_stats
 
 
 class ReportsAPI(MethodView):
@@ -315,11 +316,14 @@ class ReportsAPI(MethodView):
         org_projects = Project.query.filter_by(
             org_id=g.user.org_id, source=source
         ).all()
+        _proj_ids = [p.id for p in org_projects]
+        _proj_stats = get_batch_project_stats(_proj_ids)
         for proj in org_projects:
+            _ps = _proj_stats.get(proj.id, {})
             total = proj.total_tasks or 0
-            mapped = proj.tasks_mapped or 0
-            validated = proj.tasks_validated or 0
-            invalidated = proj.tasks_invalidated or 0
+            mapped = _ps.get("tasks_mapped", 0)
+            validated = _ps.get("tasks_validated", 0)
+            invalidated = _ps.get("tasks_invalidated", 0)
             proj_dict = {
                 "id": proj.id,
                 "name": proj.name,

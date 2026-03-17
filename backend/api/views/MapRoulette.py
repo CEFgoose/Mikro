@@ -262,15 +262,9 @@ class MapRouletteSync:
         7. Apply payment logic identical to TM4.
         8. Update project.last_sync_cursor on completion.
 
-        Payment rules (mirrors TM4 exactly):
-        - Mapper gets mapping_payable_total += mapping_rate on validation
-          (not self-validated).
-        - Mapper gets total_tasks_validated += 1 on validation.
-        - Validator gets validation_payable_total += validation_rate.
-        - Validator gets validator_tasks_validated += 1.
-        - Project gets tasks_validated += 1.
-        - On invalidation: mapper gets total_tasks_invalidated += 1,
-          validator gets validator_tasks_invalidated += 1.
+        Note: Stat counter columns on User/Project (e.g. total_tasks_mapped)
+        are NOT written here -- stats are live-queried from the Task table.
+        Payment balances are also derived from the Task table + PayRequests/Payments.
 
         Args:
             project: The Mikro Project record (source="mr", id=challenge_id).
@@ -455,8 +449,7 @@ class MapRouletteSync:
                     )
                     stats["tasks_created"] += 1
 
-                    # Link mapper to task via UserTasks and update stats
-                    # Skipped tasks: link but don't increment mapped counts
+                    # Link mapper to task via UserTasks
                     mapper = self._resolve_user(mapper_username)
                     if mapper:
                         existing_link = UserTasks.query.filter_by(
@@ -465,13 +458,6 @@ class MapRouletteSync:
                         if not existing_link:
                             UserTasks.create(
                                 user_id=mapper.id, task_id=task_record.id
-                            )
-                        if not is_skipped:
-                            mapper.update(
-                                total_tasks_mapped=mapper.total_tasks_mapped + 1
-                            )
-                            project.update(
-                                tasks_mapped=project.tasks_mapped + 1
                             )
 
                     current_app.logger.info(
@@ -646,10 +632,11 @@ class MapRouletteSync:
         """
         Apply validation or invalidation logic based on MR review status.
 
-        Mirrors the TM4 payment logic exactly:
-        - Approved/Assisted: task is validated, mapper and validator get paid
-          (unless self-validated).
-        - Rejected: task is invalidated, mapper/validator stats updated.
+        Updates Task records and creates UserTasks links.
+
+        - Approved/Assisted: task is marked validated, UserTasks link created
+          for validator.
+        - Rejected: task is marked invalidated.
 
         Args:
             task_record: The Mikro Task record.
@@ -693,78 +680,13 @@ class MapRouletteSync:
                         user_id=validator.id, task_id=task_record.id
                     )
 
-            # Handle previously invalidated tasks (reversal)
-            if task_record.invalidated:
-                mapper = self._resolve_user(mapper_username)
-                if mapper:
-                    mapper.update(
-                        total_tasks_invalidated=max(
-                            0, mapper.total_tasks_invalidated - 1
-                        ),
-                    )
-                if validator:
-                    validator.update(
-                        validator_tasks_invalidated=max(
-                            0, validator.validator_tasks_invalidated - 1
-                        ),
-                    )
-                project.update(
-                    tasks_invalidated=max(0, project.tasks_invalidated - 1)
-                )
-
             # Skip payment for self-validated tasks
             if is_self_validated:
                 current_app.logger.warning(
                     f"Self-validation detected: {mapper_username} validated "
                     f"their own MR task {task_record.task_id}"
                 )
-                project.update(
-                    tasks_validated=project.tasks_validated + 1
-                )
-                stats["tasks_validated"] += 1
-                return
 
-            # Update mapper stats (always) and payment (only if payments enabled)
-            mapper = self._resolve_user(mapper_username)
-            if mapper:
-                if project.payments_enabled:
-                    new_mapping_payable = (
-                        (mapper.mapping_payable_total or 0)
-                        + (task_record.mapping_rate or 0)
-                    )
-                    mapper.update(
-                        mapping_payable_total=new_mapping_payable,
-                        total_tasks_validated=mapper.total_tasks_validated + 1,
-                    )
-                else:
-                    mapper.update(
-                        total_tasks_validated=mapper.total_tasks_validated + 1,
-                    )
-
-            # Update validator stats (always) and payment (only if payments enabled)
-            if validator:
-                if project.payments_enabled:
-                    new_validation_payable = (
-                        (validator.validation_payable_total or 0)
-                        + (task_record.validation_rate or 0)
-                    )
-                    validator.update(
-                        validator_tasks_validated=(
-                            validator.validator_tasks_validated + 1
-                        ),
-                        validation_payable_total=new_validation_payable,
-                    )
-                else:
-                    validator.update(
-                        validator_tasks_validated=(
-                            validator.validator_tasks_validated + 1
-                        ),
-                    )
-
-            # Update project stats
-            project.update(
-                tasks_validated=project.tasks_validated + 1
-            )
             stats["tasks_validated"] += 1
 
             current_app.logger.info(
@@ -786,26 +708,6 @@ class MapRouletteSync:
                 date_validated=func.now(),
             )
 
-            # Update mapper stats
-            mapper = self._resolve_user(mapper_username)
-            if mapper:
-                mapper.update(
-                    total_tasks_invalidated=mapper.total_tasks_invalidated + 1
-                )
-
-            # Update validator stats
-            validator = self._resolve_user(reviewer_username)
-            if validator:
-                validator.update(
-                    validator_tasks_invalidated=(
-                        validator.validator_tasks_invalidated + 1
-                    ),
-                )
-
-            # Update project stats
-            project.update(
-                tasks_invalidated=project.tasks_invalidated + 1
-            )
             stats["tasks_invalidated"] += 1
 
             current_app.logger.info(
