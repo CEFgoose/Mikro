@@ -176,7 +176,6 @@ class ChecklistAPI(MethodView):
         checklist_id = request.json.get("checklist_id")
         list_items = request.json.get("list_items")
         delete_list_items = request.json.get("delete_list_items")
-        print("delete_list_items", delete_list_items)
         target_checklist = Checklist.query.filter_by(id=int(checklist_id)).first()
         target_user_checklists = [
             checklist
@@ -261,10 +260,8 @@ class ChecklistAPI(MethodView):
             .order_by(ChecklistItem.item_number)
             .all()
         )
-        print(all_items, len(all_items))
 
         for i, entry in enumerate(all_items):
-            print(i, entry.item_number)
             entry.update(item_number=i + 1)
         response["created"] = True
         response["message"] = "Checklist Items Updated"
@@ -517,7 +514,7 @@ class ChecklistAPI(MethodView):
                     if diff > 72:
                         stale = True
                 except Exception as e:
-                    print(e, "no completion date")
+                    pass
                 checklist_obj = {
                     "id": checklist.id,
                     "user_id": checklist.user_id,
@@ -579,7 +576,6 @@ class ChecklistAPI(MethodView):
                     confirmed_and_completed.append(checklist_obj)
                 elif checklist_obj["stale"]:
                     stale_started_checklists.append(checklist_obj)
-        print(inactive_checklists)
         return {
             "active_checklists": active_checklists,
             "inactive_checklists": inactive_checklists,
@@ -1040,7 +1036,6 @@ class ChecklistAPI(MethodView):
         checklist_id = request.json.get("checklist_id")
         item_number = request.json.get("item_number")
         user_id = request.json.get("user_id")
-        print(user_id)
         required_args = ["checklist_id", "item_number", "user_id"]
         for arg in required_args:
             if not request.json.get(arg):

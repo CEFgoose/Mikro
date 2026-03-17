@@ -20,6 +20,33 @@ from ..database import (
 )
 
 
+def _create_training_questions(training_id, questions_data):
+    """Create questions and answers for a training module.
+
+    Args:
+        training_id: The ID of the training to attach questions to.
+        questions_data: List of question dicts, each with 'question',
+            'correct', and 'incorrect' keys.
+    """
+    for question in questions_data:
+        new_training_question = TrainingQuestion.create(
+            training_id=training_id, question=question["question"]
+        )
+        TrainingQuestionAnswer.create(
+            training_id=training_id,
+            training_question_id=new_training_question.id,
+            value=True,
+            answer=question["correct"],
+        )
+        for incorrect in question["incorrect"]:
+            TrainingQuestionAnswer.create(
+                training_id=training_id,
+                training_question_id=new_training_question.id,
+                value=False,
+                answer=incorrect["answer"],
+            )
+
+
 class TrainingAPI(MethodView):
     """Training module management API endpoints."""
 
@@ -75,23 +102,7 @@ class TrainingAPI(MethodView):
                 training_url=request.json["training_url"],
                 training_type=request.json["training_type"],
             )
-            for question in questions:
-                new_training_question = TrainingQuestion.create(
-                    training_id=new_training.id, question=question["question"]
-                )
-                new_training_correct = TrainingQuestionAnswer.create(
-                    training_id=new_training.id,
-                    training_question_id=new_training_question.id,
-                    value=True,
-                    answer=question["correct"],
-                )
-                for incorrect in question["incorrect"]:
-                    new_training_incorrect = TrainingQuestionAnswer.create(
-                        training_id=new_training.id,
-                        training_question_id=new_training_question.id,
-                        value=False,
-                        answer=incorrect["answer"],
-                    )
+            _create_training_questions(new_training.id, questions)
             response = {"message": "New Training Created", "status": 200}
             return response, 200
         except Exception as e:
@@ -191,15 +202,12 @@ class TrainingAPI(MethodView):
             arg for arg in required_args if arg not in request.json
         ]
         if missing_args:
-            print("MISSING ARG")
             response = {
                 "message": f"Missing required argument(s): {', '.join(missing_args)}",  # noqa: E501
                 "status": 400,
             }
-            print(response)
             return response
         questions = request.json["questions"]
-        print(questions)
         # Update training data
         training_id = request.json.get("training_id")
         target_training = Training.query.filter_by(id=training_id).first()
@@ -219,7 +227,6 @@ class TrainingAPI(MethodView):
             training_id=target_training.id
         ).all()
         for question in target_training_questions:
-            # print(question.question)
             target_question_answers = TrainingQuestionAnswer.query.filter_by(
                 training_question_id=question.id,
                 training_id=target_training.id,
@@ -229,24 +236,7 @@ class TrainingAPI(MethodView):
                 answer.delete(soft=False)
             question.delete(soft=False)
 
-        for question in questions:
-            print(question)
-            new_training_question = TrainingQuestion.create(
-                training_id=target_training.id, question=question["question"]
-            )
-            new_training_correct = TrainingQuestionAnswer.create(
-                training_id=target_training.id,
-                training_question_id=new_training_question.id,
-                value=True,
-                answer=question["correct"],
-            )
-            for incorrect in question["incorrect"]:
-                new_training_incorrect = TrainingQuestionAnswer.create(
-                    training_id=target_training.id,
-                    training_question_id=new_training_question.id,
-                    value=False,
-                    answer=incorrect["answer"],
-                )
+        _create_training_questions(target_training.id, questions)
 
         # Return response
         return {

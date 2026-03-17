@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
-import { Card, CardContent, CardHeader, CardTitle, Button } from "@/components/ui";
+import { Card, CardContent, CardHeader, CardTitle, Button, Modal, useToastActions } from "@/components/ui";
 import { FilterBar } from "@/components/filters";
 import { useFilters, useFetchFilterOptions } from "@/hooks";
 import { formatNumber, formatCurrency, displayRole } from "@/lib/utils";
@@ -38,6 +38,7 @@ export default function AdminUsersPage() {
   const [showTrackModal, setShowTrackModal] = useState(false);
   const [trackOsmUsername, setTrackOsmUsername] = useState("");
   const [trackDisplayName, setTrackDisplayName] = useState("");
+  const toast = useToastActions();
   const { activeFilters, setActiveFilters, filtersBody, clearFilters } = useFilters();
   const { data: filterOptions, loading: filterOptionsLoading } = useFetchFilterOptions();
 
@@ -83,7 +84,7 @@ export default function AdminUsersPage() {
 
   const handleInviteUser = async () => {
     if (!inviteEmail) {
-      alert("Please enter an email address");
+      toast.error("Please enter an email address");
       return;
     }
     setIsSaving(true);
@@ -95,16 +96,16 @@ export default function AdminUsersPage() {
       });
       const data = await response.json();
       if (response.ok && data.status === 200) {
-        alert(data.message || "Invitation sent successfully");
+        toast.success(data.message || "Invitation sent successfully");
         setShowAddModal(false);
         setInviteEmail("");
         fetchUsers();
       } else {
-        alert(data.message || "Failed to send invitation");
+        toast.error(data.message || "Failed to send invitation");
       }
     } catch (error) {
       console.error("Failed to invite user:", error);
-      alert("Failed to send invitation");
+      toast.error("Failed to send invitation");
     } finally {
       setIsSaving(false);
     }
@@ -126,16 +127,16 @@ export default function AdminUsersPage() {
       });
       const data = await response.json();
       if (response.ok && data.status === 200) {
-        alert("User updated successfully");
+        toast.success("User updated successfully");
         setShowEditModal(false);
         setSelectedUser(null);
         fetchUsers();
       } else {
-        alert(data.message || "Failed to update user");
+        toast.error(data.message || "Failed to update user");
       }
     } catch (error) {
       console.error("Failed to update user:", error);
-      alert("Failed to update user");
+      toast.error("Failed to update user");
     } finally {
       setIsSaving(false);
     }
@@ -152,16 +153,16 @@ export default function AdminUsersPage() {
       });
       const data = await response.json();
       if (response.ok && data.status === 200) {
-        alert("User removed successfully");
+        toast.success("User removed successfully");
         setShowDeleteModal(false);
         setSelectedUser(null);
         fetchUsers();
       } else {
-        alert(data.message || "Failed to remove user");
+        toast.error(data.message || "Failed to remove user");
       }
     } catch (error) {
       console.error("Failed to remove user:", error);
-      alert("Failed to remove user");
+      toast.error("Failed to remove user");
     } finally {
       setIsSaving(false);
     }
@@ -248,7 +249,7 @@ export default function AdminUsersPage() {
         const successCount = data.results?.success?.length || 0;
         const failedItems = data.results?.failed || [];
         if (successCount > 0) {
-          alert(`Successfully imported ${successCount} user(s).`);
+          toast.success(`Successfully imported ${successCount} user(s).`);
           setShowImportModal(false);
           setCsvUsers([]);
           fetchUsers();
@@ -281,15 +282,15 @@ export default function AdminUsersPage() {
       });
       const data = await response.json();
       if (response.ok && data.status === 200) {
-        alert(`Purged ${data.users_deleted} users. Your admin account was preserved.`);
+        toast.success(`Purged ${data.users_deleted} users. Your admin account was preserved.`);
         setShowPurgeModal(false);
         fetchUsers();
       } else {
-        alert(data.message || "Failed to purge users");
+        toast.error(data.message || "Failed to purge users");
       }
     } catch (error) {
       console.error("Failed to purge users:", error);
-      alert("Failed to purge users");
+      toast.error("Failed to purge users");
     } finally {
       setIsPurging(false);
     }
@@ -297,7 +298,7 @@ export default function AdminUsersPage() {
 
   const handleCreateTrackedUser = async () => {
     if (!trackOsmUsername.trim()) {
-      alert("OSM username is required");
+      toast.error("OSM username is required");
       return;
     }
     setIsSaving(true);
@@ -314,17 +315,17 @@ export default function AdminUsersPage() {
       });
       const data = await response.json();
       if (response.ok && data.status === 200) {
-        alert(data.message || "Tracked user created");
+        toast.success(data.message || "Tracked user created");
         setShowTrackModal(false);
         setTrackOsmUsername("");
         setTrackDisplayName("");
         fetchUsers();
       } else {
-        alert(data.message || "Failed to create tracked user");
+        toast.error(data.message || "Failed to create tracked user");
       }
     } catch (error) {
       console.error("Failed to create tracked user:", error);
-      alert("Failed to create tracked user");
+      toast.error("Failed to create tracked user");
     } finally {
       setIsSaving(false);
     }
@@ -472,119 +473,98 @@ export default function AdminUsersPage() {
       </Card>
 
       {/* Add User Modal */}
-      {showAddModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <Card className="w-full max-w-md">
-            <CardHeader>
-              <CardTitle>Invite User</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium mb-1">Email Address</label>
-                <input
-                  type="email"
-                  className="w-full px-3 py-2 border border-input rounded-lg focus:outline-none focus:ring-2 focus:ring-ring"
-                  placeholder="user@example.com"
-                  value={inviteEmail}
-                  onChange={(e) => setInviteEmail(e.target.value)}
-                />
-              </div>
-              <p className="text-sm text-muted-foreground">
-                The user will receive an email to set their password and complete registration.
-              </p>
-              <div className="flex gap-2 justify-end">
-                <Button variant="outline" onClick={() => { setShowAddModal(false); setInviteEmail(""); }}>
-                  Cancel
-                </Button>
-                <Button onClick={handleInviteUser} disabled={isSaving || !inviteEmail}>
-                  {isSaving ? "Sending..." : "Send Invite"}
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
+      <Modal isOpen={showAddModal} onClose={() => { setShowAddModal(false); setInviteEmail(""); }} title="Invite User">
+        <div className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium mb-1">Email Address</label>
+            <input
+              type="email"
+              className="w-full px-3 py-2 border border-input rounded-lg focus:outline-none focus:ring-2 focus:ring-ring"
+              placeholder="user@example.com"
+              value={inviteEmail}
+              onChange={(e) => setInviteEmail(e.target.value)}
+            />
+          </div>
+          <p className="text-sm text-muted-foreground">
+            The user will receive an email to set their password and complete registration.
+          </p>
+          <div className="flex gap-2 justify-end">
+            <Button variant="outline" onClick={() => { setShowAddModal(false); setInviteEmail(""); }}>
+              Cancel
+            </Button>
+            <Button onClick={handleInviteUser} disabled={isSaving || !inviteEmail}>
+              {isSaving ? "Sending..." : "Send Invite"}
+            </Button>
+          </div>
         </div>
-      )}
+      </Modal>
 
       {/* Edit User Modal */}
-      {showEditModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <Card className="w-full max-w-md">
-            <CardHeader>
-              <CardTitle>Edit User</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium mb-1">First Name</label>
-                <input
-                  type="text"
-                  className="w-full px-3 py-2 border border-input rounded-lg focus:outline-none focus:ring-2 focus:ring-ring"
-                  value={editFirstName}
-                  onChange={(e) => setEditFirstName(e.target.value)}
-                  placeholder="First name"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-1">Last Name</label>
-                <input
-                  type="text"
-                  className="w-full px-3 py-2 border border-input rounded-lg focus:outline-none focus:ring-2 focus:ring-ring"
-                  value={editLastName}
-                  onChange={(e) => setEditLastName(e.target.value)}
-                  placeholder="Last name"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-1">Role</label>
-                <select
-                  className="w-full px-3 py-2 border border-input rounded-lg focus:outline-none focus:ring-2 focus:ring-ring"
-                  value={editRole}
-                  onChange={(e) => setEditRole(e.target.value)}
-                >
-                  <option value="user">User</option>
-                  <option value="validator">Validator</option>
-                  <option value="admin">Admin</option>
-                </select>
-              </div>
-              <div className="flex gap-2 justify-end">
-                <Button variant="outline" onClick={() => setShowEditModal(false)}>
-                  Cancel
-                </Button>
-                <Button onClick={handleSaveUser} disabled={isSaving}>
-                  {isSaving ? "Saving..." : "Save Changes"}
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
+      <Modal isOpen={showEditModal} onClose={() => setShowEditModal(false)} title="Edit User">
+        <div className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium mb-1">First Name</label>
+            <input
+              type="text"
+              className="w-full px-3 py-2 border border-input rounded-lg focus:outline-none focus:ring-2 focus:ring-ring"
+              value={editFirstName}
+              onChange={(e) => setEditFirstName(e.target.value)}
+              placeholder="First name"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium mb-1">Last Name</label>
+            <input
+              type="text"
+              className="w-full px-3 py-2 border border-input rounded-lg focus:outline-none focus:ring-2 focus:ring-ring"
+              value={editLastName}
+              onChange={(e) => setEditLastName(e.target.value)}
+              placeholder="Last name"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium mb-1">Role</label>
+            <select
+              className="w-full px-3 py-2 border border-input rounded-lg focus:outline-none focus:ring-2 focus:ring-ring"
+              value={editRole}
+              onChange={(e) => setEditRole(e.target.value)}
+            >
+              <option value="user">User</option>
+              <option value="validator">Validator</option>
+              <option value="admin">Admin</option>
+            </select>
+          </div>
+          <div className="flex gap-2 justify-end">
+            <Button variant="outline" onClick={() => setShowEditModal(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleSaveUser} disabled={isSaving}>
+              {isSaving ? "Saving..." : "Save Changes"}
+            </Button>
+          </div>
         </div>
-      )}
+      </Modal>
 
       {/* Delete User Modal */}
-      {showDeleteModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <Card className="w-full max-w-md">
-            <CardHeader>
-              <CardTitle>Delete User</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <p className="text-muted-foreground">
-                Are you sure you want to remove{" "}
-                <span className="font-semibold text-foreground">
-                  {users.find((u) => u.id === selectedUser)?.name || users.find((u) => u.id === selectedUser)?.email || "this user"}
-                </span>
-                ? This action cannot be undone.
-              </p>
-              <div className="flex gap-2 justify-end">
-                <Button variant="outline" onClick={() => setShowDeleteModal(false)} disabled={isSaving}>
-                  Cancel
-                </Button>
-                <Button variant="destructive" onClick={handleDeleteUser} disabled={isSaving}>
-                  {isSaving ? "Deleting..." : "Delete"}
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
+      <Modal isOpen={showDeleteModal} onClose={() => setShowDeleteModal(false)} title="Delete User">
+        <div className="space-y-4">
+          <p className="text-muted-foreground">
+            Are you sure you want to remove{" "}
+            <span className="font-semibold text-foreground">
+              {users.find((u) => u.id === selectedUser)?.name || users.find((u) => u.id === selectedUser)?.email || "this user"}
+            </span>
+            ? This action cannot be undone.
+          </p>
+          <div className="flex gap-2 justify-end">
+            <Button variant="outline" onClick={() => setShowDeleteModal(false)} disabled={isSaving}>
+              Cancel
+            </Button>
+            <Button variant="destructive" onClick={handleDeleteUser} disabled={isSaving}>
+              {isSaving ? "Deleting..." : "Delete"}
+            </Button>
+          </div>
         </div>
-      )}
+      </Modal>
 
       {/* Hidden file input for CSV import */}
       <input
@@ -596,140 +576,119 @@ export default function AdminUsersPage() {
       />
 
       {/* Import CSV Modal */}
-      {showImportModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <Card className="w-full max-w-2xl max-h-[80vh] overflow-hidden flex flex-col">
-            <CardHeader>
-              <CardTitle>Import Users from CSV</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4 overflow-auto flex-1">
-              {importError && (
-                <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
-                  {importError}
-                </div>
-              )}
-              <p className="text-sm text-muted-foreground">
-                The following {csvUsers.length} user(s) will be invited. Each will receive an email to set their password.
-              </p>
-              <div className="border rounded-lg overflow-hidden">
-                <table className="w-full text-sm">
-                  <thead className="bg-muted">
-                    <tr>
-                      <th className="px-4 py-2 text-left font-medium">Email</th>
-                      <th className="px-4 py-2 text-left font-medium">First Name</th>
-                      <th className="px-4 py-2 text-left font-medium">Last Name</th>
-                      <th className="px-4 py-2 text-left font-medium">OSM Username</th>
-                      <th className="px-4 py-2 text-left font-medium">Role</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y">
-                    {csvUsers.map((user, idx) => (
-                      <tr key={idx}>
-                        <td className="px-4 py-2">{user.email}</td>
-                        <td className="px-4 py-2">{user.first_name || user.name?.split(" ")[0] || "-"}</td>
-                        <td className="px-4 py-2">{user.last_name || user.name?.split(" ").slice(1).join(" ") || "-"}</td>
-                        <td className="px-4 py-2">{user.osm_username || "-"}</td>
-                        <td className="px-4 py-2">
-                          <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
-                            user.role === "admin"
-                              ? "bg-purple-100 text-purple-800"
-                              : user.role === "validator"
-                              ? "bg-blue-100 text-blue-800"
-                              : "bg-green-100 text-green-800"
-                          }`}>
-                            {displayRole(user.role)}
-                          </span>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-              <div className="flex gap-2 justify-end">
-                <Button variant="outline" onClick={() => { setShowImportModal(false); setCsvUsers([]); }}>
-                  Cancel
-                </Button>
-                <Button onClick={handleImportUsers} disabled={isSaving}>
-                  {isSaving ? "Importing..." : `Import ${csvUsers.length} User(s)`}
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
+      <Modal isOpen={showImportModal} onClose={() => { setShowImportModal(false); setCsvUsers([]); }} title="Import Users from CSV" size="2xl">
+        <div className="space-y-4">
+          {importError && (
+            <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
+              {importError}
+            </div>
+          )}
+          <p className="text-sm text-muted-foreground">
+            The following {csvUsers.length} user(s) will be invited. Each will receive an email to set their password.
+          </p>
+          <div className="border rounded-lg overflow-hidden">
+            <table className="w-full text-sm">
+              <thead className="bg-muted">
+                <tr>
+                  <th className="px-4 py-2 text-left font-medium">Email</th>
+                  <th className="px-4 py-2 text-left font-medium">First Name</th>
+                  <th className="px-4 py-2 text-left font-medium">Last Name</th>
+                  <th className="px-4 py-2 text-left font-medium">OSM Username</th>
+                  <th className="px-4 py-2 text-left font-medium">Role</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y">
+                {csvUsers.map((user, idx) => (
+                  <tr key={idx}>
+                    <td className="px-4 py-2">{user.email}</td>
+                    <td className="px-4 py-2">{user.first_name || user.name?.split(" ")[0] || "-"}</td>
+                    <td className="px-4 py-2">{user.last_name || user.name?.split(" ").slice(1).join(" ") || "-"}</td>
+                    <td className="px-4 py-2">{user.osm_username || "-"}</td>
+                    <td className="px-4 py-2">
+                      <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
+                        user.role === "admin"
+                          ? "bg-purple-100 text-purple-800"
+                          : user.role === "validator"
+                          ? "bg-blue-100 text-blue-800"
+                          : "bg-green-100 text-green-800"
+                      }`}>
+                        {displayRole(user.role)}
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <div className="flex gap-2 justify-end">
+            <Button variant="outline" onClick={() => { setShowImportModal(false); setCsvUsers([]); }}>
+              Cancel
+            </Button>
+            <Button onClick={handleImportUsers} disabled={isSaving}>
+              {isSaving ? "Importing..." : `Import ${csvUsers.length} User(s)`}
+            </Button>
+          </div>
         </div>
-      )}
+      </Modal>
 
       {/* Purge Users Modal */}
-      {showPurgeModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <Card className="w-full max-w-md">
-            <CardHeader>
-              <CardTitle className="text-red-600">Purge All Users</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <p className="text-muted-foreground">
-                This will permanently delete ALL users in the organization except your own admin account.
-                All related data (task assignments, checklists, trainings, payments) will also be deleted.
-              </p>
-              <p className="text-red-600 font-semibold">
-                This action cannot be undone!
-              </p>
-              <div className="flex gap-2 justify-end">
-                <Button variant="outline" onClick={() => setShowPurgeModal(false)} disabled={isPurging}>
-                  Cancel
-                </Button>
-                <Button variant="destructive" onClick={handlePurgeUsers} disabled={isPurging}>
-                  {isPurging ? "Purging..." : "Purge All Users"}
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
+      <Modal isOpen={showPurgeModal} onClose={() => setShowPurgeModal(false)} title="Purge All Users">
+        <div className="space-y-4">
+          <p className="text-muted-foreground">
+            This will permanently delete ALL users in the organization except your own admin account.
+            All related data (task assignments, checklists, trainings, payments) will also be deleted.
+          </p>
+          <p className="text-red-600 font-semibold">
+            This action cannot be undone!
+          </p>
+          <div className="flex gap-2 justify-end">
+            <Button variant="outline" onClick={() => setShowPurgeModal(false)} disabled={isPurging}>
+              Cancel
+            </Button>
+            <Button variant="destructive" onClick={handlePurgeUsers} disabled={isPurging}>
+              {isPurging ? "Purging..." : "Purge All Users"}
+            </Button>
+          </div>
         </div>
-      )}
+      </Modal>
 
       {/* Track User Modal */}
-      {showTrackModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <Card className="w-full max-w-md">
-            <CardHeader>
-              <CardTitle>Track External User</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium mb-1">OSM Username *</label>
-                <input
-                  type="text"
-                  className="w-full px-3 py-2 border border-input rounded-lg focus:outline-none focus:ring-2 focus:ring-ring"
-                  placeholder="e.g. jorge_mapper"
-                  value={trackOsmUsername}
-                  onChange={(e) => setTrackOsmUsername(e.target.value)}
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-1">Display Name (optional)</label>
-                <input
-                  type="text"
-                  className="w-full px-3 py-2 border border-input rounded-lg focus:outline-none focus:ring-2 focus:ring-ring"
-                  placeholder="e.g. Jorge Martinez"
-                  value={trackDisplayName}
-                  onChange={(e) => setTrackDisplayName(e.target.value)}
-                />
-              </div>
-              <p className="text-sm text-muted-foreground">
-                This creates a tracked-only user record. No email or login is created.
-                The task sync will automatically pick up their OSM contributions.
-              </p>
-              <div className="flex gap-2 justify-end">
-                <Button variant="outline" onClick={() => { setShowTrackModal(false); setTrackOsmUsername(""); setTrackDisplayName(""); }}>
-                  Cancel
-                </Button>
-                <Button onClick={handleCreateTrackedUser} disabled={isSaving || !trackOsmUsername.trim()}>
-                  {isSaving ? "Creating..." : "Track User"}
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
+      <Modal isOpen={showTrackModal} onClose={() => { setShowTrackModal(false); setTrackOsmUsername(""); setTrackDisplayName(""); }} title="Track External User">
+        <div className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium mb-1">OSM Username *</label>
+            <input
+              type="text"
+              className="w-full px-3 py-2 border border-input rounded-lg focus:outline-none focus:ring-2 focus:ring-ring"
+              placeholder="e.g. jorge_mapper"
+              value={trackOsmUsername}
+              onChange={(e) => setTrackOsmUsername(e.target.value)}
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium mb-1">Display Name (optional)</label>
+            <input
+              type="text"
+              className="w-full px-3 py-2 border border-input rounded-lg focus:outline-none focus:ring-2 focus:ring-ring"
+              placeholder="e.g. Jorge Martinez"
+              value={trackDisplayName}
+              onChange={(e) => setTrackDisplayName(e.target.value)}
+            />
+          </div>
+          <p className="text-sm text-muted-foreground">
+            This creates a tracked-only user record. No email or login is created.
+            The task sync will automatically pick up their OSM contributions.
+          </p>
+          <div className="flex gap-2 justify-end">
+            <Button variant="outline" onClick={() => { setShowTrackModal(false); setTrackOsmUsername(""); setTrackDisplayName(""); }}>
+              Cancel
+            </Button>
+            <Button onClick={handleCreateTrackedUser} disabled={isSaving || !trackOsmUsername.trim()}>
+              {isSaving ? "Creating..." : "Track User"}
+            </Button>
+          </div>
         </div>
-      )}
+      </Modal>
 
       {/* Dev Tools */}
       <Card className="border-2 border-dashed border-yellow-500">

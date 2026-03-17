@@ -70,6 +70,29 @@ def _auto_assign_country(user, country_text):
         )
 
 
+def _format_user_name(user):
+    first = (user.first_name or "").title()
+    last = (user.last_name or "").title()
+    return f"{first} {last}".strip() or user.email or "Unknown"
+
+
+def _resolve_country_region(country_id, country_cache, region_cache):
+    if not country_id:
+        return None, None
+    if country_id not in country_cache:
+        country_cache[country_id] = Country.query.get(country_id)
+    c = country_cache[country_id]
+    if not c:
+        return None, None
+    region_name = None
+    if c.region_id:
+        if c.region_id not in region_cache:
+            region_cache[c.region_id] = Region.query.get(c.region_id)
+        r = region_cache[c.region_id]
+        region_name = r.name if r else None
+    return c.name, region_name
+
+
 class UserAPI(MethodView):
     """User management API endpoints."""
 
@@ -120,8 +143,6 @@ class UserAPI(MethodView):
             return self.link_mapillary()
         elif path == "unlink_mapillary":
             return self.unlink_mapillary()
-        # elif path == "register_user":
-        #     return self.register_user()
         return {
             "message": "Only /project/{fetch_users,fetch_user_projects} is permitted with GET",  # noqa: E501
         }, 405
@@ -300,14 +321,11 @@ class UserAPI(MethodView):
             response["status"] = 304
             return response
         else:
-            # extract the role, first name, and last name from the user information # noqa: E501
+            # extract the role and name from the user information
             role = g.user.role
-            firstname = g.user.first_name.capitalize()
-            lastname = g.user.last_name.capitalize()
-            name = f"{firstname} {lastname}"
             # update the response dictionary with the extracted information
             response["role"] = role
-            response["name"] = name
+            response["name"] = _format_user_name(g.user)
             response["status"] = 200
             return response
 
@@ -372,15 +390,13 @@ class UserAPI(MethodView):
 
         user = g.user
         # extract user information
-        first_name = (user.first_name or "").capitalize()
-        last_name = (user.last_name or "").capitalize()
-        full_name = f"{first_name} {last_name}".strip()
+        full_name = _format_user_name(user)
 
         # update the response dictionary with the extracted information
         response["id"] = user.id
         response["role"] = user.role
-        response["first_name"] = first_name
-        response["last_name"] = last_name
+        response["first_name"] = (user.first_name or "").title()
+        response["last_name"] = (user.last_name or "").title()
         response["name"] = full_name
         response["full_name"] = full_name
         response["email"] = user.email
@@ -441,32 +457,16 @@ class UserAPI(MethodView):
         org_users = []
         # Loop over each user and extract relevant information
         for user in users_in_org:
-            # Capitalize first and last name of the user (handle None)
-            first_name = (user.first_name or "").title()
-            last_name = (user.last_name or "").title()
-            full_name = f"{first_name} {last_name}".strip() or user.email or "Unknown"
+            full_name = _format_user_name(user)
             if user.assigned_projects is not None:
                 assigned_projects_count = len(user.assigned_projects)
             else:
                 assigned_projects_count = 0
 
             # Resolve country and region names
-            country_name = None
-            region_name = None
-            if user.country_id:
-                if user.country_id not in country_cache:
-                    c = Country.query.get(user.country_id)
-                    country_cache[user.country_id] = c
-                country_obj = country_cache[user.country_id]
-                if country_obj:
-                    country_name = country_obj.name
-                    if country_obj.region_id:
-                        if country_obj.region_id not in region_cache:
-                            r = Region.query.get(country_obj.region_id)
-                            region_cache[country_obj.region_id] = r
-                        region_obj = region_cache[country_obj.region_id]
-                        if region_obj:
-                            region_name = region_obj.name
+            country_name, region_name = _resolve_country_region(
+                user.country_id, country_cache, region_cache
+            )
 
             _ustats = batch_stats.get(user.id, {})
             # Append the user information to the org_users list
@@ -534,10 +534,7 @@ class UserAPI(MethodView):
         org_users = []
         # Loop over each user and extract relevant information
         for user in users_in_org:
-            # Capitalize first and last name of the user (handle None)
-            first_name = (user.first_name or "").title()
-            last_name = (user.last_name or "").title()
-            full_name = f"{first_name} {last_name}".strip() or user.email or "Unknown"
+            full_name = _format_user_name(user)
             if user in assigned_users:
                 assigned = "Yes"
             if user in unassigned_users:
@@ -796,12 +793,6 @@ class UserAPI(MethodView):
         response["status"] = 200
         return response
 
-    # def register_user(self):
-    #     # Initialize response dictionary
-    #     response = {}
-    #     response["status"] = 200
-    #     return response
-
     @requires_admin
     def purge_all_users(self):
         """DEV ONLY: Purge all users EXCEPT the initiating admin."""
@@ -940,21 +931,14 @@ class UserAPI(MethodView):
             .all()
         )
 
-        first_name = (user.first_name or "").title()
-        last_name = (user.last_name or "").title()
-        full_name = f"{first_name} {last_name}".strip() or user.email or "Unknown"
+        full_name = _format_user_name(user)
 
         # Resolve country/region names
-        country_name = None
-        region_name = None
-        if user.country_id:
-            country_obj = Country.query.get(user.country_id)
-            if country_obj:
-                country_name = country_obj.name
-                if country_obj.region_id:
-                    region_obj = Region.query.get(country_obj.region_id)
-                    if region_obj:
-                        region_name = region_obj.name
+        country_cache = {}
+        region_cache = {}
+        country_name, region_name = _resolve_country_region(
+            user.country_id, country_cache, region_cache
+        )
 
         _stats = get_user_task_stats(user)
         _pay = get_user_payment_balances(user)
@@ -962,8 +946,8 @@ class UserAPI(MethodView):
             "status": 200,
             "user": {
                 "id": user.id,
-                "first_name": first_name,
-                "last_name": last_name,
+                "first_name": (user.first_name or "").title(),
+                "last_name": (user.last_name or "").title(),
                 "full_name": full_name,
                 "email": user.email,
                 "payment_email": user.payment_email,

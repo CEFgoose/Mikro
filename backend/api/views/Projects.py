@@ -120,10 +120,6 @@ class ProjectAPI(MethodView):
             return self.fetch_user_dash_stats()
         elif path == "fetch_validator_dash_stats":
             return self.fetch_validator_dash_stats()
-        elif path == "user_join_project":
-            return self.user_join_project()
-        elif path == "user_leave_project":
-            return self.user_leave_project()
         elif path == "assign_user_project":
             return self.assign_user_project()
         elif path == "unassign_user_project":
@@ -1556,63 +1552,6 @@ class ProjectAPI(MethodView):
             "message": "User %s has left project %s" % (user_id, project_id),
             "status": 200,
         }
-
-    # def user_join_project(self):
-    #     # Check if user is authenticated
-    #     if not g.user:
-    #         return {"message": "User not found", "status": 304}
-    #     project_id = request.json.get("project_id")
-    #     if not project_id:
-    #         return {"message": "project_id required", "status": 400}
-    #     target_project = Project.query.filter_by(id=project_id).first()
-    #     if not target_project:
-    #         return {
-    #             "message": "project %s not found" % (project_id),
-    #             "status": 400,
-    #         }
-    #     existing_user_project_relation = ProjectUser.query.filter_by(
-    #         project_id=project_id, user_id=g.user.id
-    #     ).first()
-
-    #     if existing_user_project_relation:
-    #         return {
-    #             "message": "User %s has already joined project %s"
-    #             % (g.user.id, project_id),
-    #             "status": 400,
-    #         }
-    #     ProjectUser.create(project_id=project_id, user_id=g.user.id)
-    #     count = target_project.total_editors + 1
-    #     target_project.update(total_editors=count)
-    #     return {
-    #         "message": "User %s has joined project %s" % (g.user.id, project_id),
-    #         "status": 200,
-    #     }
-
-    # def user_leave_project(self):
-    #     # Check if user is authenticated
-    #     if not g:
-    #         return {"message": "User not found", "status": 304}
-    #     project_id = request.json.get("project_id")
-    #     if not project_id:
-    #         return {"message": "project_id required", "status": 400}
-    #     target_relation = ProjectUser.query.filter_by(
-    #         project_id=project_id, user_id=g.user.id
-    #     ).first()
-    #     if not target_relation:
-    #         return {"message": "project assignment not found", "status": 400}
-    #     target_relation.delete(soft=False)
-    #     target_project = Project.query.filter_by(id=project_id).first()
-    #     if not target_project:
-    #         return {
-    #             "message": "project %s not found" % (project_id),
-    #             "status": 400,
-    #         }
-    #     new_editor_count = target_project.total_editors - 1
-    #     target_project.update(total_editors=new_editor_count)
-    #     return {
-    #         "message": "User %s has left project %s" % (g.user.id, project_id),
-    #         "status": 200,
-    #     }
 
     def fetch_validator_projects(self):
         # Check if user is authenticated

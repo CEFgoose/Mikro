@@ -87,13 +87,26 @@ class RegionAPI(MethodView):
     def fetch_regions(self):
         """List all regions with their countries."""
         regions = Region.query.order_by(Region.name).all()
+
+        # Pre-fetch all countries, grouped by region_id
+        all_countries = Country.query.order_by(Country.name).all()
+        countries_by_region = {}
+        for c in all_countries:
+            countries_by_region.setdefault(c.region_id, []).append(c)
+
+        # Pre-fetch user counts per country in one query
+        user_count_rows = (
+            db.session.query(
+                UserCountry.country_id, db.func.count(UserCountry.id)
+            )
+            .group_by(UserCountry.country_id)
+            .all()
+        )
+        user_count_map = {row[0]: row[1] for row in user_count_rows}
+
         result = []
         for r in regions:
-            countries = (
-                Country.query.filter_by(region_id=r.id)
-                .order_by(Country.name)
-                .all()
-            )
+            countries = countries_by_region.get(r.id, [])
             result.append({
                 "id": r.id,
                 "name": r.name,
@@ -104,9 +117,7 @@ class RegionAPI(MethodView):
                         "name": c.name,
                         "iso_code": c.iso_code,
                         "default_timezone": c.default_timezone,
-                        "user_count": UserCountry.query.filter_by(
-                            country_id=c.id
-                        ).count(),
+                        "user_count": user_count_map.get(c.id, 0),
                     }
                     for c in countries
                 ],
@@ -170,9 +181,24 @@ class RegionAPI(MethodView):
     def fetch_countries(self):
         """List all countries with region info."""
         countries = Country.query.order_by(Country.name).all()
+
+        # Pre-fetch all regions into a lookup dict
+        all_regions = Region.query.all()
+        region_map = {r.id: r for r in all_regions}
+
+        # Pre-fetch user counts per country in one query
+        user_count_rows = (
+            db.session.query(
+                UserCountry.country_id, db.func.count(UserCountry.id)
+            )
+            .group_by(UserCountry.country_id)
+            .all()
+        )
+        user_count_map = {row[0]: row[1] for row in user_count_rows}
+
         result = []
         for c in countries:
-            region = Region.query.get(c.region_id) if c.region_id else None
+            region = region_map.get(c.region_id) if c.region_id else None
             result.append({
                 "id": c.id,
                 "name": c.name,
@@ -180,7 +206,7 @@ class RegionAPI(MethodView):
                 "region_id": c.region_id,
                 "region_name": region.name if region else None,
                 "default_timezone": c.default_timezone,
-                "user_count": UserCountry.query.filter_by(country_id=c.id).count(),
+                "user_count": user_count_map.get(c.id, 0),
             })
         return {"status": 200, "countries": result}
 
@@ -443,11 +469,17 @@ class RegionAPI(MethodView):
         ).all()
         assigned_country_ids = {r.country_id for r in assigned_rows}
 
+        # Pre-fetch all countries and regions into lookup dicts
+        all_countries_list = Country.query.order_by(Country.name).all()
+        country_map = {c.id: c for c in all_countries_list}
+        all_regions_list = Region.query.order_by(Region.name).all()
+        region_map = {r.id: r for r in all_regions_list}
+
         assigned_countries = []
         for cid in assigned_country_ids:
-            country = Country.query.get(cid)
+            country = country_map.get(cid)
             if country:
-                region = Region.query.get(country.region_id) if country.region_id else None
+                region = region_map.get(country.region_id) if country.region_id else None
                 assigned_countries.append({
                     "id": country.id,
                     "name": country.name,
@@ -465,11 +497,11 @@ class RegionAPI(MethodView):
                 "iso_code": c.iso_code,
                 "region_id": c.region_id,
             }
-            for c in Country.query.order_by(Country.name).all()
+            for c in all_countries_list
         ]
         all_regions = [
             {"id": r.id, "name": r.name}
-            for r in Region.query.order_by(Region.name).all()
+            for r in all_regions_list
         ]
 
         return {
@@ -553,9 +585,14 @@ class RegionAPI(MethodView):
     def list_countries(self):
         """List all countries grouped by region. Available to all authenticated users."""
         countries = Country.query.order_by(Country.name).all()
+
+        # Pre-fetch all regions into a lookup dict
+        all_regions = Region.query.all()
+        region_map = {r.id: r for r in all_regions}
+
         result = []
         for c in countries:
-            region = Region.query.get(c.region_id) if c.region_id else None
+            region = region_map.get(c.region_id) if c.region_id else None
             result.append({
                 "id": c.id,
                 "name": c.name,

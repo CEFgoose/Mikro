@@ -2,10 +2,11 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Card, CardContent, CardHeader, CardTitle, Button, Input } from "@/components/ui";
+import { Card, CardContent, CardHeader, CardTitle, Button, Input, useToastActions } from "@/components/ui";
 
 export default function OnboardingPage() {
   const router = useRouter();
+  const toast = useToastActions();
   const [step, setStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -24,19 +25,19 @@ export default function OnboardingPage() {
 
   const handleNext = () => {
     if (step === 1 && !osmUsername) {
-      alert("Please enter your OSM username to continue");
+      toast.error("Please enter your OSM username to continue");
       return;
     }
     if (step === 2 && (!paymentEmail || !validateEmail(paymentEmail))) {
-      alert("Please enter a valid Payoneer email address");
+      toast.error("Please enter a valid Payoneer email address");
       return;
     }
     if (step === 3 && (!country || !city)) {
-      alert("Please enter your country and city");
+      toast.error("Please enter your country and city");
       return;
     }
     if (step === 4 && !termsAccepted) {
-      alert("Please accept the terms of service to continue");
+      toast.error("Please accept the terms of service to continue");
       return;
     }
     setStep(step + 1);
@@ -63,11 +64,11 @@ export default function OnboardingPage() {
       if (response.ok) {
         router.push("/user/dashboard");
       } else {
-        alert("Failed to save your information. Please try again.");
+        toast.error("Failed to save your information. Please try again.");
       }
     } catch (error) {
       console.error("Failed to submit onboarding:", error);
-      alert("An error occurred. Please try again.");
+      toast.error("An error occurred. Please try again.");
     } finally {
       setIsSubmitting(false);
     }

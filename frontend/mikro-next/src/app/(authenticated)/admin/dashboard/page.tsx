@@ -90,9 +90,9 @@ export default function AdminDashboard() {
       await purgeTaskStats({});
       setPurgeConfirm(false);
       refetchStats();
-      alert("All task stats purged successfully");
+      toast.success("All task stats purged successfully");
     } catch (err) {
-      alert("Failed to purge task stats: " + (err instanceof Error ? err.message : "Unknown error"));
+      toast.error("Failed to purge task stats: " + (err instanceof Error ? err.message : "Unknown error"));
     }
   };
 

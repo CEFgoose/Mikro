@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Card, CardContent, CardHeader, CardTitle, Button } from "@/components/ui";
+import { Card, CardContent, CardHeader, CardTitle, Button, Modal, useToastActions } from "@/components/ui";
 import { Task } from "@/types";
 import { formatNumber, formatCurrency, getProjectExternalUrl } from "@/lib/utils";
 
@@ -11,6 +11,7 @@ export default function AdminTasksPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [showPurgeModal, setShowPurgeModal] = useState(false);
   const [isPurging, setIsPurging] = useState(false);
+  const toast = useToastActions();
 
   useEffect(() => {
     fetchExternalValidations();
@@ -76,15 +77,15 @@ export default function AdminTasksPage() {
       });
       const data = await response.json();
       if (response.ok && data.status === 200) {
-        alert(`Task stats purged. ${data.users_reset} users and ${data.projects_reset} projects reset.`);
+        toast.success(`Task stats purged. ${data.users_reset} users and ${data.projects_reset} projects reset.`);
         setShowPurgeModal(false);
         fetchExternalValidations();
       } else {
-        alert(data.message || "Failed to purge task stats");
+        toast.error(data.message || "Failed to purge task stats");
       }
     } catch (error) {
       console.error("Failed to purge task stats:", error);
-      alert("Failed to purge task stats");
+      toast.error("Failed to purge task stats");
     } finally {
       setIsPurging(false);
     }
@@ -170,32 +171,25 @@ export default function AdminTasksPage() {
       </p>
 
       {/* Purge Task Stats Modal */}
-      {showPurgeModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <Card className="w-full max-w-md">
-            <CardHeader>
-              <CardTitle className="text-red-600">Purge All Task Stats</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <p className="text-muted-foreground">
-                This will reset all task statistics for all users and projects.
-                Task counts (mapped, validated, invalidated) and payable amounts will be zeroed out.
-              </p>
-              <p className="text-red-600 font-semibold">
-                This action cannot be undone!
-              </p>
-              <div className="flex gap-2 justify-end">
-                <Button variant="outline" onClick={() => setShowPurgeModal(false)} disabled={isPurging}>
-                  Cancel
-                </Button>
-                <Button variant="destructive" onClick={handlePurgeTaskStats} disabled={isPurging}>
-                  {isPurging ? "Purging..." : "Purge All Task Stats"}
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
+      <Modal isOpen={showPurgeModal} onClose={() => setShowPurgeModal(false)} title="Purge All Task Stats">
+        <div className="space-y-4">
+          <p className="text-muted-foreground">
+            This will reset all task statistics for all users and projects.
+            Task counts (mapped, validated, invalidated) and payable amounts will be zeroed out.
+          </p>
+          <p className="text-red-600 font-semibold">
+            This action cannot be undone!
+          </p>
+          <div className="flex gap-2 justify-end">
+            <Button variant="outline" onClick={() => setShowPurgeModal(false)} disabled={isPurging}>
+              Cancel
+            </Button>
+            <Button variant="destructive" onClick={handlePurgeTaskStats} disabled={isPurging}>
+              {isPurging ? "Purging..." : "Purge All Task Stats"}
+            </Button>
+          </div>
         </div>
-      )}
+      </Modal>
 
       {/* Dev Tools */}
       <Card className="border-2 border-dashed border-yellow-500">

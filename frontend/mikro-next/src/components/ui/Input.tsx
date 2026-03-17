@@ -12,11 +12,11 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
     const inputId = id || (label ? label.toLowerCase().replace(/\s+/g, "-") : undefined);
 
     return (
-      <div style={{ width: "100%" }}>
+      <div className="w-full">
         {label && (
           <label
             htmlFor={inputId}
-            style={{ display: "block", fontSize: 14, fontWeight: 500, marginBottom: 6 }}
+            className="block text-sm font-medium mb-1.5"
           >
             {label}
           </label>
@@ -26,20 +26,16 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
           type={type}
           className={cn(
             "flex w-full rounded-lg border border-input bg-background ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50",
+            "h-[42px] px-3.5 py-2.5 text-[15px]",
             error && "border-destructive focus-visible:ring-destructive",
             className
           )}
-          style={{
-            height: 42,
-            padding: "10px 14px",
-            fontSize: 15,
-            ...style,
-          }}
+          style={style}
           ref={ref}
           {...props}
         />
         {error && (
-          <p style={{ marginTop: 4, fontSize: 14, color: "#dc2626" }}>{error}</p>
+          <p className="mt-1 text-sm text-red-600">{error}</p>
         )}
       </div>
     );

@@ -162,8 +162,8 @@ class TransactionAPI(MethodView):
             return {"message": "User %s not found" % (user_id), "status": 400}
         # Create username from first_name and last_name
         user_name = "%s %s" % (
-            target_user.first_name.capitalize(),
-            target_user.last_name.capitalize(),
+            target_user.first_name.title(),
+            target_user.last_name.title(),
         )
         payment_email = target_user.payment_email
         # Split task_ids by comma and convert to int list
@@ -245,14 +245,13 @@ class TransactionAPI(MethodView):
             return {"message": f"Invalid request_amount: {request_amount}", "status": 400}
         if request_amount <= 0:
             return {"message": f"request_amount must be greater than 0, got: {request_amount}", "status": 400}
-        print(f"Processing payment: request_id={request_id}, user_id={user_id}, amount={request_amount}")
         # task_ids = str(task_ids).split()
         target_user = User.query.filter_by(
             org_id=g.user.org_id, id=user_id
         ).first()
         user_name = "%s %s" % (
-            target_user.first_name.capitalize(),
-            target_user.last_name.capitalize(),
+            target_user.first_name.title(),
+            target_user.last_name.title(),
         )
         payment_email = target_user.payment_email
         target_request = PayRequests.query.filter_by(
@@ -314,10 +313,9 @@ class TransactionAPI(MethodView):
                 validated_by=g.user.osm_username,
             ).all()
         ]
-        print(user_task_ids, user_validated_task_ids)
         user_name = "%s %s" % (
-            g.user.first_name.capitalize(),
-            g.user.last_name.capitalize(),
+            g.user.first_name.title(),
+            g.user.last_name.title(),
         )
         _pay = get_user_payment_balances(g.user)
         if g.user.role == "validator":
