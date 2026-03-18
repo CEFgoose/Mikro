@@ -323,6 +323,14 @@ export default function AdminTimePage() {
     return entries;
   }, [allEntries, datePreset, category]);
 
+  // Filter active sessions by category
+  const filteredSessions = useMemo(() => {
+    if (category === "All") return sessions;
+    return sessions.filter(
+      (s) => s.category?.toLowerCase() === category.toLowerCase()
+    );
+  }, [sessions, category]);
+
   // Stat computations
   const stats = useMemo(() => {
     const totalSeconds = filteredEntries.reduce(
@@ -340,11 +348,11 @@ export default function AdminTimePage() {
 
     return {
       totalHours: secondsToHours(totalSeconds),
-      activeSessions: sessions.length,
+      activeSessions: filteredSessions.length,
       pendingAdjustments,
       voidedEntries,
     };
-  }, [filteredEntries, sessions]);
+  }, [filteredEntries, filteredSessions]);
 
   // Pagination
   const totalEntries = filteredEntries.length;
@@ -780,7 +788,7 @@ export default function AdminTimePage() {
       </div>
 
       {/* Active Sessions (collapsible) */}
-      {sessions.length > 0 && (
+      {filteredSessions.length > 0 && (
         <Card style={{ padding: 0 }}>
           <div
             style={{
@@ -798,7 +806,7 @@ export default function AdminTimePage() {
                 <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
               </span>
               <h2 className="text-base font-semibold">
-                Active Sessions ({sessions.length})
+                Active Sessions ({filteredSessions.length})
               </h2>
             </div>
             <svg
@@ -848,7 +856,7 @@ export default function AdminTimePage() {
                       </tr>
                     </thead>
                     <tbody>
-                      {sessions.map((session) => (
+                      {filteredSessions.map((session) => (
                         <tr
                           key={session.id}
                           className="border-b border-border last:border-0"
