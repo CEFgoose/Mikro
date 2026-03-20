@@ -398,6 +398,8 @@ class ChecklistAPI(MethodView):
                 {
                     "id": user.id,
                     "name": full_name,
+                    "first_name": user.first_name or "",
+                    "last_name": user.last_name or "",
                     "role": user.role,
                     "joined": user.create_time,
                     "assigned_projects": assigned_checklists_count,

@@ -80,6 +80,8 @@ class TimeTrackingAPI(MethodView):
             "id": entry.id,
             "userId": entry.user_id,
             "userName": user.full_name if user else "Unknown",
+            "firstName": (user.first_name or "") if user else "",
+            "lastName": (user.last_name or "") if user else "",
             "projectId": entry.project_id,
             "projectName": project.name if project else "No Project",
             "category": entry.category.capitalize() if entry.category else "",

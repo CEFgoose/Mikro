@@ -873,6 +873,8 @@ class ProjectAPI(MethodView):
             users_data.append({
                 "id": u.id,
                 "name": f"{u.first_name or ''} {u.last_name or ''}".strip() or u.email,
+                "first_name": u.first_name or "",
+                "last_name": u.last_name or "",
                 "email": u.email,
                 "role": u.role,
                 "osm_username": u.osm_username,
@@ -936,6 +938,8 @@ class ProjectAPI(MethodView):
             eu = entry_users.get(e.user_id)
             recent_entries_data.append({
                 "user_name": (f"{eu.first_name or ''} {eu.last_name or ''}".strip() or eu.email) if eu else "Unknown",
+                "first_name": (eu.first_name or "") if eu else "",
+                "last_name": (eu.last_name or "") if eu else "",
                 "category": e.category,
                 "clock_in": e.clock_in.isoformat() if e.clock_in else None,
                 "clock_out": e.clock_out.isoformat() if e.clock_out else None,

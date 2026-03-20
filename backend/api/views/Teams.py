@@ -99,6 +99,8 @@ class TeamAPI(MethodView):
                 "description": team.description,
                 "lead_id": team.lead_id,
                 "lead_name": lead_name,
+                "lead_first_name": (lead_user.first_name or "") if team.lead_id and lead_user else "",
+                "lead_last_name": (lead_user.last_name or "") if team.lead_id and lead_user else "",
                 "member_count": member_count,
                 "created_at": team.created_at.isoformat() if team.created_at else None,
             })
@@ -216,6 +218,8 @@ class TeamAPI(MethodView):
             users.append({
                 "id": user.id,
                 "name": name,
+                "first_name": user.first_name or "",
+                "last_name": user.last_name or "",
                 "email": user.email,
                 "role": user.role,
                 "assigned": "Assigned" if user.id in assigned_ids else "Not Assigned",

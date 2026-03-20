@@ -332,6 +332,8 @@ export interface TimeEntry {
   id: number;
   userId: string;
   userName: string;
+  firstName?: string;
+  lastName?: string;
   projectId: number | null;
   projectName: string;
   category: string;

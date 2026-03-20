@@ -326,6 +326,8 @@ class UserAPI(MethodView):
             # update the response dictionary with the extracted information
             response["role"] = role
             response["name"] = _format_user_name(g.user)
+            response["first_name"] = g.user.first_name or ""
+            response["last_name"] = g.user.last_name or ""
             response["status"] = 200
             return response
 
@@ -474,6 +476,8 @@ class UserAPI(MethodView):
                 {
                     "id": user.id,
                     "name": full_name,
+                    "first_name": user.first_name or "",
+                    "last_name": user.last_name or "",
                     "role": user.role,
                     "joined": user.create_time,
                     "total_payout": user.paid_total,
@@ -549,6 +553,8 @@ class UserAPI(MethodView):
                 {
                     "id": user.id,
                     "name": full_name,
+                    "first_name": user.first_name or "",
+                    "last_name": user.last_name or "",
                     "role": user.role,
                     "joined": user.create_time,
                     "total_payout": user.paid_total,
