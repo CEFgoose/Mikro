@@ -180,6 +180,7 @@ export default function AdminTimePage() {
   // Filters
   const [datePreset, setDatePreset] = useState<DatePreset>("this_month");
   const [category, setCategory] = useState<string>("All");
+  const [userSearch, setUserSearch] = useState("");
   const { activeFilters, setActiveFilters, filtersBody } = useFilters();
 
   // Pagination
@@ -279,7 +280,7 @@ export default function AdminTimePage() {
   // Reset page when filters change
   useEffect(() => {
     setPage(0);
-  }, [datePreset, category, filtersBody]);
+  }, [datePreset, category, filtersBody, userSearch]);
 
   // Live duration ticker for active sessions
   useEffect(() => {
@@ -320,16 +321,32 @@ export default function AdminTimePage() {
       );
     }
 
-    return entries;
-  }, [allEntries, datePreset, category]);
+    if (userSearch.trim()) {
+      const search = userSearch.trim().toLowerCase();
+      entries = entries.filter(
+        (e) => e.userName?.toLowerCase().includes(search)
+      );
+    }
 
-  // Filter active sessions by category
+    return entries;
+  }, [allEntries, datePreset, category, userSearch]);
+
+  // Filter active sessions by category and user search
   const filteredSessions = useMemo(() => {
-    if (category === "All") return sessions;
-    return sessions.filter(
-      (s) => s.category?.toLowerCase() === category.toLowerCase()
-    );
-  }, [sessions, category]);
+    let filtered = sessions;
+    if (category !== "All") {
+      filtered = filtered.filter(
+        (s) => s.category?.toLowerCase() === category.toLowerCase()
+      );
+    }
+    if (userSearch.trim()) {
+      const search = userSearch.trim().toLowerCase();
+      filtered = filtered.filter(
+        (s) => s.userName?.toLowerCase().includes(search)
+      );
+    }
+    return filtered;
+  }, [sessions, category, userSearch]);
 
   // Stat computations
   const stats = useMemo(() => {
@@ -518,110 +535,9 @@ export default function AdminTimePage() {
           </p>
         </div>
 
-        {/* Export dropdown */}
-        <div ref={exportRef} className="relative">
-          <Button
-            variant="outline"
-            onClick={() => setExportOpen(!exportOpen)}
-            disabled={exporting}
-            isLoading={exporting}
-          >
-            <svg
-              className="w-4 h-4 mr-2"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-              />
-            </svg>
-            Export
-            <svg
-              className="w-3 h-3 ml-1"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M19 9l-7 7-7-7"
-              />
-            </svg>
-          </Button>
-
-          {exportOpen && (
-            <div className="absolute right-0 top-full z-50 mt-1 min-w-44 rounded-lg border border-border bg-card shadow-md">
-              <div className="py-1">
-                <button
-                  type="button"
-                  onClick={() => handleExport("csv")}
-                  className="flex w-full items-center px-4 py-2 text-sm hover:bg-accent hover:text-accent-foreground"
-                >
-                  <svg
-                    className="w-4 h-4 mr-2 text-muted-foreground"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-                    />
-                  </svg>
-                  Download CSV
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleExport("json")}
-                  className="flex w-full items-center px-4 py-2 text-sm hover:bg-accent hover:text-accent-foreground"
-                >
-                  <svg
-                    className="w-4 h-4 mr-2 text-muted-foreground"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"
-                    />
-                  </svg>
-                  Download JSON
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleExport("pdf")}
-                  className="flex w-full items-center px-4 py-2 text-sm hover:bg-accent hover:text-accent-foreground"
-                >
-                  <svg
-                    className="w-4 h-4 mr-2 text-muted-foreground"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"
-                    />
-                  </svg>
-                  Download PDF
-                </button>
-              </div>
-            </div>
-          )}
-        </div>
+        <Button variant="outline" size="sm" onClick={handleOpenAddEntry}>
+          + Add Entry
+        </Button>
       </div>
 
       {/* Stat Cards */}
@@ -720,21 +636,15 @@ export default function AdminTimePage() {
           flexWrap: "wrap",
         }}
       >
+        {/* User search */}
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <label className="text-sm font-medium text-muted-foreground">
-            Date Range:
-          </label>
-          <select
-            className="rounded-md border border-border bg-background px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-            value={datePreset}
-            onChange={(e) => setDatePreset(e.target.value as DatePreset)}
-          >
-            {Object.entries(DATE_PRESET_LABELS).map(([value, label]) => (
-              <option key={value} value={value}>
-                {label}
-              </option>
-            ))}
-          </select>
+          <input
+            type="text"
+            placeholder="Search user..."
+            className="rounded-md border border-border bg-background px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring w-44"
+            value={userSearch}
+            onChange={(e) => setUserSearch(e.target.value)}
+          />
         </div>
 
         <FilterBar
@@ -782,9 +692,78 @@ export default function AdminTimePage() {
           </select>
         </div>
 
-        <Button variant="outline" size="sm" onClick={handleOpenAddEntry}>
-          + Add Entry
-        </Button>
+        <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 8 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <label className="text-sm font-medium text-muted-foreground">
+              Date Range:
+            </label>
+            <select
+              className="rounded-md border border-border bg-background px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+              value={datePreset}
+              onChange={(e) => setDatePreset(e.target.value as DatePreset)}
+            >
+              {Object.entries(DATE_PRESET_LABELS).map(([value, label]) => (
+                <option key={value} value={value}>
+                  {label}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Export dropdown */}
+          <div ref={exportRef} className="relative">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setExportOpen(!exportOpen)}
+              disabled={exporting}
+              isLoading={exporting}
+            >
+              <svg
+                className="w-4 h-4 mr-1"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                />
+              </svg>
+              Export
+            </Button>
+
+            {exportOpen && (
+              <div className="absolute right-0 top-full z-50 mt-1 min-w-44 rounded-lg border border-border bg-card shadow-md">
+                <div className="py-1">
+                  <button
+                    type="button"
+                    onClick={() => handleExport("csv")}
+                    className="flex w-full items-center px-4 py-2 text-sm hover:bg-accent hover:text-accent-foreground"
+                  >
+                    Download CSV
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleExport("json")}
+                    className="flex w-full items-center px-4 py-2 text-sm hover:bg-accent hover:text-accent-foreground"
+                  >
+                    Download JSON
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleExport("pdf")}
+                    className="flex w-full items-center px-4 py-2 text-sm hover:bg-accent hover:text-accent-foreground"
+                  >
+                    Download PDF
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
       </div>
 
       {/* Active Sessions (collapsible) */}
