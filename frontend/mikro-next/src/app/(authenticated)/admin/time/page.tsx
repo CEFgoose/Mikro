@@ -935,6 +935,7 @@ export default function AdminTimePage() {
                 const hasPendingAdjustment = entry.notes?.startsWith(
                   "[ADJUSTMENT REQUESTED]"
                 );
+                const wasAdjusted = entry.notes?.startsWith("[ADJUSTED]");
 
                 return (
                   <TableRow
@@ -985,10 +986,19 @@ export default function AdminTimePage() {
                           {entry.status}
                         </Badge>
                         {hasPendingAdjustment && (
-                          <span
-                            className="inline-block w-2 h-2 rounded-full bg-yellow-500"
-                            title="Adjustment requested"
-                          />
+                          <Badge
+                            variant="destructive"
+                            className="ml-1 text-xs uppercase"
+                          >
+                            Adjust
+                          </Badge>
+                        )}
+                        {wasAdjusted && (
+                          <Badge
+                            className="ml-1 text-xs uppercase bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300"
+                          >
+                            Adjusted
+                          </Badge>
                         )}
                       </div>
                     </TableCell>

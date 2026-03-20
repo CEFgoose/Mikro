@@ -395,7 +395,10 @@ export function AdminTimeManagement() {
                             {entry.status}
                           </Badge>
                           {entry.notes?.startsWith("[ADJUSTMENT REQUESTED]") && (
-                            <Badge variant="warning" className="ml-1 text-xs">adjust</Badge>
+                            <Badge variant="destructive" className="ml-1 text-xs uppercase">Adjust</Badge>
+                          )}
+                          {entry.notes?.startsWith("[ADJUSTED]") && (
+                            <Badge className="ml-1 text-xs uppercase bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300">Adjusted</Badge>
                           )}
                         </td>
                         <td className="py-3 px-3">

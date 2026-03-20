@@ -582,6 +582,12 @@ class TimeTrackingAPI(MethodView):
                 (entry.clock_out - entry.clock_in).total_seconds()
             )
 
+        # Mark adjustment requests as fulfilled
+        if entry.notes and entry.notes.startswith("[ADJUSTMENT REQUESTED]"):
+            entry.notes = entry.notes.replace(
+                "[ADJUSTMENT REQUESTED]", "[ADJUSTED]", 1
+            )
+
         entry.edited_by = g.user.id
         entry.edited_at = datetime.utcnow()
         entry.save()
