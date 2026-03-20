@@ -20,6 +20,7 @@ from ..stats import count_tasks_split_aware, get_project_stats, get_project_stat
 from .MapRoulette import MapRouletteSync
 from ..database import (
     db,
+    Country,
     Project,
     Task,
     PayRequests,
@@ -35,6 +36,72 @@ from ..database import (
     ProjectTeam,
     TeamUser,
 )
+
+
+def _auto_parse_project_name(name):
+    """Parse a project name to extract a short display name and country candidate.
+
+    Returns (short_name or None, country_name or None).
+    Country name is a *candidate* — caller must verify against the countries table.
+    """
+    if not name:
+        return None, None
+
+    short_name = None
+    country_name = None
+
+    # Pattern 1: MR naming convention
+    # "1_Philippines_2026-01-26_23-56-21_ConstructionCheck #Kaart 2026 #MR57669"
+    mr_match = re.match(
+        r"^\d+_([A-Za-z ]+)_\d{4}-\d{2}-\d{2}_[\d-]+_(\w+)\s*#",
+        name,
+    )
+    if mr_match:
+        country_name = mr_match.group(1).strip()
+        check_type = mr_match.group(2).strip()
+        readable_check = re.sub(r"(?<=[a-z])(?=[A-Z])", " ", check_type)
+        short_name = f"{country_name} — {readable_check}"
+        return short_name, country_name
+
+    # Pattern 2: "PP - Location, Country. Date"
+    pp_match = re.match(
+        r"^PP\s*-\s*(.+?)\.?\s*"
+        r"(?:January|February|March|April|May|June|July|August|September|October|November|December)",
+        name,
+    )
+    if pp_match:
+        location = pp_match.group(1).strip().rstrip(".")
+        short_name = location
+        parts = location.split(",")
+        if len(parts) >= 2:
+            country_name = parts[-1].strip()
+        return short_name, country_name
+
+    # If the name is already short enough, don't generate a short_name
+    if len(name) <= 40:
+        return None, None
+
+    return short_name, country_name
+
+
+def _auto_assign_country(project_id, country_candidate):
+    """Look up country_candidate in the countries table (exact, case-insensitive).
+
+    If found, create a ProjectCountry link. Does nothing if no exact match or
+    if the link already exists.
+    """
+    if not country_candidate:
+        return
+    country_obj = Country.query.filter(
+        db.func.lower(Country.name) == country_candidate.lower()
+    ).first()
+    if not country_obj:
+        return
+    existing = ProjectCountry.query.filter_by(
+        project_id=project_id, country_id=country_obj.id
+    ).first()
+    if not existing:
+        ProjectCountry.create(project_id=project_id, country_id=country_obj.id)
 
 
 class ProjectAPI(MethodView):
@@ -226,13 +293,16 @@ class ProjectAPI(MethodView):
         if payments_enabled:
             if mapping_rate < 0.01 or validation_rate < 0.01:
                 return {"message": "Rate per task insufficient when payments enabled", "status": 400}
-        short_name = request.json.get("short_name", "")
+        short_name_input = request.json.get("short_name", "").strip()
+        parsed_short, parsed_country = _auto_parse_project_name(project_name)
+        final_short_name = short_name_input or parsed_short or ""
+
         Project.create(
             id=project_id,
             org_id=g.user.org_id,
             created_by=g.user.id,
             name=project_name,
-            short_name=short_name,
+            short_name=final_short_name,
             total_tasks=total_tasks,
             max_payment=float(calculation),
             url=url,
@@ -244,6 +314,9 @@ class ProjectAPI(MethodView):
             status=True,  # New projects are active by default
             payments_enabled=payments_enabled,
         )
+
+        _auto_assign_country(project_id, parsed_country)
+
         return {"message": "Project created", "project_id": project_id, "status": 200}
 
     def _create_mr_project(self):
@@ -303,13 +376,16 @@ class ProjectAPI(MethodView):
         else:
             calculation = 0
 
-        short_name = request.json.get("short_name", "")
+        short_name_input = request.json.get("short_name", "").strip()
+        parsed_short, parsed_country = _auto_parse_project_name(project_name)
+        final_short_name = short_name_input or parsed_short or ""
+
         Project.create(
             id=challenge_id,
             org_id=g.user.org_id,
             created_by=g.user.id,
             name=project_name,
-            short_name=short_name,
+            short_name=final_short_name,
             total_tasks=total_tasks,
             max_payment=float(calculation),
             url=url,
@@ -322,6 +398,8 @@ class ProjectAPI(MethodView):
             source="mr",
             payments_enabled=payments_enabled,
         )
+
+        _auto_assign_country(challenge_id, parsed_country)
 
         # Queue background metadata backfill if MR API failed
         if needs_backfill:
@@ -1416,13 +1494,23 @@ class ProjectAPI(MethodView):
         if not g.user:
             return {"message": "User not found", "status": 304}
 
-        # Fetch all active projects
+        # Fetch only projects the user is assigned to
         user_projects = []
+
+        assigned_project_ids = {
+            r.project_id
+            for r in ProjectUser.query.filter_by(user_id=g.user.id).all()
+        }
 
         active_projects = Project.query.filter(
             Project.org_id == g.user.org_id,
             Project.status == True,
         ).all()
+
+        # Only include projects the user is assigned to
+        active_projects = [
+            p for p in active_projects if p.id in assigned_project_ids
+        ]
 
         # Location visibility filter
         user_cids = get_user_country_ids(g.user.id)

@@ -106,6 +106,7 @@ export default function AdminProjectsPage() {
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
   const [showAddModal, setShowAddModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
+  const [editModalLoading, setEditModalLoading] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [showPurgeModal, setShowPurgeModal] = useState(false);
   const [formData, setFormData] = useState<ProjectFormData>(defaultFormData);
@@ -287,6 +288,7 @@ export default function AdminProjectsPage() {
       payments_enabled: project.payments_enabled ?? true,
     });
     setEditTab("settings");
+    setEditModalLoading(true);
     setShowEditModal(true);
     // Fetch users and teams for this project
     try {
@@ -300,6 +302,8 @@ export default function AdminProjectsPage() {
       console.error("Failed to fetch project data");
       setProjectUsers([]);
       setProjectTeams([]);
+    } finally {
+      setEditModalLoading(false);
     }
   };
 
@@ -416,6 +420,10 @@ export default function AdminProjectsPage() {
           aVal = a.max_payment ?? 0;
           bVal = b.max_payment ?? 0;
           break;
+        case "completion":
+          aVal = getCompletionPct(a) ?? -1;
+          bVal = getCompletionPct(b) ?? -1;
+          break;
         case "difficulty":
           const diffOrder: Record<string, number> = { Easy: 1, Medium: 2, Hard: 3 };
           aVal = diffOrder[a.difficulty || ""] ?? 0;
@@ -441,12 +449,33 @@ export default function AdminProjectsPage() {
     );
   };
 
+  /** Calculate completion % for a project (TM4 or MR). */
+  const getCompletionPct = (project: Project): number | null => {
+    if (!project.total_tasks || project.total_tasks === 0) return null;
+    if (project.source === "mr" && project.mr_status_breakdown) {
+      const fixed = (project.mr_status_breakdown["1"] ?? 0) + (project.mr_status_breakdown["5"] ?? 0);
+      return Math.round((fixed / project.total_tasks) * 100);
+    }
+    const validated = project.total_validated ?? 0;
+    return Math.round((validated / project.total_tasks) * 100);
+  };
+
+  /** Return a Tailwind text color class based on completion percentage. */
+  const completionColor = (pct: number): string => {
+    if (pct >= 80) return "text-green-600";
+    if (pct >= 60) return "text-emerald-500";
+    if (pct >= 40) return "text-yellow-500";
+    if (pct >= 20) return "text-orange-500";
+    return "text-red-500";
+  };
+
   const projSortColumns = [
-    { key: "name", label: "Project", width: "w-[28%]" },
-    { key: "total_tasks", label: "Tasks", width: "w-[7%]" },
-    { key: "", label: "Progress", width: "w-[15%]" },
-    { key: "mapping_rate", label: "Rates", width: "w-[12%]" },
-    { key: "budget", label: "Budget", width: "w-[12%]" },
+    { key: "name", label: "Project", width: "w-[26%]" },
+    { key: "total_tasks", label: "Tasks", width: "w-[6%]" },
+    { key: "", label: "Progress", width: "w-[14%]" },
+    { key: "completion", label: "Done", width: "w-[6%]" },
+    { key: "mapping_rate", label: "Rates", width: "w-[11%]" },
+    { key: "budget", label: "Budget", width: "w-[11%]" },
     { key: "difficulty", label: "Difficulty", width: "w-[10%]" },
   ];
 
@@ -529,6 +558,13 @@ export default function AdminProjectsPage() {
               )}
             </TableCell>
             <TableCell>
+              {(() => {
+                const pct = getCompletionPct(project);
+                if (pct === null) return <span className="text-muted-foreground text-sm">—</span>;
+                return <span className={`text-sm font-semibold ${completionColor(pct)}`}>{pct}%</span>;
+              })()}
+            </TableCell>
+            <TableCell>
               {project.payments_enabled === false ? (
                 <Badge variant="secondary">Stats Only</Badge>
               ) : (
@@ -594,7 +630,7 @@ export default function AdminProjectsPage() {
         ))}
         {projectList.length === 0 && (
           <TableRow>
-            <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
+            <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
               No projects found
             </TableCell>
           </TableRow>
@@ -659,17 +695,26 @@ export default function AdminProjectsPage() {
         </Card>
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">Total Paid Out</CardTitle>
+            <CardTitle className="text-sm font-medium">By Platform</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">
-              {formatCurrency(
-                [...activeProjects, ...inactiveProjects].reduce(
-                  (sum, p) => sum + (p.total_payout ?? 0),
-                  0
-                )
-              )}
-            </div>
+            {(() => {
+              const all = [...activeProjects, ...inactiveProjects];
+              const tm4 = all.filter((p) => p.source !== "mr").length;
+              const mr = all.filter((p) => p.source === "mr").length;
+              return (
+                <div className="flex items-baseline gap-3">
+                  <div>
+                    <span className="text-2xl font-bold">{formatNumber(tm4)}</span>
+                    <Badge variant="secondary" className="ml-1 text-[10px]">TM4</Badge>
+                  </div>
+                  <div>
+                    <span className="text-2xl font-bold">{formatNumber(mr)}</span>
+                    <Badge variant="default" className="ml-1 text-[10px] bg-blue-500">MR</Badge>
+                  </div>
+                </div>
+              );
+            })()}
           </CardContent>
         </Card>
       </div>
@@ -973,7 +1018,7 @@ export default function AdminProjectsPage() {
         title="Edit Project"
         description={`Editing ${selectedProject?.name || "project"}`}
         size="lg"
-        footer={
+        footer={editModalLoading ? null : (
           <>
             <Button variant="outline" onClick={() => {
               setShowEditModal(false);
@@ -988,8 +1033,14 @@ export default function AdminProjectsPage() {
               Save Changes
             </Button>
           </>
-        }
+        )}
       >
+        {editModalLoading ? (
+          <div className="flex flex-col items-center justify-center py-16 gap-3">
+            <div className="h-8 w-8 animate-spin rounded-full border-4 border-muted border-t-foreground" />
+            <p className="text-sm text-muted-foreground">Loading project data…</p>
+          </div>
+        ) : (
         <Tabs defaultValue="settings" value={editTab} onValueChange={(v) => setEditTab(v as "settings" | "users" | "teams" | "training" | "locations")}>
           <TabsList className="mb-4">
             <TabsTrigger value="settings">Settings</TabsTrigger>
@@ -1209,6 +1260,7 @@ export default function AdminProjectsPage() {
             )}
           </TabsContent>
         </Tabs>
+        )}
       </Modal>
 
       {/* Delete Confirmation */}
