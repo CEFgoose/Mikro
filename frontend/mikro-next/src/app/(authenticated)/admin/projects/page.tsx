@@ -114,6 +114,7 @@ export default function AdminProjectsPage() {
   const [projectTeams, setProjectTeams] = useState<ProjectTeamItem[]>([]);
   const [editTab, setEditTab] = useState<"settings" | "users" | "teams" | "training" | "locations">("settings");
   const [showMyProjects, setShowMyProjects] = useState(false);
+  const [projectSearch, setProjectSearch] = useState("");
   const [newProjectId, setNewProjectId] = useState<number | null>(null);
   const [addTab, setAddTab] = useState<"details" | "locations" | "teams">("details");
   const [addProjectTeams, setAddProjectTeams] = useState<ProjectTeamItem[]>([]);
@@ -400,8 +401,8 @@ export default function AdminProjectsPage() {
       let bVal: string | number = "";
       switch (projSortKey) {
         case "name":
-          aVal = (a.name || "").toLowerCase();
-          bVal = (b.name || "").toLowerCase();
+          aVal = (a.short_name || a.name || "").toLowerCase();
+          bVal = (b.short_name || b.name || "").toLowerCase();
           break;
         case "total_tasks":
           aVal = a.total_tasks ?? 0;
@@ -428,6 +429,16 @@ export default function AdminProjectsPage() {
       return 0;
     });
     return sorted;
+  };
+
+  const filterProjectsBySearch = (list: Project[]) => {
+    if (!projectSearch.trim()) return list;
+    const search = projectSearch.trim().toLowerCase();
+    return list.filter(
+      (p) =>
+        (p.name || "").toLowerCase().includes(search) ||
+        (p.short_name || "").toLowerCase().includes(search)
+    );
   };
 
   const projSortColumns = [
@@ -665,6 +676,13 @@ export default function AdminProjectsPage() {
 
       {/* Filters */}
       <div className="flex items-center gap-3">
+        <input
+          type="text"
+          placeholder="Search projects..."
+          className="rounded-md border border-border bg-background px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring w-48"
+          value={projectSearch}
+          onChange={(e) => setProjectSearch(e.target.value)}
+        />
         <div className="flex-1">
           <FilterBar
             dimensions={filterOptions?.dimensions ? Object.entries(filterOptions.dimensions).map(([key, values]) => ({
@@ -701,14 +719,14 @@ export default function AdminProjectsPage() {
         <TabsContent value="active">
           <Card>
             <CardContent className="p-0">
-              <ProjectTable projectList={sortProjects(activeProjects)} />
+              <ProjectTable projectList={sortProjects(filterProjectsBySearch(activeProjects))} />
             </CardContent>
           </Card>
         </TabsContent>
         <TabsContent value="inactive">
           <Card>
             <CardContent className="p-0">
-              <ProjectTable projectList={sortProjects(inactiveProjects)} />
+              <ProjectTable projectList={sortProjects(filterProjectsBySearch(inactiveProjects))} />
             </CardContent>
           </Card>
         </TabsContent>
