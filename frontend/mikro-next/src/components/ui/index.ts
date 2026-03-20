@@ -42,3 +42,4 @@ export {
   type Toast,
   type ToastVariant,
 } from "./Toast";
+export { Tooltip, type TooltipProps } from "./Tooltip";

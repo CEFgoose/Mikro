@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useEffect, useRef, useCallback } from "react";
-import { Card, CardContent, CardHeader, CardTitle, Skeleton, Badge, Button, useToastActions } from "@/components/ui";
-import { useAdminDashboardStats, useOrgTransactions, useUsersList, useOrgProjects, usePurgeTaskStats, useAdminSyncAllTasks, useCheckSyncStatus } from "@/hooks";
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
+import { Card, CardContent, CardHeader, CardTitle, Skeleton, Badge, Button, useToastActions, Tooltip } from "@/components/ui";
+import { useAdminDashboardStats, useOrgTransactions, useUsersList, useOrgProjects, usePurgeTaskStats, useAdminSyncAllTasks, useCheckSyncStatus, useAdminTimeHistory, useAdminActiveSessions } from "@/hooks";
 import { TimeTrackingWidget } from "@/components/widgets/TimeTrackingWidget";
 import { AdminTimeManagement } from "@/components/widgets/AdminTimeManagement";
 import { formatNumber, formatCurrency } from "@/lib/utils";
@@ -16,15 +16,57 @@ function formatDate(dateString: string): string {
   });
 }
 
-export default function AdminDashboard() {
+// --- Lower dashboard section (deferred) ---
+// This component manages its own data fetching so it doesn't block the time section above.
+
+function DashboardStats() {
   const { data: stats, loading: statsLoading, error: statsError, refetch: refetchStats } = useAdminDashboardStats();
   const { data: transactions, loading: transactionsLoading } = useOrgTransactions();
   const { data: users, loading: usersLoading } = useUsersList();
-  const { data: projects } = useOrgProjects();
+  const { data: timeHistory, loading: timeHistoryLoading } = useAdminTimeHistory();
+  const { data: activeSessions } = useAdminActiveSessions();
   const { mutate: purgeTaskStats, loading: purging } = usePurgeTaskStats();
   const { mutate: syncAllTasks } = useAdminSyncAllTasks();
   const { mutate: checkSyncStatus } = useCheckSyncStatus();
   const toast = useToastActions();
+
+  // Snapshot timestamp — records when this data was loaded
+  const [snapshotTime] = useState(() => new Date());
+
+  // Time management quick stats
+  const timeStats = useMemo(() => {
+    const entries = timeHistory?.entries || [];
+    const sessions = activeSessions?.sessions || [];
+    const now = new Date();
+
+    // This week (Sunday start)
+    const dayOfWeek = now.getDay();
+    const weekStart = new Date(now.getFullYear(), now.getMonth(), now.getDate() - dayOfWeek);
+
+    const thisWeekEntries = entries.filter(
+      (e) => e.clockIn && new Date(e.clockIn) >= weekStart && e.status === "completed"
+    );
+    const weekHours = Math.round(
+      thisWeekEntries.reduce((sum, e) => sum + (e.durationSeconds ?? 0), 0) / 3600 * 10
+    ) / 10;
+
+    // Pending adjustment requests
+    const pendingAdjustments = entries.filter(
+      (e) => e.notes?.startsWith("[ADJUSTMENT REQUESTED]") && e.status === "completed"
+    ).length;
+
+    // Suspicious long sessions: active sessions running 10+ hours
+    const longRunning = sessions.filter((s) => {
+      if (!s.clockIn) return false;
+      const elapsed = (now.getTime() - new Date(s.clockIn).getTime()) / 1000;
+      return elapsed > 10 * 3600; // 10+ hours
+    }).length;
+
+    // Active session count
+    const activeCount = sessions.length;
+
+    return { weekHours, pendingAdjustments, longRunning, activeCount };
+  }, [timeHistory, activeSessions]);
   const [purgeConfirm, setPurgeConfirm] = useState(false);
   const [syncProgress, setSyncProgress] = useState<string | null>(null);
   const [syncing, setSyncing] = useState(false);
@@ -97,18 +139,13 @@ export default function AdminDashboard() {
   };
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Admin Dashboard</h1>
-          <p className="text-muted-foreground">
-            Organization overview and management
-          </p>
-        </div>
-        <div className="flex items-center gap-3">
-          {syncing && syncProgress && (
-            <span className="text-sm text-muted-foreground">{syncProgress}</span>
-          )}
+    <>
+      {/* Sync button */}
+      <div className="flex items-center justify-end gap-3">
+        {syncing && syncProgress && (
+          <span className="text-sm text-muted-foreground">{syncProgress}</span>
+        )}
+        <Tooltip content="Pull latest task data from Tasking Manager and MapRoulette" position="bottom">
           <Button
             variant="outline"
             size="sm"
@@ -117,19 +154,7 @@ export default function AdminDashboard() {
           >
             {syncing ? "Syncing..." : "Sync All Tasks"}
           </Button>
-        </div>
-      </div>
-
-      {/* Time Tracking Widget */}
-      <div className="grid gap-4 lg:grid-cols-4">
-        <div className="lg:col-span-1">
-          <TimeTrackingWidget
-            projects={projects?.org_active_projects?.map((p: { id: number; name: string }) => ({ id: p.id, name: p.name })) ?? []}
-          />
-        </div>
-        <div className="lg:col-span-3">
-          <AdminTimeManagement />
-        </div>
+        </Tooltip>
       </div>
 
       {statsError && (
@@ -139,10 +164,12 @@ export default function AdminDashboard() {
       )}
 
       {/* Stats Cards */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 md:grid-cols-3">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Active Projects</CardTitle>
+            <Tooltip content="Projects currently active across Tasking Manager and MapRoulette" position="bottom">
+              <CardTitle className="text-sm font-medium">Active Projects</CardTitle>
+            </Tooltip>
             <svg
               xmlns="http://www.w3.org/2000/svg"
               viewBox="0 0 24 24"
@@ -153,7 +180,8 @@ export default function AdminDashboard() {
               strokeWidth="2"
               className="h-4 w-4 text-muted-foreground"
             >
-              <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
+              <rect width="20" height="14" x="2" y="5" rx="2" />
+              <path d="M2 10h20" />
             </svg>
           </CardHeader>
           <CardContent>
@@ -172,7 +200,9 @@ export default function AdminDashboard() {
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Users</CardTitle>
+            <Tooltip content="Total registered users in your organization" position="bottom">
+              <CardTitle className="text-sm font-medium">Total Users</CardTitle>
+            </Tooltip>
             <svg
               xmlns="http://www.w3.org/2000/svg"
               viewBox="0 0 24 24"
@@ -204,40 +234,9 @@ export default function AdminDashboard() {
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Pending Payouts</CardTitle>
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth="2"
-              className="h-4 w-4 text-muted-foreground"
-            >
-              <rect width="20" height="14" x="2" y="5" rx="2" />
-              <path d="M2 10h20" />
-            </svg>
-          </CardHeader>
-          <CardContent>
-            {statsLoading ? (
-              <Skeleton className="h-8 w-24" />
-            ) : (
-              <>
-                <div className="text-2xl font-bold">
-                  {formatCurrency(stats?.requests_total ?? 0)}
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  {formatNumber(transactions?.requests?.length ?? 0)} pending requests
-                </p>
-              </>
-            )}
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Tasks This Month</CardTitle>
+            <Tooltip content="Total mapping and validation tasks completed this calendar month" position="bottom">
+              <CardTitle className="text-sm font-medium">Tasks This Month</CardTitle>
+            </Tooltip>
             <svg
               xmlns="http://www.w3.org/2000/svg"
               viewBox="0 0 24 24"
@@ -269,11 +268,99 @@ export default function AdminDashboard() {
         </Card>
       </div>
 
+      {/* Time Management Quick Stats */}
+      <div className="grid gap-4 md:grid-cols-3">
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <Tooltip content="Total hours logged by all users this week (Sunday to now)" position="bottom">
+              <CardTitle className="text-sm font-medium">Hours This Week</CardTitle>
+            </Tooltip>
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" className="h-4 w-4 text-muted-foreground">
+              <circle cx="12" cy="12" r="10" />
+              <polyline points="12 6 12 12 16 14" />
+            </svg>
+          </CardHeader>
+          <CardContent>
+            {timeHistoryLoading ? (
+              <Skeleton className="h-8 w-16" />
+            ) : (
+              <>
+                <div className="text-2xl font-bold">{timeStats.weekHours}h</div>
+                <p className="text-xs text-muted-foreground">
+                  {timeStats.activeCount} {timeStats.activeCount === 1 ? "user" : "users"} currently clocked in
+                </p>
+              </>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <Tooltip content="Time entries where a user has requested an adjustment that hasn't been resolved yet" position="bottom">
+              <CardTitle className="text-sm font-medium">Pending Adjustments</CardTitle>
+            </Tooltip>
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" className="h-4 w-4 text-muted-foreground">
+              <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+              <line x1="12" y1="9" x2="12" y2="13" />
+              <line x1="12" y1="17" x2="12.01" y2="17" />
+            </svg>
+          </CardHeader>
+          <CardContent>
+            {timeHistoryLoading ? (
+              <Skeleton className="h-8 w-16" />
+            ) : (
+              <>
+                <div className={`text-2xl font-bold ${timeStats.pendingAdjustments > 0 ? "text-yellow-600" : "text-muted-foreground"}`}>
+                  {formatNumber(timeStats.pendingAdjustments)}
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  {timeStats.pendingAdjustments > 0 ? "Awaiting admin review" : "No pending requests"}
+                </p>
+              </>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <Tooltip content="Active clock-ins running longer than 10 hours — may indicate a user forgot to clock out" position="bottom">
+              <CardTitle className="text-sm font-medium">Long-Running Sessions</CardTitle>
+            </Tooltip>
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" className="h-4 w-4 text-muted-foreground">
+              <circle cx="12" cy="12" r="10" />
+              <line x1="12" y1="8" x2="12" y2="12" />
+              <line x1="12" y1="16" x2="12.01" y2="16" />
+            </svg>
+          </CardHeader>
+          <CardContent>
+            {timeHistoryLoading ? (
+              <Skeleton className="h-8 w-16" />
+            ) : (
+              <>
+                <div className={`text-2xl font-bold ${timeStats.longRunning > 0 ? "text-red-600" : "text-muted-foreground"}`}>
+                  {formatNumber(timeStats.longRunning)}
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  {timeStats.longRunning > 0 ? "Sessions over 10 hours — review needed" : "No suspicious sessions"}
+                </p>
+              </>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Snapshot notice */}
+      <p className="text-xs text-muted-foreground text-right">
+        Stats as of {snapshotTime.toLocaleString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit", hour12: true })}
+      </p>
+
       {/* Task Statistics */}
       <div className="grid gap-4 md:grid-cols-3">
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">Mapped Tasks</CardTitle>
+            <Tooltip content="Total tasks marked as mapped across all projects since tracking began" position="bottom">
+              <CardTitle className="text-sm font-medium">Mapped Tasks (All Time)</CardTitle>
+            </Tooltip>
           </CardHeader>
           <CardContent>
             {statsLoading ? (
@@ -288,7 +375,9 @@ export default function AdminDashboard() {
 
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">Validated Tasks</CardTitle>
+            <Tooltip content="Tasks reviewed and approved by a validator since tracking began" position="bottom">
+              <CardTitle className="text-sm font-medium">Validated Tasks (All Time)</CardTitle>
+            </Tooltip>
           </CardHeader>
           <CardContent>
             {statsLoading ? (
@@ -303,7 +392,9 @@ export default function AdminDashboard() {
 
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">Invalidated Tasks</CardTitle>
+            <Tooltip content="Tasks sent back for rework after validation review since tracking began" position="bottom">
+              <CardTitle className="text-sm font-medium">Invalidated Tasks (All Time)</CardTitle>
+            </Tooltip>
           </CardHeader>
           <CardContent>
             {statsLoading ? (
@@ -321,9 +412,11 @@ export default function AdminDashboard() {
       {stats?.self_validated_count != null && stats.self_validated_count > 0 && (
         <Card className="border-yellow-200 bg-yellow-50">
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-yellow-800">
-              Self-Validation Alerts
-            </CardTitle>
+            <Tooltip content="Tasks where the same user both mapped and validated — flagged as not payable to prevent abuse" position="bottom">
+              <CardTitle className="text-sm font-medium text-yellow-800">
+                Self-Validation Alerts
+              </CardTitle>
+            </Tooltip>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-yellow-700">
@@ -340,7 +433,9 @@ export default function AdminDashboard() {
       <div className="grid gap-4 md:grid-cols-3">
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">Total Payable</CardTitle>
+            <Tooltip content="Total amount owed to all users based on completed tasks and payment rates" position="bottom">
+              <CardTitle className="text-sm font-medium">Total Payable</CardTitle>
+            </Tooltip>
           </CardHeader>
           <CardContent>
             {statsLoading ? (
@@ -355,22 +450,31 @@ export default function AdminDashboard() {
 
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">Pending Requests</CardTitle>
+            <Tooltip content="Payment requests submitted by users awaiting admin approval" position="bottom">
+              <CardTitle className="text-sm font-medium">Pending Requests</CardTitle>
+            </Tooltip>
           </CardHeader>
           <CardContent>
             {statsLoading ? (
               <Skeleton className="h-10 w-28" />
             ) : (
-              <div className="text-3xl font-bold text-yellow-600">
-                {formatCurrency(stats?.requests_total ?? 0)}
-              </div>
+              <>
+                <div className="text-3xl font-bold text-yellow-600">
+                  {formatCurrency(stats?.requests_total ?? 0)}
+                </div>
+                <p className="text-xs text-muted-foreground mt-1">
+                  {formatNumber(transactions?.requests?.length ?? 0)} pending requests
+                </p>
+              </>
             )}
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">Total Paid Out</CardTitle>
+            <Tooltip content="Total amount already paid out to users" position="bottom">
+              <CardTitle className="text-sm font-medium">Total Paid Out</CardTitle>
+            </Tooltip>
           </CardHeader>
           <CardContent>
             {statsLoading ? (
@@ -388,7 +492,9 @@ export default function AdminDashboard() {
       <div className="grid gap-4 md:grid-cols-2">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle>Recent Payment Requests</CardTitle>
+            <Tooltip content="Most recent payment requests from users — click View All to manage" position="bottom">
+              <CardTitle>Recent Payment Requests</CardTitle>
+            </Tooltip>
             <Link
               href="/admin/payments"
               className="text-sm text-kaart-orange hover:underline"
@@ -435,7 +541,9 @@ export default function AdminDashboard() {
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle>Recent Payouts</CardTitle>
+            <Tooltip content="Most recent completed payments to users" position="bottom">
+              <CardTitle>Recent Payouts</CardTitle>
+            </Tooltip>
             <Link
               href="/admin/payments"
               className="text-sm text-kaart-orange hover:underline"
@@ -481,47 +589,6 @@ export default function AdminDashboard() {
         </Card>
       </div>
 
-      {/* Quick Actions */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Quick Actions</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex flex-wrap gap-3">
-            <Link
-              href="/admin/projects"
-              className="inline-flex items-center rounded-lg bg-kaart-orange px-4 py-2 text-sm font-medium text-white hover:bg-kaart-orange-dark transition-colors"
-            >
-              Manage Projects
-            </Link>
-            <Link
-              href="/admin/users"
-              className="inline-flex items-center rounded-lg bg-secondary px-4 py-2 text-sm font-medium hover:bg-secondary/80 transition-colors"
-            >
-              Manage Users
-            </Link>
-            <Link
-              href="/admin/payments"
-              className="inline-flex items-center rounded-lg bg-secondary px-4 py-2 text-sm font-medium hover:bg-secondary/80 transition-colors"
-            >
-              Process Payments
-            </Link>
-            <Link
-              href="/admin/training"
-              className="inline-flex items-center rounded-lg bg-secondary px-4 py-2 text-sm font-medium hover:bg-secondary/80 transition-colors"
-            >
-              Training Modules
-            </Link>
-            <Link
-              href="/admin/checklists"
-              className="inline-flex items-center rounded-lg bg-secondary px-4 py-2 text-sm font-medium hover:bg-secondary/80 transition-colors"
-            >
-              Checklists
-            </Link>
-          </div>
-        </CardContent>
-      </Card>
-
       {/* DEV ONLY: Danger Zone */}
       <Card className="border-red-200 bg-red-50/50 mt-8">
         <CardHeader className="pb-2">
@@ -560,6 +627,63 @@ export default function AdminDashboard() {
           </p>
         </CardContent>
       </Card>
+    </>
+  );
+}
+
+// --- Main page component ---
+// Only the time section loads here; everything else is deferred to DashboardStats.
+
+export default function AdminDashboard() {
+  const { data: projects } = useOrgProjects();
+  const [showStats, setShowStats] = useState(false);
+
+  // Defer lower sections until after the time section has painted
+  useEffect(() => {
+    const id = requestAnimationFrame(() => setShowStats(true));
+    return () => cancelAnimationFrame(id);
+  }, []);
+
+  return (
+    <div className="space-y-6">
+      <div>
+        <h1 className="text-3xl font-bold tracking-tight">Admin Dashboard</h1>
+        <p className="text-muted-foreground">
+          Organization overview and management
+        </p>
+      </div>
+
+      {/* Time Tracking — loads first */}
+      <div className="grid gap-4 lg:grid-cols-4">
+        <div className="lg:col-span-1">
+          <TimeTrackingWidget
+            projects={projects?.org_active_projects?.map((p: { id: number; name: string }) => ({ id: p.id, name: p.name })) ?? []}
+          />
+        </div>
+        <div className="lg:col-span-3">
+          <AdminTimeManagement />
+        </div>
+      </div>
+
+      {/* Lower sections — deferred */}
+      {showStats ? (
+        <DashboardStats />
+      ) : (
+        <div className="space-y-6">
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+            {[1, 2, 3, 4].map((i) => (
+              <Card key={i}>
+                <CardHeader className="pb-2">
+                  <Skeleton className="h-4 w-24" />
+                </CardHeader>
+                <CardContent>
+                  <Skeleton className="h-8 w-16" />
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
