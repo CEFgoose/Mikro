@@ -536,23 +536,13 @@ export default function AdminProjectsPage() {
             </TableCell>
             <TableCell>{formatNumber(project.total_tasks)}</TableCell>
             <TableCell>
-              {project.source === "mr" && project.mr_status_breakdown && Object.keys(project.mr_status_breakdown).length > 0 ? (
+              {project.source === "mr" ? (
                 <div className="text-sm space-y-0.5">
-                  {project.mr_status_breakdown["1"] != null && (
-                    <p className="text-green-600">{formatNumber(project.mr_status_breakdown["1"])} Fixed</p>
-                  )}
-                  {project.mr_status_breakdown["5"] != null && (
-                    <p className="text-emerald-500">{formatNumber(project.mr_status_breakdown["5"])} Already Fixed</p>
-                  )}
-                  {project.mr_status_breakdown["2"] != null && (
-                    <p className="text-amber-600">{formatNumber(project.mr_status_breakdown["2"])} Not an Issue</p>
-                  )}
-                  {project.mr_status_breakdown["6"] != null && (
-                    <p className="text-orange-500">{formatNumber(project.mr_status_breakdown["6"])} Can&apos;t Complete</p>
-                  )}
-                  {project.mr_status_breakdown["3"] != null && (
-                    <p className="text-gray-400">{formatNumber(project.mr_status_breakdown["3"])} Skipped</p>
-                  )}
+                  <p className="text-green-600">{formatNumber(project.mr_status_breakdown?.["1"] ?? 0)} Fixed</p>
+                  <p className="text-emerald-500">{formatNumber(project.mr_status_breakdown?.["5"] ?? 0)} Already Fixed</p>
+                  <p className="text-amber-600">{formatNumber(project.mr_status_breakdown?.["2"] ?? 0)} Not an Issue</p>
+                  <p className="text-orange-500">{formatNumber(project.mr_status_breakdown?.["6"] ?? 0)} Can&apos;t Complete</p>
+                  <p className="text-gray-400">{formatNumber(project.mr_status_breakdown?.["3"] ?? 0)} Skipped</p>
                 </div>
               ) : (
                 <div className="text-sm">
