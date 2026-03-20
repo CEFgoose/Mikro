@@ -183,6 +183,10 @@ export default function AdminTimePage() {
   const [userSearch, setUserSearch] = useState("");
   const { activeFilters, setActiveFilters, filtersBody } = useFilters();
 
+  // Sorting
+  const [sortKey, setSortKey] = useState<string>("clockIn");
+  const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
+
   // Pagination
   const [page, setPage] = useState(0);
 
@@ -371,10 +375,71 @@ export default function AdminTimePage() {
     };
   }, [filteredEntries, filteredSessions]);
 
+  // Sort handler
+  const handleSort = (key: string) => {
+    if (sortKey === key) {
+      setSortDir(sortDir === "asc" ? "desc" : "asc");
+    } else {
+      setSortKey(key);
+      setSortDir(key === "clockIn" ? "desc" : "asc");
+    }
+    setPage(0);
+  };
+
+  // Sorted entries
+  const sortedEntries = useMemo(() => {
+    const entries = [...filteredEntries];
+    const dir = sortDir === "asc" ? 1 : -1;
+
+    entries.sort((a, b) => {
+      let aVal: string | number | null = null;
+      let bVal: string | number | null = null;
+
+      switch (sortKey) {
+        case "userName":
+          aVal = (a.userName || "").toLowerCase();
+          bVal = (b.userName || "").toLowerCase();
+          break;
+        case "projectName":
+          aVal = (a.projectName || "").toLowerCase();
+          bVal = (b.projectName || "").toLowerCase();
+          break;
+        case "category":
+          aVal = (a.category || "").toLowerCase();
+          bVal = (b.category || "").toLowerCase();
+          break;
+        case "clockIn":
+          aVal = a.clockIn || "";
+          bVal = b.clockIn || "";
+          break;
+        case "clockOut":
+          aVal = a.clockOut || "";
+          bVal = b.clockOut || "";
+          break;
+        case "duration":
+          aVal = a.durationSeconds ?? 0;
+          bVal = b.durationSeconds ?? 0;
+          break;
+        case "status":
+          aVal = a.status || "";
+          bVal = b.status || "";
+          break;
+        default:
+          return 0;
+      }
+
+      if (aVal < bVal) return -1 * dir;
+      if (aVal > bVal) return 1 * dir;
+      return 0;
+    });
+
+    return entries;
+  }, [filteredEntries, sortKey, sortDir]);
+
   // Pagination
-  const totalEntries = filteredEntries.length;
+  const totalEntries = sortedEntries.length;
   const totalPages = Math.max(1, Math.ceil(totalEntries / PAGE_SIZE));
-  const pagedEntries = filteredEntries.slice(
+  const pagedEntries = sortedEntries.slice(
     page * PAGE_SIZE,
     (page + 1) * PAGE_SIZE
   );
@@ -898,13 +963,31 @@ export default function AdminTimePage() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>User</TableHead>
-                <TableHead>Project</TableHead>
-                <TableHead>Category</TableHead>
-                <TableHead>Clock In</TableHead>
-                <TableHead>Clock Out</TableHead>
-                <TableHead>Duration</TableHead>
-                <TableHead>Status</TableHead>
+                {[
+                  { key: "userName", label: "User" },
+                  { key: "projectName", label: "Project" },
+                  { key: "category", label: "Category" },
+                  { key: "clockIn", label: "Clock In" },
+                  { key: "clockOut", label: "Clock Out" },
+                  { key: "duration", label: "Duration" },
+                  { key: "status", label: "Status" },
+                ].map((col) => (
+                  <TableHead
+                    key={col.key}
+                    onClick={() => handleSort(col.key)}
+                    className="cursor-pointer select-none hover:text-foreground transition-colors"
+                  >
+                    <span className="inline-flex items-center gap-1">
+                      {col.label}
+                      {sortKey === col.key && (
+                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                            d={sortDir === "asc" ? "M5 15l7-7 7 7" : "M19 9l-7 7-7-7"} />
+                        </svg>
+                      )}
+                    </span>
+                  </TableHead>
+                ))}
                 <TableHead>Actions</TableHead>
               </TableRow>
             </TableHeader>
