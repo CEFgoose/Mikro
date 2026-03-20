@@ -605,9 +605,13 @@ class TransactionAPI(MethodView):
         users_reset = 0
         for user in users:
             user.update(
+                payable_total=0,
+                mapping_payable_total=0,
+                validation_payable_total=0,
                 checklist_payable_total=0,
                 requested_total=0,
-                total_payout=0,
+                paid_total=0,
+                requesting_payment=False,
             )
             users_reset += 1
 
