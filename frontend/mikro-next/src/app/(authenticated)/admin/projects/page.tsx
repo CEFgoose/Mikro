@@ -59,6 +59,7 @@ interface ProjectUserItem {
 interface ProjectFormData {
   url: string;
   source: "tm4" | "mr";
+  short_name: string;
   mapping_rate: string;
   validation_rate: string;
   max_editors: string;
@@ -72,6 +73,7 @@ interface ProjectFormData {
 const defaultFormData: ProjectFormData = {
   url: "",
   source: "tm4",
+  short_name: "",
   mapping_rate: "0.10",
   validation_rate: "0.05",
   max_editors: "5",
@@ -201,6 +203,7 @@ export default function AdminProjectsPage() {
     try {
       await updateProject({
         project_id: selectedProject.id,
+        short_name: formData.short_name,
         difficulty: formData.difficulty,
         rate_type: true,
         mapping_rate: formData.payments_enabled ? parseFloat(formData.mapping_rate) : 0,
@@ -278,6 +281,7 @@ export default function AdminProjectsPage() {
     setFormData({
       url: project.url,
       source: project.source ?? "tm4",
+      short_name: project.short_name ?? "",
       mapping_rate: project.mapping_rate_per_task.toString(),
       validation_rate: project.validation_rate_per_task.toString(),
       max_editors: project.max_editors?.toString() ?? "5",
@@ -1055,6 +1059,12 @@ export default function AdminProjectsPage() {
 
           <TabsContent value="settings">
             <div className="space-y-4">
+              <Input
+                label="Short Name"
+                placeholder="e.g. Philippines — Construction Check"
+                value={formData.short_name}
+                onChange={(e) => handleInputChange("short_name", e.target.value)}
+              />
               <div className="flex items-center gap-2">
                 <input
                   type="checkbox"
