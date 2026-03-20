@@ -875,6 +875,7 @@ class UserAPI(MethodView):
             "category": entry.category.capitalize() if entry.category else "",
             "projectId": entry.project_id,
             "projectName": project.name if project else "No Project",
+            "projectShortName": (project.short_name or "") if project else "",
             "status": entry.status,
             "notes": entry.notes,
         }
@@ -1568,6 +1569,7 @@ class UserAPI(MethodView):
                 "taskId": t.task_id,
                 "projectId": t.project_id,
                 "projectName": proj.name if proj else f"Project {t.project_id}",
+                "projectShortName": (proj.short_name or "") if proj else "",
                 "action": "mapped",
                 "date": t.date_mapped.isoformat() if t.date_mapped else None,
                 "status": "validated" if t.validated else ("invalidated" if t.invalidated else "pending"),
@@ -1588,6 +1590,7 @@ class UserAPI(MethodView):
                 "taskId": t.task_id,
                 "projectId": t.project_id,
                 "projectName": proj.name if proj else f"Project {t.project_id}",
+                "projectShortName": (proj.short_name or "") if proj else "",
                 "action": action,
                 "date": t.date_validated.isoformat() if t.date_validated else None,
                 "status": action,

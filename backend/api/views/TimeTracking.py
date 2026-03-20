@@ -84,6 +84,7 @@ class TimeTrackingAPI(MethodView):
             "lastName": (user.last_name or "") if user else "",
             "projectId": entry.project_id,
             "projectName": project.name if project else "No Project",
+            "projectShortName": (project.short_name or "") if project else "",
             "category": entry.category.capitalize() if entry.category else "",
             "clockIn": entry.clock_in.isoformat() + "Z" if entry.clock_in else None,
             "clockOut": entry.clock_out.isoformat() + "Z" if entry.clock_out else None,

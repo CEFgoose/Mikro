@@ -380,16 +380,86 @@ export default function AdminProjectsPage() {
     }
   };
 
+  const [projSortKey, setProjSortKey] = useState<string>("name");
+  const [projSortDir, setProjSortDir] = useState<"asc" | "desc">("asc");
+
+  const handleProjSort = (key: string) => {
+    if (projSortKey === key) {
+      setProjSortDir(projSortDir === "asc" ? "desc" : "asc");
+    } else {
+      setProjSortKey(key);
+      setProjSortDir("asc");
+    }
+  };
+
+  const sortProjects = (list: Project[]) => {
+    const sorted = [...list];
+    const dir = projSortDir === "asc" ? 1 : -1;
+    sorted.sort((a, b) => {
+      let aVal: string | number = "";
+      let bVal: string | number = "";
+      switch (projSortKey) {
+        case "name":
+          aVal = (a.name || "").toLowerCase();
+          bVal = (b.name || "").toLowerCase();
+          break;
+        case "total_tasks":
+          aVal = a.total_tasks ?? 0;
+          bVal = b.total_tasks ?? 0;
+          break;
+        case "mapping_rate":
+          aVal = a.mapping_rate_per_task ?? 0;
+          bVal = b.mapping_rate_per_task ?? 0;
+          break;
+        case "budget":
+          aVal = a.max_payment ?? 0;
+          bVal = b.max_payment ?? 0;
+          break;
+        case "difficulty":
+          const diffOrder: Record<string, number> = { Easy: 1, Medium: 2, Hard: 3 };
+          aVal = diffOrder[a.difficulty || ""] ?? 0;
+          bVal = diffOrder[b.difficulty || ""] ?? 0;
+          break;
+        default:
+          return 0;
+      }
+      if (aVal < bVal) return -1 * dir;
+      if (aVal > bVal) return 1 * dir;
+      return 0;
+    });
+    return sorted;
+  };
+
+  const projSortColumns = [
+    { key: "name", label: "Project", width: "w-[28%]" },
+    { key: "total_tasks", label: "Tasks", width: "w-[7%]" },
+    { key: "", label: "Progress", width: "w-[15%]" },
+    { key: "mapping_rate", label: "Rates", width: "w-[12%]" },
+    { key: "budget", label: "Budget", width: "w-[12%]" },
+    { key: "difficulty", label: "Difficulty", width: "w-[10%]" },
+  ];
+
   const ProjectTable = ({ projectList }: { projectList: Project[] }) => (
     <Table className="table-fixed">
       <TableHeader>
         <TableRow>
-          <TableHead className="w-[28%]">Project</TableHead>
-          <TableHead className="w-[7%]">Tasks</TableHead>
-          <TableHead className="w-[15%]">Progress</TableHead>
-          <TableHead className="w-[12%]">Rates</TableHead>
-          <TableHead className="w-[12%]">Budget</TableHead>
-          <TableHead className="w-[10%]">Difficulty</TableHead>
+          {projSortColumns.map((col) => (
+            <TableHead
+              key={col.label}
+              className={`${col.width} ${col.key ? "cursor-pointer select-none hover:text-foreground transition-colors" : ""}`}
+              onClick={col.key ? () => handleProjSort(col.key) : undefined}
+            >
+              <span className="inline-flex items-center gap-1">
+                {col.label}
+                {col.key && projSortKey === col.key && (
+                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                      d={projSortDir === "asc" ? "M5 15l7-7 7 7" : "M19 9l-7 7-7-7"} />
+                  </svg>
+                )}
+              </span>
+            </TableHead>
+          ))}
           <TableHead className="w-[16%] text-right">Actions</TableHead>
         </TableRow>
       </TableHeader>
@@ -631,14 +701,14 @@ export default function AdminProjectsPage() {
         <TabsContent value="active">
           <Card>
             <CardContent className="p-0">
-              <ProjectTable projectList={activeProjects} />
+              <ProjectTable projectList={sortProjects(activeProjects)} />
             </CardContent>
           </Card>
         </TabsContent>
         <TabsContent value="inactive">
           <Card>
             <CardContent className="p-0">
-              <ProjectTable projectList={inactiveProjects} />
+              <ProjectTable projectList={sortProjects(inactiveProjects)} />
             </CardContent>
           </Card>
         </TabsContent>

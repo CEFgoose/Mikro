@@ -867,6 +867,7 @@ class TaskAPI(MethodView):
                 "task_id": task.task_id,
                 "project_id": task.project_id,
                 "project_name": task_project.name if task_project else None,
+                "project_short_name": (task_project.short_name or "") if task_project else "",
                 "project_url": task_project.url if task_project else None,
                 "validation_rate": task.validation_rate,
                 "mapping_rate": task.mapping_rate,

@@ -430,6 +430,7 @@ class TransactionAPI(MethodView):
                 projects_map[project_id] = {
                     "project_id": project_id,
                     "project_name": project.name if project else f"Project {project_id}",
+                    "project_short_name": (project.short_name or "") if project else "",
                     "project_url": project.url if project else None,
                     "tasks": [],
                     "mapping_count": 0,

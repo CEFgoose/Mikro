@@ -226,11 +226,13 @@ class ProjectAPI(MethodView):
         if payments_enabled:
             if mapping_rate < 0.01 or validation_rate < 0.01:
                 return {"message": "Rate per task insufficient when payments enabled", "status": 400}
+        short_name = request.json.get("short_name", "")
         Project.create(
             id=project_id,
             org_id=g.user.org_id,
             created_by=g.user.id,
             name=project_name,
+            short_name=short_name,
             total_tasks=total_tasks,
             max_payment=float(calculation),
             url=url,
@@ -301,11 +303,13 @@ class ProjectAPI(MethodView):
         else:
             calculation = 0
 
+        short_name = request.json.get("short_name", "")
         Project.create(
             id=challenge_id,
             org_id=g.user.org_id,
             created_by=g.user.id,
             name=project_name,
+            short_name=short_name,
             total_tasks=total_tasks,
             max_payment=float(calculation),
             url=url,
@@ -384,9 +388,10 @@ class ProjectAPI(MethodView):
                 max_payment=float(mapping_calculation),
                 validation_rate_per_task=validation_rate,
             )
+        short_name = request.json.get("short_name", target_project.short_name)
         target_project.update(
             visibility=visibility, difficulty=difficulty, status=project_status,
-            payments_enabled=payments_enabled,
+            payments_enabled=payments_enabled, short_name=short_name,
         )
         if max_editors and max_editors != 0:
             target_project.update(
@@ -685,6 +690,7 @@ class ProjectAPI(MethodView):
                 {
                     "id": project.id,
                     "name": project.name,
+                    "short_name": project.short_name or "",
                     "visibility": project.visibility,
                     "max_payment": project.max_payment,
                     "payment_due": project.payment_due,
@@ -722,6 +728,7 @@ class ProjectAPI(MethodView):
                 {
                     "id": project.id,
                     "name": project.name,
+                    "short_name": project.short_name or "",
                     "visibility": project.visibility,
                     "max_payment": project.max_payment,
                     "payment_due": project.payment_due,
@@ -1006,6 +1013,7 @@ class ProjectAPI(MethodView):
             "project": {
                 "id": project.id,
                 "name": project.name,
+                "short_name": project.short_name or "",
                 "url": project.url,
                 "source": project.source,
                 "status": project.status,
@@ -1468,6 +1476,7 @@ class ProjectAPI(MethodView):
                 {
                     "id": project.id,
                     "name": project.name,
+                    "short_name": project.short_name or "",
                     "visibility": project.visibility,
                     "max_payment": project.max_payment,
                     "payment_due": project.payment_due,
@@ -1722,6 +1731,7 @@ class ProjectAPI(MethodView):
                 {
                     "id": project.id,
                     "name": project.name,
+                    "short_name": project.short_name or "",
                     "visibility": project.visibility,
                     "max_payment": project.max_payment,
                     "payment_due": project.payment_due,
@@ -1752,6 +1762,7 @@ class ProjectAPI(MethodView):
                 {
                     "id": project.id,
                     "name": project.name,
+                    "short_name": project.short_name or "",
                     "visibility": project.visibility,
                     "max_payment": project.max_payment,
                     "payment_due": project.payment_due,
@@ -1829,6 +1840,7 @@ class ProjectAPI(MethodView):
                 {
                     "id": project.id,
                     "name": project.name,
+                    "short_name": project.short_name or "",
                     "visibility": project.visibility,
                     "max_payment": project.max_payment,
                     "payment_due": project.payment_due,

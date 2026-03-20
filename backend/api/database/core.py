@@ -157,6 +157,7 @@ class Project(ModelWithSoftDeleteAndCRUD, SurrogatePK):
 
     id = db.Column(db.Integer, primary_key=True, autoincrement=False)
     name = db.Column(db.String(255), nullable=True)
+    short_name = db.Column(db.String(100), nullable=True)  # Admin-set display name
     org_id = db.Column(db.String(255), nullable=True)  # Changed to String for Auth0
     url = db.Column(db.String(500), nullable=False)
     source = db.Column(db.String(20), nullable=False, server_default="tm4")  # "tm4" or "mr"

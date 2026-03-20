@@ -42,6 +42,7 @@ export interface UserListItem extends User {
 export interface Project {
   id: number;
   name: string;
+  short_name?: string;
   url: string;
   total_tasks: number;
   source?: "tm4" | "mr";
@@ -336,6 +337,7 @@ export interface TimeEntry {
   lastName?: string;
   projectId: number | null;
   projectName: string;
+  projectShortName?: string;
   category: string;
   clockIn: string | null;
   clockOut: string | null;
