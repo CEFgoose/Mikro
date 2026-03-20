@@ -101,6 +101,45 @@ services:
       - key: FLASK_BACKEND_URL
         value: http://mikro-backend:8080
 
+workers:
+  # Background worker - nightly task sync, element analysis, MR backfill
+  - name: mikro-worker
+    github:
+      repo: CEFgoose/Mikro
+      branch: master
+      deploy_on_push: true
+    source_dir: backend
+    environment_slug: python
+    instance_count: 1
+    instance_size_slug: professional-xs
+    run_command: python -m api.worker
+    envs:
+      # Database
+      - key: DATABASE_URL
+        scope: RUN_TIME
+        value: ${db.DATABASE_URL}
+
+      # Flask
+      - key: FLASK_ENV
+        value: production
+      - key: SECRET_KEY
+        type: SECRET
+        value: ${SECRET_KEY}
+
+      # Auth0
+      - key: AUTH0_DOMAIN
+        type: SECRET
+        value: ${AUTH0_DOMAIN}
+      - key: API_AUDIENCE
+        value: https://mikro/api/authorize
+
+      # Tasking Manager 4
+      - key: TM4_API_TOKEN
+        type: SECRET
+        value: ${TM4_API_TOKEN}
+      - key: TM4_API_URL
+        value: https://tasks.kaart.com/api/v2
+
 databases:
   - name: db
     engine: PG
