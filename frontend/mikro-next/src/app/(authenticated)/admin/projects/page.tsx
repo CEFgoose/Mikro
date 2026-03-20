@@ -451,13 +451,18 @@ export default function AdminProjectsPage() {
 
   /** Calculate completion % for a project (TM4 or MR). */
   const getCompletionPct = (project: Project): number | null => {
-    if (!project.total_tasks || project.total_tasks === 0) return null;
-    if (project.source === "mr" && project.mr_status_breakdown) {
-      const fixed = (project.mr_status_breakdown["1"] ?? 0) + (project.mr_status_breakdown["5"] ?? 0);
-      return Math.round((fixed / project.total_tasks) * 100);
+    try {
+      if (!project.total_tasks || project.total_tasks === 0) return null;
+      if (project.source === "mr" && project.mr_status_breakdown && typeof project.mr_status_breakdown === "object" && !Array.isArray(project.mr_status_breakdown)) {
+        const breakdown = project.mr_status_breakdown as Record<string, number>;
+        const fixed = (breakdown["1"] ?? 0) + (breakdown["5"] ?? 0);
+        return Math.round((fixed / project.total_tasks) * 100);
+      }
+      const validated = project.total_validated ?? 0;
+      return Math.round((validated / project.total_tasks) * 100);
+    } catch {
+      return null;
     }
-    const validated = project.total_validated ?? 0;
-    return Math.round((validated / project.total_tasks) * 100);
   };
 
   /** Return a Tailwind text color class based on completion percentage. */
@@ -559,9 +564,13 @@ export default function AdminProjectsPage() {
             </TableCell>
             <TableCell>
               {(() => {
-                const pct = getCompletionPct(project);
-                if (pct === null) return <span className="text-muted-foreground text-sm">—</span>;
-                return <span className={`text-sm font-semibold ${completionColor(pct)}`}>{pct}%</span>;
+                try {
+                  const pct = getCompletionPct(project);
+                  if (pct === null) return <span className="text-muted-foreground text-sm">—</span>;
+                  return <span className={`text-sm font-semibold ${completionColor(pct)}`}>{pct}%</span>;
+                } catch {
+                  return <span className="text-muted-foreground text-sm">—</span>;
+                }
               })()}
             </TableCell>
             <TableCell>
