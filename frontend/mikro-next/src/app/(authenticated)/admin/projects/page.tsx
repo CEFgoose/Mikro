@@ -518,8 +518,8 @@ export default function AdminProjectsPage() {
             <TableCell className="max-w-0">
               <div className="min-w-0">
                 <div className="font-medium truncate">
-                  <Link href={`/admin/projects/${project.id}`} className="font-medium text-kaart-orange hover:underline" title={`View project details: ${project.name}`}>
-                    {project.name}
+                  <Link href={`/admin/projects/${project.id}`} className="font-medium text-kaart-orange hover:underline" title={project.name}>
+                    {project.short_name || project.name}
                   </Link>
                   {project.source === "mr" ? (
                     <Badge variant="default" className="ml-2 text-[10px] bg-blue-500">MR</Badge>
