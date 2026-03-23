@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import {
   Card,
   CardContent,
@@ -106,6 +106,32 @@ export default function AdminPaymentsPage() {
   const { mutate: fetchArchivedTransactions, loading: loadingArchived } = useFetchArchivedTransactions();
   const { mutate: purgeTransactions, loading: purging } = usePurgeTransactions();
   const toast = useToastActions();
+
+  // Fetch total potential payout (sum of all users' validated_tasks_amounts)
+  const [totalPotentialPayout, setTotalPotentialPayout] = useState(0);
+  useEffect(() => {
+    const fetchPotentialPayout = async () => {
+      try {
+        const res = await fetch("/backend/user/fetch_users", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({}),
+        });
+        if (res.ok) {
+          const data = await res.json();
+          const total = (data.users || []).reduce(
+            (sum: number, u: { validated_tasks_amounts?: number }) =>
+              sum + (u.validated_tasks_amounts ?? 0),
+            0
+          );
+          setTotalPotentialPayout(total);
+        }
+      } catch (error) {
+        console.error("Failed to fetch potential payout:", error);
+      }
+    };
+    fetchPotentialPayout();
+  }, []);
 
   const [selectedRequest, setSelectedRequest] = useState<PayRequest | null>(null);
   const [selectedPayment, setSelectedPayment] = useState<Payment | null>(null);
@@ -379,7 +405,18 @@ export default function AdminPaymentsPage() {
       </div>
 
       {/* Stats Cards */}
-      <div className="grid gap-4 md:grid-cols-4">
+      <div className="grid gap-4 md:grid-cols-5">
+        <Card className="border-kaart-orange/30">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium">Total Potential Payout</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-kaart-orange">{formatCurrency(totalPotentialPayout)}</div>
+            <p className="text-xs text-muted-foreground">
+              If all users cashed in now
+            </p>
+          </CardContent>
+        </Card>
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium">Pending Requests</CardTitle>

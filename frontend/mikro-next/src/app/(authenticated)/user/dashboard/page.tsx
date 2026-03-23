@@ -2,7 +2,7 @@
 
 import { useUser } from "@auth0/nextjs-auth0/client";
 import { Card, CardContent, CardHeader, CardTitle, Skeleton, Badge, Button } from "@/components/ui";
-import { useUserDashboardStats, useUserProjects, useUserPayable, useSubmitPaymentRequest, useSyncUserTasks } from "@/hooks";
+import { useUserDashboardStats, useUserProjects, useUserPayable, useSubmitPaymentRequest, useSyncUserTasks, usePaymentsVisible } from "@/hooks";
 import { TimeTrackingWidget } from "@/components/widgets/TimeTrackingWidget";
 import { UserTimeHistory } from "@/components/widgets/UserTimeHistory";
 import { useToastActions } from "@/components/ui";
@@ -17,6 +17,7 @@ export default function UserDashboard() {
   const { data: payable, loading: payableLoading, refetch: refetchPayable } = useUserPayable();
   const { mutate: submitPayment, loading: submittingPayment } = useSubmitPaymentRequest();
   const { mutate: syncTasks, loading: syncing } = useSyncUserTasks();
+  const { paymentsVisible } = usePaymentsVisible();
   const toast = useToastActions();
   const [isRequestingPayment, setIsRequestingPayment] = useState(false);
 
@@ -92,7 +93,7 @@ export default function UserDashboard() {
       </div>
 
       {/* Main Stats Cards */}
-      <div style={{ display: "grid", gap: 16, gridTemplateColumns: "repeat(4, 1fr)" }} className="grid-stats">
+      <div style={{ display: "grid", gap: 16, gridTemplateColumns: paymentsVisible ? "repeat(4, 1fr)" : "repeat(3, 1fr)" }} className="grid-stats">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Tasks Mapped</CardTitle>
@@ -159,42 +160,44 @@ export default function UserDashboard() {
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
-              {(stats?.requests_total ?? 0) > 0 ? "Available Balance" : "Payable Total"}
-            </CardTitle>
-            <svg
-              className={`h-4 w-4 ${(stats?.requests_total ?? 0) > 0 ? "text-yellow-500" : "text-muted-foreground"}`}
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-              />
-            </svg>
-          </CardHeader>
-          <CardContent>
-            {payableLoading || statsLoading ? (
-              <Skeleton className="h-8 w-24" />
-            ) : (
-              <>
-                <div className="text-2xl font-bold">
-                  {formatCurrency(payable?.payable_total ?? 0)}
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  {(stats?.requests_total ?? 0) > 0
-                    ? "Request pending"
-                    : "Available for payout"}
-                </p>
-              </>
-            )}
-          </CardContent>
-        </Card>
+        {paymentsVisible && (
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">
+                {(stats?.requests_total ?? 0) > 0 ? "Available Balance" : "Payable Total"}
+              </CardTitle>
+              <svg
+                className={`h-4 w-4 ${(stats?.requests_total ?? 0) > 0 ? "text-yellow-500" : "text-muted-foreground"}`}
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                />
+              </svg>
+            </CardHeader>
+            <CardContent>
+              {payableLoading || statsLoading ? (
+                <Skeleton className="h-8 w-24" />
+              ) : (
+                <>
+                  <div className="text-2xl font-bold">
+                    {formatCurrency(payable?.payable_total ?? 0)}
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    {(stats?.requests_total ?? 0) > 0
+                      ? "Request pending"
+                      : "Available for payout"}
+                  </p>
+                </>
+              )}
+            </CardContent>
+          </Card>
+        )}
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -229,7 +232,7 @@ export default function UserDashboard() {
       </div>
 
       {/* Earnings & Payments - Compact Row */}
-      <div style={{ display: "grid", gap: 12, gridTemplateColumns: "repeat(5, 1fr)" }} className="grid-earnings">
+      {paymentsVisible && <div style={{ display: "grid", gap: 12, gridTemplateColumns: "repeat(5, 1fr)" }} className="grid-earnings">
         <Card style={{ padding: 0 }}>
           <div style={{ padding: "10px 14px" }}>
             <p style={{ fontSize: 11, color: "#6b7280", marginBottom: 2 }}>Mapping Earnings</p>
@@ -294,7 +297,7 @@ export default function UserDashboard() {
             )}
           </div>
         </Card>
-      </div>
+      </div>}
 
       {/* Recent Projects */}
       <div style={{ display: "grid", gap: 16, gridTemplateColumns: "repeat(2, 1fr)" }} className="grid-projects">
@@ -369,40 +372,44 @@ export default function UserDashboard() {
             <CardTitle style={{ fontSize: 18 }}>Quick Actions</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3" style={{ padding: "8px 20px 16px" }}>
-            {(stats?.requests_total ?? 0) > 0 ? (
-              <div className="rounded-lg bg-yellow-50 dark:bg-yellow-950 border border-yellow-200 dark:border-yellow-800 p-3">
-                <div className="flex items-center gap-2 mb-1">
-                  <svg className="h-4 w-4 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                  <p className="font-medium text-sm text-yellow-800 dark:text-yellow-200">
-                    Payment Request Pending
+            {paymentsVisible && (
+              <>
+                {(stats?.requests_total ?? 0) > 0 ? (
+                  <div className="rounded-lg bg-yellow-50 dark:bg-yellow-950 border border-yellow-200 dark:border-yellow-800 p-3">
+                    <div className="flex items-center gap-2 mb-1">
+                      <svg className="h-4 w-4 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                      <p className="font-medium text-sm text-yellow-800 dark:text-yellow-200">
+                        Payment Request Pending
+                      </p>
+                    </div>
+                    <p className="text-xs text-yellow-700 dark:text-yellow-300">
+                      Pending: {formatCurrency(stats?.requests_total ?? 0)}
+                    </p>
+                  </div>
+                ) : (payable?.payable_total ?? 0) > 0 ? (
+                  <div className="rounded-lg bg-green-50 dark:bg-green-950 p-3">
+                    <p className="font-medium text-sm text-green-800 dark:text-green-200">
+                      {formatCurrency(payable?.payable_total ?? 0)} available!
+                    </p>
+                    <Button
+                      variant="primary"
+                      size="sm"
+                      className="mt-2"
+                      onClick={handleRequestPayment}
+                      isLoading={isRequestingPayment || submittingPayment}
+                      disabled={(payable?.payable_total ?? 0) <= 0}
+                    >
+                      Request Payment
+                    </Button>
+                  </div>
+                ) : (
+                  <p className="text-xs text-muted-foreground">
+                    Complete tasks to earn money.
                   </p>
-                </div>
-                <p className="text-xs text-yellow-700 dark:text-yellow-300">
-                  Pending: {formatCurrency(stats?.requests_total ?? 0)}
-                </p>
-              </div>
-            ) : (payable?.payable_total ?? 0) > 0 ? (
-              <div className="rounded-lg bg-green-50 dark:bg-green-950 p-3">
-                <p className="font-medium text-sm text-green-800 dark:text-green-200">
-                  {formatCurrency(payable?.payable_total ?? 0)} available!
-                </p>
-                <Button
-                  variant="primary"
-                  size="sm"
-                  className="mt-2"
-                  onClick={handleRequestPayment}
-                  isLoading={isRequestingPayment || submittingPayment}
-                  disabled={(payable?.payable_total ?? 0) <= 0}
-                >
-                  Request Payment
-                </Button>
-              </div>
-            ) : (
-              <p className="text-xs text-muted-foreground">
-                Complete tasks to earn money.
-              </p>
+                )}
+              </>
             )}
 
             <div className="flex flex-wrap gap-2">
@@ -413,13 +420,15 @@ export default function UserDashboard() {
               >
                 View Projects
               </Link>
-              <Link
-                href="/user/payments"
-                className="inline-flex items-center rounded-lg bg-secondary px-3 py-1.5 text-xs font-medium hover:bg-secondary/80 transition-colors"
-                title="View your payment history"
-              >
-                Payment History
-              </Link>
+              {paymentsVisible && (
+                <Link
+                  href="/user/payments"
+                  className="inline-flex items-center rounded-lg bg-secondary px-3 py-1.5 text-xs font-medium hover:bg-secondary/80 transition-colors"
+                  title="View your payment history"
+                >
+                  Payment History
+                </Link>
+              )}
               <Link
                 href="/user/training"
                 className="inline-flex items-center rounded-lg bg-secondary px-3 py-1.5 text-xs font-medium hover:bg-secondary/80 transition-colors"

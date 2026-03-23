@@ -120,7 +120,10 @@ class LoginAPI(MethodView):
         g.user = user
 
         # Check if user needs onboarding (missing required fields)
-        needs_onboarding = not user.osm_username or not user.payment_email
+        # Only require payment_email if payments are visible for this user
+        needs_onboarding = not user.osm_username or (
+            user.payments_visible and not user.payment_email
+        )
 
         # Build response
         return jsonify(
@@ -134,6 +137,7 @@ class LoginAPI(MethodView):
                 "city": user.city,
                 "country": user.country,
                 "needs_onboarding": needs_onboarding,
+                "payments_visible": user.payments_visible,
                 "status": 200,
             }
         )

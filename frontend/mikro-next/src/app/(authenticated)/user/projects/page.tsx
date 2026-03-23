@@ -10,12 +10,12 @@ import {
   Skeleton,
   useToastActions,
 } from "@/components/ui";
-import { useUserProjects } from "@/hooks";
+import { useUserProjects, usePaymentsVisible } from "@/hooks";
 import { getProjectExternalUrl, formatNumber, formatCurrency } from "@/lib/utils";
 import Link from "next/link";
 import type { Project } from "@/types";
 
-function ProjectCard({ project }: { project: Project }) {
+function ProjectCard({ project, paymentsVisible }: { project: Project; paymentsVisible: boolean }) {
   const progressPercent = project.total_tasks > 0
     ? Math.round(((project.total_mapped ?? 0) / project.total_tasks) * 100)
     : 0;
@@ -111,7 +111,7 @@ function ProjectCard({ project }: { project: Project }) {
         </div>
 
         {/* Payment Rates */}
-        {project.payments_enabled !== false && (
+        {paymentsVisible && project.payments_enabled !== false && (
           <div className="border-t border-border pt-4">
             <p className="text-sm text-muted-foreground mb-2">Payment Rates</p>
             <div className="flex gap-4">
@@ -148,6 +148,7 @@ function ProjectCard({ project }: { project: Project }) {
 
 export default function UserProjectsPage() {
   const { data: projects, loading, error } = useUserProjects();
+  const { paymentsVisible } = usePaymentsVisible();
   const toast = useToastActions();
 
   // Show error as toast instead of inline
@@ -206,30 +207,32 @@ export default function UserProjectsPage() {
             </div>
           </div>
         </Card>
-        <Card style={{ padding: 0 }}>
-          <div style={{ padding: "12px 16px" }}>
-            <p style={{ fontSize: 12, color: "#6b7280", marginBottom: 4 }}>Potential Earnings</p>
-            <div style={{ fontSize: 20, fontWeight: 700, color: "#ff6b35" }}>
-              {formatCurrency(
-                activeProjects
-                  .filter((p) => p.payments_enabled !== false)
-                  .reduce(
-                    (sum, p) =>
-                      sum +
-                      (p.total_tasks - (p.total_mapped ?? 0)) * p.mapping_rate_per_task,
-                    0
-                  )
-              )}
+        {paymentsVisible && (
+          <Card style={{ padding: 0 }}>
+            <div style={{ padding: "12px 16px" }}>
+              <p style={{ fontSize: 12, color: "#6b7280", marginBottom: 4 }}>Potential Earnings</p>
+              <div style={{ fontSize: 20, fontWeight: 700, color: "#ff6b35" }}>
+                {formatCurrency(
+                  activeProjects
+                    .filter((p) => p.payments_enabled !== false)
+                    .reduce(
+                      (sum, p) =>
+                        sum +
+                        (p.total_tasks - (p.total_mapped ?? 0)) * p.mapping_rate_per_task,
+                      0
+                    )
+                )}
+              </div>
             </div>
-          </div>
-        </Card>
+          </Card>
+        )}
       </div>
 
       {/* Projects Grid */}
       {activeProjects.length > 0 ? (
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
           {activeProjects.map((project) => (
-            <ProjectCard key={project.id} project={project} />
+            <ProjectCard key={project.id} project={project} paymentsVisible={paymentsVisible} />
           ))}
         </div>
       ) : (

@@ -57,14 +57,11 @@ export default function LandingPage() {
 
             {/* Auth Buttons */}
             <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-              <a href="/auth/login" style={{ fontSize: 14, fontWeight: 500, color: "#374151", textDecoration: "none" }}>
-                Log in
-              </a>
               <a
                 href="/auth/login"
                 style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", borderRadius: 6, backgroundColor: "#004e89", padding: "8px 16px", fontSize: 14, fontWeight: 500, color: "white", textDecoration: "none" }}
               >
-                Sign up
+                Log in
               </a>
             </div>
           </div>

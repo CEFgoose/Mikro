@@ -13,6 +13,7 @@ import {
 } from "@/components/ui";
 import { useUser } from "@auth0/nextjs-auth0/client";
 import { useFetchProjectProfile } from "@/hooks/useApi";
+import { usePaymentsVisible } from "@/hooks";
 import {
   formatNumber,
   formatCurrency,
@@ -74,6 +75,7 @@ export default function UserProjectProfilePage() {
   const params = useParams();
   const projectId = Number(params.id);
   const { user: auth0User } = useUser();
+  const { paymentsVisible } = usePaymentsVisible();
 
   const {
     mutate: fetchProfile,
@@ -218,7 +220,7 @@ export default function UserProjectProfilePage() {
                     {formatNumber(me.tasks_validated)}
                   </p>
                 </div>
-                {proj.payments_enabled !== false && (
+                {paymentsVisible && proj.payments_enabled !== false && (
                   <div>
                     <p className="text-sm text-muted-foreground">Your Earnings</p>
                     <p className="text-xl font-semibold text-green-600">
@@ -304,7 +306,7 @@ export default function UserProjectProfilePage() {
       </Card>
 
       {/* Rates */}
-      {proj.payments_enabled !== false && (
+      {paymentsVisible && proj.payments_enabled !== false && (
         <Card>
           <CardHeader>
             <CardTitle>Rates</CardTitle>

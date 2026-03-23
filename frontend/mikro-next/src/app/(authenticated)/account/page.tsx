@@ -5,6 +5,7 @@ import { useUser } from "@auth0/nextjs-auth0/client";
 import { useSearchParams } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle, Button, Input } from "@/components/ui";
 import { useTheme } from "@/contexts/ThemeContext";
+import { usePaymentsVisible } from "@/hooks";
 
 interface UserProfile {
   id: number;
@@ -43,6 +44,7 @@ export default function AccountPage() {
   const [mapillaryUnlinking, setMapillaryUnlinking] = useState(false);
   const [mapillaryMessage, setMapillaryMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
   const { isDarkMode, toggleDarkMode } = useTheme();
+  const { paymentsVisible } = usePaymentsVisible();
 
   // Form state
   const [paymentEmail, setPaymentEmail] = useState("");
@@ -571,19 +573,21 @@ export default function AccountPage() {
 
           {/* Editable Fields */}
           <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-            <div>
-              <label style={{ display: "block", fontSize: 14, fontWeight: 500, marginBottom: 6 }}>Payment Email (Payoneer)</label>
-              {isEditing ? (
-                <Input
-                  type="email"
-                  value={paymentEmail}
-                  onChange={(e) => setPaymentEmail(e.target.value)}
-                  placeholder="your-payoneer@email.com"
-                />
-              ) : (
-                <p style={{ fontSize: 15, color: "var(--foreground)" }}>{profile?.payment_email || "-"}</p>
-              )}
-            </div>
+            {paymentsVisible && (
+              <div>
+                <label style={{ display: "block", fontSize: 14, fontWeight: 500, marginBottom: 6 }}>Payment Email (Payoneer)</label>
+                {isEditing ? (
+                  <Input
+                    type="email"
+                    value={paymentEmail}
+                    onChange={(e) => setPaymentEmail(e.target.value)}
+                    placeholder="your-payoneer@email.com"
+                  />
+                ) : (
+                  <p style={{ fontSize: 15, color: "var(--foreground)" }}>{profile?.payment_email || "-"}</p>
+                )}
+              </div>
+            )}
 
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
               <div>

@@ -6,6 +6,7 @@ import { useToastActions } from "@/components/ui";
 import { useAddChecklistComment } from "@/hooks";
 import { Checklist } from "@/types";
 import { formatNumber, formatCurrency } from "@/lib/utils";
+import { usePaymentsVisible } from "@/hooks";
 
 export default function ValidatorChecklistsPage() {
   const [completedChecklists, setCompletedChecklists] = useState<Checklist[]>([]);
@@ -18,6 +19,7 @@ export default function ValidatorChecklistsPage() {
   const [commentText, setCommentText] = useState("");
 
   const { mutate: addComment, loading: addingComment } = useAddChecklistComment();
+  const { paymentsVisible } = usePaymentsVisible();
   const toast = useToastActions();
 
   useEffect(() => {
@@ -163,9 +165,11 @@ export default function ValidatorChecklistsPage() {
                   >
                     {checklist.difficulty}
                   </span>
-                  <span className="text-sm text-muted-foreground">
-                    {formatCurrency(checklist.validation_rate)}
-                  </span>
+                  {paymentsVisible && (
+                    <span className="text-sm text-muted-foreground">
+                      {formatCurrency(checklist.validation_rate)}
+                    </span>
+                  )}
                 </div>
               </div>
             </CardHeader>

@@ -10,7 +10,12 @@ interface UserInfo {
   email?: string;
 }
 
-async function syncUserWithBackend(accessToken: string, userInfo?: UserInfo): Promise<string> {
+interface SyncResult {
+  role: string;
+  paymentsVisible: boolean;
+}
+
+async function syncUserWithBackend(accessToken: string, userInfo?: UserInfo): Promise<SyncResult> {
   try {
     const response = await fetch(`${BACKEND_URL}/api/login`, {
       method: "POST",
@@ -22,13 +27,16 @@ async function syncUserWithBackend(accessToken: string, userInfo?: UserInfo): Pr
     });
     if (response.ok) {
       const data = await response.json();
-      return data.role || "user";
+      return {
+        role: data.role || "user",
+        paymentsVisible: data.payments_visible ?? false,
+      };
     }
     console.error("Failed to sync user with backend:", response.status);
-    return "user";
+    return { role: "user", paymentsVisible: false };
   } catch (error) {
     console.error("Error syncing user with backend:", error);
-    return "user";
+    return { role: "user", paymentsVisible: false };
   }
 }
 
@@ -45,6 +53,7 @@ export default async function AuthenticatedLayout({
 
   // Sync user with backend and get role from database
   let role = "user";
+  let paymentsVisible = false;
   try {
     const tokenResponse = await auth0.getAccessToken();
     if (tokenResponse?.token) {
@@ -53,16 +62,23 @@ export default async function AuthenticatedLayout({
         name: session.user?.name,
         email: session.user?.email,
       };
-      role = await syncUserWithBackend(tokenResponse.token, userInfo);
+      const syncResult = await syncUserWithBackend(tokenResponse.token, userInfo);
+      role = syncResult.role;
+      paymentsVisible = syncResult.paymentsVisible;
     }
   } catch (error) {
     console.error("Error getting access token for user sync:", error);
   }
 
+  // Admins always see payments
+  if (role === "admin") {
+    paymentsVisible = true;
+  }
+
   return (
     <div style={{ minHeight: "100vh", backgroundColor: "var(--muted)" }}>
       <Header />
-      <Sidebar role={role as "user" | "validator" | "admin"} />
+      <Sidebar role={role as "user" | "validator" | "admin"} paymentsVisible={paymentsVisible} />
       <main
         className="main-content"
         style={{

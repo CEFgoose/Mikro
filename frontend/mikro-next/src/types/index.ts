@@ -32,6 +32,7 @@ export interface User {
   timezone?: string;
   is_tracked_only?: boolean;
   mapillary_username?: string;
+  payments_visible?: boolean;
 }
 
 export interface UserListItem extends User {
@@ -412,6 +413,7 @@ export interface UserProfileData {
   region_name: string | null;
   timezone: string | null;
   is_tracked_only?: boolean;
+  payments_visible?: boolean;
   mapillary_username?: string;
   joined: string;
   total_tasks_mapped: number;
@@ -868,6 +870,7 @@ export interface UserDetailsResponse {
   country: string;
   email: string;
   payment_email: string;
+  payments_visible: boolean;
   status: number;
 }
 
@@ -881,6 +884,7 @@ export interface LoginResponse {
   city: string;
   country: string;
   needs_onboarding: boolean;
+  payments_visible: boolean;
   status: number;
 }
 

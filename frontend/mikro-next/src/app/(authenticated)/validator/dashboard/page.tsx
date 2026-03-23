@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle, Skeleton, Badge, Button } fro
 import { useToastActions } from "@/components/ui";
 import { TimeTrackingWidget } from "@/components/widgets/TimeTrackingWidget";
 import { UserTimeHistory } from "@/components/widgets/UserTimeHistory";
-import { useSyncUserTasks, useValidatorProjects, useUserPayable, useSubmitPaymentRequest } from "@/hooks";
+import { useSyncUserTasks, useValidatorProjects, useUserPayable, useSubmitPaymentRequest, usePaymentsVisible } from "@/hooks";
 import { ValidatorDashboardStats, Project } from "@/types";
 import { formatNumber, formatCurrency, getProjectExternalUrl } from "@/lib/utils";
 import Link from "next/link";
@@ -20,6 +20,7 @@ export default function ValidatorDashboard() {
   const [statsLoading, setStatsLoading] = useState(true);
   const [statsError, setStatsError] = useState<string | null>(null);
   const { mutate: syncTasks, loading: syncing } = useSyncUserTasks();
+  const { paymentsVisible } = usePaymentsVisible();
   const toast = useToastActions();
   const [isRequestingPayment, setIsRequestingPayment] = useState(false);
 
@@ -147,7 +148,7 @@ export default function ValidatorDashboard() {
       )}
 
       {/* Main Stats Cards - Mapping Work */}
-      <div style={{ display: "grid", gap: 16, gridTemplateColumns: "repeat(4, 1fr)" }} className="grid-stats">
+      <div style={{ display: "grid", gap: 16, gridTemplateColumns: paymentsVisible ? "repeat(4, 1fr)" : "repeat(3, 1fr)" }} className="grid-stats">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Tasks Mapped</CardTitle>
@@ -194,30 +195,32 @@ export default function ValidatorDashboard() {
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
-              {(stats?.requests_total ?? 0) > 0 ? "Available Balance" : "Payable Total"}
-            </CardTitle>
-            <svg className={`h-4 w-4 ${(stats?.requests_total ?? 0) > 0 ? "text-yellow-500" : "text-muted-foreground"}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-          </CardHeader>
-          <CardContent>
-            {payableLoading || statsLoading ? (
-              <Skeleton className="h-8 w-24" />
-            ) : (
-              <>
-                <div className="text-2xl font-bold">
-                  {formatCurrency(payable?.payable_total ?? stats?.payable_total ?? 0)}
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  {(stats?.requests_total ?? 0) > 0 ? "Request pending" : "Available for payout"}
-                </p>
-              </>
-            )}
-          </CardContent>
-        </Card>
+        {paymentsVisible && (
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">
+                {(stats?.requests_total ?? 0) > 0 ? "Available Balance" : "Payable Total"}
+              </CardTitle>
+              <svg className={`h-4 w-4 ${(stats?.requests_total ?? 0) > 0 ? "text-yellow-500" : "text-muted-foreground"}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </CardHeader>
+            <CardContent>
+              {payableLoading || statsLoading ? (
+                <Skeleton className="h-8 w-24" />
+              ) : (
+                <>
+                  <div className="text-2xl font-bold">
+                    {formatCurrency(payable?.payable_total ?? stats?.payable_total ?? 0)}
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    {(stats?.requests_total ?? 0) > 0 ? "Request pending" : "Available for payout"}
+                  </p>
+                </>
+              )}
+            </CardContent>
+          </Card>
+        )}
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -291,33 +294,35 @@ export default function ValidatorDashboard() {
             </CardContent>
           </Card>
 
-          <Card className="border-green-200 bg-green-50/50 dark:bg-green-950/20">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Validation Earnings</CardTitle>
-              <svg className="h-4 w-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-            </CardHeader>
-            <CardContent>
-              {statsLoading ? (
-                <Skeleton className="h-8 w-20" />
-              ) : (
-                <>
-                  <div className="text-2xl font-bold text-green-600">
-                    {formatCurrency(stats?.calculated_validation_earnings ?? stats?.validation_payable_total ?? 0)}
-                  </div>
-                  <p className="text-xs text-muted-foreground">
-                    From validation work
-                  </p>
-                </>
-              )}
-            </CardContent>
-          </Card>
+          {paymentsVisible && (
+            <Card className="border-green-200 bg-green-50/50 dark:bg-green-950/20">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Validation Earnings</CardTitle>
+                <svg className="h-4 w-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </CardHeader>
+              <CardContent>
+                {statsLoading ? (
+                  <Skeleton className="h-8 w-20" />
+                ) : (
+                  <>
+                    <div className="text-2xl font-bold text-green-600">
+                      {formatCurrency(stats?.calculated_validation_earnings ?? stats?.validation_payable_total ?? 0)}
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      From validation work
+                    </p>
+                  </>
+                )}
+              </CardContent>
+            </Card>
+          )}
         </div>
       </div>
 
       {/* Earnings & Payments Row */}
-      <div style={{ display: "grid", gap: 12, gridTemplateColumns: "repeat(4, 1fr)" }} className="grid-earnings">
+      {paymentsVisible && <div style={{ display: "grid", gap: 12, gridTemplateColumns: "repeat(4, 1fr)" }} className="grid-earnings">
         <Card style={{ padding: 0 }}>
           <div style={{ padding: "10px 14px" }}>
             <p style={{ fontSize: 11, color: "#6b7280", marginBottom: 2 }}>Mapping Earnings</p>
@@ -369,7 +374,7 @@ export default function ValidatorDashboard() {
             )}
           </div>
         </Card>
-      </div>
+      </div>}
 
       {/* Projects and Quick Actions */}
       <div style={{ display: "grid", gap: 16, gridTemplateColumns: "repeat(2, 1fr)" }} className="grid-projects">
@@ -449,45 +454,49 @@ export default function ValidatorDashboard() {
             <CardTitle>Quick Actions</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            {(stats?.requests_total ?? 0) > 0 ? (
-              <div className="rounded-lg bg-yellow-50 dark:bg-yellow-950 border border-yellow-200 dark:border-yellow-800 p-4">
-                <div className="flex items-center gap-2 mb-2">
-                  <svg className="h-5 w-5 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                  <p className="font-medium text-yellow-800 dark:text-yellow-200">
-                    Payment Request Pending
-                  </p>
-                </div>
-                <p className="text-sm text-yellow-700 dark:text-yellow-300">
-                  You have a pending request for {formatCurrency(stats?.requests_total ?? 0)}.
-                  You can submit a new request after this one is processed.
-                </p>
-                {(payable?.payable_total ?? 0) > 0 && (
-                  <p className="text-sm text-yellow-600 dark:text-yellow-400 mt-2">
-                    Additional earnings: {formatCurrency(payable?.payable_total ?? 0)}
+            {paymentsVisible && (
+              <>
+                {(stats?.requests_total ?? 0) > 0 ? (
+                  <div className="rounded-lg bg-yellow-50 dark:bg-yellow-950 border border-yellow-200 dark:border-yellow-800 p-4">
+                    <div className="flex items-center gap-2 mb-2">
+                      <svg className="h-5 w-5 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                      <p className="font-medium text-yellow-800 dark:text-yellow-200">
+                        Payment Request Pending
+                      </p>
+                    </div>
+                    <p className="text-sm text-yellow-700 dark:text-yellow-300">
+                      You have a pending request for {formatCurrency(stats?.requests_total ?? 0)}.
+                      You can submit a new request after this one is processed.
+                    </p>
+                    {(payable?.payable_total ?? 0) > 0 && (
+                      <p className="text-sm text-yellow-600 dark:text-yellow-400 mt-2">
+                        Additional earnings: {formatCurrency(payable?.payable_total ?? 0)}
+                      </p>
+                    )}
+                  </div>
+                ) : (payable?.payable_total ?? stats?.payable_total ?? 0) > 0 ? (
+                  <div className="rounded-lg bg-green-50 dark:bg-green-950 p-4">
+                    <p className="font-medium text-green-800 dark:text-green-200">
+                      You have {formatCurrency(payable?.payable_total ?? stats?.payable_total ?? 0)} available!
+                    </p>
+                    <Button
+                      variant="primary"
+                      className="mt-3"
+                      onClick={handleRequestPayment}
+                      isLoading={isRequestingPayment || submittingPayment}
+                      disabled={(payable?.payable_total ?? 0) <= 0}
+                    >
+                      Request Payment
+                    </Button>
+                  </div>
+                ) : (
+                  <p className="text-sm text-muted-foreground">
+                    Complete mapping and validation tasks to earn money. Your validated work will appear here.
                   </p>
                 )}
-              </div>
-            ) : (payable?.payable_total ?? stats?.payable_total ?? 0) > 0 ? (
-              <div className="rounded-lg bg-green-50 dark:bg-green-950 p-4">
-                <p className="font-medium text-green-800 dark:text-green-200">
-                  You have {formatCurrency(payable?.payable_total ?? stats?.payable_total ?? 0)} available!
-                </p>
-                <Button
-                  variant="primary"
-                  className="mt-3"
-                  onClick={handleRequestPayment}
-                  isLoading={isRequestingPayment || submittingPayment}
-                  disabled={(payable?.payable_total ?? 0) <= 0}
-                >
-                  Request Payment
-                </Button>
-              </div>
-            ) : (
-              <p className="text-sm text-muted-foreground">
-                Complete mapping and validation tasks to earn money. Your validated work will appear here.
-              </p>
+              </>
             )}
 
             <div className="flex flex-wrap gap-2 pt-2">
@@ -498,13 +507,15 @@ export default function ValidatorDashboard() {
               >
                 View Projects
               </Link>
-              <Link
-                href="/user/payments"
-                className="inline-flex items-center rounded-lg bg-secondary px-4 py-2 text-sm font-medium hover:bg-secondary/80 transition-colors"
-                title="View your payment history"
-              >
-                Payment History
-              </Link>
+              {paymentsVisible && (
+                <Link
+                  href="/user/payments"
+                  className="inline-flex items-center rounded-lg bg-secondary px-4 py-2 text-sm font-medium hover:bg-secondary/80 transition-colors"
+                  title="View your payment history"
+                >
+                  Payment History
+                </Link>
+              )}
               <Link
                 href="/validator/checklists"
                 className="inline-flex items-center rounded-lg bg-secondary px-4 py-2 text-sm font-medium hover:bg-secondary/80 transition-colors"
@@ -535,12 +546,12 @@ export default function ValidatorDashboard() {
               <thead className="bg-muted">
                 <tr>
                   <th className="px-4 py-3 text-left text-sm font-medium">Project</th>
-                  <th className="px-4 py-3 text-left text-sm font-medium">Map Rate</th>
-                  <th className="px-4 py-3 text-left text-sm font-medium">Val Rate</th>
+                  {paymentsVisible && <th className="px-4 py-3 text-left text-sm font-medium">Map Rate</th>}
+                  {paymentsVisible && <th className="px-4 py-3 text-left text-sm font-medium">Val Rate</th>}
                   <th className="px-4 py-3 text-left text-sm font-medium">Total Tasks</th>
                   <th className="px-4 py-3 text-left text-sm font-medium">Your Mapped</th>
                   <th className="px-4 py-3 text-left text-sm font-medium">Your Validated</th>
-                  <th className="px-4 py-3 text-left text-sm font-medium">Your Earnings</th>
+                  {paymentsVisible && <th className="px-4 py-3 text-left text-sm font-medium">Your Earnings</th>}
                   <th className="px-4 py-3 text-left text-sm font-medium">Status</th>
                 </tr>
               </thead>
@@ -560,14 +571,14 @@ export default function ValidatorDashboard() {
                         {project.name}
                       </Link>
                     </td>
-                    <td className="px-4 py-3">{formatCurrency(project.mapping_rate_per_task)}</td>
-                    <td className="px-4 py-3">{formatCurrency(project.validation_rate_per_task)}</td>
+                    {paymentsVisible && <td className="px-4 py-3">{formatCurrency(project.mapping_rate_per_task)}</td>}
+                    {paymentsVisible && <td className="px-4 py-3">{formatCurrency(project.validation_rate_per_task)}</td>}
                     <td className="px-4 py-3">{formatNumber(project.total_tasks)}</td>
                     <td className="px-4 py-3">{formatNumber(project.tasks_mapped ?? 0)}</td>
                     <td className="px-4 py-3">{formatNumber(project.tasks_validated ?? 0)}</td>
-                    <td className="px-4 py-3 text-kaart-orange font-medium">
+                    {paymentsVisible && <td className="px-4 py-3 text-kaart-orange font-medium">
                       {formatCurrency(project.user_earnings ?? 0)}
-                    </td>
+                    </td>}
                     <td className="px-4 py-3">
                       {(project as Project & { unassigned?: boolean }).unassigned ? (
                         <Badge variant="outline">Unassigned</Badge>
@@ -579,7 +590,7 @@ export default function ValidatorDashboard() {
                 ))}
                 {projects.length === 0 && (
                   <tr>
-                    <td colSpan={8} className="px-4 py-8 text-center text-muted-foreground">
+                    <td colSpan={paymentsVisible ? 8 : 5} className="px-4 py-8 text-center text-muted-foreground">
                       No projects assigned. Contact an admin to be assigned to projects.
                     </td>
                   </tr>

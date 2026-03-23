@@ -3,10 +3,12 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle, Button, Input, useToastActions } from "@/components/ui";
+import { usePaymentsVisible } from "@/hooks";
 
 export default function OnboardingPage() {
   const router = useRouter();
   const toast = useToastActions();
+  const { paymentsVisible } = usePaymentsVisible();
   const [step, setStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -17,7 +19,8 @@ export default function OnboardingPage() {
   const [city, setCity] = useState("");
   const [termsAccepted, setTermsAccepted] = useState(false);
 
-  const totalSteps = 5;
+  // Steps: 1=OSM, 2=Payment (skip if !paymentsVisible), 3=Location, 4=Terms, 5=Done
+  const totalSteps = paymentsVisible ? 5 : 4;
 
   const validateEmail = (email: string) => {
     return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
@@ -40,11 +43,21 @@ export default function OnboardingPage() {
       toast.error("Please accept the terms of service to continue");
       return;
     }
-    setStep(step + 1);
+    // Skip payment step if payments not visible
+    if (step === 1 && !paymentsVisible) {
+      setStep(3);
+    } else {
+      setStep(step + 1);
+    }
   };
 
   const handleBack = () => {
-    setStep(step - 1);
+    // Skip payment step if payments not visible
+    if (step === 3 && !paymentsVisible) {
+      setStep(1);
+    } else {
+      setStep(step - 1);
+    }
   };
 
   const handleSubmit = async () => {
@@ -218,9 +231,11 @@ export default function OnboardingPage() {
                   <p>
                     <strong>OSM Username:</strong> {osmUsername}
                   </p>
-                  <p>
-                    <strong>Payment Email:</strong> {paymentEmail}
-                  </p>
+                  {paymentsVisible && (
+                    <p>
+                      <strong>Payment Email:</strong> {paymentEmail}
+                    </p>
+                  )}
                   <p>
                     <strong>Location:</strong> {city}, {country}
                   </p>

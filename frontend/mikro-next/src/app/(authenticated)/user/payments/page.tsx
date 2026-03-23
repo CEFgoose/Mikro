@@ -26,6 +26,7 @@ import {
   useUserTransactions,
   useUserPayable,
   useSubmitPaymentRequest,
+  usePaymentsVisible,
 } from "@/hooks";
 import { formatNumber, formatCurrency } from "@/lib/utils";
 
@@ -41,6 +42,7 @@ export default function UserPaymentsPage() {
   const { data: transactions, loading: transactionsLoading, refetch } = useUserTransactions();
   const { data: payable, loading: payableLoading, refetch: refetchPayable } = useUserPayable();
   const { mutate: submitPayment, loading: submitting } = useSubmitPaymentRequest();
+  const { paymentsVisible, loading: pvLoading } = usePaymentsVisible();
   const toast = useToastActions();
 
   const [showRequestModal, setShowRequestModal] = useState(false);
@@ -70,7 +72,7 @@ export default function UserPaymentsPage() {
     }
   };
 
-  const loading = transactionsLoading || payableLoading;
+  const loading = transactionsLoading || payableLoading || pvLoading;
 
   if (loading) {
     return (
@@ -82,6 +84,26 @@ export default function UserPaymentsPage() {
           ))}
         </div>
         <Skeleton className="h-64 w-full" />
+      </div>
+    );
+  }
+
+  if (!paymentsVisible) {
+    return (
+      <div style={{ display: "flex", flexDirection: "column", gap: 32 }}>
+        <div style={{ marginBottom: 8 }}>
+          <h1 className="text-3xl font-bold tracking-tight">Payments</h1>
+        </div>
+        <Card>
+          <CardContent style={{ padding: "48px 24px", textAlign: "center" }}>
+            <p style={{ fontSize: 16, color: "#6b7280" }}>
+              Payments are not enabled for your account.
+            </p>
+            <p style={{ fontSize: 14, color: "#9ca3af", marginTop: 8 }}>
+              Contact your administrator if you believe this is an error.
+            </p>
+          </CardContent>
+        </Card>
       </div>
     );
   }

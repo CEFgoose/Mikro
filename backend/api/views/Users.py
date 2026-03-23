@@ -418,6 +418,9 @@ class UserAPI(MethodView):
         # Mapillary account linking
         response["mapillary_username"] = user.mapillary_username
 
+        # Payment visibility
+        response["payments_visible"] = user.payments_visible or False
+
         # Stats for display
         _stats = get_user_task_stats(user)
         response["total_tasks_mapped"] = _stats["total_tasks_mapped"]
@@ -496,6 +499,7 @@ class UserAPI(MethodView):
                     "timezone": user.timezone,
                     "is_tracked_only": user.is_tracked_only or False,
                     "mapillary_username": user.mapillary_username,
+                    "payments_visible": user.payments_visible or False,
                 }
             )
         # Add the list of users to the return_obj dictionary
@@ -744,6 +748,8 @@ class UserAPI(MethodView):
             updates["timezone"] = (request.json["timezone"] or "").strip() or None
         if "mapillary_username" in request.json:
             updates["mapillary_username"] = (request.json["mapillary_username"] or "").strip() or None
+        if "payments_visible" in request.json:
+            updates["payments_visible"] = bool(request.json["payments_visible"])
 
         # Handle country_id change (with auto-timezone from country)
         if "country_id" in request.json:
@@ -1000,6 +1006,7 @@ class UserAPI(MethodView):
                 "region_name": region_name,
                 "timezone": user.timezone,
                 "is_tracked_only": user.is_tracked_only or False,
+                "payments_visible": user.payments_visible or False,
                 "joined": user.create_time.isoformat() if user.create_time else None,
                 # Task stats
                 "total_tasks_mapped": _stats["total_tasks_mapped"],

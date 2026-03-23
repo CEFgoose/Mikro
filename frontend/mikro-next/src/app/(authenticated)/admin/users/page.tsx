@@ -32,6 +32,7 @@ export default function AdminUsersPage() {
   const [editTimezone, setEditTimezone] = useState("");
   const [editCountryId, setEditCountryId] = useState<number | null>(null);
   const [editMapillaryUsername, setEditMapillaryUsername] = useState("");
+  const [editPaymentsVisible, setEditPaymentsVisible] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [userSearch, setUserSearch] = useState("");
   const [sortKey, setSortKey] = useState<string>("name");
@@ -168,6 +169,7 @@ export default function AdminUsersPage() {
       setEditTimezone(user?.timezone || "");
       setEditCountryId(null); // Will show current country as placeholder
       setEditMapillaryUsername(user?.mapillary_username || "");
+      setEditPaymentsVisible(user?.payments_visible ?? false);
       setShowEditModal(true);
     }
   };
@@ -218,6 +220,7 @@ export default function AdminUsersPage() {
           timezone: editTimezone,
           ...(editCountryId !== null ? { country_id: editCountryId } : {}),
           mapillary_username: editMapillaryUsername,
+          payments_visible: editPaymentsVisible,
         }),
       });
       const data = await response.json();
@@ -500,6 +503,7 @@ export default function AdminUsersPage() {
                     { key: "name", label: "Name" },
                     { key: "osm_username", label: "OSM User" },
                     { key: "role", label: "Role" },
+                    { key: "", label: "Pay" },
                     { key: "country", label: "Country" },
                     { key: "region", label: "Region" },
                     { key: "", label: "Timezone" },
@@ -570,6 +574,13 @@ export default function AdminUsersPage() {
                         )}
                       </div>
                     </td>
+                    <td className="px-6 py-5">
+                      {user.payments_visible ? (
+                        <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">Yes</span>
+                      ) : (
+                        <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-500">No</span>
+                      )}
+                    </td>
                     <td className="px-6 py-5 text-foreground">{user.country_name || "\u2014"}</td>
                     <td className="px-6 py-5 text-foreground">{user.region_name || "\u2014"}</td>
                     <td className="px-6 py-5 text-foreground">{user.timezone || "\u2014"}</td>
@@ -587,7 +598,7 @@ export default function AdminUsersPage() {
                 ))}
                 {users.length === 0 && (
                   <tr>
-                    <td colSpan={12} className="px-4 py-8 text-center text-muted-foreground">
+                    <td colSpan={13} className="px-4 py-8 text-center text-muted-foreground">
                       No users found
                     </td>
                   </tr>
@@ -723,6 +734,52 @@ export default function AdminUsersPage() {
                 <option key={c.id} value={c.id}>{c.name}</option>
               ))}
             </select>
+          </div>
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              padding: "12px 16px",
+              backgroundColor: "var(--secondary)",
+              borderRadius: 8,
+              border: "1px solid var(--border)",
+            }}
+          >
+            <div>
+              <p style={{ fontWeight: 500, fontSize: 14 }}>Payment Enabled</p>
+              <p style={{ fontSize: 12, color: "var(--muted-foreground)", marginTop: 2 }}>
+                Allow this user to see payment rates, earnings, and request payouts
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setEditPaymentsVisible(!editPaymentsVisible)}
+              style={{
+                position: "relative",
+                display: "inline-flex",
+                height: 24,
+                width: 44,
+                alignItems: "center",
+                borderRadius: 9999,
+                border: "none",
+                cursor: "pointer",
+                transition: "background-color 0.2s",
+                backgroundColor: editPaymentsVisible ? "#22c55e" : "#d1d5db",
+              }}
+            >
+              <span
+                style={{
+                  display: "inline-block",
+                  height: 16,
+                  width: 16,
+                  borderRadius: "50%",
+                  backgroundColor: "white",
+                  transition: "transform 0.2s",
+                  transform: editPaymentsVisible ? "translateX(24px)" : "translateX(4px)",
+                }}
+              />
+            </button>
           </div>
           <div className="flex gap-2 justify-end">
             <Button variant="outline" onClick={() => setShowEditModal(false)}>

@@ -6,6 +6,7 @@ import { SidebarClock } from "./SidebarClock";
 
 interface SidebarProps {
   role: "user" | "validator" | "admin";
+  paymentsVisible?: boolean;
 }
 
 interface NavItem {
@@ -119,15 +120,22 @@ const iconMap: Record<string, React.ReactNode> = {
   ),
 };
 
-export function Sidebar({ role }: SidebarProps) {
+export function Sidebar({ role, paymentsVisible = true }: SidebarProps) {
   const pathname = usePathname();
 
-  const navItems =
+  const allNavItems =
     role === "admin"
       ? adminNavItems
       : role === "validator"
         ? validatorNavItems
         : userNavItems;
+
+  // Hide Payments link for non-admin users when payments not visible
+  const navItems = role === "admin"
+    ? allNavItems
+    : paymentsVisible
+      ? allNavItems
+      : allNavItems.filter((item) => item.label !== "Payments");
 
   const linkBaseStyle: React.CSSProperties = {
     display: "flex",
