@@ -478,6 +478,8 @@ class UserAPI(MethodView):
                     "name": full_name,
                     "first_name": user.first_name or "",
                     "last_name": user.last_name or "",
+                    "email": user.email or "",
+                    "osm_username": user.osm_username or "",
                     "role": user.role,
                     "joined": user.create_time,
                     "total_payout": user.paid_total,
@@ -732,6 +734,36 @@ class UserAPI(MethodView):
             updates["first_name"] = (request.json["first_name"] or "").strip()
         if "last_name" in request.json:
             updates["last_name"] = (request.json["last_name"] or "").strip()
+
+        # Handle additional profile fields
+        if "osm_username" in request.json:
+            updates["osm_username"] = (request.json["osm_username"] or "").strip() or None
+        if "email" in request.json:
+            updates["email"] = (request.json["email"] or "").strip()
+        if "timezone" in request.json:
+            updates["timezone"] = (request.json["timezone"] or "").strip() or None
+        if "mapillary_username" in request.json:
+            updates["mapillary_username"] = (request.json["mapillary_username"] or "").strip() or None
+
+        # Handle country_id change (with auto-timezone from country)
+        if "country_id" in request.json:
+            new_cid = request.json["country_id"]
+            if new_cid:
+                country_obj = Country.query.get(new_cid)
+                if country_obj:
+                    updates["country_id"] = new_cid
+                    updates["country"] = country_obj.name
+                    if "timezone" not in request.json and country_obj.default_timezone:
+                        updates["timezone"] = country_obj.default_timezone
+                    existing_uc = UserCountry.query.filter_by(
+                        user_id=user_id, country_id=new_cid
+                    ).first()
+                    if not existing_uc:
+                        UserCountry.create(
+                            user_id=user_id, country_id=new_cid, is_primary=True
+                        )
+            else:
+                updates["country_id"] = None
 
         if not updates:
             return_obj["message"] = "No changes provided"

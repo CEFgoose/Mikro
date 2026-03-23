@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle, Button, Modal, useToastActions } from "@/components/ui";
 import { FilterBar } from "@/components/filters";
-import { useFilters, useFetchFilterOptions } from "@/hooks";
+import { useFilters, useFetchFilterOptions, useFetchCountries } from "@/hooks";
 import { formatNumber, formatCurrency, displayRole } from "@/lib/utils";
 import { User } from "@/types";
 
@@ -27,7 +27,15 @@ export default function AdminUsersPage() {
   const [editRole, setEditRole] = useState<string>("user");
   const [editFirstName, setEditFirstName] = useState("");
   const [editLastName, setEditLastName] = useState("");
+  const [editOsmUsername, setEditOsmUsername] = useState("");
+  const [editEmail, setEditEmail] = useState("");
+  const [editTimezone, setEditTimezone] = useState("");
+  const [editCountryId, setEditCountryId] = useState<number | null>(null);
+  const [editMapillaryUsername, setEditMapillaryUsername] = useState("");
   const [isSaving, setIsSaving] = useState(false);
+  const [userSearch, setUserSearch] = useState("");
+  const [sortKey, setSortKey] = useState<string>("name");
+  const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
   const [inviteEmail, setInviteEmail] = useState("");
   const [showImportModal, setShowImportModal] = useState(false);
   const [csvUsers, setCsvUsers] = useState<CsvUser[]>([]);
@@ -41,6 +49,83 @@ export default function AdminUsersPage() {
   const toast = useToastActions();
   const { activeFilters, setActiveFilters, filtersBody, clearFilters } = useFilters();
   const { data: filterOptions, loading: filterOptionsLoading } = useFetchFilterOptions();
+  const { data: countriesData } = useFetchCountries();
+  const countries = countriesData?.countries ?? [];
+
+  const handleSort = (key: string) => {
+    if (sortKey === key) {
+      setSortDir(sortDir === "asc" ? "desc" : "asc");
+    } else {
+      setSortKey(key);
+      setSortDir("asc");
+    }
+  };
+
+  const sortUsers = (list: User[]) => {
+    const sorted = [...list];
+    const dir = sortDir === "asc" ? 1 : -1;
+    sorted.sort((a, b) => {
+      let aVal: string | number = "";
+      let bVal: string | number = "";
+      switch (sortKey) {
+        case "name":
+          aVal = (a.name || "").toLowerCase();
+          bVal = (b.name || "").toLowerCase();
+          break;
+        case "osm_username":
+          aVal = (a.osm_username || "").toLowerCase();
+          bVal = (b.osm_username || "").toLowerCase();
+          break;
+        case "role": {
+          const roleOrder: Record<string, number> = { admin: 3, validator: 2, user: 1 };
+          aVal = roleOrder[a.role || ""] ?? 0;
+          bVal = roleOrder[b.role || ""] ?? 0;
+          break;
+        }
+        case "country":
+          aVal = (a.country_name || "").toLowerCase();
+          bVal = (b.country_name || "").toLowerCase();
+          break;
+        case "region":
+          aVal = (a.region_name || "").toLowerCase();
+          bVal = (b.region_name || "").toLowerCase();
+          break;
+        case "projects":
+          aVal = a.assigned_projects ?? 0;
+          bVal = b.assigned_projects ?? 0;
+          break;
+        case "mapped":
+          aVal = a.total_tasks_mapped ?? 0;
+          bVal = b.total_tasks_mapped ?? 0;
+          break;
+        case "validated":
+          aVal = a.total_tasks_validated ?? 0;
+          bVal = b.total_tasks_validated ?? 0;
+          break;
+        case "total_paid":
+          aVal = a.total_payout ?? 0;
+          bVal = b.total_payout ?? 0;
+          break;
+        default:
+          return 0;
+      }
+      if (aVal < bVal) return -1 * dir;
+      if (aVal > bVal) return 1 * dir;
+      return 0;
+    });
+    return sorted;
+  };
+
+  const filterUsersBySearch = (list: User[]) => {
+    if (!userSearch.trim()) return list;
+    const search = userSearch.trim().toLowerCase();
+    return list.filter(
+      (u) =>
+        (u.name || "").toLowerCase().includes(search) ||
+        (u.osm_username || "").toLowerCase().includes(search) ||
+        (u.email || "").toLowerCase().includes(search)
+    );
+  };
 
   useEffect(() => {
     fetchUsers();
@@ -78,6 +163,11 @@ export default function AdminUsersPage() {
       setEditRole(user?.role || "user");
       setEditFirstName(user?.first_name || "");
       setEditLastName(user?.last_name || "");
+      setEditOsmUsername(user?.osm_username || "");
+      setEditEmail(user?.email || "");
+      setEditTimezone(user?.timezone || "");
+      setEditCountryId(null); // Will show current country as placeholder
+      setEditMapillaryUsername(user?.mapillary_username || "");
       setShowEditModal(true);
     }
   };
@@ -123,6 +213,11 @@ export default function AdminUsersPage() {
           role: editRole,
           first_name: editFirstName,
           last_name: editLastName,
+          osm_username: editOsmUsername,
+          email: editEmail,
+          timezone: editTimezone,
+          ...(editCountryId !== null ? { country_id: editCountryId } : {}),
+          mapillary_username: editMapillaryUsername,
         }),
       });
       const data = await response.json();
@@ -365,7 +460,16 @@ export default function AdminUsersPage() {
         </div>
       </div>
 
-      {/* Filters */}
+      {/* Search + Filters */}
+      <div className="flex items-center gap-3">
+        <input
+          type="text"
+          placeholder="Search users..."
+          className="rounded-md border border-border bg-background px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring w-48"
+          value={userSearch}
+          onChange={(e) => setUserSearch(e.target.value)}
+        />
+        <div className="flex-1">
       <FilterBar
         dimensions={filterOptions?.dimensions ? Object.entries(filterOptions.dimensions).map(([key, values]) => ({
           key,
@@ -382,6 +486,8 @@ export default function AdminUsersPage() {
         onChange={setActiveFilters}
         loading={filterOptionsLoading}
       />
+        </div>
+      </div>
 
       {/* Users Table */}
       <Card>
@@ -390,21 +496,40 @@ export default function AdminUsersPage() {
             <table className="w-full">
               <thead className="bg-muted border-b border-border">
                 <tr>
-                  <th className="px-6 py-4 text-left text-sm font-semibold text-foreground">Name</th>
-                  <th className="px-6 py-4 text-left text-sm font-semibold text-foreground">Role</th>
-                  <th className="px-6 py-4 text-left text-sm font-semibold text-foreground">Country</th>
-                  <th className="px-6 py-4 text-left text-sm font-semibold text-foreground">Region</th>
-                  <th className="px-6 py-4 text-left text-sm font-semibold text-foreground">Timezone</th>
-                  <th className="px-6 py-4 text-left text-sm font-semibold text-foreground">Projects</th>
-                  <th className="px-6 py-4 text-left text-sm font-semibold text-foreground">Mapped</th>
-                  <th className="px-6 py-4 text-left text-sm font-semibold text-foreground">Validated</th>
-                  <th className="px-6 py-4 text-left text-sm font-semibold text-foreground">Invalidated</th>
-                  <th className="px-6 py-4 text-left text-sm font-semibold text-foreground">Awaiting</th>
-                  <th className="px-6 py-4 text-left text-sm font-semibold text-foreground">Total Paid</th>
+                  {[
+                    { key: "name", label: "Name" },
+                    { key: "osm_username", label: "OSM User" },
+                    { key: "role", label: "Role" },
+                    { key: "country", label: "Country" },
+                    { key: "region", label: "Region" },
+                    { key: "", label: "Timezone" },
+                    { key: "projects", label: "Projects" },
+                    { key: "mapped", label: "Mapped" },
+                    { key: "validated", label: "Validated" },
+                    { key: "", label: "Invalidated" },
+                    { key: "", label: "Awaiting" },
+                    { key: "total_paid", label: "Total Paid" },
+                  ].map((col, i) => (
+                    <th
+                      key={`${col.label}-${i}`}
+                      className={`px-6 py-4 text-left text-sm font-semibold text-foreground ${col.key ? "cursor-pointer select-none hover:text-kaart-orange transition-colors" : ""}`}
+                      onClick={col.key ? () => handleSort(col.key) : undefined}
+                    >
+                      <span className="inline-flex items-center gap-1">
+                        {col.label}
+                        {col.key && sortKey === col.key && (
+                          <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                              d={sortDir === "asc" ? "M5 15l7-7 7 7" : "M19 9l-7 7-7-7"} />
+                          </svg>
+                        )}
+                      </span>
+                    </th>
+                  ))}
                 </tr>
               </thead>
               <tbody className="divide-y divide-border bg-card">
-                {users.map((user) => (
+                {sortUsers(filterUsersBySearch(users)).map((user) => (
                   <tr
                     key={user.id}
                     onClick={() => handleSelectUser(user.id)}
@@ -424,6 +549,7 @@ export default function AdminUsersPage() {
                         {user.name?.trim() || user.email || "Unknown"}
                       </Link>
                     </td>
+                    <td className="px-6 py-5 text-sm text-foreground">{user.osm_username || "\u2014"}</td>
                     <td className="px-6 py-5">
                       <div className="flex items-center gap-1.5">
                         <span
@@ -461,7 +587,7 @@ export default function AdminUsersPage() {
                 ))}
                 {users.length === 0 && (
                   <tr>
-                    <td colSpan={11} className="px-4 py-8 text-center text-muted-foreground">
+                    <td colSpan={12} className="px-4 py-8 text-center text-muted-foreground">
                       No users found
                     </td>
                   </tr>
@@ -488,6 +614,9 @@ export default function AdminUsersPage() {
           <p className="text-sm text-muted-foreground">
             The user will receive an email to set their password and complete registration.
           </p>
+          <div className="p-3 bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-lg text-sm text-blue-700 dark:text-blue-300">
+            If this user already has a Kaart login, they can use those same credentials to log into Mikro directly — no password change needed.
+          </div>
           <div className="flex gap-2 justify-end">
             <Button variant="outline" onClick={() => { setShowAddModal(false); setInviteEmail(""); }}>
               Cancel
@@ -500,38 +629,99 @@ export default function AdminUsersPage() {
       </Modal>
 
       {/* Edit User Modal */}
-      <Modal isOpen={showEditModal} onClose={() => setShowEditModal(false)} title="Edit User">
+      <Modal isOpen={showEditModal} onClose={() => setShowEditModal(false)} title="Edit User" size="lg">
         <div className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium mb-1">First Name</label>
-            <input
-              type="text"
-              className="w-full px-3 py-2 border border-input rounded-lg focus:outline-none focus:ring-2 focus:ring-ring"
-              value={editFirstName}
-              onChange={(e) => setEditFirstName(e.target.value)}
-              placeholder="First name"
-            />
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium mb-1">First Name</label>
+              <input
+                type="text"
+                className="w-full px-3 py-2 border border-input rounded-lg focus:outline-none focus:ring-2 focus:ring-ring"
+                value={editFirstName}
+                onChange={(e) => setEditFirstName(e.target.value)}
+                placeholder="First name"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-1">Last Name</label>
+              <input
+                type="text"
+                className="w-full px-3 py-2 border border-input rounded-lg focus:outline-none focus:ring-2 focus:ring-ring"
+                value={editLastName}
+                onChange={(e) => setEditLastName(e.target.value)}
+                placeholder="Last name"
+              />
+            </div>
           </div>
           <div>
-            <label className="block text-sm font-medium mb-1">Last Name</label>
+            <label className="block text-sm font-medium mb-1">Email</label>
             <input
-              type="text"
+              type="email"
               className="w-full px-3 py-2 border border-input rounded-lg focus:outline-none focus:ring-2 focus:ring-ring"
-              value={editLastName}
-              onChange={(e) => setEditLastName(e.target.value)}
-              placeholder="Last name"
+              value={editEmail}
+              onChange={(e) => setEditEmail(e.target.value)}
+              placeholder="user@example.com"
             />
           </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium mb-1">OSM Username</label>
+              <input
+                type="text"
+                className="w-full px-3 py-2 border border-input rounded-lg focus:outline-none focus:ring-2 focus:ring-ring"
+                value={editOsmUsername}
+                onChange={(e) => setEditOsmUsername(e.target.value)}
+                placeholder="osm_username"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-1">Mapillary Username</label>
+              <input
+                type="text"
+                className="w-full px-3 py-2 border border-input rounded-lg focus:outline-none focus:ring-2 focus:ring-ring"
+                value={editMapillaryUsername}
+                onChange={(e) => setEditMapillaryUsername(e.target.value)}
+                placeholder="mapillary_username"
+              />
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium mb-1">Role</label>
+              <select
+                className="w-full px-3 py-2 border border-input rounded-lg focus:outline-none focus:ring-2 focus:ring-ring"
+                value={editRole}
+                onChange={(e) => setEditRole(e.target.value)}
+              >
+                <option value="user">User</option>
+                <option value="validator">Validator</option>
+                <option value="admin">Admin</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-1">Timezone</label>
+              <input
+                type="text"
+                className="w-full px-3 py-2 border border-input rounded-lg focus:outline-none focus:ring-2 focus:ring-ring"
+                value={editTimezone}
+                onChange={(e) => setEditTimezone(e.target.value)}
+                placeholder="e.g. America/New_York"
+              />
+            </div>
+          </div>
           <div>
-            <label className="block text-sm font-medium mb-1">Role</label>
+            <label className="block text-sm font-medium mb-1">Country</label>
             <select
               className="w-full px-3 py-2 border border-input rounded-lg focus:outline-none focus:ring-2 focus:ring-ring"
-              value={editRole}
-              onChange={(e) => setEditRole(e.target.value)}
+              value={editCountryId ?? ""}
+              onChange={(e) => setEditCountryId(e.target.value ? parseInt(e.target.value) : null)}
             >
-              <option value="user">User</option>
-              <option value="validator">Validator</option>
-              <option value="admin">Admin</option>
+              <option value="">
+                {users.find((u) => u.id === selectedUser)?.country_name || "— Select country —"}
+              </option>
+              {countries.map((c) => (
+                <option key={c.id} value={c.id}>{c.name}</option>
+              ))}
             </select>
           </div>
           <div className="flex gap-2 justify-end">
