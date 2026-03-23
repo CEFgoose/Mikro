@@ -58,8 +58,10 @@ export default function AdminRegionsPage() {
   const [countryTimezone, setCountryTimezone] = useState("");
   const [countrySaving, setCountrySaving] = useState(false);
 
-  // Seed state
+  // Seed / Purge state
   const [seeding, setSeeding] = useState(false);
+  const [showPurgeModal, setShowPurgeModal] = useState(false);
+  const [purging, setPurging] = useState(false);
 
   const fetchRegions = useCallback(async () => {
     try {
@@ -114,6 +116,29 @@ export default function AdminRegionsPage() {
       toast.error("Failed to seed defaults");
     } finally {
       setSeeding(false);
+    }
+  };
+
+  const handlePurgeRegions = async () => {
+    setPurging(true);
+    try {
+      const response = await fetch("/backend/region/purge_all_regions", {
+        method: "POST",
+      });
+      const data = await response.json();
+      if (response.ok && data.status === 200) {
+        toast.success(data.message || "All regions purged");
+        setSelectedRegion(null);
+        setShowPurgeModal(false);
+        fetchRegions();
+      } else {
+        toast.error(data.message || "Failed to purge regions");
+      }
+    } catch (error) {
+      console.error("Failed to purge regions:", error);
+      toast.error("Failed to purge regions");
+    } finally {
+      setPurging(false);
     }
   };
 
@@ -642,6 +667,34 @@ export default function AdminRegionsPage() {
         confirmText="Delete"
         variant="destructive"
       />
+
+      {/* Purge Confirmation */}
+      <ConfirmDialog
+        isOpen={showPurgeModal}
+        onClose={() => setShowPurgeModal(false)}
+        onConfirm={handlePurgeRegions}
+        title="Purge All Regions"
+        message="This will DELETE all regions, countries, and all user/project/training/checklist location assignments. Users will have their country unset. This action cannot be undone!"
+        confirmText="Purge All"
+        variant="destructive"
+        isLoading={purging}
+      />
+
+      {/* Dev Tools Section */}
+      <Card className="mt-8 border-dashed border-yellow-500">
+        <CardHeader className="pb-2">
+          <CardTitle className="text-sm font-medium text-yellow-600">Dev Tools (Remove before production)</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <Button
+            variant="destructive"
+            onClick={() => setShowPurgeModal(true)}
+            isLoading={purging}
+          >
+            Purge All Regions & Countries
+          </Button>
+        </CardContent>
+      </Card>
     </div>
   );
 }

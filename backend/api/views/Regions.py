@@ -73,9 +73,11 @@ class RegionAPI(MethodView):
             return self.unassign_checklist_location()
         elif path == "fetch_checklist_locations":
             return self.fetch_checklist_locations()
-        # Seed
+        # Seed / Purge
         elif path == "seed_defaults":
             return self.seed_defaults()
+        elif path == "purge_all_regions":
+            return self.purge_all_regions()
         # Public (non-admin) endpoints
         elif path == "list_countries":
             return self.list_countries()
@@ -616,7 +618,7 @@ class RegionAPI(MethodView):
                 ("United States", "USA", "America/New_York"),
                 ("Canada", "CAN", "America/Toronto"),
             ],
-            "Central America & Caribbean": [
+            "Central America": [
                 ("Mexico", "MEX", "America/Mexico_City"),
                 ("Guatemala", "GTM", "America/Guatemala"),
                 ("Belize", "BLZ", "America/Belize"),
@@ -625,6 +627,8 @@ class RegionAPI(MethodView):
                 ("Nicaragua", "NIC", "America/Managua"),
                 ("Costa Rica", "CRI", "America/Costa_Rica"),
                 ("Panama", "PAN", "America/Panama"),
+            ],
+            "Caribbean": [
                 ("Cuba", "CUB", "America/Havana"),
                 ("Jamaica", "JAM", "America/Jamaica"),
                 ("Haiti", "HTI", "America/Port-au-Prince"),
@@ -640,7 +644,7 @@ class RegionAPI(MethodView):
                 ("Saint Kitts and Nevis", "KNA", "America/St_Kitts"),
                 ("Puerto Rico", "PRI", "America/Puerto_Rico"),
             ],
-            "Latin America": [
+            "South America": [
                 ("Colombia", "COL", "America/Bogota"),
                 ("Peru", "PER", "America/Lima"),
                 ("Brazil", "BRA", "America/Sao_Paulo"),
@@ -655,7 +659,7 @@ class RegionAPI(MethodView):
                 ("Suriname", "SUR", "America/Paramaribo"),
             ],
             # ─── Europe ──────────────────────────────────────
-            "Western Europe": [
+            "Europe": [
                 ("United Kingdom", "GBR", "Europe/London"),
                 ("France", "FRA", "Europe/Paris"),
                 ("Germany", "DEU", "Europe/Berlin"),
@@ -667,8 +671,6 @@ class RegionAPI(MethodView):
                 ("Austria", "AUT", "Europe/Vienna"),
                 ("Liechtenstein", "LIE", "Europe/Vaduz"),
                 ("Monaco", "MCO", "Europe/Monaco"),
-            ],
-            "Northern Europe": [
                 ("Sweden", "SWE", "Europe/Stockholm"),
                 ("Norway", "NOR", "Europe/Oslo"),
                 ("Denmark", "DNK", "Europe/Copenhagen"),
@@ -677,8 +679,6 @@ class RegionAPI(MethodView):
                 ("Estonia", "EST", "Europe/Tallinn"),
                 ("Latvia", "LVA", "Europe/Riga"),
                 ("Lithuania", "LTU", "Europe/Vilnius"),
-            ],
-            "Southern Europe": [
                 ("Spain", "ESP", "Europe/Madrid"),
                 ("Portugal", "PRT", "Europe/Lisbon"),
                 ("Italy", "ITA", "Europe/Rome"),
@@ -695,8 +695,6 @@ class RegionAPI(MethodView):
                 ("Andorra", "AND", "Europe/Andorra"),
                 ("San Marino", "SMR", "Europe/San_Marino"),
                 ("Vatican City", "VAT", "Europe/Vatican"),
-            ],
-            "Eastern Europe": [
                 ("Poland", "POL", "Europe/Warsaw"),
                 ("Czech Republic", "CZE", "Europe/Prague"),
                 ("Slovakia", "SVK", "Europe/Bratislava"),
@@ -713,7 +711,7 @@ class RegionAPI(MethodView):
                 ("Turkey", "TUR", "Europe/Istanbul"),
             ],
             # ─── Africa ──────────────────────────────────────
-            "North Africa": [
+            "Africa": [
                 ("Egypt", "EGY", "Africa/Cairo"),
                 ("Libya", "LBY", "Africa/Tripoli"),
                 ("Tunisia", "TUN", "Africa/Tunis"),
@@ -721,8 +719,6 @@ class RegionAPI(MethodView):
                 ("Morocco", "MAR", "Africa/Casablanca"),
                 ("Sudan", "SDN", "Africa/Khartoum"),
                 ("South Sudan", "SSD", "Africa/Juba"),
-            ],
-            "East Africa": [
                 ("Kenya", "KEN", "Africa/Nairobi"),
                 ("Tanzania", "TZA", "Africa/Dar_es_Salaam"),
                 ("Uganda", "UGA", "Africa/Kampala"),
@@ -738,8 +734,6 @@ class RegionAPI(MethodView):
                 ("Mauritius", "MUS", "Indian/Mauritius"),
                 ("Seychelles", "SYC", "Indian/Mahe"),
                 ("Malawi", "MWI", "Africa/Blantyre"),
-            ],
-            "West Africa": [
                 ("Nigeria", "NGA", "Africa/Lagos"),
                 ("Ghana", "GHA", "Africa/Accra"),
                 ("Senegal", "SEN", "Africa/Dakar"),
@@ -764,8 +758,6 @@ class RegionAPI(MethodView):
                 ("Equatorial Guinea", "GNQ", "Africa/Malabo"),
                 ("Gabon", "GAB", "Africa/Libreville"),
                 ("Sao Tome and Principe", "STP", "Africa/Sao_Tome"),
-            ],
-            "Southern Africa": [
                 ("South Africa", "ZAF", "Africa/Johannesburg"),
                 ("Botswana", "BWA", "Africa/Gaborone"),
                 ("Zimbabwe", "ZWE", "Africa/Harare"),
@@ -793,7 +785,7 @@ class RegionAPI(MethodView):
                 ("Palestine", "PSE", "Asia/Gaza"),
             ],
             # ─── Asia ────────────────────────────────────────
-            "East Asia": [
+            "Asia": [
                 ("China", "CHN", "Asia/Shanghai"),
                 ("Japan", "JPN", "Asia/Tokyo"),
                 ("South Korea", "KOR", "Asia/Seoul"),
@@ -801,8 +793,21 @@ class RegionAPI(MethodView):
                 ("Mongolia", "MNG", "Asia/Ulaanbaatar"),
                 ("Taiwan", "TWN", "Asia/Taipei"),
                 ("Hong Kong", "HKG", "Asia/Hong_Kong"),
+                ("India", "IND", "Asia/Kolkata"),
+                ("Bangladesh", "BGD", "Asia/Dhaka"),
+                ("Nepal", "NPL", "Asia/Kathmandu"),
+                ("Sri Lanka", "LKA", "Asia/Colombo"),
+                ("Pakistan", "PAK", "Asia/Karachi"),
+                ("Afghanistan", "AFG", "Asia/Kabul"),
+                ("Bhutan", "BTN", "Asia/Thimphu"),
+                ("Maldives", "MDV", "Indian/Maldives"),
+                ("Uzbekistan", "UZB", "Asia/Tashkent"),
+                ("Kazakhstan", "KAZ", "Asia/Almaty"),
+                ("Kyrgyzstan", "KGZ", "Asia/Bishkek"),
+                ("Tajikistan", "TJK", "Asia/Dushanbe"),
+                ("Turkmenistan", "TKM", "Asia/Ashgabat"),
             ],
-            "Southeast Asia": [
+            "SE Asia": [
                 ("Philippines", "PHL", "Asia/Manila"),
                 ("Indonesia", "IDN", "Asia/Jakarta"),
                 ("Vietnam", "VNM", "Asia/Ho_Chi_Minh"),
@@ -814,23 +819,6 @@ class RegionAPI(MethodView):
                 ("Laos", "LAO", "Asia/Vientiane"),
                 ("Brunei", "BRN", "Asia/Brunei"),
                 ("Timor-Leste", "TLS", "Asia/Dili"),
-            ],
-            "South Asia": [
-                ("India", "IND", "Asia/Kolkata"),
-                ("Bangladesh", "BGD", "Asia/Dhaka"),
-                ("Nepal", "NPL", "Asia/Kathmandu"),
-                ("Sri Lanka", "LKA", "Asia/Colombo"),
-                ("Pakistan", "PAK", "Asia/Karachi"),
-                ("Afghanistan", "AFG", "Asia/Kabul"),
-                ("Bhutan", "BTN", "Asia/Thimphu"),
-                ("Maldives", "MDV", "Indian/Maldives"),
-            ],
-            "Central Asia": [
-                ("Uzbekistan", "UZB", "Asia/Tashkent"),
-                ("Kazakhstan", "KAZ", "Asia/Almaty"),
-                ("Kyrgyzstan", "KGZ", "Asia/Bishkek"),
-                ("Tajikistan", "TJK", "Asia/Dushanbe"),
-                ("Turkmenistan", "TKM", "Asia/Ashgabat"),
             ],
             # ─── Oceania ─────────────────────────────────────
             "Oceania": [
@@ -912,4 +900,46 @@ class RegionAPI(MethodView):
             "message": msg,
             "created_regions": created_regions,
             "created_countries": created_countries,
+        }
+
+    @requires_admin
+    def purge_all_regions(self):
+        """DEV ONLY: Delete all regions, countries, and related assignments."""
+        if not g.user:
+            return {"message": "User not found", "status": 304}
+
+        org_id = g.user.org_id
+
+        # Clear user country_id references first
+        users_with_country = User.query.filter(
+            User.org_id == org_id, User.country_id.isnot(None)
+        ).all()
+        users_reset = 0
+        for u in users_with_country:
+            u.country_id = None
+            users_reset += 1
+
+        # Delete all user-country assignments
+        uc_deleted = UserCountry.query.delete()
+
+        # Delete all resource-country assignments
+        pc_deleted = ProjectCountry.query.delete()
+        tc_deleted = TrainingCountry.query.delete()
+        cc_deleted = ChecklistCountry.query.delete()
+
+        # Delete all countries
+        countries_deleted = Country.query.filter_by(org_id=org_id).delete()
+
+        # Delete all regions
+        regions_deleted = Region.query.filter_by(org_id=org_id).delete()
+
+        db.session.commit()
+
+        return {
+            "status": 200,
+            "message": f"Purged {regions_deleted} regions, {countries_deleted} countries",
+            "regions_deleted": regions_deleted,
+            "countries_deleted": countries_deleted,
+            "users_reset": users_reset,
+            "assignments_deleted": uc_deleted + pc_deleted + tc_deleted + cc_deleted,
         }
