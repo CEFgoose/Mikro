@@ -398,6 +398,7 @@ class Training(ModelWithSoftDeleteAndCRUD, SurrogatePK, db.Model):
     point_value = db.Column(db.Integer, nullable=True)
     training_url = db.Column(db.String(500), nullable=True)
     difficulty = db.Column(db.String(50), nullable=True)
+    created_by = db.Column(db.String(200), nullable=True)
 
 
 class TrainingQuestion(ModelWithSoftDeleteAndCRUD, SurrogatePK, db.Model):

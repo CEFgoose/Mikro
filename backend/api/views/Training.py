@@ -94,6 +94,11 @@ class TrainingAPI(MethodView):
             return response, 400
         questions = request.json["questions"]
         try:
+            # Build created_by from current user
+            creator_name = "%s (%s)" % (
+                (g.user.first_name or "").capitalize(),
+                g.user.osm_username or g.user.email or "",
+            )
             new_training = Training.create(
                 title=request.json["title"],
                 org_id=g.user.org_id,
@@ -101,6 +106,7 @@ class TrainingAPI(MethodView):
                 difficulty=request.json["difficulty"],
                 training_url=request.json["training_url"],
                 training_type=request.json["training_type"],
+                created_by=creator_name,
             )
             _create_training_questions(new_training.id, questions)
             response = {"message": "New Training Created", "status": 200}
@@ -501,6 +507,7 @@ class TrainingAPI(MethodView):
             "difficulty": training.difficulty,
             "training_url": training.training_url,
             "training_type": training.training_type,
+            "created_by": training.created_by,
             "questions": questions,
         }
 

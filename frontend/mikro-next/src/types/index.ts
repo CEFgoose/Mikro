@@ -157,6 +157,7 @@ export interface Training {
   difficulty: "Easy" | "Medium" | "Hard";
   training_type?: "Mapping" | "Validation" | "Project" | "mapping" | "validation" | "project";
   project_id?: number;
+  created_by?: string;
   questions?: TrainingQuestion[];
 }
 

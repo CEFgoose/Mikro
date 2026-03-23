@@ -36,6 +36,7 @@ import {
 } from "@/hooks";
 import type { Training, TrainingQuestion } from "@/types";
 import { formatNumber } from "@/lib/utils";
+import { useUser } from "@auth0/nextjs-auth0/client";
 
 interface TrainingFormData {
   title: string;
@@ -67,6 +68,7 @@ export default function AdminTrainingPage() {
   const { mutate: modifyTraining, loading: modifying } = useModifyTraining();
   const { mutate: deleteTraining, loading: deleting } = useDeleteTraining();
   const { mutate: purgeTrainings, loading: purging } = usePurgeTrainings();
+  const { user: auth0User } = useUser();
   const toast = useToastActions();
 
   const [selectedTraining, setSelectedTraining] = useState<Training | null>(null);
@@ -78,11 +80,77 @@ export default function AdminTrainingPage() {
   const [questions, setQuestions] = useState<QuestionFormData[]>([]);
   const [editQuestions, setEditQuestions] = useState<QuestionFormData[]>([]);
   const [editTab, setEditTab] = useState<"settings" | "locations" | "questions">("settings");
+  const [searchTerm, setSearchTerm] = useState("");
+  const [sortKey, setSortKey] = useState<string>("title");
+  const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
 
   const mappingTrainings = trainings?.org_mapping_trainings ?? [];
   const validationTrainings = trainings?.org_validation_trainings ?? [];
   const projectTrainings = trainings?.org_project_trainings ?? [];
   const allTrainings = [...mappingTrainings, ...validationTrainings, ...projectTrainings];
+
+  // Current user's name for "Created by Me" filtering
+  const currentUserName = auth0User?.name || "";
+
+  const handleSort = (key: string) => {
+    if (sortKey === key) {
+      setSortDir(sortDir === "asc" ? "desc" : "asc");
+    } else {
+      setSortKey(key);
+      setSortDir("asc");
+    }
+  };
+
+  const filterAndSort = (list: Training[]) => {
+    let filtered = list;
+    if (searchTerm.trim()) {
+      const s = searchTerm.trim().toLowerCase();
+      filtered = filtered.filter(
+        (t) =>
+          t.title.toLowerCase().includes(s) ||
+          (t.created_by || "").toLowerCase().includes(s) ||
+          (t.difficulty || "").toLowerCase().includes(s)
+      );
+    }
+    const dir = sortDir === "asc" ? 1 : -1;
+    return [...filtered].sort((a, b) => {
+      let aVal: string | number = "";
+      let bVal: string | number = "";
+      switch (sortKey) {
+        case "title":
+          aVal = a.title.toLowerCase();
+          bVal = b.title.toLowerCase();
+          break;
+        case "difficulty": {
+          const order: Record<string, number> = { Easy: 1, Medium: 2, Hard: 3 };
+          aVal = order[a.difficulty] ?? 0;
+          bVal = order[b.difficulty] ?? 0;
+          break;
+        }
+        case "points":
+          aVal = a.point_value;
+          bVal = b.point_value;
+          break;
+        case "questions":
+          aVal = a.questions?.length ?? 0;
+          bVal = b.questions?.length ?? 0;
+          break;
+        case "created_by":
+          aVal = (a.created_by || "").toLowerCase();
+          bVal = (b.created_by || "").toLowerCase();
+          break;
+        default:
+          return 0;
+      }
+      if (aVal < bVal) return -1 * dir;
+      if (aVal > bVal) return 1 * dir;
+      return 0;
+    });
+  };
+
+  const myTrainings = allTrainings.filter(
+    (t) => t.created_by && currentUserName && t.created_by.toLowerCase().includes(currentUserName.split(" ")[0].toLowerCase())
+  );
 
   const handleInputChange = (field: keyof TrainingFormData, value: string) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
@@ -315,86 +383,108 @@ export default function AdminTrainingPage() {
     setQuestions(questions.filter((_, i) => i !== index));
   };
 
-  const TrainingTable = ({ trainingList }: { trainingList: Training[] }) => (
-    <Table>
-      <TableHeader>
-        <TableRow>
-          <TableHead>Title</TableHead>
-          <TableHead>Difficulty</TableHead>
-          <TableHead>Points</TableHead>
-          <TableHead>Questions</TableHead>
-          <TableHead>URL</TableHead>
-          <TableHead className="text-right">Actions</TableHead>
-        </TableRow>
-      </TableHeader>
-      <TableBody>
-        {trainingList.map((training) => (
-          <TableRow key={training.id}>
-            <TableCell className="font-medium">{training.title}</TableCell>
-            <TableCell>
-              <div className="flex items-center gap-1">
-                <Badge
-                  variant={
-                    training.difficulty === "Easy"
-                      ? "success"
-                      : training.difficulty === "Medium"
-                      ? "warning"
-                      : "destructive"
-                  }
-                >
-                  {training.difficulty}
-                </Badge>
-                {(training as Training & { assigned_locations?: number }).assigned_locations ? (
-                  <Badge variant="secondary" className="text-[10px]">
-                    {(training as Training & { assigned_locations?: number }).assigned_locations} loc
-                  </Badge>
-                ) : null}
-              </div>
-            </TableCell>
-            <TableCell>{training.point_value}</TableCell>
-            <TableCell>{formatNumber(training.questions?.length ?? 0)}</TableCell>
-            <TableCell>
-              <a
-                href={training.training_url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-kaart-orange hover:underline"
-              >
-                View
-              </a>
-            </TableCell>
-            <TableCell className="text-right">
-              <div className="flex justify-end gap-2">
-                <Button size="sm" variant="outline" onClick={() => openEditModal(training, "questions")}>
-                  Questions
-                </Button>
-                <Button size="sm" variant="outline" onClick={() => openEditModal(training)}>
-                  Edit
-                </Button>
-                <Button
-                  size="sm"
-                  variant="destructive"
-                  onClick={() => {
-                    setSelectedTraining(training);
-                    setShowDeleteModal(true);
-                  }}
-                >
-                  Delete
-                </Button>
-              </div>
-            </TableCell>
-          </TableRow>
-        ))}
-        {trainingList.length === 0 && (
-          <TableRow>
-            <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
-              No trainings found
-            </TableCell>
-          </TableRow>
+  const SortHeader = ({ label, sortField }: { label: string; sortField: string }) => (
+    <TableHead
+      className="cursor-pointer select-none hover:text-kaart-orange transition-colors"
+      onClick={() => handleSort(sortField)}
+    >
+      <span className="inline-flex items-center gap-1">
+        {label}
+        {sortKey === sortField && (
+          <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+              d={sortDir === "asc" ? "M5 15l7-7 7 7" : "M19 9l-7 7-7-7"} />
+          </svg>
         )}
-      </TableBody>
-    </Table>
+      </span>
+    </TableHead>
   );
+
+  const TrainingTable = ({ trainingList }: { trainingList: Training[] }) => {
+    const sorted = filterAndSort(trainingList);
+    return (
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <SortHeader label="Title" sortField="title" />
+            <SortHeader label="Difficulty" sortField="difficulty" />
+            <SortHeader label="Points" sortField="points" />
+            <SortHeader label="Questions" sortField="questions" />
+            <SortHeader label="Created By" sortField="created_by" />
+            <TableHead>URL</TableHead>
+            <TableHead className="text-right">Actions</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {sorted.map((training) => (
+            <TableRow key={training.id}>
+              <TableCell className="font-medium">{training.title}</TableCell>
+              <TableCell>
+                <div className="flex items-center gap-1">
+                  <Badge
+                    variant={
+                      training.difficulty === "Easy"
+                        ? "success"
+                        : training.difficulty === "Medium"
+                        ? "warning"
+                        : "destructive"
+                    }
+                  >
+                    {training.difficulty}
+                  </Badge>
+                  {(training as Training & { assigned_locations?: number }).assigned_locations ? (
+                    <Badge variant="secondary" className="text-[10px]">
+                      {(training as Training & { assigned_locations?: number }).assigned_locations} loc
+                    </Badge>
+                  ) : null}
+                </div>
+              </TableCell>
+              <TableCell>{training.point_value}</TableCell>
+              <TableCell>{formatNumber(training.questions?.length ?? 0)}</TableCell>
+              <TableCell className="text-sm text-muted-foreground">{training.created_by || "\u2014"}</TableCell>
+              <TableCell>
+                <a
+                  href={training.training_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-kaart-orange hover:underline"
+                >
+                  View
+                </a>
+              </TableCell>
+              <TableCell className="text-right">
+                <div className="flex justify-end gap-2">
+                  <Button size="sm" variant="outline" onClick={() => openEditModal(training, "questions")}>
+                    Questions
+                  </Button>
+                  <Button size="sm" variant="outline" onClick={() => openEditModal(training)}>
+                    Edit
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="destructive"
+                    onClick={() => {
+                      setSelectedTraining(training);
+                      setShowDeleteModal(true);
+                    }}
+                  >
+                    Delete
+                  </Button>
+                </div>
+              </TableCell>
+            </TableRow>
+          ))}
+          {sorted.length === 0 && (
+            <TableRow>
+              <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
+                No trainings found
+              </TableCell>
+            </TableRow>
+          )}
+        </TableBody>
+      </Table>
+    );
+  };
 
   if (loading) {
     return (
@@ -460,10 +550,20 @@ export default function AdminTrainingPage() {
         </Card>
       </div>
 
+      {/* Search */}
+      <div className="flex-1">
+        <Input
+          placeholder="Search by title, creator, or difficulty..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+        />
+      </div>
+
       {/* Trainings Tabs */}
       <Tabs defaultValue="all">
         <TabsList>
           <TabsTrigger value="all">All ({formatNumber(allTrainings.length)})</TabsTrigger>
+          <TabsTrigger value="mine">Created by Me ({formatNumber(myTrainings.length)})</TabsTrigger>
           <TabsTrigger value="mapping">Mapping ({formatNumber(mappingTrainings.length)})</TabsTrigger>
           <TabsTrigger value="validation">Validation ({formatNumber(validationTrainings.length)})</TabsTrigger>
           <TabsTrigger value="project">Project Specific ({formatNumber(projectTrainings.length)})</TabsTrigger>
@@ -472,6 +572,13 @@ export default function AdminTrainingPage() {
           <Card>
             <CardContent className="p-0">
               <TrainingTable trainingList={allTrainings} />
+            </CardContent>
+          </Card>
+        </TabsContent>
+        <TabsContent value="mine">
+          <Card>
+            <CardContent className="p-0">
+              <TrainingTable trainingList={myTrainings} />
             </CardContent>
           </Card>
         </TabsContent>

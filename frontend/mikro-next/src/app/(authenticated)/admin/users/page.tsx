@@ -711,13 +711,18 @@ export default function AdminUsersPage() {
             </div>
             <div>
               <label className="block text-sm font-medium mb-1">Timezone</label>
-              <input
-                type="text"
-                className="w-full px-3 py-2 border border-input rounded-lg focus:outline-none focus:ring-2 focus:ring-ring"
+              <select
+                className="w-full px-3 py-2 border border-input rounded-lg focus:outline-none focus:ring-2 focus:ring-ring bg-background"
                 value={editTimezone}
                 onChange={(e) => setEditTimezone(e.target.value)}
-                placeholder="e.g. America/New_York"
-              />
+              >
+                <option value="">— Select timezone —</option>
+                {Intl.supportedValuesOf("timeZone").map((tz) => (
+                  <option key={tz} value={tz}>
+                    {tz.replace(/_/g, " ")}
+                  </option>
+                ))}
+              </select>
             </div>
           </div>
           <div>

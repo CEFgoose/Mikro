@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useRef, useEffect } from "react";
+import { useState, useMemo, useRef, useEffect, useCallback } from "react";
 import {
   Card,
   CardContent,
@@ -34,6 +34,7 @@ import {
 } from "@/hooks";
 import type { Checklist } from "@/types";
 import { formatNumber, formatCurrency, displayRole } from "@/lib/utils";
+import { useUser } from "@auth0/nextjs-auth0/client";
 
 function formatDate(dateString: string): string {
   return new Date(dateString).toLocaleDateString("en-US", {
@@ -81,7 +82,9 @@ export default function AdminChecklistsPage() {
   const { mutate: unassignUser, loading: unassigning } = useUnassignUserChecklist();
   const { mutate: fetchChecklistUsers } = useFetchChecklistUsers();
   const { mutate: purgeChecklists, loading: purging } = usePurgeChecklists();
+  const { user: auth0User } = useUser();
   const toast = useToastActions();
+  const [searchTerm, setSearchTerm] = useState("");
 
   const [selectedChecklist, setSelectedChecklist] = useState<Checklist | null>(null);
   const [showAddModal, setShowAddModal] = useState(false);
@@ -124,6 +127,34 @@ export default function AdminChecklistsPage() {
       totalPaid,
     };
   }, [activeChecklists, inactiveChecklists, completedChecklists, confirmedChecklists, staleChecklists]);
+
+  const currentUserName = auth0User?.name || "";
+
+  const filterChecklists = useCallback((list: Checklist[]) => {
+    if (!searchTerm.trim()) return list;
+    const s = searchTerm.trim().toLowerCase();
+    return list.filter(
+      (c) =>
+        c.name.toLowerCase().includes(s) ||
+        (c.author || "").toLowerCase().includes(s) ||
+        (c.description || "").toLowerCase().includes(s) ||
+        (c.difficulty || "").toLowerCase().includes(s)
+    );
+  }, [searchTerm]);
+
+  const allChecklists = useMemo(() => [
+    ...activeChecklists,
+    ...inactiveChecklists,
+    ...completedChecklists,
+    ...confirmedChecklists,
+    ...staleChecklists,
+  ], [activeChecklists, inactiveChecklists, completedChecklists, confirmedChecklists, staleChecklists]);
+
+  const myChecklists = useMemo(() =>
+    allChecklists.filter(
+      (c) => c.author && currentUserName && c.author.toLowerCase().includes(currentUserName.split(" ")[0].toLowerCase())
+    ),
+  [allChecklists, currentUserName]);
 
   const handleInputChange = (field: keyof ChecklistFormData, value: string | boolean) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
@@ -390,6 +421,12 @@ export default function AdminChecklistsPage() {
                 <span>{formatDate(checklist.due_date)}</span>
               </div>
             )}
+            {checklist.author && (
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Created by:</span>
+                <span className="truncate ml-2">{checklist.author}</span>
+              </div>
+            )}
             {checklist.assigned_user && (
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Assigned:</span>
@@ -517,10 +554,20 @@ export default function AdminChecklistsPage() {
         </Card>
       </div>
 
+      {/* Search */}
+      <div className="flex-1">
+        <Input
+          placeholder="Search by name, creator, description, or difficulty..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+        />
+      </div>
+
       {/* Tabs */}
       <Tabs defaultValue="active">
         <TabsList>
           <TabsTrigger value="active">Active ({formatNumber(activeChecklists.length)})</TabsTrigger>
+          <TabsTrigger value="mine">Created by Me ({formatNumber(myChecklists.length)})</TabsTrigger>
           <TabsTrigger value="pending">Pending Confirmation ({formatNumber(completedChecklists.length)})</TabsTrigger>
           <TabsTrigger value="confirmed">Confirmed ({formatNumber(confirmedChecklists.length)})</TabsTrigger>
           <TabsTrigger value="inactive">Inactive ({formatNumber(inactiveChecklists.length)})</TabsTrigger>
@@ -528,80 +575,96 @@ export default function AdminChecklistsPage() {
         </TabsList>
 
         <TabsContent value="active">
-          {activeChecklists.length > 0 ? (
+          {filterChecklists(activeChecklists).length > 0 ? (
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-              {activeChecklists.map((checklist) => (
+              {filterChecklists(activeChecklists).map((checklist) => (
                 <ChecklistCard key={checklist.id} checklist={checklist} />
               ))}
             </div>
           ) : (
             <Card>
               <CardContent className="py-12 text-center text-muted-foreground">
-                No active checklists
+                {searchTerm ? "No matching active checklists" : "No active checklists"}
+              </CardContent>
+            </Card>
+          )}
+        </TabsContent>
+
+        <TabsContent value="mine">
+          {filterChecklists(myChecklists).length > 0 ? (
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+              {filterChecklists(myChecklists).map((checklist) => (
+                <ChecklistCard key={checklist.id} checklist={checklist} />
+              ))}
+            </div>
+          ) : (
+            <Card>
+              <CardContent className="py-12 text-center text-muted-foreground">
+                {searchTerm ? "No matching checklists" : "No checklists created by you"}
               </CardContent>
             </Card>
           )}
         </TabsContent>
 
         <TabsContent value="pending">
-          {completedChecklists.length > 0 ? (
+          {filterChecklists(completedChecklists).length > 0 ? (
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-              {completedChecklists.map((checklist) => (
+              {filterChecklists(completedChecklists).map((checklist) => (
                 <ChecklistCard key={checklist.id} checklist={checklist} showConfirm />
               ))}
             </div>
           ) : (
             <Card>
               <CardContent className="py-12 text-center text-muted-foreground">
-                No checklists pending confirmation
+                {searchTerm ? "No matching checklists" : "No checklists pending confirmation"}
               </CardContent>
             </Card>
           )}
         </TabsContent>
 
         <TabsContent value="confirmed">
-          {confirmedChecklists.length > 0 ? (
+          {filterChecklists(confirmedChecklists).length > 0 ? (
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-              {confirmedChecklists.map((checklist) => (
+              {filterChecklists(confirmedChecklists).map((checklist) => (
                 <ChecklistCard key={checklist.id} checklist={checklist} />
               ))}
             </div>
           ) : (
             <Card>
               <CardContent className="py-12 text-center text-muted-foreground">
-                No confirmed checklists
+                {searchTerm ? "No matching checklists" : "No confirmed checklists"}
               </CardContent>
             </Card>
           )}
         </TabsContent>
 
         <TabsContent value="inactive">
-          {inactiveChecklists.length > 0 ? (
+          {filterChecklists(inactiveChecklists).length > 0 ? (
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-              {inactiveChecklists.map((checklist) => (
+              {filterChecklists(inactiveChecklists).map((checklist) => (
                 <ChecklistCard key={checklist.id} checklist={checklist} />
               ))}
             </div>
           ) : (
             <Card>
               <CardContent className="py-12 text-center text-muted-foreground">
-                No inactive checklists
+                {searchTerm ? "No matching checklists" : "No inactive checklists"}
               </CardContent>
             </Card>
           )}
         </TabsContent>
 
         <TabsContent value="stale">
-          {staleChecklists.length > 0 ? (
+          {filterChecklists(staleChecklists).length > 0 ? (
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-              {staleChecklists.map((checklist) => (
+              {filterChecklists(staleChecklists).map((checklist) => (
                 <ChecklistCard key={checklist.id} checklist={checklist} />
               ))}
             </div>
           ) : (
             <Card>
               <CardContent className="py-12 text-center text-muted-foreground">
-                No stale checklists
+                {searchTerm ? "No matching checklists" : "No stale checklists"}
               </CardContent>
             </Card>
           )}
