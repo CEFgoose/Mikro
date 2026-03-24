@@ -11,6 +11,10 @@ import {
   CardTitle,
   Badge,
   Button,
+  Tabs,
+  TabsList,
+  TabsTrigger,
+  TabsContent,
   Table,
   TableHeader,
   TableBody,
@@ -270,145 +274,146 @@ export default function PunkDetailPage() {
         />
       </div>
 
-      {/* Heatmap */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Activity Heatmap</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {heatmapPoints.length > 0 ? (
-            <MappingHeatmap points={heatmapPoints} height="400px" />
-          ) : (
-            <p className="text-muted-foreground text-center py-8">
-              No location data available
-            </p>
+      {/* Tabbed Content — Heatmap, Changesets, Discussions */}
+      <Tabs defaultValue="heatmap">
+        <TabsList>
+          <TabsTrigger value="heatmap">Heatmap</TabsTrigger>
+          <TabsTrigger value="changesets">Changesets ({formatNumber(changesets.length)})</TabsTrigger>
+          <TabsTrigger value="discussions">Discussions ({data.discussions?.length ?? 0})</TabsTrigger>
+          {sortedHashtags.length > 0 && (
+            <TabsTrigger value="hashtags">Hashtags ({formatNumber(sortedHashtags.length)})</TabsTrigger>
           )}
-        </CardContent>
-      </Card>
+        </TabsList>
 
-      {/* Hashtag Summary */}
-      {sortedHashtags.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Top Hashtags</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="flex flex-wrap gap-2">
-              {sortedHashtags.map(([tag, count]) => (
-                <Badge key={tag} variant="secondary">
-                  #{tag} ({formatNumber(count)})
-                </Badge>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      )}
+        {/* Heatmap Tab */}
+        <TabsContent value="heatmap">
+          <Card>
+            <CardContent className="p-4">
+              {heatmapPoints.length > 0 ? (
+                <MappingHeatmap points={heatmapPoints} height="500px" />
+              ) : (
+                <p className="text-muted-foreground text-center py-8">
+                  No location data available. Click Refresh Activity to fetch.
+                </p>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
 
-      {/* Changesets Table */}
-      <Card>
-        <CardHeader>
-          <CardTitle>
-            Changesets{" "}
-            {changesets.length > 0 && (
-              <span className="text-sm font-normal text-muted-foreground ml-2">
-                ({formatNumber(changesets.length)})
-              </span>
-            )}
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          {sortedChangesets.length > 0 ? (
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Date</TableHead>
-                    <TableHead>Changeset ID</TableHead>
-                    <TableHead>Comment</TableHead>
-                    <TableHead>Editor</TableHead>
-                    <TableHead className="text-right">Changes</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {sortedChangesets.map((cs) => (
-                    <TableRow key={cs.changeset_id}>
-                      <TableCell className="whitespace-nowrap">
-                        {formatDate(cs.created_at)}
-                      </TableCell>
-                      <TableCell>
+        {/* Changesets Tab */}
+        <TabsContent value="changesets">
+          <Card>
+            <CardContent className="p-0">
+              {sortedChangesets.length > 0 ? (
+                <div className="overflow-x-auto" style={{ maxHeight: 600, overflowY: "auto" }}>
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Date</TableHead>
+                        <TableHead>Changeset ID</TableHead>
+                        <TableHead>Comment</TableHead>
+                        <TableHead>Editor</TableHead>
+                        <TableHead className="text-right">Changes</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {sortedChangesets.map((cs) => (
+                        <TableRow key={cs.changeset_id}>
+                          <TableCell className="whitespace-nowrap">
+                            {formatDate(cs.created_at)}
+                          </TableCell>
+                          <TableCell>
+                            <a
+                              href={`https://www.openstreetmap.org/changeset/${cs.changeset_id}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-kaart-orange hover:underline"
+                            >
+                              {cs.changeset_id}
+                            </a>
+                          </TableCell>
+                          <TableCell className="max-w-xs truncate text-muted-foreground">
+                            {cs.comment || "\u2014"}
+                          </TableCell>
+                          <TableCell className="whitespace-nowrap">
+                            {cs.editor || "\u2014"}
+                          </TableCell>
+                          <TableCell className="text-right">
+                            {formatNumber(cs.changes_count)}
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              ) : (
+                <p className="text-muted-foreground text-center py-8">
+                  No changesets cached. Click Refresh Activity to fetch data.
+                </p>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Discussions Tab */}
+        <TabsContent value="discussions">
+          <Card>
+            <CardHeader className="pb-2">
+              <p className="text-sm text-muted-foreground">
+                Comments on this user&apos;s changesets from other OSM editors
+              </p>
+            </CardHeader>
+            <CardContent>
+              {data.discussions && data.discussions.length > 0 ? (
+                <div className="space-y-3" style={{ maxHeight: 600, overflowY: "auto" }}>
+                  {data.discussions.map((disc, i) => (
+                    <div
+                      key={i}
+                      className="border border-border rounded-lg p-3"
+                    >
+                      <div className="flex items-start justify-between gap-2 mb-1">
+                        <p className="text-sm font-medium">{disc.title}</p>
                         <a
-                          href={`https://www.openstreetmap.org/changeset/${cs.changeset_id}`}
+                          href={disc.link}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="text-kaart-orange hover:underline"
+                          className="text-xs text-kaart-orange hover:underline whitespace-nowrap"
                         >
-                          {cs.changeset_id}
+                          View on OSM
                         </a>
-                      </TableCell>
-                      <TableCell className="max-w-xs truncate text-muted-foreground">
-                        {cs.comment || "\u2014"}
-                      </TableCell>
-                      <TableCell className="whitespace-nowrap">
-                        {cs.editor || "\u2014"}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        {formatNumber(cs.changes_count)}
-                      </TableCell>
-                    </TableRow>
+                      </div>
+                      <p className="text-sm text-muted-foreground whitespace-pre-line">
+                        {disc.description || "\u2014"}
+                      </p>
+                    </div>
                   ))}
-                </TableBody>
-              </Table>
-            </div>
-          ) : (
-            <p className="text-muted-foreground text-center py-8">
-              No changesets cached. Click Refresh Activity to fetch data.
-            </p>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* Changeset Discussions */}
-      <Card>
-        <CardHeader>
-          <CardTitle>
-            Changeset Discussions ({data.discussions?.length ?? 0})
-          </CardTitle>
-          <p className="text-sm text-muted-foreground">
-            Comments on this user&apos;s changesets from other OSM editors
-          </p>
-        </CardHeader>
-        <CardContent>
-          {data.discussions && data.discussions.length > 0 ? (
-            <div className="space-y-3">
-              {data.discussions.map((disc, i) => (
-                <div
-                  key={i}
-                  className="border border-border rounded-lg p-3"
-                >
-                  <div className="flex items-start justify-between gap-2 mb-1">
-                    <p className="text-sm font-medium">{disc.title}</p>
-                    <a
-                      href={disc.link}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-xs text-kaart-orange hover:underline whitespace-nowrap"
-                    >
-                      View on OSM
-                    </a>
-                  </div>
-                  <p className="text-sm text-muted-foreground whitespace-pre-line">
-                    {disc.description || "\u2014"}
-                  </p>
                 </div>
-              ))}
-            </div>
-          ) : (
-            <p className="text-muted-foreground text-center py-8">
-              No changeset discussions found. Click Refresh Activity to fetch data.
-            </p>
-          )}
-        </CardContent>
-      </Card>
+              ) : (
+                <p className="text-muted-foreground text-center py-8">
+                  No changeset discussions found. Click Refresh Activity to fetch data.
+                </p>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Hashtags Tab */}
+        {sortedHashtags.length > 0 && (
+          <TabsContent value="hashtags">
+            <Card>
+              <CardContent className="p-6">
+                <div className="flex flex-wrap gap-2">
+                  {sortedHashtags.map(([tag, count]) => (
+                    <Badge key={tag} variant="secondary">
+                      #{tag} ({formatNumber(count)})
+                    </Badge>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+        )}
+      </Tabs>
     </div>
   );
 }
