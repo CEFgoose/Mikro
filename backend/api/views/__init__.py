@@ -13,6 +13,7 @@ from .Teams import TeamAPI
 from .Reports import ReportsAPI
 from .Regions import RegionAPI
 from .Webhook import WebhookAPI
+from .Punks import PunkAPI
 
 __all__ = {
     "UserAPI",
@@ -28,4 +29,5 @@ __all__ = {
     "ReportsAPI",
     "RegionAPI",
     "WebhookAPI",
+    "PunkAPI",
 }

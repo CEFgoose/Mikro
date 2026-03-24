@@ -122,6 +122,7 @@ def _register_views(app):
         ReportsAPI,
         RegionAPI,
         WebhookAPI,
+        PunkAPI,
     )
 
     # Authentication
@@ -171,6 +172,9 @@ def _register_views(app):
     app.add_url_rule(
         "/api/webhook/<path>", view_func=WebhookAPI.as_view("webhook")
     )
+
+    # Punks watchlist
+    app.add_url_rule("/api/punk/<path>", view_func=PunkAPI.as_view("punk"))
 
 
 # Create application instance for gunicorn

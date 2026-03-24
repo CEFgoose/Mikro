@@ -34,6 +34,8 @@ from .core import (
     TimeEntry,
     SyncJob,
     ElementAnalysisCache,
+    Punk,
+    PunkChangeset,
 )
 
 __all__ = [
@@ -71,4 +73,6 @@ __all__ = [
     "TimeEntry",
     "SyncJob",
     "ElementAnalysisCache",
+    "Punk",
+    "PunkChangeset",
 ]

@@ -848,6 +848,50 @@ export interface MapillaryStatsResponse {
   weekly_uploads: Array<{ week: string; images: number }>;
 }
 
+// Punks List types
+export interface Punk {
+  id: number;
+  osm_username: string;
+  osm_uid?: number;
+  notes?: string;
+  tags?: string[];
+  added_by: string;
+  added_by_name?: string;
+  created_at: string;
+  cached_total_changesets?: number;
+  cached_last_active?: string;
+  cached_account_created?: string;
+  cache_updated_at?: string;
+}
+
+export interface PunksResponse {
+  punks: Punk[];
+  status: number;
+}
+
+export interface PunkDetailResponse {
+  punk: Punk;
+  changesets: Array<{
+    changeset_id: number;
+    created_at: string;
+    closed_at?: string;
+    changes_count: number;
+    comment?: string;
+    editor?: string;
+    source?: string;
+    centroid_lat?: number;
+    centroid_lon?: number;
+    hashtags?: string[];
+  }>;
+  heatmapPoints: [number, number, number][];
+  summary: {
+    totalChangesets: number;
+    totalChanges: number;
+  };
+  hashtagSummary: Record<string, number>;
+  status: number;
+}
+
 // API Response types
 export interface ApiResponse<T = unknown> {
   data?: T;

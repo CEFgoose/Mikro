@@ -1,0 +1,371 @@
+"use client";
+
+import { useState, useEffect } from "react";
+import { useParams } from "next/navigation";
+import Link from "next/link";
+import dynamic from "next/dynamic";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  Badge,
+  Button,
+  Table,
+  TableHeader,
+  TableBody,
+  TableHead,
+  TableRow,
+  TableCell,
+  useToastActions,
+} from "@/components/ui";
+import { usePunkDetail, useRefreshPunkActivity } from "@/hooks";
+import type { PunkDetailResponse } from "@/types";
+import { formatNumber } from "@/lib/utils";
+
+const MappingHeatmap = dynamic(() => import("@/components/MappingHeatmap"), {
+  ssr: false,
+});
+
+function StatCard({
+  label,
+  value,
+  sub,
+}: {
+  label: string;
+  value: string | number;
+  sub?: string;
+}) {
+  return (
+    <Card>
+      <CardContent className="p-4 text-center">
+        <p className="text-sm text-muted-foreground">{label}</p>
+        <p className="text-2xl font-bold mt-1">{value}</p>
+        {sub && <p className="text-xs text-muted-foreground mt-1">{sub}</p>}
+      </CardContent>
+    </Card>
+  );
+}
+
+function formatDate(dateString: string): string {
+  return new Date(dateString).toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
+}
+
+function timeAgo(dateString: string): string {
+  const diff = Date.now() - new Date(dateString).getTime();
+  const minutes = Math.floor(diff / 60000);
+  if (minutes < 60) return `${minutes}m ago`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours}h ago`;
+  const days = Math.floor(hours / 24);
+  if (days < 30) return `${days}d ago`;
+  const months = Math.floor(days / 30);
+  if (months < 12) return `${months}mo ago`;
+  return `${Math.floor(months / 12)}y ago`;
+}
+
+function accountAge(dateString: string): string {
+  const diff = Date.now() - new Date(dateString).getTime();
+  const days = Math.floor(diff / 86400000);
+  if (days < 30) return `${days} days`;
+  const months = Math.floor(days / 30);
+  if (months < 12) return `${months} months`;
+  const years = Math.floor(months / 12);
+  const rem = months % 12;
+  return rem > 0 ? `${years}y ${rem}mo` : `${years} years`;
+}
+
+export default function PunkDetailPage() {
+  const params = useParams();
+  const id = params.id;
+  const toast = useToastActions();
+
+  const {
+    mutate: fetchDetail,
+    loading: detailLoading,
+    error: detailError,
+  } = usePunkDetail();
+
+  const {
+    mutate: refreshActivity,
+    loading: refreshing,
+  } = useRefreshPunkActivity();
+
+  const [data, setData] = useState<PunkDetailResponse | null>(null);
+  const [pageLoading, setPageLoading] = useState(true);
+
+  useEffect(() => {
+    if (id) {
+      fetchDetail({ punk_id: Number(id) })
+        .then((res) => {
+          if (res?.punk) setData(res);
+        })
+        .catch(() => {})
+        .finally(() => setPageLoading(false));
+    }
+  }, [id, fetchDetail]);
+
+  const handleRefresh = async () => {
+    try {
+      await refreshActivity({ punk_id: Number(id) });
+      toast.success("Activity refreshed");
+      const result = await fetchDetail({ punk_id: Number(id) });
+      if (result?.punk) setData(result);
+    } catch {
+      toast.error("Failed to refresh activity");
+    }
+  };
+
+  if (pageLoading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-kaart-orange" />
+      </div>
+    );
+  }
+
+  if (detailError && !data) {
+    return (
+      <div className="space-y-4">
+        <Link
+          href="/admin/punks"
+          className="text-kaart-orange hover:underline text-sm"
+        >
+          {"\u2190"} Back to Punks List
+        </Link>
+        <Card>
+          <CardContent className="p-8 text-center text-red-500">
+            Failed to load punk detail: {detailError}
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  if (!data) return null;
+
+  const { punk, changesets, heatmapPoints, summary, hashtagSummary } = data;
+
+  const sortedChangesets = [...changesets].sort(
+    (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+  );
+
+  const sortedHashtags = Object.entries(hashtagSummary).sort(
+    (a, b) => b[1] - a[1]
+  );
+
+  const cachedChangesTotal = changesets.reduce(
+    (sum, cs) => sum + (cs.changes_count || 0),
+    0
+  );
+
+  return (
+    <div className="space-y-6">
+      {/* Header */}
+      <div>
+        <Link
+          href="/admin/punks"
+          className="text-kaart-orange hover:underline text-sm"
+        >
+          {"\u2190"} Back to Punks List
+        </Link>
+
+        <div className="flex items-start justify-between mt-2">
+          <h1 className="text-2xl font-bold">{punk.osm_username}</h1>
+          <div className="flex items-center gap-2">
+            <a
+              href={`https://www.openstreetmap.org/user/${encodeURIComponent(punk.osm_username)}`}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <Button variant="outline" size="sm">
+                OSM Profile {"\u2197"}
+              </Button>
+            </a>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleRefresh}
+              disabled={refreshing}
+            >
+              {refreshing ? (
+                <>
+                  <span className="animate-spin inline-block h-4 w-4 border-b-2 border-current rounded-full mr-2" />
+                  Refreshing...
+                </>
+              ) : (
+                "Refresh Activity"
+              )}
+            </Button>
+          </div>
+        </div>
+      </div>
+
+      {/* Info Card */}
+      <Card>
+        <CardContent className="p-6 space-y-3">
+          {punk.notes ? (
+            <p className="text-sm">{punk.notes}</p>
+          ) : (
+            <p className="text-sm text-muted-foreground">No notes</p>
+          )}
+
+          {punk.tags && punk.tags.length > 0 && (
+            <div className="flex flex-wrap gap-2">
+              {punk.tags.map((tag) => (
+                <Badge key={tag} variant="secondary">
+                  {tag}
+                </Badge>
+              ))}
+            </div>
+          )}
+
+          <div className="flex flex-wrap gap-4 text-xs text-muted-foreground">
+            <span>
+              Added by {punk.added_by_name || punk.added_by} on{" "}
+              {formatDate(punk.created_at)}
+            </span>
+            <span>
+              Last refreshed{" "}
+              {punk.cache_updated_at ? timeAgo(punk.cache_updated_at) : "Never"}
+            </span>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Summary Stats */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <StatCard
+          label="Account Age"
+          value={
+            punk.cached_account_created
+              ? accountAge(punk.cached_account_created)
+              : "Unknown"
+          }
+        />
+        <StatCard
+          label="Total Changesets"
+          value={
+            punk.cached_total_changesets != null
+              ? formatNumber(punk.cached_total_changesets)
+              : "Unknown"
+          }
+        />
+        <StatCard
+          label="Last Active"
+          value={
+            punk.cached_last_active
+              ? formatDate(punk.cached_last_active)
+              : "Unknown"
+          }
+        />
+        <StatCard
+          label="Cached Changes"
+          value={formatNumber(cachedChangesTotal)}
+          sub={`from ${formatNumber(changesets.length)} changesets`}
+        />
+      </div>
+
+      {/* Heatmap */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Activity Heatmap</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {heatmapPoints.length > 0 ? (
+            <MappingHeatmap points={heatmapPoints} height="400px" />
+          ) : (
+            <p className="text-muted-foreground text-center py-8">
+              No location data available
+            </p>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Hashtag Summary */}
+      {sortedHashtags.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Top Hashtags</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex flex-wrap gap-2">
+              {sortedHashtags.map(([tag, count]) => (
+                <Badge key={tag} variant="secondary">
+                  #{tag} ({formatNumber(count)})
+                </Badge>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Changesets Table */}
+      <Card>
+        <CardHeader>
+          <CardTitle>
+            Changesets{" "}
+            {changesets.length > 0 && (
+              <span className="text-sm font-normal text-muted-foreground ml-2">
+                ({formatNumber(changesets.length)})
+              </span>
+            )}
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {sortedChangesets.length > 0 ? (
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Date</TableHead>
+                    <TableHead>Changeset ID</TableHead>
+                    <TableHead>Comment</TableHead>
+                    <TableHead>Editor</TableHead>
+                    <TableHead className="text-right">Changes</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {sortedChangesets.map((cs) => (
+                    <TableRow key={cs.changeset_id}>
+                      <TableCell className="whitespace-nowrap">
+                        {formatDate(cs.created_at)}
+                      </TableCell>
+                      <TableCell>
+                        <a
+                          href={`https://www.openstreetmap.org/changeset/${cs.changeset_id}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-kaart-orange hover:underline"
+                        >
+                          {cs.changeset_id}
+                        </a>
+                      </TableCell>
+                      <TableCell className="max-w-xs truncate text-muted-foreground">
+                        {cs.comment || "\u2014"}
+                      </TableCell>
+                      <TableCell className="whitespace-nowrap">
+                        {cs.editor || "\u2014"}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        {formatNumber(cs.changes_count)}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          ) : (
+            <p className="text-muted-foreground text-center py-8">
+              No changesets cached. Click Refresh Activity to fetch data.
+            </p>
+          )}
+        </CardContent>
+      </Card>
+    </div>
+  );
+}

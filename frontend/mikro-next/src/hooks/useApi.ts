@@ -35,6 +35,8 @@ import type {
   CountriesResponse,
   MapillaryStatsResponse,
   ProjectProfileResponse,
+  PunksResponse,
+  PunkDetailResponse,
 } from "@/types";
 
 /**
@@ -934,4 +936,24 @@ export function useUnassignProjectTraining() {
 // Project Profile
 export function useFetchProjectProfile() {
   return useApiMutation<ProjectProfileResponse>("/project/fetch_project_profile");
+}
+
+// ─── Punks List (Admin) ────────────────────────────────
+export function usePunksList() {
+  return useApiCall<PunksResponse>("/punk/fetch_punks");
+}
+export function useCreatePunk() {
+  return useApiMutation("/punk/create_punk");
+}
+export function useUpdatePunk() {
+  return useApiMutation("/punk/update_punk");
+}
+export function useDeletePunk() {
+  return useApiMutation("/punk/delete_punk");
+}
+export function usePunkDetail() {
+  return useApiMutation<PunkDetailResponse>("/punk/fetch_punk_detail");
+}
+export function useRefreshPunkActivity() {
+  return useApiMutation("/punk/refresh_punk_activity");
 }
