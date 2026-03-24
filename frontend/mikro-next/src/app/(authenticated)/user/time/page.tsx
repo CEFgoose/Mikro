@@ -66,7 +66,30 @@ function getDateRange(preset: DatePreset): { startDate: string | null; endDate: 
 
 // --- Category options ---
 
-const CATEGORIES = ["All", "Mapping", "Validation", "Review", "Training", "Other"] as const;
+const CATEGORIES = [
+  "All",
+  "Editing",
+  "Validating",
+  "Training",
+  "Checklist",
+  "QC / Review",
+  "Meeting",
+  "Documentation",
+  "Imagery Capture",
+  "Other",
+] as const;
+
+const CATEGORY_LABEL_MAP: Record<string, string> = {
+  editing: "Editing",
+  validating: "Validating",
+  training: "Training",
+  checklist: "Checklist",
+  qc_review: "QC / Review",
+  meeting: "Meeting",
+  documentation: "Documentation",
+  imagery_capture: "Imagery Capture",
+  other: "Other",
+};
 
 // --- Formatting helpers ---
 
@@ -132,7 +155,10 @@ export default function UserTimePage() {
     const body: Record<string, unknown> = {};
     if (startDate) body.startDate = startDate;
     if (endDate) body.endDate = endDate;
-    if (category !== "All") body.category = category.toLowerCase();
+    if (category !== "All") {
+      const catEntry = Object.entries(CATEGORY_LABEL_MAP).find(([, label]) => label === category);
+      body.category = catEntry ? catEntry[0] : category.toLowerCase();
+    }
     body.limit = 500;
     body.offset = 0;
     refetch(body).catch(() => {});
@@ -174,7 +200,7 @@ export default function UserTimePage() {
     // Client-side category filtering (fallback)
     if (category !== "All") {
       entries = entries.filter(
-        (e) => e.category?.toLowerCase() === category.toLowerCase()
+        (e) => e.category === category || e.category?.toLowerCase() === category.toLowerCase()
       );
     }
 
@@ -344,6 +370,7 @@ export default function UserTimePage() {
                 <TableHead>Date</TableHead>
                 <TableHead>Project</TableHead>
                 <TableHead>Category</TableHead>
+                <TableHead>Task</TableHead>
                 <TableHead>Clock In</TableHead>
                 <TableHead>Clock Out</TableHead>
                 <TableHead>Duration</TableHead>
@@ -371,6 +398,9 @@ export default function UserTimePage() {
                     </TableCell>
                     <TableCell>
                       <Badge variant="secondary">{entry.category || "--"}</Badge>
+                    </TableCell>
+                    <TableCell className="text-muted-foreground">
+                      {entry.taskName || "—"}
                     </TableCell>
                     <TableCell className={`text-muted-foreground ${isVoided ? "line-through" : ""}`}>
                       {entry.clockIn ? formatTime(entry.clockIn) : "--"}
@@ -423,7 +453,7 @@ export default function UserTimePage() {
               {/* Inline adjustment form row */}
               {adjustmentEntryId && pagedEntries.some((e) => e.id === adjustmentEntryId) && (
                 <TableRow>
-                  <TableCell colSpan={8} style={{ padding: 0 }}>
+                  <TableCell colSpan={9} style={{ padding: 0 }}>
                     <div className="border-t border-border p-4 bg-muted/50">
                       <h4 className="text-sm font-medium mb-2">
                         Request Adjustment for Entry #{adjustmentEntryId}
@@ -468,7 +498,7 @@ export default function UserTimePage() {
               {pagedEntries.length === 0 && (
                 <TableRow>
                   <TableCell
-                    colSpan={8}
+                    colSpan={9}
                     style={{ textAlign: "center", padding: "32px 16px", color: "#6b7280" }}
                   >
                     No time entries found

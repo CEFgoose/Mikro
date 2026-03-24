@@ -4,17 +4,27 @@ import { useState, useEffect, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Select, SelectOption } from "@/components/ui/Select";
-import { useClockIn, useClockOut, useActiveTimeSession } from "@/hooks";
+import {
+  useClockIn,
+  useClockOut,
+  useActiveTimeSession,
+  useApiCall,
+  useCustomTopics,
+} from "@/hooks";
 
 interface TimeTrackingWidgetProps {
   projects?: { id: number; name: string }[];
 }
 
-const TASK_CATEGORIES: SelectOption[] = [
-  { value: "mapping", label: "Mapping" },
-  { value: "validation", label: "Validation" },
-  { value: "review", label: "Review" },
+const TOPIC_OPTIONS: SelectOption[] = [
+  { value: "editing", label: "Editing" },
+  { value: "validating", label: "Validating" },
   { value: "training", label: "Training" },
+  { value: "checklist", label: "Checklist" },
+  { value: "qc_review", label: "QC / Review" },
+  { value: "meeting", label: "Meeting" },
+  { value: "documentation", label: "Documentation" },
+  { value: "imagery_capture", label: "Imagery Capture" },
   { value: "other", label: "Other" },
 ];
 
@@ -34,15 +44,40 @@ export function TimeTrackingWidget({
   const [clockInTime, setClockInTime] = useState<Date | null>(null);
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
   const [selectedProject, setSelectedProject] = useState<string>("");
-  const [selectedCategory, setSelectedCategory] = useState<string>("");
+  const [selectedTopic, setSelectedTopic] = useState<string>("");
+  const [taskName, setTaskName] = useState<string>("");
+  const [taskRefType, setTaskRefType] = useState<string | null>(null);
+  const [taskRefId, setTaskRefId] = useState<number | null>(null);
+  const [customTopicInput, setCustomTopicInput] = useState<string>("");
+  const [isAddingCustomTopic, setIsAddingCustomTopic] = useState(false);
   const [showConfirmation, setShowConfirmation] = useState(false);
   const [apiError, setApiError] = useState<string | null>(null);
   const [activeSessionProjectName, setActiveSessionProjectName] = useState<string>("");
-  const [activeSessionCategory, setActiveSessionCategory] = useState<string>("");
+  const [activeSessionTopic, setActiveSessionTopic] = useState<string>("");
+  const [activeSessionTaskName, setActiveSessionTaskName] = useState<string>("");
 
   const { data: activeSession, loading: sessionLoading, refetch: refetchSession } = useActiveTimeSession();
   const { mutate: clockIn, loading: clockingIn } = useClockIn();
   const { mutate: clockOut, loading: clockingOut } = useClockOut();
+
+  // Lazy-loaded data for training and checklist topics
+  const {
+    data: trainingData,
+    refetch: fetchTrainings,
+  } = useApiCall<{
+    status: number;
+    trainings: Array<{ id: number; title: string }>;
+  }>("/training/fetch_user_trainings", { immediate: false });
+
+  const {
+    data: checklistData,
+    refetch: fetchChecklists,
+  } = useApiCall<{
+    status: number;
+    active_checklists: Array<{ id: number; name: string }>;
+  }>("/checklist/fetch_user_checklists", { immediate: false });
+
+  const { data: customTopicsData } = useCustomTopics();
 
   // Listen for sync events from sidebar clock or other instances
   useEffect(() => {
@@ -60,7 +95,8 @@ export function TimeTrackingWidget({
       setIsClockedIn(true);
       setClockInTime(new Date(session.clockIn!));
       setActiveSessionProjectName(session.projectName || "");
-      setActiveSessionCategory(session.category || "");
+      setActiveSessionTopic(session.category || "");
+      setActiveSessionTaskName(session.taskName || "");
       if (session.projectId) {
         setSelectedProject(session.projectId.toString());
       }
@@ -84,14 +120,35 @@ export function TimeTrackingWidget({
     };
   }, [isClockedIn, clockInTime]);
 
+  // Lazy-load training/checklist data when topic changes
+  useEffect(() => {
+    if (selectedTopic === "training") {
+      fetchTrainings().catch(() => {});
+    } else if (selectedTopic === "checklist") {
+      fetchChecklists().catch(() => {});
+    }
+  }, [selectedTopic, fetchTrainings, fetchChecklists]);
+
+  // Reset task fields when topic changes
+  useEffect(() => {
+    setTaskName("");
+    setTaskRefType(null);
+    setTaskRefId(null);
+    setCustomTopicInput("");
+    setIsAddingCustomTopic(false);
+  }, [selectedTopic]);
+
   const handleClockIn = useCallback(async () => {
-    if (!selectedProject || !selectedCategory) return;
+    if (!selectedProject || !selectedTopic) return;
     setApiError(null);
 
     try {
       await clockIn({
         project_id: parseInt(selectedProject),
-        category: selectedCategory,
+        category: selectedTopic,
+        task_name: taskName || null,
+        task_ref_type: taskRefType || null,
+        task_ref_id: taskRefId || null,
       });
 
       const now = new Date();
@@ -101,14 +158,15 @@ export function TimeTrackingWidget({
       setActiveSessionProjectName(
         projects.find((p) => p.id.toString() === selectedProject)?.name || ""
       );
-      setActiveSessionCategory(
-        TASK_CATEGORIES.find((c) => c.value === selectedCategory)?.label || ""
+      setActiveSessionTopic(
+        TOPIC_OPTIONS.find((t) => t.value === selectedTopic)?.label || ""
       );
+      setActiveSessionTaskName(taskName || "");
       window.dispatchEvent(new Event("clock-state-changed"));
     } catch (err) {
       setApiError(err instanceof Error ? err.message : "Failed to clock in");
     }
-  }, [selectedProject, selectedCategory, clockIn, projects]);
+  }, [selectedProject, selectedTopic, taskName, taskRefType, taskRefId, clockIn, projects]);
 
   const handleClockOut = useCallback(async () => {
     setApiError(null);
@@ -131,10 +189,206 @@ export function TimeTrackingWidget({
     }
   }, [clockOut]);
 
+  // Handle task selection for project-based topics
+  const handleProjectTaskSelect = useCallback(
+    (projectId: string) => {
+      const project = projects.find((p) => p.id.toString() === projectId);
+      setTaskRefType("project");
+      setTaskRefId(project ? project.id : null);
+      setTaskName(project ? project.name : "");
+    },
+    [projects]
+  );
+
+  // Handle task selection for training
+  const handleTrainingSelect = useCallback(
+    (trainingId: string) => {
+      const training = trainingData?.trainings?.find(
+        (t) => t.id.toString() === trainingId
+      );
+      setTaskRefType("training");
+      setTaskRefId(training ? training.id : null);
+      setTaskName(training ? training.title : "");
+    },
+    [trainingData]
+  );
+
+  // Handle task selection for checklist
+  const handleChecklistSelect = useCallback(
+    (checklistId: string) => {
+      const checklist = checklistData?.active_checklists?.find(
+        (c) => c.id.toString() === checklistId
+      );
+      setTaskRefType("checklist");
+      setTaskRefId(checklist ? checklist.id : null);
+      setTaskName(checklist ? checklist.name : "");
+    },
+    [checklistData]
+  );
+
+  // Handle custom topic selection
+  const handleCustomTopicSelect = useCallback(
+    (value: string) => {
+      if (value === "__add_new__") {
+        setIsAddingCustomTopic(true);
+        setTaskName("");
+        setTaskRefType(null);
+        setTaskRefId(null);
+      } else {
+        setIsAddingCustomTopic(false);
+        const topic = customTopicsData?.topics?.find(
+          (t) => t.id.toString() === value
+        );
+        setTaskName(topic ? topic.name : "");
+        setTaskRefType(null);
+        setTaskRefId(topic ? topic.id : null);
+      }
+    },
+    [customTopicsData]
+  );
+
   const projectOptions: SelectOption[] = projects.map((p) => ({
     value: p.id.toString(),
     label: p.name,
   }));
+
+  const trainingOptions: SelectOption[] = (trainingData?.trainings || []).map(
+    (t) => ({
+      value: t.id.toString(),
+      label: t.title,
+    })
+  );
+
+  const checklistOptions: SelectOption[] = (
+    checklistData?.active_checklists || []
+  ).map((c) => ({
+    value: c.id.toString(),
+    label: c.name,
+  }));
+
+  const customTopicOptions: SelectOption[] = [
+    ...(customTopicsData?.topics || []).map((t) => ({
+      value: t.id.toString(),
+      label: t.name,
+    })),
+    { value: "__add_new__", label: "Add new..." },
+  ];
+
+  // Render the task selector based on the selected topic
+  const renderTaskSelector = () => {
+    if (!selectedTopic) return null;
+
+    // Project-based topics
+    if (["editing", "validating", "qc_review"].includes(selectedTopic)) {
+      return (
+        <Select
+          label="Task (Project)"
+          options={projectOptions}
+          value={taskRefId ? taskRefId.toString() : ""}
+          onChange={handleProjectTaskSelect}
+          placeholder="Select a project (optional)"
+        />
+      );
+    }
+
+    // Training
+    if (selectedTopic === "training") {
+      return (
+        <Select
+          label="Training Module"
+          options={trainingOptions}
+          value={taskRefId ? taskRefId.toString() : ""}
+          onChange={handleTrainingSelect}
+          placeholder="Select training (optional)"
+        />
+      );
+    }
+
+    // Checklist
+    if (selectedTopic === "checklist") {
+      return (
+        <Select
+          label="Checklist"
+          options={checklistOptions}
+          value={taskRefId ? taskRefId.toString() : ""}
+          onChange={handleChecklistSelect}
+          placeholder="Select checklist (optional)"
+        />
+      );
+    }
+
+    // Free-text topics
+    if (["meeting", "documentation", "imagery_capture"].includes(selectedTopic)) {
+      return (
+        <div>
+          <label className="block text-sm font-medium text-foreground mb-1">
+            Task Name
+          </label>
+          <input
+            type="text"
+            value={taskName}
+            onChange={(e) => {
+              setTaskName(e.target.value);
+              setTaskRefType(null);
+              setTaskRefId(null);
+            }}
+            placeholder="Describe the task (optional)"
+            className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+          />
+        </div>
+      );
+    }
+
+    // Other - custom topics
+    if (selectedTopic === "other") {
+      return (
+        <div>
+          {!isAddingCustomTopic ? (
+            <Select
+              label="Custom Topic"
+              options={customTopicOptions}
+              value={taskRefId ? taskRefId.toString() : ""}
+              onChange={handleCustomTopicSelect}
+              placeholder="Select topic or add new (optional)"
+            />
+          ) : (
+            <div>
+              <label className="block text-sm font-medium text-foreground mb-1">
+                New Topic
+              </label>
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={customTopicInput}
+                  onChange={(e) => {
+                    setCustomTopicInput(e.target.value);
+                    setTaskName(e.target.value);
+                    setTaskRefType(null);
+                    setTaskRefId(null);
+                  }}
+                  placeholder="Enter topic name"
+                  className="flex-1 rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                />
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsAddingCustomTopic(false);
+                    setCustomTopicInput("");
+                    setTaskName("");
+                  }}
+                  className="text-xs text-muted-foreground hover:text-foreground"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    return null;
+  };
 
   // Loading state while checking for active session
   if (sessionLoading) {
@@ -186,9 +440,15 @@ export function TimeTrackingWidget({
             <p className="text-sm font-medium mb-1">
               {activeSessionProjectName}
             </p>
-            <p className="text-xs text-muted-foreground mb-4">
-              {activeSessionCategory}
+            <p className="text-xs text-muted-foreground mb-1">
+              {activeSessionTopic}
             </p>
+            {activeSessionTaskName && (
+              <p className="text-xs text-muted-foreground mb-4">
+                {activeSessionTaskName}
+              </p>
+            )}
+            {!activeSessionTaskName && <div className="mb-4" />}
             {apiError && (
               <p className="text-xs text-red-600 mb-2">{apiError}</p>
             )}
@@ -293,16 +553,17 @@ export function TimeTrackingWidget({
             placeholder="Select a project"
           />
           <Select
-            label="Task Category"
-            options={TASK_CATEGORIES}
-            value={selectedCategory}
-            onChange={setSelectedCategory}
-            placeholder="Select category"
+            label="Topic"
+            options={TOPIC_OPTIONS}
+            value={selectedTopic}
+            onChange={setSelectedTopic}
+            placeholder="Select topic"
           />
+          {renderTaskSelector()}
           <Button
             variant="primary"
             onClick={handleClockIn}
-            disabled={!selectedProject || !selectedCategory || clockingIn}
+            disabled={!selectedProject || !selectedTopic || clockingIn}
             className="w-full mt-2"
           >
             <svg

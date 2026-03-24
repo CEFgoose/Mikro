@@ -89,20 +89,40 @@ function getDateRange(preset: DatePreset): {
 
 const CATEGORIES = [
   "All",
-  "Mapping",
-  "Validation",
-  "Review",
+  "Editing",
+  "Validating",
   "Training",
+  "Checklist",
+  "QC / Review",
+  "Meeting",
+  "Documentation",
+  "Imagery Capture",
   "Other",
 ] as const;
 
 const CATEGORY_OPTIONS = [
-  "mapping",
-  "validation",
-  "review",
+  "editing",
+  "validating",
   "training",
+  "checklist",
+  "qc_review",
+  "meeting",
+  "documentation",
+  "imagery_capture",
   "other",
 ];
+
+const CATEGORY_LABEL_MAP: Record<string, string> = {
+  editing: "Editing",
+  validating: "Validating",
+  training: "Training",
+  checklist: "Checklist",
+  qc_review: "QC / Review",
+  meeting: "Meeting",
+  documentation: "Documentation",
+  imagery_capture: "Imagery Capture",
+  other: "Other",
+};
 
 // --- Formatting helpers ---
 
@@ -216,7 +236,7 @@ export default function AdminTimePage() {
   const [showAddEntry, setShowAddEntry] = useState(false);
   const [addUserId, setAddUserId] = useState("");
   const [addProjectId, setAddProjectId] = useState("");
-  const [addCategory, setAddCategory] = useState("mapping");
+  const [addCategory, setAddCategory] = useState("editing");
   const [addClockIn, setAddClockIn] = useState("");
   const [addClockOut, setAddClockOut] = useState("");
   const [addNotes, setAddNotes] = useState("");
@@ -270,7 +290,10 @@ export default function AdminTimePage() {
     const body: Record<string, unknown> = {};
     if (startDate) body.startDate = startDate;
     if (endDate) body.endDate = endDate;
-    if (category !== "All") body.category = category.toLowerCase();
+    if (category !== "All") {
+      const catEntry = Object.entries(CATEGORY_LABEL_MAP).find(([, label]) => label === category);
+      body.category = catEntry ? catEntry[0] : category.toLowerCase();
+    }
     if (filtersBody) body.filters = filtersBody;
     body.limit = 500;
     body.offset = 0;
@@ -321,7 +344,7 @@ export default function AdminTimePage() {
 
     if (category !== "All") {
       entries = entries.filter(
-        (e) => e.category?.toLowerCase() === category.toLowerCase()
+        (e) => e.category === category || e.category?.toLowerCase() === category.toLowerCase()
       );
     }
 
@@ -340,7 +363,7 @@ export default function AdminTimePage() {
     let filtered = sessions;
     if (category !== "All") {
       filtered = filtered.filter(
-        (s) => s.category?.toLowerCase() === category.toLowerCase()
+        (s) => s.category === category || s.category?.toLowerCase() === category.toLowerCase()
       );
     }
     if (userSearch.trim()) {
@@ -463,7 +486,7 @@ export default function AdminTimePage() {
     setEditingEntry(entry);
     setEditClockIn(entry.clockIn ? toDatetimeLocal(entry.clockIn) : "");
     setEditClockOut(entry.clockOut ? toDatetimeLocal(entry.clockOut) : "");
-    setEditCategory(entry.category?.toLowerCase() || "mapping");
+    setEditCategory(entry.category?.toLowerCase() || "editing");
     setEditError(null);
   };
 
@@ -507,7 +530,7 @@ export default function AdminTimePage() {
   const handleOpenAddEntry = () => {
     setAddUserId("");
     setAddProjectId("");
-    setAddCategory("mapping");
+    setAddCategory("editing");
     setAddClockIn("");
     setAddClockOut("");
     setAddNotes("");
@@ -556,7 +579,7 @@ export default function AdminTimePage() {
       await exportEntries({
         startDate: startDate ?? undefined,
         endDate: endDate ?? undefined,
-        category: category !== "All" ? category.toLowerCase() : undefined,
+        category: category !== "All" ? (Object.entries(CATEGORY_LABEL_MAP).find(([, label]) => label === category)?.[0] ?? category.toLowerCase()) : undefined,
         filters: filtersBody,
         format,
       });
@@ -967,6 +990,7 @@ export default function AdminTimePage() {
                   { key: "userName", label: "User" },
                   { key: "projectName", label: "Project" },
                   { key: "category", label: "Category" },
+                  { key: "taskName", label: "Task" },
                   { key: "clockIn", label: "Clock In" },
                   { key: "clockOut", label: "Clock Out" },
                   { key: "duration", label: "Duration" },
@@ -1016,6 +1040,9 @@ export default function AdminTimePage() {
                       <Badge variant="secondary">
                         {entry.category || "--"}
                       </Badge>
+                    </TableCell>
+                    <TableCell className="text-muted-foreground">
+                      {entry.taskName || "\u2014"}
                     </TableCell>
                     <TableCell
                       className={`text-muted-foreground ${isVoided ? "line-through" : ""}`}
@@ -1139,7 +1166,7 @@ export default function AdminTimePage() {
               {pagedEntries.length === 0 && (
                 <TableRow>
                   <TableCell
-                    colSpan={8}
+                    colSpan={9}
                     style={{
                       textAlign: "center",
                       padding: "32px 16px",
@@ -1267,7 +1294,7 @@ export default function AdminTimePage() {
               >
                 {CATEGORY_OPTIONS.map((cat) => (
                   <option key={cat} value={cat}>
-                    {cat.charAt(0).toUpperCase() + cat.slice(1)}
+                    {CATEGORY_LABEL_MAP[cat] || cat}
                   </option>
                 ))}
               </select>
@@ -1344,7 +1371,7 @@ export default function AdminTimePage() {
             >
               {CATEGORY_OPTIONS.map((cat) => (
                 <option key={cat} value={cat}>
-                  {cat.charAt(0).toUpperCase() + cat.slice(1)}
+                  {CATEGORY_LABEL_MAP[cat] || cat}
                 </option>
               ))}
             </select>

@@ -16,12 +16,34 @@ from flask.views import MethodView
 from flask import g, request, jsonify, Response
 
 from ..utils import requires_admin
-from ..database import TimeEntry, User, Project, TeamUser, db
+from ..database import TimeEntry, User, Project, TeamUser, CustomTopic, db
 from ..filters import resolve_filtered_user_ids
 
 logger = logging.getLogger(__name__)
 
-VALID_CATEGORIES = {"mapping", "validation", "review", "training", "other"}
+VALID_CATEGORIES = {
+    "editing", "validating", "training", "checklist",
+    "qc_review", "meeting", "documentation", "imagery_capture", "other",
+    # Legacy values — still accepted for backward compat
+    "mapping", "validation", "review",
+}
+
+# Map stored category values to display labels
+CATEGORY_DISPLAY_MAP = {
+    "editing": "Editing",
+    "validating": "Validating",
+    "training": "Training",
+    "checklist": "Checklist",
+    "qc_review": "QC / Review",
+    "meeting": "Meeting",
+    "documentation": "Documentation",
+    "imagery_capture": "Imagery Capture",
+    "other": "Other",
+    # Legacy mappings
+    "mapping": "Editing",
+    "validation": "Validating",
+    "review": "QC / Review",
+}
 
 
 class TimeTrackingAPI(MethodView):
@@ -58,6 +80,8 @@ class TimeTrackingAPI(MethodView):
             return self.request_adjustment()
         elif path == "export":
             return self.admin_export()
+        elif path == "fetch_custom_topics":
+            return self.fetch_custom_topics()
 
         return jsonify({"message": "Endpoint not found", "status": 404}), 404
 
@@ -85,7 +109,10 @@ class TimeTrackingAPI(MethodView):
             "projectId": entry.project_id,
             "projectName": project.name if project else "No Project",
             "projectShortName": (project.short_name or "") if project else "",
-            "category": entry.category.capitalize() if entry.category else "",
+            "category": CATEGORY_DISPLAY_MAP.get(entry.category, entry.category.capitalize() if entry.category else ""),
+            "taskName": entry.task_name,
+            "taskRefType": entry.task_ref_type,
+            "taskRefId": entry.task_ref_id,
             "clockIn": entry.clock_in.isoformat() + "Z" if entry.clock_in else None,
             "clockOut": entry.clock_out.isoformat() + "Z" if entry.clock_out else None,
             "duration": duration,
@@ -264,9 +291,24 @@ class TimeTrackingAPI(MethodView):
         entry.project_id = project_id
         entry.org_id = g.user.org_id
         entry.category = category
+        entry.task_name = data.get("task_name")
+        entry.task_ref_type = data.get("task_ref_type")
+        entry.task_ref_id = data.get("task_ref_id")
         entry.clock_in = datetime.utcnow()
         entry.status = "active"
         entry.save()
+
+        # If "other" with a custom task_name, upsert into custom_topics
+        if category == "other" and entry.task_name:
+            existing = CustomTopic.query.filter_by(
+                name=entry.task_name, org_id=g.user.org_id
+            ).first()
+            if not existing:
+                topic = CustomTopic()
+                topic.name = entry.task_name
+                topic.org_id = g.user.org_id
+                topic.created_by = g.user.id
+                topic.save()
 
         return jsonify({
             "message": "Clocked in successfully",
@@ -402,6 +444,30 @@ class TimeTrackingAPI(MethodView):
         return jsonify({
             "message": "Adjustment request submitted",
             "status": 200,
+        }), 200
+
+    def fetch_custom_topics(self):
+        """Fetch all custom topics for the user's org."""
+        if not hasattr(g, "user") or not g.user:
+            return jsonify({"message": "Unauthorized", "status": 401}), 401
+
+        topics = (
+            CustomTopic.query
+            .filter_by(org_id=g.user.org_id)
+            .order_by(CustomTopic.name)
+            .all()
+        )
+
+        return jsonify({
+            "status": 200,
+            "topics": [
+                {
+                    "id": t.id,
+                    "name": t.name,
+                    "createdBy": t.created_by,
+                }
+                for t in topics
+            ],
         }), 200
 
     # ─── Admin Endpoints ──────────────────────────────────────
@@ -577,6 +643,13 @@ class TimeTrackingAPI(MethodView):
                 }), 400
             entry.category = cat
 
+        if "taskName" in data:
+            entry.task_name = data["taskName"]
+        if "taskRefType" in data:
+            entry.task_ref_type = data["taskRefType"]
+        if "taskRefId" in data:
+            entry.task_ref_id = data["taskRefId"]
+
         # Recalculate duration if both times present
         if entry.clock_in and entry.clock_out:
             entry.duration_seconds = int(
@@ -671,6 +744,9 @@ class TimeTrackingAPI(MethodView):
         entry.org_id = g.user.org_id
         entry.project_id = project_id
         entry.category = category
+        entry.task_name = data.get("taskName")
+        entry.task_ref_type = data.get("taskRefType")
+        entry.task_ref_id = data.get("taskRefId")
         entry.clock_in = clock_in
         entry.clock_out = clock_out
         entry.duration_seconds = int((clock_out - clock_in).total_seconds())
@@ -679,6 +755,18 @@ class TimeTrackingAPI(MethodView):
         entry.edited_by = g.user.id
         entry.edited_at = datetime.utcnow()
         entry.save()
+
+        # If "other" with a custom task_name, upsert into custom_topics
+        if category == "other" and entry.task_name:
+            existing = CustomTopic.query.filter_by(
+                name=entry.task_name, org_id=g.user.org_id
+            ).first()
+            if not existing:
+                topic = CustomTopic()
+                topic.name = entry.task_name
+                topic.org_id = g.user.org_id
+                topic.created_by = g.user.id
+                topic.save()
 
         return jsonify({
             "message": "Entry created",
@@ -770,7 +858,7 @@ class TimeTrackingAPI(MethodView):
         output = io.StringIO()
         writer = csv.writer(output)
         writer.writerow([
-            "User", "OSM Username", "Project", "Category",
+            "User", "OSM Username", "Project", "Category", "Task",
             "Clock In", "Clock Out", "Duration (hours)", "Status",
             "Changesets", "Changes", "Notes",
         ])
@@ -782,7 +870,8 @@ class TimeTrackingAPI(MethodView):
                 user.full_name if user else "Unknown",
                 user.osm_username if user else "",
                 project.name if project else "",
-                entry.category.capitalize() if entry.category else "",
+                CATEGORY_DISPLAY_MAP.get(entry.category, entry.category.capitalize() if entry.category else ""),
+                entry.task_name or "",
                 entry.clock_in.isoformat() + "Z" if entry.clock_in else "",
                 entry.clock_out.isoformat() + "Z" if entry.clock_out else "",
                 self._format_duration_hours(entry.duration_seconds),
@@ -860,7 +949,7 @@ class TimeTrackingAPI(MethodView):
 
         # Build table data
         headers = [
-            "User", "OSM Username", "Project", "Category",
+            "User", "OSM Username", "Project", "Category", "Task",
             "Clock In", "Clock Out", "Duration (h)", "Status",
             "Changesets", "Changes",
         ]
@@ -884,7 +973,8 @@ class TimeTrackingAPI(MethodView):
                 (user.full_name if user else "Unknown")[:20],
                 (user.osm_username if user else "")[:20],
                 (project.name if project else "")[:20],
-                (entry.category.capitalize() if entry.category else ""),
+                CATEGORY_DISPLAY_MAP.get(entry.category, entry.category.capitalize() if entry.category else ""),
+                (entry.task_name or "")[:20],
                 (entry.clock_in.strftime("%Y-%m-%d %H:%M") if entry.clock_in else ""),
                 (entry.clock_out.strftime("%Y-%m-%d %H:%M") if entry.clock_out else ""),
                 self._format_duration_hours(dur_secs),
@@ -895,7 +985,7 @@ class TimeTrackingAPI(MethodView):
 
         # Totals row
         table_data.append([
-            "TOTALS", "", "", "", "", "",
+            "TOTALS", "", "", "", "", "", "",
             self._format_duration_hours(total_seconds),
             f"{len(entries)} entries",
             str(total_changesets),
@@ -904,9 +994,9 @@ class TimeTrackingAPI(MethodView):
 
         # Create and style table
         col_widths = [
-            1.1 * inch, 1.1 * inch, 1.1 * inch, 0.8 * inch,
-            1.2 * inch, 1.2 * inch, 0.8 * inch, 0.7 * inch,
-            0.7 * inch, 0.7 * inch,
+            1.0 * inch, 1.0 * inch, 1.0 * inch, 0.8 * inch, 0.8 * inch,
+            1.1 * inch, 1.1 * inch, 0.7 * inch, 0.6 * inch,
+            0.6 * inch, 0.6 * inch,
         ]
         table = Table(table_data, colWidths=col_widths, repeatRows=1)
         table.setStyle(TableStyle([

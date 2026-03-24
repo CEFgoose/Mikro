@@ -760,6 +760,9 @@ class TimeEntry(CRUDMixin, db.Model):
     )
     org_id = db.Column(db.String(255), nullable=True, index=True)
     category = db.Column(db.String(50), nullable=False)  # mapping|validation|review|training|other
+    task_name = db.Column(db.String(255), nullable=True)       # display name of the selected task
+    task_ref_type = db.Column(db.String(50), nullable=True)     # "project", "training", "checklist", or null
+    task_ref_id = db.Column(db.Integer, nullable=True)          # FK to the referenced entity, or null
     clock_in = db.Column(DateTime, nullable=False, default=func.now())
     clock_out = db.Column(DateTime, nullable=True)
     duration_seconds = db.Column(db.Integer, nullable=True)
@@ -786,6 +789,24 @@ class TimeEntry(CRUDMixin, db.Model):
 
     def __repr__(self):
         return f"<TimeEntry {self.id} user={self.user_id} status={self.status}>"
+
+
+class CustomTopic(CRUDMixin, db.Model):
+    """User-created custom topic for time tracking 'Other' category."""
+    __tablename__ = "custom_topics"
+
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    name = db.Column(db.String(100), nullable=False)
+    org_id = db.Column(db.String(255), nullable=True)
+    created_by = db.Column(db.String(255), nullable=True)
+    created_at = db.Column(db.DateTime, default=func.now())
+
+    __table_args__ = (
+        db.UniqueConstraint("name", "org_id", name="uq_custom_topics_name_org"),
+    )
+
+    def __repr__(self):
+        return f"<CustomTopic {self.id}: {self.name}>"
 
 
 class SyncJob(CRUDMixin, db.Model):

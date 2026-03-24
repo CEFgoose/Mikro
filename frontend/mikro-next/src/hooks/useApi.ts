@@ -643,6 +643,14 @@ export function useAdminAddTestEntry() {
   return useApiMutation<{ message: string; status: number; entry: TimeTrackingSessionResponse }>("/timetracking/admin_add_test_entry");
 }
 
+// Custom topics for "Other" time tracking category
+export function useCustomTopics() {
+  return useApiCall<{
+    status: number;
+    topics: Array<{ id: number; name: string; createdBy: string }>;
+  }>("/timetracking/fetch_custom_topics");
+}
+
 // Admin/User: export time entries as CSV/XLSX file download
 export function useExportTimeEntries() {
   const [loading, setLoading] = useState(false);

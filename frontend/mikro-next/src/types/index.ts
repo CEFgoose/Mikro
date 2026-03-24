@@ -341,6 +341,9 @@ export interface TimeEntry {
   projectName: string;
   projectShortName?: string;
   category: string;
+  taskName?: string | null;
+  taskRefType?: string | null;  // "project" | "training" | "checklist" | null
+  taskRefId?: number | null;
   clockIn: string | null;
   clockOut: string | null;
   duration: string | null;
