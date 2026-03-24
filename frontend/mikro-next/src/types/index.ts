@@ -889,6 +889,11 @@ export interface PunkDetailResponse {
     totalChanges: number;
   };
   hashtagSummary: Record<string, number>;
+  discussions: Array<{
+    title: string;
+    link: string;
+    description: string;
+  }>;
   status: number;
 }
 

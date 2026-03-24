@@ -366,6 +366,49 @@ export default function PunkDetailPage() {
           )}
         </CardContent>
       </Card>
+
+      {/* Changeset Discussions */}
+      <Card>
+        <CardHeader>
+          <CardTitle>
+            Changeset Discussions ({data.discussions?.length ?? 0})
+          </CardTitle>
+          <p className="text-sm text-muted-foreground">
+            Comments on this user&apos;s changesets from other OSM editors
+          </p>
+        </CardHeader>
+        <CardContent>
+          {data.discussions && data.discussions.length > 0 ? (
+            <div className="space-y-3">
+              {data.discussions.map((disc, i) => (
+                <div
+                  key={i}
+                  className="border border-border rounded-lg p-3"
+                >
+                  <div className="flex items-start justify-between gap-2 mb-1">
+                    <p className="text-sm font-medium">{disc.title}</p>
+                    <a
+                      href={disc.link}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-xs text-kaart-orange hover:underline whitespace-nowrap"
+                    >
+                      View on OSM
+                    </a>
+                  </div>
+                  <p className="text-sm text-muted-foreground whitespace-pre-line">
+                    {disc.description || "\u2014"}
+                  </p>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="text-muted-foreground text-center py-8">
+              No changeset discussions found. Click Refresh Activity to fetch data.
+            </p>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 }

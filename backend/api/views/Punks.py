@@ -12,6 +12,7 @@ from flask import g, request, current_app
 from datetime import datetime
 from ..utils import requires_admin
 from ..database import db, Punk, PunkChangeset
+import json
 import requests as http_requests
 import xml.etree.ElementTree as ET
 
@@ -248,6 +249,14 @@ class PunkAPI(MethodView):
             ),
         }
 
+        # Parse cached discussions
+        discussions = []
+        if punk.cached_discussions:
+            try:
+                discussions = json.loads(punk.cached_discussions)
+            except Exception:
+                pass
+
         return {
             "status": 200,
             "punk": punk_info,
@@ -258,6 +267,7 @@ class PunkAPI(MethodView):
                 "totalChangesets": len(changeset_list),
                 "totalChanges": total_changes,
             },
+            "discussions": discussions,
         }
 
     # ─── Refresh punk activity ───────────────────────────
@@ -423,6 +433,34 @@ class PunkAPI(MethodView):
         )
         if last_active_row:
             punk.cached_last_active = last_active_row.created_at
+
+        # 6. Fetch discussion comments from neis-one RSS feed
+        discussions = []
+        if uid:
+            try:
+                disc_url = (
+                    f"https://resultmaps.neis-one.org/osm-discussion-comments.php"
+                    f"?uid={uid}&feed=yes"
+                )
+                disc_resp = http_requests.get(
+                    disc_url, headers=OSM_HEADERS, timeout=OSM_TIMEOUT
+                )
+                if disc_resp.status_code == 200:
+                    disc_root = ET.fromstring(disc_resp.content)
+                    channel = disc_root.find("channel")
+                    if channel is not None:
+                        for item in channel.findall("item"):
+                            discussions.append({
+                                "title": item.findtext("title", ""),
+                                "link": item.findtext("link", ""),
+                                "description": item.findtext("description", ""),
+                            })
+            except Exception as e:
+                current_app.logger.warning(
+                    f"Failed to fetch discussions for uid {uid}: {e}"
+                )
+
+        punk.cached_discussions = json.dumps(discussions) if discussions else None
 
         punk.cache_updated_at = datetime.utcnow()
         db.session.commit()
