@@ -29,7 +29,7 @@ def upgrade():
         sa.Column("cached_last_active", sa.DateTime(), nullable=True),
         sa.Column("cached_account_created", sa.DateTime(), nullable=True),
         sa.Column("cache_updated_at", sa.DateTime(), nullable=True),
-        sa.Column("deleted", sa.Boolean(), server_default="false"),
+        sa.Column("deleted_date", sa.DateTime(), nullable=True),
         sa.PrimaryKeyConstraint("id"),
         sa.UniqueConstraint("osm_username"),
     )
