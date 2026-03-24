@@ -838,7 +838,7 @@ class Punk(ModelWithSoftDeleteAndCRUD, SurrogatePK):
     tags = Column(MutableList.as_mutable(ARRAY(String(50))), nullable=True)
     added_by = db.Column(db.String(255), nullable=False)
     added_by_name = db.Column(db.String(200), nullable=True)
-    org_id = db.Column(db.String(255), nullable=False)
+    org_id = db.Column(db.String(255), nullable=True)
     created_at = db.Column(db.DateTime, default=func.now())
     cached_total_changesets = db.Column(db.Integer, nullable=True)
     cached_last_active = db.Column(db.DateTime, nullable=True)

@@ -23,7 +23,7 @@ def upgrade():
         sa.Column("tags", postgresql.ARRAY(sa.String(50)), nullable=True),
         sa.Column("added_by", sa.String(255), nullable=False),
         sa.Column("added_by_name", sa.String(200), nullable=True),
-        sa.Column("org_id", sa.String(255), nullable=False),
+        sa.Column("org_id", sa.String(255), nullable=True),
         sa.Column("created_at", sa.DateTime(), server_default=sa.func.now()),
         sa.Column("cached_total_changesets", sa.Integer(), nullable=True),
         sa.Column("cached_last_active", sa.DateTime(), nullable=True),
