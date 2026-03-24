@@ -46,7 +46,7 @@ class PunkAPI(MethodView):
         """Return all punks for the org with cached stats."""
         org_id = g.user.org_id
         punks = (
-            Punk.query.filter_by(org_id=org_id, deleted=False)
+            Punk.query.filter_by(org_id=org_id)
             .order_by(Punk.created_at.desc())
             .all()
         )
@@ -89,7 +89,7 @@ class PunkAPI(MethodView):
             return {"message": "osm_username is required", "status": 400}
 
         # Check for duplicate
-        existing = Punk.query.filter_by(osm_username=osm_username, deleted=False).first()
+        existing = Punk.query.filter_by(osm_username=osm_username).first()
         if existing:
             return {"message": f"'{osm_username}' is already on the watchlist", "status": 400}
 
@@ -132,7 +132,7 @@ class PunkAPI(MethodView):
             return {"message": "punk_id is required", "status": 400}
 
         punk = Punk.query.get(punk_id)
-        if not punk or punk.deleted:
+        if not punk:
             return {"message": "Punk not found", "status": 404}
 
         updates = {}
@@ -178,7 +178,7 @@ class PunkAPI(MethodView):
             return {"message": "punk_id is required", "status": 400}
 
         punk = Punk.query.get(punk_id)
-        if not punk or punk.deleted:
+        if not punk:
             return {"message": "Punk not found", "status": 404}
 
         changesets = (
@@ -271,7 +271,7 @@ class PunkAPI(MethodView):
             return {"message": "punk_id is required", "status": 400}
 
         punk = Punk.query.get(punk_id)
-        if not punk or punk.deleted:
+        if not punk:
             return {"message": "Punk not found", "status": 404}
 
         try:
