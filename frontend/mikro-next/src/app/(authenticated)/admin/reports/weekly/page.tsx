@@ -352,7 +352,7 @@ function SectionHeader({
 export default function WeeklyReportBuilderPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { addToast } = useToastActions();
+  const toast = useToastActions();
 
   // Date defaults: last 7 days
   const defaultEnd = new Date();
@@ -424,7 +424,7 @@ export default function WeeklyReportBuilderPage() {
           hydrateDraft(result.draft);
         }
       }).catch(() => {
-        addToast("Failed to load draft", "error");
+        toast.error("Failed to load draft");
       });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -466,11 +466,11 @@ export default function WeeklyReportBuilderPage() {
       });
       if (result?.id) {
         setDraftId(result.id);
-        addToast("Draft saved", "success");
+        toast.success("Draft saved");
         refetchDrafts();
       }
     } catch {
-      addToast("Failed to save draft", "error");
+      toast.error("Failed to save draft");
     } finally {
       setSaving(false);
     }
@@ -480,7 +480,7 @@ export default function WeeklyReportBuilderPage() {
   const handleDelete = async (id: number) => {
     try {
       await deleteDraft({ id });
-      addToast("Draft deleted", "success");
+      toast.success("Draft deleted");
       refetchDrafts();
       if (id === draftId) {
         setDraftId(null);
@@ -488,7 +488,7 @@ export default function WeeklyReportBuilderPage() {
         setSections(getDefaultSections());
       }
     } catch {
-      addToast("Failed to delete draft", "error");
+      toast.error("Failed to delete draft");
     }
   };
 
@@ -946,7 +946,7 @@ export default function WeeklyReportBuilderPage() {
                         onClick={() => {
                           hydrateDraft(d);
                           setShowDraftsList(false);
-                          addToast("Draft loaded", "success");
+                          toast.success("Draft loaded");
                         }}
                         className="text-xs text-blue-600 hover:underline"
                       >
