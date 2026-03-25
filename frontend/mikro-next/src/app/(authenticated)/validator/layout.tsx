@@ -43,15 +43,17 @@ export default async function ValidatorLayout({
   let role = "user";
   try {
     const tokenResponse = await auth0.getAccessToken();
-    if (tokenResponse?.token) {
-      const userInfo = {
-        name: session.user?.name,
-        email: session.user?.email,
-      };
-      role = await getUserRole(tokenResponse.token, userInfo);
+    if (!tokenResponse?.token) {
+      redirect("/auth/login");
     }
+    const userInfo = {
+      name: session.user?.name,
+      email: session.user?.email,
+    };
+    role = await getUserRole(tokenResponse.token, userInfo);
   } catch {
-    // Default to user if can't get role
+    // Token retrieval failed — session expired, force re-login
+    redirect("/auth/login");
   }
 
   // Validator or admin can access validator routes

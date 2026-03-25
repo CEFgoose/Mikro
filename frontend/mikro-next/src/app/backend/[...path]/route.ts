@@ -27,16 +27,17 @@ async function handleRequest(
 
     const backendUrl = `${BACKEND_URL}/api/${backendPath}${queryString}`;
 
-    // Get the access token from session
+    // Get the access token from session — if missing/expired, reject immediately
     const accessToken = session.tokenSet?.accessToken;
+
+    if (!accessToken) {
+      return NextResponse.json({ error: "Access token expired" }, { status: 401 });
+    }
 
     const headers: HeadersInit = {
       "Content-Type": "application/json",
+      "Authorization": `Bearer ${accessToken}`,
     };
-
-    if (accessToken) {
-      headers["Authorization"] = `Bearer ${accessToken}`;
-    }
 
     const body = request.method !== "GET" ? await request.text() : undefined;
 

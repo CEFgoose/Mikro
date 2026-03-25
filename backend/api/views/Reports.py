@@ -5,6 +5,7 @@ Reports API endpoints for Mikro.
 Handles editing statistics and timekeeping reports for admin dashboards.
 """
 
+import logging
 import xml.etree.ElementTree as ET
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
@@ -13,6 +14,8 @@ from flask.views import MethodView
 from flask import g, request, current_app
 from datetime import datetime, timedelta
 from sqlalchemy import func
+
+logger = logging.getLogger(__name__)
 
 from ..utils import requires_admin
 from ..database import db, Task, Project, User, TimeEntry, TeamUser, SyncJob, ElementAnalysisCache
@@ -904,6 +907,9 @@ class ReportsAPI(MethodView):
             }
 
         # Fetch changesets from OSM API for each username concurrently
+        # NOTE: _fetch_user_heatmap runs in a thread pool, so we cannot use
+        # current_app.logger inside it (Flask app context is not available).
+        # Use the module-level logger instead.
         def _fetch_user_heatmap(username):
             """Fetch changeset list for one user and extract centroids."""
             osm_url = "https://api.openstreetmap.org/api/0.6/changesets"
@@ -915,12 +921,12 @@ class ReportsAPI(MethodView):
             try:
                 resp = http_requests.get(osm_url, params=params, timeout=30)
                 if not resp.ok:
-                    current_app.logger.warning(
+                    logger.warning(
                         f"OSM API error for {username}: {resp.status_code}"
                     )
                     return username, [], 0, 0
             except http_requests.RequestException as e:
-                current_app.logger.warning(
+                logger.warning(
                     f"OSM API request failed for {username}: {e}"
                 )
                 return username, [], 0, 0
@@ -928,7 +934,7 @@ class ReportsAPI(MethodView):
             try:
                 root = ET.fromstring(resp.text)
             except ET.ParseError:
-                current_app.logger.warning(
+                logger.warning(
                     f"Failed to parse OSM XML for {username}"
                 )
                 return username, [], 0, 0
@@ -1184,8 +1190,7 @@ class ReportsAPI(MethodView):
         start_iso = start_dt.strftime("%Y-%m-%dT00:00:00Z")
         end_iso = end_dt.strftime("%Y-%m-%dT23:59:59Z")
 
-        # Capture these before spawning threads (threads lack Flask app context)
-        logger = current_app.logger
+        # NOTE: threads lack Flask app context — use module-level logger
 
         def fetch_user_images(user):
             """Fetch all Mapillary images for a single user."""

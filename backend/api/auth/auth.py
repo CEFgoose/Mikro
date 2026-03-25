@@ -7,11 +7,16 @@ Pattern adapted from Viewer application.
 
 import json
 import os
+import time as _time
 from urllib.request import urlopen
 
 from flask import request, jsonify, g, current_app
 from jose import jwt
 import requests
+
+# In-memory JWKS cache (shared across requests in the same process)
+_jwks_cache = {"data": None, "fetched_at": 0}
+_JWKS_CACHE_TTL = 3600  # 1 hour
 
 
 class AuthError(Exception):
@@ -112,9 +117,17 @@ def authenticate_request():
 
         token = get_token_auth_header()
 
-        # Fetch JWKS from Auth0
-        jsonurl = urlopen(f"https://{auth0_domain}/.well-known/jwks.json")
-        jwks = json.loads(jsonurl.read())
+        # Fetch JWKS from Auth0 (cached with TTL)
+        now = _time.time()
+        if _jwks_cache["data"] and (now - _jwks_cache["fetched_at"]) < _JWKS_CACHE_TTL:
+            jwks = _jwks_cache["data"]
+        else:
+            jsonurl = urlopen(
+                f"https://{auth0_domain}/.well-known/jwks.json", timeout=5
+            )
+            jwks = json.loads(jsonurl.read())
+            _jwks_cache["data"] = jwks
+            _jwks_cache["fetched_at"] = now
 
         # Get the unverified header to find the key ID
         unverified_header = jwt.get_unverified_header(token)

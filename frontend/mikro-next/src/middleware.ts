@@ -12,7 +12,7 @@ export default async function proxy(request: NextRequest) {
   }
 
   // Public routes - pass through with auth cookies maintained
-  const publicRoutes = ["/", "/unauthorized"];
+  const publicRoutes = ["/"];
   const isPublicRoute = publicRoutes.some(
     (route) => request.nextUrl.pathname === route
   );

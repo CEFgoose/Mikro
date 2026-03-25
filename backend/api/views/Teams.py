@@ -229,7 +229,7 @@ class TeamAPI(MethodView):
 
     @requires_admin
     def assign_team_member(self):
-        """Add a user to a team (idempotent)."""
+        """Add a user to a team (idempotent). Also assigns the user to all projects the team has."""
         if not g.user:
             return {"message": "Missing user info", "status": 304}
 
@@ -251,7 +251,22 @@ class TeamAPI(MethodView):
         if not existing:
             TeamUser.create(team_id=team_id, user_id=user_id)
 
-        return {"message": "User assigned to team", "status": 200}
+        # Cascade: assign user to all projects this team already has
+        team_projects = ProjectTeam.query.filter_by(team_id=team_id).all()
+        projects_assigned = 0
+        for tp in team_projects:
+            existing_pu = ProjectUser.query.filter_by(
+                user_id=user_id, project_id=tp.project_id
+            ).first()
+            if not existing_pu:
+                ProjectUser.create(user_id=user_id, project_id=tp.project_id)
+                projects_assigned += 1
+
+        return {
+            "message": "User assigned to team",
+            "projects_assigned": projects_assigned,
+            "status": 200,
+        }
 
     @requires_admin
     def unassign_team_member(self):

@@ -56,18 +56,21 @@ export default async function AuthenticatedLayout({
   let paymentsVisible = false;
   try {
     const tokenResponse = await auth0.getAccessToken();
-    if (tokenResponse?.token) {
-      // Pass user info from session to backend for syncing
-      const userInfo = {
-        name: session.user?.name,
-        email: session.user?.email,
-      };
-      const syncResult = await syncUserWithBackend(tokenResponse.token, userInfo);
-      role = syncResult.role;
-      paymentsVisible = syncResult.paymentsVisible;
+    if (!tokenResponse?.token) {
+      // No valid access token — session is stale, force re-login
+      redirect("/auth/login");
     }
-  } catch (error) {
-    console.error("Error getting access token for user sync:", error);
+    // Pass user info from session to backend for syncing
+    const userInfo = {
+      name: session.user?.name,
+      email: session.user?.email,
+    };
+    const syncResult = await syncUserWithBackend(tokenResponse.token, userInfo);
+    role = syncResult.role;
+    paymentsVisible = syncResult.paymentsVisible;
+  } catch {
+    // Token retrieval failed — session expired, force re-login
+    redirect("/auth/login");
   }
 
   // Admins always see payments

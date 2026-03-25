@@ -65,6 +65,12 @@ export function useApiCall<T>(
           body: JSON.stringify(overrideBody || options?.body || {}),
         });
 
+        // Auth failure — force re-login immediately
+        if (response.status === 401) {
+          window.location.href = "/auth/login";
+          return undefined as unknown as T;
+        }
+
         const result = await response.json();
 
         if (result.status === 200 || response.ok) {
@@ -195,6 +201,12 @@ export function useApiMutation<TResponse = { message: string; status: number }>(
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(body),
         });
+
+        // Auth failure — force re-login immediately
+        if (response.status === 401) {
+          window.location.href = "/auth/login";
+          return undefined as unknown as TResponse;
+        }
 
         const result = await response.json();
 
@@ -667,6 +679,12 @@ export function useExportTimeEntries() {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(params),
         });
+
+        // Auth failure — force re-login immediately
+        if (response.status === 401) {
+          window.location.href = "/auth/login";
+          return;
+        }
 
         if (!response.ok) {
           // Try to parse error JSON from the response body
