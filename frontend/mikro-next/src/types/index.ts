@@ -900,6 +900,25 @@ export interface PunkDetailResponse {
   status: number;
 }
 
+// Weekly Report types
+export interface WeeklyReportDraft {
+  id: number;
+  title: string;
+  report_date: string;
+  start_date: string;
+  end_date: string;
+  sections: string; // JSON string
+  status: string;
+  created_by: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface WeeklyReportDraftsResponse {
+  drafts: WeeklyReportDraft[];
+  status: number;
+}
+
 // API Response types
 export interface ApiResponse<T = unknown> {
   data?: T;

@@ -37,6 +37,7 @@ from .core import (
     ElementAnalysisCache,
     Punk,
     PunkChangeset,
+    WeeklyReport,
 )
 
 __all__ = [
@@ -77,4 +78,5 @@ __all__ = [
     "ElementAnalysisCache",
     "Punk",
     "PunkChangeset",
+    "WeeklyReport",
 ]

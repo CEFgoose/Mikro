@@ -605,6 +605,12 @@ export default function AdminReportsPage() {
             </span>
           )}
           <button
+            onClick={() => router.push("/admin/reports/weekly")}
+            className="inline-flex items-center px-3 py-1.5 rounded-lg bg-blue-600 text-white text-sm font-medium hover:bg-blue-700 transition-colors"
+          >
+            Build Weekly Report
+          </button>
+          <button
             onClick={() => fetchData()}
             disabled={editingLoading || mrLoading || timekeepingLoading}
             className="inline-flex items-center px-3 py-1.5 rounded-lg bg-kaart-orange text-white text-sm font-medium hover:bg-kaart-orange-dark transition-colors disabled:opacity-50"

@@ -37,6 +37,8 @@ import type {
   ProjectProfileResponse,
   PunksResponse,
   PunkDetailResponse,
+  WeeklyReportDraft,
+  WeeklyReportDraftsResponse,
 } from "@/types";
 
 /**
@@ -982,4 +984,18 @@ export function usePunkDetail() {
 }
 export function useRefreshPunkActivity() {
   return useApiMutation("/punk/refresh_punk_activity");
+}
+
+// Weekly Reports
+export function useSaveWeeklyReport() {
+  return useApiMutation<{ message: string; id: number; status: number }>("/weeklyreport/save_draft");
+}
+export function useFetchWeeklyDrafts() {
+  return useApiCall<WeeklyReportDraftsResponse>("/weeklyreport/fetch_drafts");
+}
+export function useFetchWeeklyDraft() {
+  return useApiMutation<{ draft: WeeklyReportDraft; status: number }>("/weeklyreport/fetch_draft");
+}
+export function useDeleteWeeklyDraft() {
+  return useApiMutation<{ message: string; status: number }>("/weeklyreport/delete_draft");
 }
