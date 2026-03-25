@@ -189,17 +189,6 @@ export function TimeTrackingWidget({
     }
   }, [clockOut]);
 
-  // Handle task selection for project-based topics
-  const handleProjectTaskSelect = useCallback(
-    (projectId: string) => {
-      const project = projects.find((p) => p.id.toString() === projectId);
-      setTaskRefType("project");
-      setTaskRefId(project ? project.id : null);
-      setTaskName(project ? project.name : "");
-    },
-    [projects]
-  );
-
   // Handle task selection for training
   const handleTrainingSelect = useCallback(
     (trainingId: string) => {
@@ -278,17 +267,9 @@ export function TimeTrackingWidget({
   const renderTaskSelector = () => {
     if (!selectedTopic) return null;
 
-    // Project-based topics
+    // Project-based topics — no task selector needed, project already selected above
     if (["editing", "validating", "qc_review"].includes(selectedTopic)) {
-      return (
-        <Select
-          label="Task (Project)"
-          options={projectOptions}
-          value={taskRefId ? taskRefId.toString() : ""}
-          onChange={handleProjectTaskSelect}
-          placeholder="Select a project (optional)"
-        />
-      );
+      return null;
     }
 
     // Training
