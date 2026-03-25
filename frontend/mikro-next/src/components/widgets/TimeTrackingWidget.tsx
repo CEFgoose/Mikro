@@ -66,7 +66,9 @@ export function TimeTrackingWidget({
     refetch: fetchTrainings,
   } = useApiCall<{
     status: number;
-    trainings: Array<{ id: number; title: string }>;
+    mapping_trainings: Array<{ id: number; title: string }>;
+    validation_trainings: Array<{ id: number; title: string }>;
+    project_trainings: Array<{ id: number; title: string }>;
   }>("/training/fetch_user_trainings", { immediate: false });
 
   const {
@@ -74,7 +76,8 @@ export function TimeTrackingWidget({
     refetch: fetchChecklists,
   } = useApiCall<{
     status: number;
-    active_checklists: Array<{ id: number; name: string }>;
+    user_started_checklists: Array<{ id: number; name: string }>;
+    user_available_checklists: Array<{ id: number; name: string }>;
   }>("/checklist/fetch_user_checklists", { immediate: false });
 
   const { data: customTopicsData } = useCustomTopics();
@@ -192,7 +195,12 @@ export function TimeTrackingWidget({
   // Handle task selection for training
   const handleTrainingSelect = useCallback(
     (trainingId: string) => {
-      const training = trainingData?.trainings?.find(
+      const allTrainings = [
+        ...(trainingData?.mapping_trainings || []),
+        ...(trainingData?.validation_trainings || []),
+        ...(trainingData?.project_trainings || []),
+      ];
+      const training = allTrainings.find(
         (t) => t.id.toString() === trainingId
       );
       setTaskRefType("training");
@@ -205,7 +213,11 @@ export function TimeTrackingWidget({
   // Handle task selection for checklist
   const handleChecklistSelect = useCallback(
     (checklistId: string) => {
-      const checklist = checklistData?.active_checklists?.find(
+      const allChecklists = [
+        ...(checklistData?.user_started_checklists || []),
+        ...(checklistData?.user_available_checklists || []),
+      ];
+      const checklist = allChecklists.find(
         (c) => c.id.toString() === checklistId
       );
       setTaskRefType("checklist");
@@ -241,16 +253,19 @@ export function TimeTrackingWidget({
     label: p.name,
   }));
 
-  const trainingOptions: SelectOption[] = (trainingData?.trainings || []).map(
-    (t) => ({
-      value: t.id.toString(),
-      label: t.title,
-    })
-  );
+  const trainingOptions: SelectOption[] = [
+    ...(trainingData?.mapping_trainings || []),
+    ...(trainingData?.validation_trainings || []),
+    ...(trainingData?.project_trainings || []),
+  ].map((t) => ({
+    value: t.id.toString(),
+    label: t.title,
+  }));
 
-  const checklistOptions: SelectOption[] = (
-    checklistData?.active_checklists || []
-  ).map((c) => ({
+  const checklistOptions: SelectOption[] = [
+    ...(checklistData?.user_started_checklists || []),
+    ...(checklistData?.user_available_checklists || []),
+  ].map((c) => ({
     value: c.id.toString(),
     label: c.name,
   }));
