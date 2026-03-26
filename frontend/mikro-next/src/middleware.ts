@@ -28,6 +28,14 @@ export default async function proxy(request: NextRequest) {
     return NextResponse.redirect(`${origin}/auth/login`);
   }
 
+  // Check if access token is expired — getSession() returns stale sessions,
+  // so users see the app "logged in" but all API calls fail
+  const expiresAt = session.tokenSet?.expiresAt;
+  if (expiresAt && expiresAt < Math.floor(Date.now() / 1000)) {
+    const { origin } = new URL(request.url);
+    return NextResponse.redirect(`${origin}/auth/login`);
+  }
+
   return authRes;
 }
 
