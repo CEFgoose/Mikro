@@ -125,6 +125,7 @@ def _register_views(app):
         PunkAPI,
         WeeklyReportAPI,
         FriendAPI,
+        CommunityDataAPI,
     )
 
     # Authentication
@@ -186,6 +187,12 @@ def _register_views(app):
 
     # Friends List
     app.add_url_rule("/api/friend/<path>", view_func=FriendAPI.as_view("friend"))
+
+    # Community Data
+    app.add_url_rule(
+        "/api/community/<path>",
+        view_func=CommunityDataAPI.as_view("community"),
+    )
 
 
 # Create application instance for gunicorn

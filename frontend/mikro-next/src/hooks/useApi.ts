@@ -41,6 +41,8 @@ import type {
   FriendDetailResponse,
   WeeklyReportDraft,
   WeeklyReportDraftsResponse,
+  CommunityEntriesResponse,
+  CommunitySheetConfigResponse,
 } from "@/types";
 
 /**
@@ -1026,4 +1028,18 @@ export function useFetchWeeklyDraft() {
 }
 export function useDeleteWeeklyDraft() {
   return useApiMutation<{ message: string; status: number }>("/weeklyreport/delete_draft");
+}
+
+// Community Data
+export function useSyncCommunitySheet() {
+  return useApiMutation<{ message: string; synced: number; skipped: number; total: number; status: number }>("/community/sync_from_sheet");
+}
+export function useFetchCommunityEntries() {
+  return useApiMutation<CommunityEntriesResponse>("/community/fetch_entries");
+}
+export function useUpdateCommunityEntry() {
+  return useApiMutation("/community/update_entry");
+}
+export function useFetchSheetConfig() {
+  return useApiCall<CommunitySheetConfigResponse>("/community/fetch_sheet_config");
 }

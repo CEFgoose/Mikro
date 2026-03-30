@@ -958,3 +958,26 @@ class WeeklyReport(CRUDMixin, db.Model):
 
     def __repr__(self):
         return f"<WeeklyReport {self.id} title={self.title} status={self.status}>"
+
+
+class CommunityEntry(CRUDMixin, db.Model):
+    """Community update entry synced from Google Sheets or entered manually."""
+
+    __tablename__ = "community_entries"
+
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    org_id = db.Column(db.String(255), nullable=True, index=True)
+    sheet_row_index = db.Column(db.Integer, nullable=True)
+    entry_type = db.Column(
+        db.String(50), nullable=False, default="outreach", server_default="outreach"
+    )
+    submitted_at = db.Column(db.DateTime, nullable=True)
+    original_data = db.Column(db.Text, nullable=True)
+    edited_data = db.Column(db.Text, nullable=True)
+    is_edited = db.Column(db.Boolean, default=False, server_default="False")
+    submitted_by = db.Column(db.String(255), nullable=True)
+    created_at = db.Column(db.DateTime, default=func.now())
+    updated_at = db.Column(db.DateTime, default=func.now(), onupdate=func.now())
+
+    def __repr__(self):
+        return f"<CommunityEntry {self.id} type={self.entry_type}>"

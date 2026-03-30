@@ -40,6 +40,7 @@ from .core import (
     Friend,
     FriendChangeset,
     WeeklyReport,
+    CommunityEntry,
 )
 
 __all__ = [
@@ -83,4 +84,5 @@ __all__ = [
     "Friend",
     "FriendChangeset",
     "WeeklyReport",
+    "CommunityEntry",
 ]

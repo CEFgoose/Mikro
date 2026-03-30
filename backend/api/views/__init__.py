@@ -16,6 +16,7 @@ from .Webhook import WebhookAPI
 from .Punks import PunkAPI
 from .WeeklyReport import WeeklyReportAPI
 from .Friends import FriendAPI
+from .CommunityData import CommunityDataAPI
 
 __all__ = {
     "UserAPI",
@@ -34,4 +35,5 @@ __all__ = {
     "PunkAPI",
     "WeeklyReportAPI",
     "FriendAPI",
+    "CommunityDataAPI",
 }

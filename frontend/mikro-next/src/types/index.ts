@@ -972,6 +972,34 @@ export interface WeeklyReportDraftsResponse {
   status: number;
 }
 
+// Community Data types
+export interface CommunityEntry {
+  id: number;
+  entry_type: string;
+  submitted_at: string | null;
+  original_data: Record<string, string>;
+  edited_data: Record<string, string> | null;
+  is_edited: boolean;
+  submitted_by: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CommunityEntriesResponse {
+  entries: CommunityEntry[];
+  headers: string[];
+  status: number;
+}
+
+export interface CommunitySheetConfigResponse {
+  configured: boolean;
+  tab_name: string;
+  last_synced: string | null;
+  headers: string[];
+  total_entries: number;
+  status: number;
+}
+
 // API Response types
 export interface ApiResponse<T = unknown> {
   data?: T;

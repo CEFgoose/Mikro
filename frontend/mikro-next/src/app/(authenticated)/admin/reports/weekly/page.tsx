@@ -18,6 +18,8 @@ import {
   useFetchElementAnalysis,
   useOrgProjects,
   useFetchTeams,
+  useSyncCommunitySheet,
+  useFetchCommunityEntries,
 } from "@/hooks/useApi";
 import type {
   TimekeepingStatsResponse,
@@ -25,6 +27,7 @@ import type {
   ProjectsResponse,
   WeeklyReportDraft,
   TeamsResponse,
+  CommunityEntry,
 } from "@/types";
 import {
   BarChart,
@@ -383,6 +386,8 @@ export default function WeeklyReportBuilderPage() {
   const { mutate: fetchElements, loading: elemLoading } = useFetchElementAnalysis();
   const { data: projectsData } = useOrgProjects();
   const { data: teamsData } = useFetchTeams();
+  const { mutate: syncSheet, loading: syncLoading } = useSyncCommunitySheet();
+  const { mutate: fetchCommunityEntries } = useFetchCommunityEntries();
 
   // Auto-fetched data storage
   const [timekeepingData, setTimekeepingData] = useState<TimekeepingStatsResponse | null>(null);
@@ -520,6 +525,45 @@ export default function WeeklyReportBuilderPage() {
       }
     } catch {
       toast.error("Failed to delete draft");
+    }
+  };
+
+  // ── Pull community data from Google Sheet ──
+  const handlePullCommunityData = async (sectionType: "community_outreach" | "community_discussions" | "investigations") => {
+    try {
+      const result = await fetchCommunityEntries({
+        startDate,
+        endDate,
+        entryType: sectionType === "community_outreach" ? "outreach" : sectionType === "community_discussions" ? "discussion" : "investigation",
+      });
+      if (result?.entries && result.entries.length > 0) {
+        const rows = result.entries.map((entry: CommunityEntry) => {
+          const data = entry.edited_data || entry.original_data;
+          // Map sheet columns to table row format — use whatever keys exist
+          const row: ManualTableRow = {};
+          Object.entries(data).forEach(([key, value]) => {
+            row[key] = value || "";
+          });
+          return row;
+        });
+        updateSection(sectionType, { rows });
+        toast.success(`Pulled ${result.entries.length} entries from sheet`);
+      } else {
+        toast.info("No entries found for this date range");
+      }
+    } catch {
+      toast.error("Failed to fetch community data");
+    }
+  };
+
+  const handleSyncSheet = async () => {
+    try {
+      const result = await syncSheet({});
+      if (result?.synced !== undefined) {
+        toast.success(`Synced ${result.synced} new entries (${result.skipped} already imported)`);
+      }
+    } catch {
+      toast.error("Failed to sync from Google Sheet");
     }
   };
 
@@ -844,9 +888,26 @@ export default function WeeklyReportBuilderPage() {
       case "community_outreach":
         return (
           <div>
-            <p className="text-xs text-muted-foreground mb-2">
-              Manual entry: Location, User/Org, Event, Date, Status, Attendees, Notes
-            </p>
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-xs text-muted-foreground">
+                Location, User/Org, Event, Date, Status, Attendees, Notes
+              </p>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={handleSyncSheet}
+                  disabled={syncLoading}
+                  className="text-xs px-2 py-1 rounded bg-blue-100 text-blue-700 hover:bg-blue-200 transition-colors disabled:opacity-50"
+                >
+                  {syncLoading ? "Syncing..." : "Sync Sheet"}
+                </button>
+                <button
+                  onClick={() => handlePullCommunityData("community_outreach")}
+                  className="text-xs px-2 py-1 rounded bg-green-100 text-green-700 hover:bg-green-200 transition-colors"
+                >
+                  Pull from Sheet
+                </button>
+              </div>
+            </div>
             <EditableTable
               columns={[
                 { key: "location", label: "Location" },
@@ -866,9 +927,17 @@ export default function WeeklyReportBuilderPage() {
       case "community_discussions":
         return (
           <div>
-            <p className="text-xs text-muted-foreground mb-2">
-              Manual entry: Location, User/Org, Interaction, Date, Channel/Link, Status, Key Participants, Notes
-            </p>
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-xs text-muted-foreground">
+                Location, User/Org, Interaction, Date, Channel/Link, Status, Key Participants, Notes
+              </p>
+              <button
+                onClick={() => handlePullCommunityData("community_discussions")}
+                className="text-xs px-2 py-1 rounded bg-green-100 text-green-700 hover:bg-green-200 transition-colors"
+              >
+                Pull from Sheet
+              </button>
+            </div>
             <EditableTable
               columns={[
                 { key: "location", label: "Location" },
@@ -889,9 +958,17 @@ export default function WeeklyReportBuilderPage() {
       case "investigations":
         return (
           <div>
-            <p className="text-xs text-muted-foreground mb-2">
-              Manual entry for investigations
-            </p>
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-xs text-muted-foreground">
+                Investigations
+              </p>
+              <button
+                onClick={() => handlePullCommunityData("investigations")}
+                className="text-xs px-2 py-1 rounded bg-green-100 text-green-700 hover:bg-green-200 transition-colors"
+              >
+                Pull from Sheet
+              </button>
+            </div>
             <EditableTable
               columns={[
                 { key: "location", label: "Location" },

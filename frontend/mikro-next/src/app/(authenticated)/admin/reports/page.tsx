@@ -23,6 +23,8 @@ import {
   useQueueElementAnalysis,
   useCheckElementAnalysisStatus,
   useFetchMapillaryStats,
+  useSyncCommunitySheet,
+  useFetchCommunityEntries,
 } from "@/hooks/useApi";
 import { useFilters } from "@/hooks";
 import { FilterBar } from "@/components/filters";
@@ -32,6 +34,7 @@ import type {
   ChangesetHeatmapResponse,
   ElementAnalysisCategory,
   MapillaryStatsResponse,
+  CommunityEntry,
 } from "@/types";
 import {
   BarChart,
@@ -449,6 +452,10 @@ export default function AdminReportsPage() {
   const { mutate: queueElementAnalysis } = useQueueElementAnalysis();
   const { mutate: checkElementAnalysisStatus } = useCheckElementAnalysisStatus();
   const { mutate: fetchMapillaryStats } = useFetchMapillaryStats();
+  const { mutate: syncCommunitySheet, loading: communitySyncLoading } = useSyncCommunitySheet();
+  const { mutate: fetchCommunityEntries } = useFetchCommunityEntries();
+  const [communityEntries, setCommunityEntries] = useState<CommunityEntry[]>([]);
+  const [communityLoading, setCommunityLoading] = useState(false);
 
   // ── Data Fetching ────────────────────────────────────────
   const fetchData = useCallback(async () => {
@@ -1330,167 +1337,133 @@ export default function AdminReportsPage() {
         {/* ═══════ COMMUNITY TAB ═══════ */}
         <TabsContent value="community">
           <div className="space-y-6">
-            <p className="text-xs text-muted-foreground">
-              Sample data — pending community data source integration
-            </p>
-
-            {/* Stat Cards Row */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <Card className="bg-gray-800 text-white">
-                <CardContent className="p-6">
-                  <p className="text-sm text-gray-300 font-medium mb-1">
-                    Community Interactions
-                  </p>
-                  <p className="text-xl font-bold">
-                    3 Events; 4 Interactions
-                  </p>
-                  <div className="flex gap-4 mt-3">
-                    <span className="text-xs text-gray-400">
-                      Weekly totals +0%
-                    </span>
-                    <span className="text-xs text-green-400">
-                      Weekly Delta +97%
-                    </span>
-                  </div>
-                </CardContent>
-              </Card>
-              <Card className="bg-gray-800 text-white">
-                <CardContent className="p-6">
-                  <p className="text-sm text-gray-300 font-medium mb-1">
-                    Event Participants
-                  </p>
-                  <p className="text-xl font-bold">
-                    15 New; 10 Return
-                  </p>
-                  <p className="text-lg font-semibold text-gray-200">
-                    25 Total
-                  </p>
-                  <div className="flex gap-4 mt-3">
-                    <span className="text-xs text-gray-400">
-                      Weekly totals +0%
-                    </span>
-                    <span className="text-xs text-green-400">
-                      Weekly Delta +97%
-                    </span>
-                  </div>
-                </CardContent>
-              </Card>
+            {/* Header with sync controls */}
+            <div className="flex items-center justify-between">
+              <p className="text-xs text-muted-foreground">
+                {communityEntries.length > 0
+                  ? `${communityEntries.length} entries synced from Google Sheet`
+                  : "No community data synced yet — click Sync to pull from Google Sheet"}
+              </p>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={async () => {
+                    try {
+                      await syncCommunitySheet({});
+                      // Re-fetch entries after sync
+                      setCommunityLoading(true);
+                      const result = await fetchCommunityEntries({});
+                      if (result?.entries) setCommunityEntries(result.entries);
+                      setCommunityLoading(false);
+                    } catch {
+                      setCommunityLoading(false);
+                    }
+                  }}
+                  disabled={communitySyncLoading}
+                  className="px-3 py-1.5 rounded-lg bg-blue-600 text-white text-sm font-medium hover:bg-blue-700 transition-colors disabled:opacity-50"
+                >
+                  {communitySyncLoading ? "Syncing..." : "Sync from Sheet"}
+                </button>
+                <button
+                  onClick={async () => {
+                    setCommunityLoading(true);
+                    try {
+                      const result = await fetchCommunityEntries({});
+                      if (result?.entries) setCommunityEntries(result.entries);
+                    } catch { /* ignore */ }
+                    setCommunityLoading(false);
+                  }}
+                  disabled={communityLoading}
+                  className="px-3 py-1.5 rounded-lg bg-muted text-sm font-medium hover:bg-muted/80 transition-colors disabled:opacity-50"
+                >
+                  {communityLoading ? "Loading..." : "Refresh"}
+                </button>
+              </div>
             </div>
 
-            {/* Event Summation Log */}
-            <Card className="bg-gray-800">
+            {/* Stat Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <StatCard
+                label="Total Entries"
+                value={communityEntries.length}
+              />
+              <StatCard
+                label="Edited"
+                value={communityEntries.filter((e) => e.is_edited).length}
+              />
+              <StatCard
+                label="Entry Types"
+                value={[...new Set(communityEntries.map((e) => e.entry_type))].length}
+              />
+            </div>
+
+            {/* Entries Table */}
+            <Card>
               <CardHeader>
-                <CardTitle className="text-white">
-                  Event Summation Log
-                </CardTitle>
+                <CardTitle className="text-base">Community Entries</CardTitle>
               </CardHeader>
-              <CardContent className="p-0">
-                <div className="divide-y divide-gray-700">
-                  {MOCK_COMMUNITY_EVENTS.map((event) => {
-                    const isExpanded = expandedEvents.has(event.id);
-                    return (
-                      <div key={event.id}>
+              <CardContent>
+                {communityEntries.length > 0 ? (
+                  <div className="space-y-2" style={{ maxHeight: 600, overflowY: "auto" }}>
+                    {communityEntries.map((entry) => {
+                      const data = entry.edited_data || entry.original_data;
+                      const isExpanded = expandedEvents.has(entry.id);
+                      return (
                         <div
-                          className="flex items-center gap-3 px-6 py-4 cursor-pointer hover:bg-gray-700/50 transition-colors"
-                          onClick={() => {
-                            const next = new Set(expandedEvents);
-                            if (isExpanded) next.delete(event.id);
-                            else next.add(event.id);
-                            setExpandedEvents(next);
-                          }}
+                          key={entry.id}
+                          className={`border rounded-lg p-3 ${entry.is_edited ? "border-l-4 border-l-blue-500" : "border-border"}`}
                         >
-                          <span className="text-gray-400 text-sm w-4">
-                            {isExpanded ? "\u25BC" : "\u25B6"}
-                          </span>
-                          <span className="text-white font-medium flex-1 text-sm">
-                            {event.title}
-                          </span>
-                          <div className="flex gap-1.5">
-                            {event.categories.map((cat) => (
-                              <CategoryBadge key={cat} label={cat} />
-                            ))}
+                          <div
+                            className="flex items-center justify-between cursor-pointer"
+                            onClick={() => {
+                              const next = new Set(expandedEvents);
+                              if (isExpanded) next.delete(entry.id);
+                              else next.add(entry.id);
+                              setExpandedEvents(next);
+                            }}
+                          >
+                            <div className="flex items-center gap-2">
+                              <span className="text-muted-foreground text-xs">
+                                {isExpanded ? "\u25BC" : "\u25B6"}
+                              </span>
+                              <span className="text-sm font-medium">
+                                {Object.values(data)[1] || Object.values(data)[0] || "Entry"}
+                              </span>
+                              <span className="text-xs bg-muted px-2 py-0.5 rounded">
+                                {entry.entry_type}
+                              </span>
+                              {entry.is_edited && (
+                                <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded">
+                                  Edited
+                                </span>
+                              )}
+                            </div>
+                            <span className="text-xs text-muted-foreground">
+                              {entry.submitted_at
+                                ? new Date(entry.submitted_at).toLocaleDateString()
+                                : "No date"}
+                            </span>
                           </div>
-                          <button className="px-3 py-1 text-xs font-medium text-kaart-orange border border-kaart-orange rounded hover:bg-kaart-orange hover:text-white transition-colors">
-                            Edit
-                          </button>
-                        </div>
-                        {isExpanded && (
-                          <div className="px-14 pb-4 text-gray-300">
-                            <p className="text-sm mb-3">
-                              {event.summary}
-                            </p>
-                            <div className="bg-gray-900 rounded-lg p-3 inline-block">
-                              <p className="text-xs font-semibold text-gray-200 mb-1">
-                                Participants:
-                              </p>
-                              <div className="text-xs text-gray-400 space-y-0.5">
-                                <p>
-                                  {event.participants.new} new
-                                </p>
-                                <p>
-                                  {event.participants.return}{" "}
-                                  return
-                                </p>
-                                <p>
-                                  {event.participants.key} key
-                                </p>
-                                <p className="font-medium text-gray-200">
-                                  {event.participants.total}{" "}
-                                  total
-                                </p>
+                          {isExpanded && (
+                            <div className="mt-2 pt-2 border-t border-border">
+                              <div className="grid grid-cols-2 gap-2 text-sm">
+                                {Object.entries(data).map(([key, value]) => (
+                                  <div key={key}>
+                                    <span className="text-xs text-muted-foreground">{key}:</span>
+                                    <p className="text-sm">{value || "\u2014"}</p>
+                                  </div>
+                                ))}
                               </div>
                             </div>
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Overwrites Section */}
-            <Card className="bg-gray-800">
-              <CardHeader>
-                <CardTitle className="text-white flex items-center gap-2">
-                  <svg
-                    className="w-5 h-5 text-orange-400"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"
-                    />
-                  </svg>
-                  Overwrites
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="p-0">
-                <div className="divide-y divide-gray-700">
-                  {MOCK_OVERWRITES.map((ow) => (
-                    <div
-                      key={ow.id}
-                      className="flex items-center gap-3 px-6 py-4"
-                    >
-                      <span className="text-gray-400 text-sm w-4">
-                        \u25B6
-                      </span>
-                      <span className="text-white font-medium flex-1 text-sm">
-                        {ow.title}
-                      </span>
-                      <a
-                        href={ow.link}
-                        className="px-3 py-1 text-xs font-medium text-kaart-orange border border-kaart-orange rounded hover:bg-kaart-orange hover:text-white transition-colors"
-                      >
-                        Link
-                      </a>
-                    </div>
-                  ))}
-                </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <p className="text-muted-foreground text-center py-8">
+                    No community entries. Click &quot;Sync from Sheet&quot; to import data from Google Sheets.
+                  </p>
+                )}
               </CardContent>
             </Card>
           </div>
