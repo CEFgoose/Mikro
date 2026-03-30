@@ -23,7 +23,7 @@ import {
   TableCell,
   useToastActions,
 } from "@/components/ui";
-import { usePunkDetail, useRefreshPunkActivity } from "@/hooks";
+import { usePunkDetail, useRefreshPunkActivity, useToggleDiscussionFlag } from "@/hooks";
 import type { PunkDetailResponse } from "@/types";
 import { formatNumber } from "@/lib/utils";
 
@@ -99,8 +99,11 @@ export default function PunkDetailPage() {
     loading: refreshing,
   } = useRefreshPunkActivity();
 
+  const { mutate: toggleFlag } = useToggleDiscussionFlag();
+
   const [data, setData] = useState<PunkDetailResponse | null>(null);
   const [pageLoading, setPageLoading] = useState(true);
+  const [expandedDiscussions, setExpandedDiscussions] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     if (id) {
@@ -121,6 +124,26 @@ export default function PunkDetailPage() {
       if (result?.punk) setData(result);
     } catch {
       toast.error("Failed to refresh activity");
+    }
+  };
+
+  const handleToggleFlag = async (link: string) => {
+    // Optimistic update
+    setData((prev) => {
+      if (!prev) return prev;
+      return {
+        ...prev,
+        discussions: prev.discussions.map((d) =>
+          d.link === link ? { ...d, flagged: !d.flagged } : d
+        ),
+      };
+    });
+    try {
+      await toggleFlag({ punk_id: Number(id), link });
+    } catch {
+      toast.error("Failed to toggle flag");
+      const result = await fetchDetail({ punk_id: Number(id) });
+      if (result?.punk) setData(result);
     }
   };
 
@@ -361,6 +384,11 @@ export default function PunkDetailPage() {
             <CardHeader className="pb-2">
               <p className="text-sm text-muted-foreground">
                 Comments on this user&apos;s changesets from other OSM editors
+                {data.discussions && data.discussions.length > 0 && (
+                  <span className="ml-2 text-xs">
+                    (sorted: flagged first, then newest)
+                  </span>
+                )}
               </p>
             </CardHeader>
             <CardContent>
@@ -369,22 +397,67 @@ export default function PunkDetailPage() {
                   {data.discussions.map((disc, i) => (
                     <div
                       key={i}
-                      className="border border-border rounded-lg p-3"
+                      className={`border rounded-lg p-3 ${
+                        disc.flagged
+                          ? "border-l-4 border-l-kaart-orange border-t border-r border-b border-border bg-orange-50/30 dark:bg-orange-950/10"
+                          : "border-border"
+                      }`}
                     >
                       <div className="flex items-start justify-between gap-2 mb-1">
-                        <p className="text-sm font-medium">{disc.title}</p>
-                        <a
-                          href={disc.link}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-xs text-kaart-orange hover:underline whitespace-nowrap"
-                        >
-                          View on OSM
-                        </a>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium">{disc.title}</p>
+                          {disc.pubDate ? (
+                            <p className="text-xs text-muted-foreground mt-0.5">
+                              {formatDate(disc.pubDate)} ({timeAgo(disc.pubDate)})
+                            </p>
+                          ) : (
+                            <p className="text-xs text-muted-foreground mt-0.5">No date</p>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-2 shrink-0">
+                          <button
+                            onClick={() => handleToggleFlag(disc.link)}
+                            className={`text-base leading-none ${
+                              disc.flagged
+                                ? "text-kaart-orange"
+                                : "text-muted-foreground hover:text-kaart-orange"
+                            } transition-colors`}
+                            title={disc.flagged ? "Unflag" : "Flag as important"}
+                          >
+                            {disc.flagged ? "\u2605" : "\u2606"}
+                          </button>
+                          <a
+                            href={disc.link}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-xs text-kaart-orange hover:underline whitespace-nowrap"
+                          >
+                            View on OSM
+                          </a>
+                        </div>
                       </div>
-                      <p className="text-sm text-muted-foreground whitespace-pre-line">
+                      <p
+                        className={`text-sm text-muted-foreground whitespace-pre-line ${
+                          !expandedDiscussions.has(disc.link) ? "line-clamp-3" : ""
+                        }`}
+                      >
                         {disc.description || "\u2014"}
                       </p>
+                      {disc.description && disc.description.length > 200 && (
+                        <button
+                          onClick={() =>
+                            setExpandedDiscussions((prev) => {
+                              const next = new Set(prev);
+                              if (next.has(disc.link)) next.delete(disc.link);
+                              else next.add(disc.link);
+                              return next;
+                            })
+                          }
+                          className="text-xs text-kaart-orange hover:underline mt-1"
+                        >
+                          {expandedDiscussions.has(disc.link) ? "Show less" : "Show more"}
+                        </button>
+                      )}
                     </div>
                   ))}
                 </div>

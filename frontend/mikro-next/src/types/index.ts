@@ -896,6 +896,8 @@ export interface PunkDetailResponse {
     title: string;
     link: string;
     description: string;
+    pubDate: string;
+    flagged: boolean;
   }>;
   status: number;
 }

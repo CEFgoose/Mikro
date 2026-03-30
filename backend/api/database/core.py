@@ -866,6 +866,7 @@ class Punk(ModelWithSoftDeleteAndCRUD, SurrogatePK):
     cached_account_created = db.Column(db.DateTime, nullable=True)
     cache_updated_at = db.Column(db.DateTime, nullable=True)
     cached_discussions = db.Column(db.Text, nullable=True)  # JSON blob of discussion entries
+    flagged_discussions = db.Column(db.Text, nullable=True)  # JSON array of flagged discussion links
 
 
 class PunkChangeset(CRUDMixin, SurrogatePK, db.Model):

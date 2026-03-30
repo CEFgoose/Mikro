@@ -985,6 +985,9 @@ export function usePunkDetail() {
 export function useRefreshPunkActivity() {
   return useApiMutation("/punk/refresh_punk_activity");
 }
+export function useToggleDiscussionFlag() {
+  return useApiMutation("/punk/toggle_discussion_flag");
+}
 
 // Weekly Reports
 export function useSaveWeeklyReport() {

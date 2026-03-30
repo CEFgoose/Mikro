@@ -10,11 +10,20 @@ detail/heatmap data for analysis.
 from flask.views import MethodView
 from flask import g, request, current_app
 from datetime import datetime
+from email.utils import parsedate_to_datetime
 from ..utils import requires_admin
 from ..database import db, Punk, PunkChangeset
 import json
 import requests as http_requests
 import xml.etree.ElementTree as ET
+
+
+def _parse_rss_date(date_str):
+    """Parse an RFC 822 date string from an RSS feed."""
+    try:
+        return parsedate_to_datetime(date_str)
+    except Exception:
+        return datetime.min
 
 
 OSM_API_BASE = "https://api.openstreetmap.org/api/0.6"
@@ -38,6 +47,8 @@ class PunkAPI(MethodView):
             return self.fetch_punk_detail()
         elif path == "refresh_punk_activity":
             return self.refresh_punk_activity()
+        elif path == "toggle_discussion_flag":
+            return self.toggle_discussion_flag()
         return {"message": "Unknown path", "status": 404}
 
     # ─── List all punks ──────────────────────────────────
@@ -249,13 +260,33 @@ class PunkAPI(MethodView):
             ),
         }
 
-        # Parse cached discussions
+        # Parse cached discussions and merge flag state
         discussions = []
         if punk.cached_discussions:
             try:
                 discussions = json.loads(punk.cached_discussions)
             except Exception:
                 pass
+
+        flagged_links = set()
+        if punk.flagged_discussions:
+            try:
+                flagged_links = set(json.loads(punk.flagged_discussions))
+            except Exception:
+                pass
+
+        for disc in discussions:
+            disc["flagged"] = disc.get("link", "") in flagged_links
+
+        # Sort: flagged first, then newest first
+        discussions.sort(
+            key=lambda d: (
+                not d.get("flagged", False),
+                -_parse_rss_date(d.get("pubDate", "")).timestamp()
+                if d.get("pubDate")
+                else 0,
+            ),
+        )
 
         return {
             "status": 200,
@@ -291,6 +322,40 @@ class PunkAPI(MethodView):
             return {"message": f"OSM API error: {str(e)}", "status": 502}
 
         return {"status": 200, "message": f"Activity refreshed for '{punk.osm_username}'"}
+
+    # ─── Toggle discussion flag ───────────────────────────
+
+    @requires_admin
+    def toggle_discussion_flag(self):
+        """Toggle a discussion link as flagged/unflagged."""
+        data = request.json or {}
+        punk_id = data.get("punk_id")
+        link = data.get("link")
+        if not punk_id or not link:
+            return {"message": "punk_id and link are required", "status": 400}
+
+        punk = Punk.query.get(punk_id)
+        if not punk:
+            return {"message": "Punk not found", "status": 404}
+
+        flagged = set()
+        if punk.flagged_discussions:
+            try:
+                flagged = set(json.loads(punk.flagged_discussions))
+            except Exception:
+                pass
+
+        if link in flagged:
+            flagged.discard(link)
+            is_flagged = False
+        else:
+            flagged.add(link)
+            is_flagged = True
+
+        punk.flagged_discussions = json.dumps(list(flagged))
+        db.session.commit()
+
+        return {"status": 200, "flagged": is_flagged, "message": "Flag toggled"}
 
     # ─── Internal refresh logic ──────────────────────────
 
@@ -454,11 +519,18 @@ class PunkAPI(MethodView):
                                 "title": item.findtext("title", ""),
                                 "link": item.findtext("link", ""),
                                 "description": item.findtext("description", ""),
+                                "pubDate": item.findtext("pubDate", ""),
                             })
             except Exception as e:
                 current_app.logger.warning(
                     f"Failed to fetch discussions for uid {uid}: {e}"
                 )
+
+        # Sort discussions newest first by pubDate
+        discussions.sort(
+            key=lambda d: _parse_rss_date(d.get("pubDate", "")),
+            reverse=True,
+        )
 
         punk.cached_discussions = json.dumps(discussions) if discussions else None
 
