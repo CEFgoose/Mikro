@@ -9,7 +9,7 @@ from flask.views import MethodView
 from flask import g, request
 
 from ..utils import requires_admin
-from ..database import User, PayRequests, Payments, UserTasks, Task, Project
+from ..database import db, User, PayRequests, Payments, UserTasks, Task, Project
 from ..stats import get_user_payment_balances
 
 

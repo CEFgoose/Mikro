@@ -17,12 +17,14 @@ import {
   useFetchTimekeepingStats,
   useFetchElementAnalysis,
   useOrgProjects,
+  useFetchTeams,
 } from "@/hooks/useApi";
 import type {
   TimekeepingStatsResponse,
   ElementAnalysisCategory,
   ProjectsResponse,
   WeeklyReportDraft,
+  TeamsResponse,
 } from "@/types";
 import {
   BarChart,
@@ -367,6 +369,8 @@ export default function WeeklyReportBuilderPage() {
   const [draftId, setDraftId] = useState<number | null>(null);
   const [saving, setSaving] = useState(false);
   const [showDraftsList, setShowDraftsList] = useState(false);
+  const [selectedTeamId, setSelectedTeamId] = useState<number | null>(null);
+  const [compareEnabled, setCompareEnabled] = useState(false);
 
   // API hooks
   const { mutate: saveDraft } = useSaveWeeklyReport();
@@ -378,6 +382,7 @@ export default function WeeklyReportBuilderPage() {
   const { mutate: fetchTimekeeping, loading: tkLoading } = useFetchTimekeepingStats();
   const { mutate: fetchElements, loading: elemLoading } = useFetchElementAnalysis();
   const { data: projectsData } = useOrgProjects();
+  const { data: teamsData } = useFetchTeams();
 
   // Auto-fetched data storage
   const [timekeepingData, setTimekeepingData] = useState<TimekeepingStatsResponse | null>(null);
@@ -385,13 +390,22 @@ export default function WeeklyReportBuilderPage() {
   const [tkFetched, setTkFetched] = useState(false);
   const [elemFetched, setElemFetched] = useState(false);
 
-  // ── Fetch auto-populated data when date range changes ──
+  // ── Derive previous draft for comparison ──
+  const prevDraft = draftsData?.drafts?.find((d) => d.id !== draftId) || null;
+
+  // ── Fetch auto-populated data when date range or team changes ──
   const fetchAutoData = useCallback(async () => {
     setTkFetched(false);
     setElemFetched(false);
 
     try {
-      const tkResult = await fetchTimekeeping({ startDate, endDate });
+      const tkParams: Record<string, unknown> = { startDate, endDate };
+      if (selectedTeamId) tkParams.teamId = selectedTeamId;
+      if (compareEnabled && prevDraft) {
+        tkParams.compareStartDate = prevDraft.start_date;
+        tkParams.compareEndDate = prevDraft.end_date;
+      }
+      const tkResult = await fetchTimekeeping(tkParams);
       setTimekeepingData(tkResult);
       setTkFetched(true);
     } catch {
@@ -409,7 +423,7 @@ export default function WeeklyReportBuilderPage() {
     } catch {
       setElemFetched(true);
     }
-  }, [startDate, endDate, fetchTimekeeping, fetchElements]);
+  }, [startDate, endDate, selectedTeamId, compareEnabled, prevDraft, fetchTimekeeping, fetchElements]);
 
   useEffect(() => {
     fetchAutoData();
@@ -438,11 +452,25 @@ export default function WeeklyReportBuilderPage() {
     setEndDate(draft.end_date);
     try {
       const parsed = JSON.parse(draft.sections);
-      if (Array.isArray(parsed)) {
-        // Merge saved sections with defaults (in case new sections were added)
+      // Support both old format (plain array) and new format (metadata + sections)
+      let sectionData: ReportSection[] | null = null;
+      if (parsed && parsed.metadata && parsed.sections) {
+        // New format with metadata
+        sectionData = parsed.sections;
+        if (parsed.metadata.selectedTeamId !== undefined) {
+          setSelectedTeamId(parsed.metadata.selectedTeamId);
+        }
+        if (parsed.metadata.compareEnabled !== undefined) {
+          setCompareEnabled(parsed.metadata.compareEnabled);
+        }
+      } else if (Array.isArray(parsed)) {
+        // Old format: plain array of sections
+        sectionData = parsed;
+      }
+      if (sectionData && Array.isArray(sectionData)) {
         const defaults = getDefaultSections();
         const merged = defaults.map((def) => {
-          const saved = parsed.find((s: ReportSection) => s.type === def.type);
+          const saved = sectionData!.find((s: ReportSection) => s.type === def.type);
           return saved ? { ...def, ...saved } : def;
         });
         setSections(merged);
@@ -462,7 +490,10 @@ export default function WeeklyReportBuilderPage() {
         report_date: endDate,
         start_date: startDate,
         end_date: endDate,
-        sections: JSON.stringify(sections),
+        sections: JSON.stringify({
+          metadata: { selectedTeamId, compareEnabled },
+          sections,
+        }),
       });
       if (result?.id) {
         setDraftId(result.id);
@@ -568,9 +599,36 @@ export default function WeeklyReportBuilderPage() {
           </div>
         );
 
-      case "team_activity_charts":
+      case "team_activity_charts": {
+        const comparison = timekeepingData?.comparison?.summary;
+        const currentSummary = timekeepingData?.summary;
         return (
           <div className="space-y-4">
+            {/* Comparison summary stats */}
+            {compareEnabled && comparison && currentSummary && (
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                {[
+                  { label: "Total Hours", current: currentSummary.total_hours, prior: comparison.total_hours },
+                  { label: "Changesets", current: currentSummary.total_changesets, prior: comparison.total_changesets },
+                  { label: "Changes", current: currentSummary.total_changes, prior: comparison.total_changes },
+                  { label: "Active Users", current: currentSummary.active_users, prior: comparison.active_users },
+                ].map(({ label, current, prior }) => {
+                  const delta = prior > 0 ? ((current - prior) / prior) * 100 : null;
+                  return (
+                    <div key={label} className="border border-border rounded-lg p-3 text-center">
+                      <p className="text-xs text-muted-foreground">{label}</p>
+                      <p className="text-lg font-bold">{typeof current === "number" ? formatNumber(Math.round(current * 10) / 10) : current}</p>
+                      {delta !== null && (
+                        <p className={`text-xs font-medium ${delta >= 0 ? "text-green-600" : "text-red-600"}`}>
+                          {delta >= 0 ? "\u25B2" : "\u25BC"} {Math.abs(delta).toFixed(1)}% vs prior
+                        </p>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+
             {tkLoading && !tkFetched ? (
               <div className="flex items-center justify-center h-32">
                 <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-kaart-orange" />
@@ -645,6 +703,7 @@ export default function WeeklyReportBuilderPage() {
             )}
           </div>
         );
+      }
 
       case "primary_activity":
         return (
@@ -675,6 +734,11 @@ export default function WeeklyReportBuilderPage() {
       case "element_analysis":
         return (
           <div>
+            {selectedTeamId && (
+              <p className="text-xs text-blue-600 mb-2">
+                Note: Element analysis is org-wide and cannot be filtered by team
+              </p>
+            )}
             {elemLoading && !elemFetched ? (
               <div className="flex items-center justify-center h-32">
                 <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-kaart-orange" />
@@ -971,7 +1035,7 @@ export default function WeeklyReportBuilderPage() {
 
       {/* Controls */}
       <Card>
-        <CardContent className="p-4">
+        <CardContent className="p-4 space-y-3">
           <div className="flex flex-wrap items-end gap-4">
             <div className="flex-1 min-w-48">
               <label className="text-xs text-muted-foreground">Report Title</label>
@@ -1000,6 +1064,19 @@ export default function WeeklyReportBuilderPage() {
                 className="w-full mt-1 px-3 py-1.5 text-sm border border-border rounded-lg bg-background focus:outline-none focus:ring-1 focus:ring-kaart-orange"
               />
             </div>
+            <div>
+              <label className="text-xs text-muted-foreground">Team</label>
+              <select
+                value={selectedTeamId ?? ""}
+                onChange={(e) => setSelectedTeamId(e.target.value ? Number(e.target.value) : null)}
+                className="w-full mt-1 px-3 py-1.5 text-sm border border-border rounded-lg bg-background focus:outline-none focus:ring-1 focus:ring-kaart-orange"
+              >
+                <option value="">All Teams</option>
+                {teamsData?.teams?.map((t) => (
+                  <option key={t.id} value={t.id}>{t.name}</option>
+                ))}
+              </select>
+            </div>
             <button
               onClick={fetchAutoData}
               disabled={tkLoading || elemLoading}
@@ -1008,6 +1085,22 @@ export default function WeeklyReportBuilderPage() {
               {tkLoading || elemLoading ? "Fetching..." : "Refresh Data"}
             </button>
           </div>
+          {/* Compare to last report toggle */}
+          {prevDraft && (
+            <div className="flex items-center gap-2 pt-1 border-t border-border">
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={compareEnabled}
+                  onChange={(e) => setCompareEnabled(e.target.checked)}
+                  className="rounded border-border"
+                />
+                <span className="text-xs text-muted-foreground">
+                  Compare to last report: <strong>{prevDraft.title}</strong> ({prevDraft.start_date} to {prevDraft.end_date})
+                </span>
+              </label>
+            </div>
+          )}
         </CardContent>
       </Card>
 
