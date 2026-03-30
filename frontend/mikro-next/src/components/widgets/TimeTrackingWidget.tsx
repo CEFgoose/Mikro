@@ -132,22 +132,27 @@ export function TimeTrackingWidget({
     }
   }, [selectedTopic, fetchTrainings, fetchChecklists]);
 
-  // Reset task fields when topic changes
+  // Reset task and project fields when topic changes
   useEffect(() => {
     setTaskName("");
     setTaskRefType(null);
     setTaskRefId(null);
     setCustomTopicInput("");
     setIsAddingCustomTopic(false);
+    if (!["editing", "validating", "qc_review"].includes(selectedTopic)) {
+      setSelectedProject("");
+    }
   }, [selectedTopic]);
 
   const handleClockIn = useCallback(async () => {
-    if (!selectedProject || !selectedTopic) return;
+    if (!selectedTopic) return;
+    const needsProject = ["editing", "validating", "qc_review"].includes(selectedTopic);
+    if (needsProject && !selectedProject) return;
     setApiError(null);
 
     try {
       await clockIn({
-        project_id: parseInt(selectedProject),
+        project_id: selectedProject ? parseInt(selectedProject) : null,
         category: selectedTopic,
         task_name: taskName || null,
         task_ref_type: taskRefType || null,
@@ -542,24 +547,26 @@ export function TimeTrackingWidget({
             <p className="text-xs text-red-600">{apiError}</p>
           )}
           <Select
-            label="Project"
-            options={projectOptions}
-            value={selectedProject}
-            onChange={setSelectedProject}
-            placeholder="Select a project"
-          />
-          <Select
             label="Topic"
             options={TOPIC_OPTIONS}
             value={selectedTopic}
             onChange={setSelectedTopic}
             placeholder="Select topic"
           />
+          {selectedTopic && ["editing", "validating", "qc_review"].includes(selectedTopic) && (
+            <Select
+              label="Project"
+              options={projectOptions}
+              value={selectedProject}
+              onChange={setSelectedProject}
+              placeholder="Select a project"
+            />
+          )}
           {renderTaskSelector()}
           <Button
             variant="primary"
             onClick={handleClockIn}
-            disabled={!selectedProject || !selectedTopic || clockingIn}
+            disabled={!selectedTopic || (["editing", "validating", "qc_review"].includes(selectedTopic) && !selectedProject) || clockingIn}
             className="w-full mt-2"
           >
             <svg
