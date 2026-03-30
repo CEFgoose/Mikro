@@ -37,6 +37,8 @@ import type {
   ProjectProfileResponse,
   PunksResponse,
   PunkDetailResponse,
+  FriendsResponse,
+  FriendDetailResponse,
   WeeklyReportDraft,
   WeeklyReportDraftsResponse,
 } from "@/types";
@@ -987,6 +989,29 @@ export function useRefreshPunkActivity() {
 }
 export function useToggleDiscussionFlag() {
   return useApiMutation("/punk/toggle_discussion_flag");
+}
+
+// Friends List
+export function useFriendsList() {
+  return useApiCall<FriendsResponse>("/friend/fetch_friends");
+}
+export function useCreateFriend() {
+  return useApiMutation("/friend/create_friend");
+}
+export function useUpdateFriend() {
+  return useApiMutation("/friend/update_friend");
+}
+export function useDeleteFriend() {
+  return useApiMutation("/friend/delete_friend");
+}
+export function useFriendDetail() {
+  return useApiMutation<FriendDetailResponse>("/friend/fetch_friend_detail");
+}
+export function useRefreshFriendActivity() {
+  return useApiMutation("/friend/refresh_friend_activity");
+}
+export function useToggleFriendDiscussionFlag() {
+  return useApiMutation("/friend/toggle_discussion_flag");
 }
 
 // Weekly Reports

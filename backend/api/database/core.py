@@ -893,6 +893,52 @@ class PunkChangeset(CRUDMixin, SurrogatePK, db.Model):
     hashtags = Column(MutableList.as_mutable(ARRAY(String(255))), nullable=True)
 
 
+class Friend(ModelWithSoftDeleteAndCRUD, SurrogatePK):
+    """Tracked OSM editor on the friends watchlist."""
+
+    __tablename__ = "friends"
+
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    osm_username = db.Column(db.String(255), nullable=False, unique=True, index=True)
+    osm_uid = db.Column(db.BigInteger, nullable=True)
+    notes = db.Column(db.Text, nullable=True)
+    tags = Column(MutableList.as_mutable(ARRAY(String(50))), nullable=True)
+    added_by = db.Column(db.String(255), nullable=False)
+    added_by_name = db.Column(db.String(200), nullable=True)
+    org_id = db.Column(db.String(255), nullable=True)
+    created_at = db.Column(db.DateTime, default=func.now())
+    cached_total_changesets = db.Column(db.Integer, nullable=True)
+    cached_last_active = db.Column(db.DateTime, nullable=True)
+    cached_account_created = db.Column(db.DateTime, nullable=True)
+    cache_updated_at = db.Column(db.DateTime, nullable=True)
+    cached_discussions = db.Column(db.Text, nullable=True)
+    flagged_discussions = db.Column(db.Text, nullable=True)
+
+
+class FriendChangeset(CRUDMixin, SurrogatePK, db.Model):
+    """Cached changeset data for a tracked friend."""
+
+    __tablename__ = "friend_changesets"
+
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    friend_id = db.Column(
+        db.Integer,
+        db.ForeignKey("friends.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    changeset_id = db.Column(db.BigInteger, nullable=False, unique=True)
+    created_at = db.Column(db.DateTime, nullable=False)
+    closed_at = db.Column(db.DateTime, nullable=True)
+    changes_count = db.Column(db.Integer, default=0)
+    comment = db.Column(db.Text, nullable=True)
+    editor = db.Column(db.String(255), nullable=True)
+    source = db.Column(db.String(255), nullable=True)
+    centroid_lat = db.Column(db.Float, nullable=True)
+    centroid_lon = db.Column(db.Float, nullable=True)
+    hashtags = Column(MutableList.as_mutable(ARRAY(String(255))), nullable=True)
+
+
 class WeeklyReport(CRUDMixin, db.Model):
     """Weekly report draft for client-facing PDF generation."""
 

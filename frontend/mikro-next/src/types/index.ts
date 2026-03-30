@@ -902,6 +902,57 @@ export interface PunkDetailResponse {
   status: number;
 }
 
+// Friends List types
+export interface Friend {
+  id: number;
+  osm_username: string;
+  osm_uid?: number;
+  notes?: string;
+  tags?: string[];
+  added_by: string;
+  added_by_name?: string;
+  created_at: string;
+  cached_total_changesets?: number;
+  cached_last_active?: string;
+  cached_account_created?: string;
+  cache_updated_at?: string;
+}
+
+export interface FriendsResponse {
+  friends: Friend[];
+  status: number;
+}
+
+export interface FriendDetailResponse {
+  friend: Friend;
+  changesets: Array<{
+    changeset_id: number;
+    created_at: string;
+    closed_at?: string;
+    changes_count: number;
+    comment?: string;
+    editor?: string;
+    source?: string;
+    centroid_lat?: number;
+    centroid_lon?: number;
+    hashtags?: string[];
+  }>;
+  heatmapPoints: [number, number, number][];
+  summary: {
+    totalChangesets: number;
+    totalChanges: number;
+  };
+  hashtagSummary: Record<string, number>;
+  discussions: Array<{
+    title: string;
+    link: string;
+    description: string;
+    pubDate: string;
+    flagged: boolean;
+  }>;
+  status: number;
+}
+
 // Weekly Report types
 export interface WeeklyReportDraft {
   id: number;

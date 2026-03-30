@@ -124,6 +124,7 @@ def _register_views(app):
         WebhookAPI,
         PunkAPI,
         WeeklyReportAPI,
+        FriendAPI,
     )
 
     # Authentication
@@ -182,6 +183,9 @@ def _register_views(app):
         "/api/weeklyreport/<path>",
         view_func=WeeklyReportAPI.as_view("weeklyreport"),
     )
+
+    # Friends List
+    app.add_url_rule("/api/friend/<path>", view_func=FriendAPI.as_view("friend"))
 
 
 # Create application instance for gunicorn

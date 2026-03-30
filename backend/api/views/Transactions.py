@@ -591,17 +591,19 @@ class TransactionAPI(MethodView):
 
         org_id = g.user.org_id
 
-        # Hard delete all pay requests (including archived)
-        all_requests = PayRequests.query.with_deleted().filter_by(org_id=org_id).all()
+        # Hard delete all pay requests
+        all_requests = PayRequests.query.filter_by(org_id=org_id).all()
         requests_deleted = len(all_requests)
         for req in all_requests:
-            req.delete(soft=False)
+            db.session.delete(req)
 
-        # Hard delete all payments (including archived)
-        all_payments = Payments.query.with_deleted().filter_by(org_id=org_id).all()
+        # Hard delete all payments
+        all_payments = Payments.query.filter_by(org_id=org_id).all()
         payments_deleted = len(all_payments)
         for pay in all_payments:
-            pay.delete(soft=False)
+            db.session.delete(pay)
+
+        db.session.flush()
 
         # Reset user payment stats
         users = User.query.filter_by(org_id=org_id).all()

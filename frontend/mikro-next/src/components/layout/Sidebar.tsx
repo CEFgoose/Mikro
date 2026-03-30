@@ -48,6 +48,7 @@ const adminNavItems: NavItem[] = [
   { label: "Reports", href: "/admin/reports", icon: "chart" },
   { label: "Regions", href: "/admin/regions", icon: "globe" },
   { label: "Punks List", href: "/admin/punks", icon: "shield" },
+  { label: "Friends List", href: "/admin/friends", icon: "users" },
 ];
 
 const iconMap: Record<string, React.ReactNode> = {

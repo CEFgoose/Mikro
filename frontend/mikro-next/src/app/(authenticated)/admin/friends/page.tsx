@@ -1,0 +1,547 @@
+"use client";
+
+import { useState, useMemo } from "react";
+import Link from "next/link";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  Button,
+  Badge,
+  Modal,
+  ConfirmDialog,
+  Input,
+  Table,
+  TableHeader,
+  TableBody,
+  TableHead,
+  TableRow,
+  TableCell,
+  Skeleton,
+} from "@/components/ui";
+import { useToastActions } from "@/components/ui";
+import {
+  useFriendsList,
+  useCreateFriend,
+  useUpdateFriend,
+  useDeleteFriend,
+  useRefreshFriendActivity,
+} from "@/hooks";
+import type { Friend } from "@/types";
+import { formatNumber } from "@/lib/utils";
+
+function formatDate(dateString: string): string {
+  return new Date(dateString).toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
+}
+
+export default function FriendsListPage() {
+  const { data, loading, refetch } = useFriendsList();
+  const { mutate: createFriend, loading: creating } = useCreateFriend();
+  const { mutate: updateFriend, loading: updating } = useUpdateFriend();
+  const { mutate: deleteFriend, loading: deleting } = useDeleteFriend();
+  const { mutate: refreshFriendActivity } = useRefreshFriendActivity();
+  const toast = useToastActions();
+
+  const friends = data?.friends ?? [];
+
+  // Modal states
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [selectedFriend, setSelectedFriend] = useState<Friend | null>(null);
+
+  // Add form fields
+  const [addUsername, setAddUsername] = useState("");
+  const [addNotes, setAddNotes] = useState("");
+  const [addTags, setAddTags] = useState("");
+
+  // Edit form fields
+  const [editNotes, setEditNotes] = useState("");
+  const [editTags, setEditTags] = useState("");
+
+  // Search & sort
+  const [searchTerm, setSearchTerm] = useState("");
+  const [sortKey, setSortKey] = useState<string>("created_at");
+  const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
+
+  // Per-row refresh loading
+  const [refreshingIds, setRefreshingIds] = useState<Set<number>>(new Set());
+
+  // Stats
+  const activeLast7Days = useMemo(() => {
+    const sevenDaysAgo = new Date();
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+    return friends.filter(
+      (p) => p.cached_last_active && new Date(p.cached_last_active) >= sevenDaysAgo
+    ).length;
+  }, [friends]);
+
+  const mostActive = useMemo(() => {
+    if (friends.length === 0) return null;
+    return friends.reduce<Friend | null>((best, p) => {
+      if (!best) return p;
+      return (p.cached_total_changesets ?? 0) > (best.cached_total_changesets ?? 0) ? p : best;
+    }, null);
+  }, [friends]);
+
+  // Sort handler
+  const handleSort = (key: string) => {
+    if (sortKey === key) {
+      setSortDir(sortDir === "asc" ? "desc" : "asc");
+    } else {
+      setSortKey(key);
+      setSortDir("asc");
+    }
+  };
+
+  // Filter and sort
+  const filteredAndSorted = useMemo(() => {
+    let filtered = friends;
+    if (searchTerm.trim()) {
+      const s = searchTerm.trim().toLowerCase();
+      filtered = filtered.filter(
+        (p) =>
+          p.osm_username.toLowerCase().includes(s) ||
+          (p.notes || "").toLowerCase().includes(s) ||
+          (p.tags || []).join(" ").toLowerCase().includes(s)
+      );
+    }
+
+    const dir = sortDir === "asc" ? 1 : -1;
+    return [...filtered].sort((a, b) => {
+      let aVal: string | number = "";
+      let bVal: string | number = "";
+      switch (sortKey) {
+        case "username":
+          aVal = a.osm_username.toLowerCase();
+          bVal = b.osm_username.toLowerCase();
+          break;
+        case "added_by":
+          aVal = (a.added_by_name || "").toLowerCase();
+          bVal = (b.added_by_name || "").toLowerCase();
+          break;
+        case "created_at":
+          aVal = a.created_at || "";
+          bVal = b.created_at || "";
+          break;
+        case "last_active":
+          aVal = a.cached_last_active || "";
+          bVal = b.cached_last_active || "";
+          if (!aVal && !bVal) return 0;
+          if (!aVal) return 1;
+          if (!bVal) return -1;
+          break;
+        case "changesets":
+          aVal = a.cached_total_changesets ?? 0;
+          bVal = b.cached_total_changesets ?? 0;
+          break;
+        default:
+          return 0;
+      }
+      if (aVal < bVal) return -1 * dir;
+      if (aVal > bVal) return 1 * dir;
+      return 0;
+    });
+  }, [friends, searchTerm, sortKey, sortDir]);
+
+  // CRUD handlers
+  const handleCreateFriend = async () => {
+    if (!addUsername.trim()) {
+      toast.error("OSM username is required");
+      return;
+    }
+    try {
+      await createFriend({
+        osm_username: addUsername.trim(),
+        notes: addNotes,
+        tags: addTags
+          .split(",")
+          .map((t) => t.trim())
+          .filter(Boolean),
+      });
+      toast.success("Friend added successfully");
+      setShowAddModal(false);
+      setAddUsername("");
+      setAddNotes("");
+      setAddTags("");
+      refetch();
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Failed to add friend";
+      toast.error(message);
+    }
+  };
+
+  const openEditModal = (friend: Friend) => {
+    setSelectedFriend(friend);
+    setEditNotes(friend.notes || "");
+    setEditTags((friend.tags || []).join(", "));
+    setShowEditModal(true);
+  };
+
+  const handleUpdateFriend = async () => {
+    if (!selectedFriend) return;
+    try {
+      await updateFriend({
+        friend_id: selectedFriend.id,
+        notes: editNotes,
+        tags: editTags
+          .split(",")
+          .map((t) => t.trim())
+          .filter(Boolean),
+      });
+      toast.success("Friend updated successfully");
+      setShowEditModal(false);
+      setSelectedFriend(null);
+      refetch();
+    } catch {
+      toast.error("Failed to update friend");
+    }
+  };
+
+  const handleDeleteFriend = async () => {
+    if (!selectedFriend) return;
+    try {
+      await deleteFriend({ friend_id: selectedFriend.id });
+      toast.success("Friend removed successfully");
+      setShowDeleteModal(false);
+      setSelectedFriend(null);
+      refetch();
+    } catch {
+      toast.error("Failed to remove friend");
+    }
+  };
+
+  const handleRefresh = async (friend: Friend) => {
+    setRefreshingIds((prev) => new Set(prev).add(friend.id));
+    try {
+      await refreshFriendActivity({ friend_id: friend.id });
+      toast.success(`Refreshed activity for ${friend.osm_username}`);
+      refetch();
+    } catch {
+      toast.error("Failed to refresh activity");
+    } finally {
+      setRefreshingIds((prev) => {
+        const next = new Set(prev);
+        next.delete(friend.id);
+        return next;
+      });
+    }
+  };
+
+  // SortHeader sub-component
+  const SortHeader = ({ label, sortField }: { label: string; sortField: string }) => (
+    <TableHead
+      className="cursor-pointer select-none hover:text-kaart-orange transition-colors"
+      onClick={() => handleSort(sortField)}
+    >
+      <span className="inline-flex items-center gap-1">
+        {label}
+        {sortKey === sortField && (
+          <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d={sortDir === "asc" ? "M5 15l7-7 7 7" : "M19 9l-7 7-7-7"}
+            />
+          </svg>
+        )}
+      </span>
+    </TableHead>
+  );
+
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        <div className="flex justify-between items-center">
+          <Skeleton className="h-8 w-32" />
+          <Skeleton className="h-10 w-24" />
+        </div>
+        <div className="grid gap-4 md:grid-cols-3">
+          <Skeleton className="h-24 w-full" />
+          <Skeleton className="h-24 w-full" />
+          <Skeleton className="h-24 w-full" />
+        </div>
+        <Skeleton className="h-10 w-64" />
+        <Skeleton className="h-64 w-full" />
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex justify-between items-center">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">Friends List</h1>
+          <p className="text-muted-foreground">
+            Track and manage friendly OSM users
+          </p>
+        </div>
+        <Button onClick={() => setShowAddModal(true)}>Add Friend</Button>
+      </div>
+
+      {/* Stats Cards */}
+      <div className="grid gap-4 md:grid-cols-3">
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium">Total Listed</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{formatNumber(friends.length)}</div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium">Active Last 7 Days</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-kaart-orange">
+              {formatNumber(activeLast7Days)}
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium">Most Active</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-red-600">
+              {mostActive?.osm_username ?? "\u2014"}
+            </div>
+            {mostActive?.cached_total_changesets != null && (
+              <p className="text-xs text-muted-foreground">
+                {formatNumber(mostActive.cached_total_changesets)} changesets
+              </p>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Search */}
+      <div className="flex-1">
+        <Input
+          placeholder="Search by username, notes, or tags..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+        />
+      </div>
+
+      {/* Table */}
+      <Card>
+        <CardContent className="p-0">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <SortHeader label="OSM Username" sortField="username" />
+                <TableHead>Notes</TableHead>
+                <TableHead>Tags</TableHead>
+                <SortHeader label="Added By" sortField="added_by" />
+                <SortHeader label="Date Added" sortField="created_at" />
+                <SortHeader label="Last Active" sortField="last_active" />
+                <SortHeader label="Changesets" sortField="changesets" />
+                <TableHead className="text-right">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {filteredAndSorted.map((friend) => (
+                <TableRow key={friend.id}>
+                  <TableCell className="font-medium">
+                    <Link
+                      href={`/admin/friends/${friend.id}`}
+                      className="text-kaart-orange hover:underline"
+                    >
+                      {friend.osm_username}
+                    </Link>
+                  </TableCell>
+                  <TableCell className="text-muted-foreground max-w-[200px] truncate">
+                    {friend.notes
+                      ? friend.notes.length > 60
+                        ? `${friend.notes.slice(0, 60)}...`
+                        : friend.notes
+                      : "\u2014"}
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex flex-wrap gap-1">
+                      {(friend.tags || []).map((tag) => (
+                        <Badge key={tag} variant="secondary">
+                          {tag}
+                        </Badge>
+                      ))}
+                    </div>
+                  </TableCell>
+                  <TableCell className="text-sm text-muted-foreground">
+                    {friend.added_by_name || "\u2014"}
+                  </TableCell>
+                  <TableCell>{formatDate(friend.created_at)}</TableCell>
+                  <TableCell>
+                    {friend.cached_last_active ? formatDate(friend.cached_last_active) : "Never"}
+                  </TableCell>
+                  <TableCell>
+                    {friend.cached_total_changesets != null
+                      ? formatNumber(friend.cached_total_changesets)
+                      : "\u2014"}
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <div className="flex justify-end gap-2">
+                      <Button size="sm" variant="outline" onClick={() => openEditModal(friend)}>
+                        Edit
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => handleRefresh(friend)}
+                        isLoading={refreshingIds.has(friend.id)}
+                      >
+                        Refresh
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="destructive"
+                        onClick={() => {
+                          setSelectedFriend(friend);
+                          setShowDeleteModal(true);
+                        }}
+                      >
+                        Delete
+                      </Button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))}
+              {filteredAndSorted.length === 0 && (
+                <TableRow>
+                  <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
+                    {friends.length === 0
+                      ? "No friends listed yet. Add an OSM username to start tracking."
+                      : "No results match your search."}
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
+
+      {/* Add Modal */}
+      <Modal
+        isOpen={showAddModal}
+        onClose={() => {
+          setShowAddModal(false);
+          setAddUsername("");
+          setAddNotes("");
+          setAddTags("");
+        }}
+        title="Add to Friends List"
+        description="Add an OSM user to the friends tracking list"
+        footer={
+          <>
+            <Button variant="outline" onClick={() => setShowAddModal(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleCreateFriend} isLoading={creating}>
+              Add Friend
+            </Button>
+          </>
+        }
+      >
+        <div className="space-y-4">
+          <Input
+            label="OSM Username"
+            placeholder="Enter OSM username"
+            value={addUsername}
+            onChange={(e) => setAddUsername(e.target.value)}
+          />
+          <div>
+            <label className="text-sm font-medium leading-none mb-2 block">Notes</label>
+            <textarea
+              className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+              rows={3}
+              placeholder="Optional notes about this user..."
+              value={addNotes}
+              onChange={(e) => setAddNotes(e.target.value)}
+            />
+          </div>
+          <Input
+            label="Tags"
+            placeholder="helpful, experienced, active-reviewer"
+            value={addTags}
+            onChange={(e) => setAddTags(e.target.value)}
+          />
+          <p className="text-xs text-muted-foreground">Separate tags with commas</p>
+        </div>
+      </Modal>
+
+      {/* Edit Modal */}
+      <Modal
+        isOpen={showEditModal}
+        onClose={() => {
+          setShowEditModal(false);
+          setSelectedFriend(null);
+        }}
+        title="Edit Friend"
+        description={`Editing ${selectedFriend?.osm_username}`}
+        footer={
+          <>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setShowEditModal(false);
+                setSelectedFriend(null);
+              }}
+            >
+              Cancel
+            </Button>
+            <Button onClick={handleUpdateFriend} isLoading={updating}>
+              Save Changes
+            </Button>
+          </>
+        }
+      >
+        <div className="space-y-4">
+          <div>
+            <label className="text-sm font-medium leading-none mb-2 block">OSM Username</label>
+            <p className="text-sm text-muted-foreground">{selectedFriend?.osm_username}</p>
+          </div>
+          <div>
+            <label className="text-sm font-medium leading-none mb-2 block">Notes</label>
+            <textarea
+              className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+              rows={3}
+              placeholder="Notes about this user..."
+              value={editNotes}
+              onChange={(e) => setEditNotes(e.target.value)}
+            />
+          </div>
+          <Input
+            label="Tags"
+            placeholder="helpful, experienced, active-reviewer"
+            value={editTags}
+            onChange={(e) => setEditTags(e.target.value)}
+          />
+          <p className="text-xs text-muted-foreground">Separate tags with commas</p>
+        </div>
+      </Modal>
+
+      {/* Delete Confirmation */}
+      <ConfirmDialog
+        isOpen={showDeleteModal}
+        onClose={() => {
+          setShowDeleteModal(false);
+          setSelectedFriend(null);
+        }}
+        onConfirm={handleDeleteFriend}
+        title="Remove from Friends List"
+        message={`Are you sure you want to remove ${selectedFriend?.osm_username} from the Friends List?`}
+        confirmText="Remove"
+        variant="destructive"
+        isLoading={deleting}
+      />
+    </div>
+  );
+}
