@@ -657,7 +657,7 @@ export default function AdminDashboard() {
       <div className="grid gap-4 lg:grid-cols-4">
         <div className="lg:col-span-1">
           <TimeTrackingWidget
-            projects={projects?.org_active_projects?.map((p: { id: number; name: string }) => ({ id: p.id, name: p.name })) ?? []}
+            projects={projects?.org_active_projects?.map((p: { id: number; name: string; short_name?: string }) => ({ id: p.id, name: p.name, short_name: p.short_name })) ?? []}
           />
         </div>
         <div className="lg:col-span-3">

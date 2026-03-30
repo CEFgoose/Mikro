@@ -13,7 +13,7 @@ import {
 } from "@/hooks";
 
 interface TimeTrackingWidgetProps {
-  projects?: { id: number; name: string }[];
+  projects?: { id: number; name: string; short_name?: string }[];
 }
 
 const TOPIC_OPTIONS: SelectOption[] = [
@@ -255,7 +255,7 @@ export function TimeTrackingWidget({
 
   const projectOptions: SelectOption[] = projects.map((p) => ({
     value: p.id.toString(),
-    label: p.name,
+    label: p.short_name || p.name,
   }));
 
   const trainingOptions: SelectOption[] = [
