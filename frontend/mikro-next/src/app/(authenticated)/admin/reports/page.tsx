@@ -25,6 +25,12 @@ import {
   useFetchMapillaryStats,
   useSyncCommunitySheet,
   useFetchCommunityEntries,
+  useFetchChannels,
+  useAddChannel,
+  useRemoveChannel,
+  useFetchChannelContent,
+  useSummarizeChannel,
+  useFetchAllSummaries,
 } from "@/hooks/useApi";
 import { useFilters } from "@/hooks";
 import { FilterBar } from "@/components/filters";
@@ -35,6 +41,7 @@ import type {
   ElementAnalysisCategory,
   MapillaryStatsResponse,
   CommunityEntry,
+  MonitoredChannel,
 } from "@/types";
 import {
   BarChart,
@@ -456,6 +463,20 @@ export default function AdminReportsPage() {
   const { mutate: fetchCommunityEntries } = useFetchCommunityEntries();
   const [communityEntries, setCommunityEntries] = useState<CommunityEntry[]>([]);
   const [communityLoading, setCommunityLoading] = useState(false);
+
+  // Channel monitor hooks
+  const { data: channelsData, refetch: refetchChannels } = useFetchChannels();
+  const { mutate: addChannel } = useAddChannel();
+  const { mutate: removeChannel } = useRemoveChannel();
+  const { mutate: fetchChannelContent } = useFetchChannelContent();
+  const { mutate: summarizeChannel } = useSummarizeChannel();
+  const { mutate: fetchAllSummaries } = useFetchAllSummaries();
+  const [showManageChannels, setShowManageChannels] = useState(false);
+  const [newChannelName, setNewChannelName] = useState("");
+  const [newChannelUrl, setNewChannelUrl] = useState("");
+  const [newChannelType, setNewChannelType] = useState("rss");
+  const [channelSummaries, setChannelSummaries] = useState<Array<{ id: number; name: string; summary: string | null; summary_date: string | null; post_count: number; last_fetched: string | null }>>([]);
+  const [refreshingChannelId, setRefreshingChannelId] = useState<number | null>(null);
 
   // ── Data Fetching ────────────────────────────────────────
   const fetchData = useCallback(async () => {
@@ -1466,6 +1487,199 @@ export default function AdminReportsPage() {
                 )}
               </CardContent>
             </Card>
+
+            {/* ── Channel Summaries Section ── */}
+            <Card>
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-base">Channel Summaries</CardTitle>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={async () => {
+                        try {
+                          const result = await fetchAllSummaries({});
+                          if (result?.summaries) setChannelSummaries(result.summaries);
+                        } catch { /* ignore */ }
+                      }}
+                      className="text-xs px-2 py-1 rounded bg-muted hover:bg-muted/80 transition-colors"
+                    >
+                      Load Summaries
+                    </button>
+                    <button
+                      onClick={() => setShowManageChannels(true)}
+                      className="text-xs px-2 py-1 rounded bg-muted hover:bg-muted/80 transition-colors"
+                      title="Manage Channels"
+                    >
+                      Manage Channels
+                    </button>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent>
+                {channelSummaries.length > 0 ? (
+                  <div className="space-y-3">
+                    {channelSummaries.map((ch) => (
+                      <div key={ch.id} className="border border-border rounded-lg p-3">
+                        <div className="flex items-center justify-between mb-2">
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm font-medium">{ch.name}</span>
+                            <span className="text-xs text-muted-foreground">
+                              {ch.post_count} posts
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs text-muted-foreground">
+                              {ch.summary_date
+                                ? `Summarized ${new Date(ch.summary_date).toLocaleDateString()}`
+                                : "Not yet summarized"}
+                            </span>
+                            <button
+                              onClick={async () => {
+                                setRefreshingChannelId(ch.id);
+                                try {
+                                  await fetchChannelContent({ channel_id: ch.id });
+                                  await summarizeChannel({ channel_id: ch.id });
+                                  const result = await fetchAllSummaries({});
+                                  if (result?.summaries) setChannelSummaries(result.summaries);
+                                } catch { /* ignore */ }
+                                setRefreshingChannelId(null);
+                              }}
+                              disabled={refreshingChannelId === ch.id}
+                              className="text-xs px-2 py-1 rounded bg-kaart-orange text-white hover:bg-kaart-orange-dark transition-colors disabled:opacity-50"
+                            >
+                              {refreshingChannelId === ch.id ? "..." : "Refresh"}
+                            </button>
+                          </div>
+                        </div>
+                        {ch.summary ? (
+                          <p className="text-sm text-muted-foreground whitespace-pre-line">
+                            {ch.summary}
+                          </p>
+                        ) : (
+                          <p className="text-sm text-muted-foreground italic">
+                            No summary yet — click Refresh to fetch and summarize
+                          </p>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-muted-foreground text-center py-4 text-sm">
+                    {channelsData?.channels?.length
+                      ? "Click \"Load Summaries\" to view channel summaries"
+                      : "No channels configured. Click \"Manage Channels\" to add OSM channels to monitor."}
+                  </p>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Manage Channels Modal */}
+            {showManageChannels && (
+              <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+                <div className="bg-background rounded-xl shadow-xl max-w-lg w-full max-h-[80vh] overflow-y-auto">
+                  <div className="p-6 space-y-4">
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-lg font-semibold">Manage Channels</h3>
+                      <button
+                        onClick={() => setShowManageChannels(false)}
+                        className="text-muted-foreground hover:text-foreground"
+                      >
+                        &times;
+                      </button>
+                    </div>
+
+                    {/* Add channel form */}
+                    <div className="border border-border rounded-lg p-3 space-y-2">
+                      <p className="text-xs font-medium text-muted-foreground">Add Channel</p>
+                      <input
+                        type="text"
+                        value={newChannelName}
+                        onChange={(e) => setNewChannelName(e.target.value)}
+                        placeholder="Channel name (e.g. OSM Forum - Albania)"
+                        className="w-full px-3 py-1.5 text-sm border border-border rounded-lg bg-background focus:outline-none focus:ring-1 focus:ring-kaart-orange"
+                      />
+                      <input
+                        type="text"
+                        value={newChannelUrl}
+                        onChange={(e) => setNewChannelUrl(e.target.value)}
+                        placeholder="RSS feed URL"
+                        className="w-full px-3 py-1.5 text-sm border border-border rounded-lg bg-background focus:outline-none focus:ring-1 focus:ring-kaart-orange"
+                      />
+                      <div className="flex items-center gap-2">
+                        <select
+                          value={newChannelType}
+                          onChange={(e) => setNewChannelType(e.target.value)}
+                          className="px-3 py-1.5 text-sm border border-border rounded-lg bg-background focus:outline-none focus:ring-1 focus:ring-kaart-orange"
+                        >
+                          <option value="rss">RSS</option>
+                          <option value="forum">Forum</option>
+                          <option value="api">API</option>
+                        </select>
+                        <button
+                          onClick={async () => {
+                            if (!newChannelName || !newChannelUrl) return;
+                            try {
+                              await addChannel({ name: newChannelName, url: newChannelUrl, channel_type: newChannelType });
+                              setNewChannelName("");
+                              setNewChannelUrl("");
+                              refetchChannels();
+                            } catch { /* ignore */ }
+                          }}
+                          className="px-3 py-1.5 text-sm rounded-lg bg-kaart-orange text-white hover:bg-kaart-orange-dark transition-colors"
+                        >
+                          Add
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Channel list */}
+                    <div className="space-y-2">
+                      {channelsData?.channels?.map((ch) => (
+                        <div
+                          key={ch.id}
+                          className="flex items-center justify-between p-2 border border-border rounded-lg"
+                        >
+                          <div>
+                            <p className="text-sm font-medium">{ch.name}</p>
+                            <p className="text-xs text-muted-foreground truncate max-w-xs">
+                              {ch.url}
+                            </p>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs bg-muted px-2 py-0.5 rounded">
+                              {ch.channel_type}
+                            </span>
+                            <button
+                              onClick={async () => {
+                                try {
+                                  await removeChannel({ channel_id: ch.id });
+                                  refetchChannels();
+                                } catch { /* ignore */ }
+                              }}
+                              className="text-xs text-red-500 hover:text-red-700"
+                            >
+                              Remove
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                      {(!channelsData?.channels || channelsData.channels.length === 0) && (
+                        <p className="text-sm text-muted-foreground text-center py-2">
+                          No channels configured yet
+                        </p>
+                      )}
+                    </div>
+
+                    <button
+                      onClick={() => setShowManageChannels(false)}
+                      className="w-full px-3 py-1.5 text-sm rounded-lg bg-muted hover:bg-muted/80 transition-colors"
+                    >
+                      Close
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         </TabsContent>
 

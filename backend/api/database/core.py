@@ -981,3 +981,48 @@ class CommunityEntry(CRUDMixin, db.Model):
 
     def __repr__(self):
         return f"<CommunityEntry {self.id} type={self.entry_type}>"
+
+
+class MonitoredChannel(CRUDMixin, db.Model):
+    """Configured OSM communication channel to monitor and summarize."""
+
+    __tablename__ = "monitored_channels"
+
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    org_id = db.Column(db.String(255), nullable=True, index=True)
+    name = db.Column(db.String(255), nullable=False)
+    url = db.Column(db.String(512), nullable=False)
+    channel_type = db.Column(db.String(50), default="rss", server_default="rss")
+    active = db.Column(db.Boolean, default=True, server_default="True")
+    last_fetched_at = db.Column(db.DateTime, nullable=True)
+    last_summary = db.Column(db.Text, nullable=True)
+    last_summary_at = db.Column(db.DateTime, nullable=True)
+    post_count = db.Column(db.Integer, default=0)
+    created_by = db.Column(db.String(255), nullable=True)
+    created_at = db.Column(db.DateTime, default=func.now())
+
+    def __repr__(self):
+        return f"<MonitoredChannel {self.id} name={self.name}>"
+
+
+class ChannelPost(CRUDMixin, db.Model):
+    """Cached post from a monitored OSM channel."""
+
+    __tablename__ = "channel_posts"
+
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    channel_id = db.Column(
+        db.Integer,
+        db.ForeignKey("monitored_channels.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    external_id = db.Column(db.String(512), nullable=True)
+    title = db.Column(db.String(512), nullable=True)
+    content = db.Column(db.Text, nullable=True)
+    author = db.Column(db.String(255), nullable=True)
+    published_at = db.Column(db.DateTime, nullable=True)
+    fetched_at = db.Column(db.DateTime, default=func.now())
+
+    def __repr__(self):
+        return f"<ChannelPost {self.id} channel={self.channel_id}>"

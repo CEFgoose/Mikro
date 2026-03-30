@@ -1000,6 +1000,38 @@ export interface CommunitySheetConfigResponse {
   status: number;
 }
 
+// Channel Monitor types
+export interface MonitoredChannel {
+  id: number;
+  name: string;
+  url: string;
+  channel_type: string;
+  active: boolean;
+  last_fetched_at: string | null;
+  last_summary: string | null;
+  last_summary_at: string | null;
+  post_count: number;
+  created_by: string | null;
+  created_at: string;
+}
+
+export interface ChannelsResponse {
+  channels: MonitoredChannel[];
+  status: number;
+}
+
+export interface ChannelSummariesResponse {
+  summaries: Array<{
+    id: number;
+    name: string;
+    summary: string | null;
+    summary_date: string | null;
+    post_count: number;
+    last_fetched: string | null;
+  }>;
+  status: number;
+}
+
 // API Response types
 export interface ApiResponse<T = unknown> {
   data?: T;

@@ -17,6 +17,7 @@ from .Punks import PunkAPI
 from .WeeklyReport import WeeklyReportAPI
 from .Friends import FriendAPI
 from .CommunityData import CommunityDataAPI
+from .ChannelMonitor import ChannelMonitorAPI
 
 __all__ = {
     "UserAPI",
@@ -36,4 +37,5 @@ __all__ = {
     "WeeklyReportAPI",
     "FriendAPI",
     "CommunityDataAPI",
+    "ChannelMonitorAPI",
 }

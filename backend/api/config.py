@@ -73,6 +73,9 @@ class BaseConfig:
     # Mapillary API v4
     MAPILLARY_ACCESS_TOKEN = os.environ.get("MAPILLARY_ACCESS_TOKEN")
 
+    # Anthropic API (AI summaries)
+    ANTHROPIC_API_KEY = os.environ.get("ANTHROPIC_API_KEY")
+
     # Webhook Integration
     MIKRO_WEBHOOK_SECRET = os.environ.get("MIKRO_WEBHOOK_SECRET")
 

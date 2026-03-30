@@ -30,6 +30,9 @@ reportlab>=4.0.0
 marshmallow>=3.20.0
 marshmallow-sqlalchemy>=0.29.0
 
+# Anthropic API (AI channel summaries)
+anthropic>=0.40.0
+
 # Google Sheets API (community data integration)
 google-api-python-client>=2.0.0
 google-auth>=2.0.0

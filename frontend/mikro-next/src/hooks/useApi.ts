@@ -43,6 +43,8 @@ import type {
   WeeklyReportDraftsResponse,
   CommunityEntriesResponse,
   CommunitySheetConfigResponse,
+  ChannelsResponse,
+  ChannelSummariesResponse,
 } from "@/types";
 
 /**
@@ -1042,4 +1044,27 @@ export function useUpdateCommunityEntry() {
 }
 export function useFetchSheetConfig() {
   return useApiCall<CommunitySheetConfigResponse>("/community/fetch_sheet_config");
+}
+
+// Channel Monitor
+export function useFetchChannels() {
+  return useApiCall<ChannelsResponse>("/channel/fetch_channels");
+}
+export function useAddChannel() {
+  return useApiMutation("/channel/add_channel");
+}
+export function useUpdateChannel() {
+  return useApiMutation("/channel/update_channel");
+}
+export function useRemoveChannel() {
+  return useApiMutation("/channel/remove_channel");
+}
+export function useFetchChannelContent() {
+  return useApiMutation("/channel/fetch_channel_content");
+}
+export function useSummarizeChannel() {
+  return useApiMutation<{ message: string; summary: string; status: number }>("/channel/summarize_channel");
+}
+export function useFetchAllSummaries() {
+  return useApiMutation<ChannelSummariesResponse>("/channel/fetch_all_summaries");
 }

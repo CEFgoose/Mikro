@@ -41,6 +41,8 @@ from .core import (
     FriendChangeset,
     WeeklyReport,
     CommunityEntry,
+    MonitoredChannel,
+    ChannelPost,
 )
 
 __all__ = [
@@ -85,4 +87,6 @@ __all__ = [
     "FriendChangeset",
     "WeeklyReport",
     "CommunityEntry",
+    "MonitoredChannel",
+    "ChannelPost",
 ]

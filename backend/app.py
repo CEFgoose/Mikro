@@ -126,6 +126,7 @@ def _register_views(app):
         WeeklyReportAPI,
         FriendAPI,
         CommunityDataAPI,
+        ChannelMonitorAPI,
     )
 
     # Authentication
@@ -192,6 +193,12 @@ def _register_views(app):
     app.add_url_rule(
         "/api/community/<path>",
         view_func=CommunityDataAPI.as_view("community"),
+    )
+
+    # Channel Monitor
+    app.add_url_rule(
+        "/api/channel/<path>",
+        view_func=ChannelMonitorAPI.as_view("channel"),
     )
 
 
