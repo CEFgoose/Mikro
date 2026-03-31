@@ -837,10 +837,10 @@ export default function WeeklyReportBuilderPage() {
                   <tbody>
                     {activeProjects.map((p) => {
                       const pctMapped = p.total_tasks
-                        ? Math.round(((p.total_mapped || 0) / p.total_tasks) * 100)
+                        ? Math.min(Math.round(((p.total_mapped || 0) / p.total_tasks) * 100), 100)
                         : 0;
                       const pctValidated = p.total_tasks
-                        ? Math.round(((p.total_validated || 0) / p.total_tasks) * 100)
+                        ? Math.min(Math.round(((p.total_validated || 0) / p.total_tasks) * 100), 100)
                         : 0;
                       return (
                         <tr key={p.id}>

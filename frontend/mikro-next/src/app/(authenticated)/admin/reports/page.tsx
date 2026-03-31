@@ -1070,7 +1070,7 @@ export default function AdminReportsPage() {
                                     />
                                   </div>
                                   <span className="text-xs text-muted-foreground w-10 text-right">
-                                    {proj.percent_mapped}%
+                                    {Math.min(proj.percent_mapped, 100)}%
                                   </span>
                                 </div>
                               </td>
@@ -1088,7 +1088,7 @@ export default function AdminReportsPage() {
                                     />
                                   </div>
                                   <span className="text-xs text-muted-foreground w-10 text-right">
-                                    {proj.percent_validated}%
+                                    {Math.min(proj.percent_validated, 100)}%
                                   </span>
                                 </div>
                               </td>

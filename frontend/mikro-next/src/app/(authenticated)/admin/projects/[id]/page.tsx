@@ -150,10 +150,10 @@ export default function AdminProjectProfilePage() {
   const { project: proj } = data;
   const totalTasks = proj.total_tasks || 0;
   const pctMapped = totalTasks
-    ? (proj.effective_mapped / totalTasks) * 100
+    ? Math.min((proj.effective_mapped / totalTasks) * 100, 100)
     : 0;
   const pctValidated = totalTasks
-    ? (proj.effective_validated / totalTasks) * 100
+    ? Math.min((proj.effective_validated / totalTasks) * 100, 100)
     : 0;
   const remaining = (proj.max_payment || 0) - (proj.total_payout || 0);
   const isMR = proj.source === "mr";

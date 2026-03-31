@@ -188,6 +188,7 @@ class Project(ModelWithSoftDeleteAndCRUD, SurrogatePK):
     tasks_mapped = db.Column(db.BigInteger, default=0)
     tasks_validated = db.Column(db.BigInteger, default=0)
     tasks_invalidated = db.Column(db.BigInteger, default=0)
+    tasks_overlap = db.Column(db.Integer, default=0)
 
     # Metadata
     difficulty = db.Column(db.String(50), nullable=True, default="Intermediate")

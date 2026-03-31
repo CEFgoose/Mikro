@@ -327,6 +327,41 @@ class ReportsAPI(MethodView):
             mapped = _ps.get("tasks_mapped", 0)
             validated = _ps.get("tasks_validated", 0)
             invalidated = _ps.get("tasks_invalidated", 0)
+
+            # Source-aware percent calculation
+            if source == "mr":
+                # MR: count completed tasks directly, no split-aware logic
+                mr_completed = Task.query.filter_by(
+                    project_id=proj.id, mapped=True
+                ).count()
+                raw_pct_mapped = round(mr_completed / total * 100, 1) if total else 0
+                raw_pct_validated = 0  # MR doesn't have separate validation
+            else:
+                # TM4: exclude overlap tasks from denominator
+                effective_total = total - (proj.tasks_overlap or 0)
+                raw_pct_mapped = (
+                    round(mapped / effective_total * 100, 1)
+                    if effective_total > 0
+                    else 0
+                )
+                raw_pct_validated = (
+                    round(validated / effective_total * 100, 1)
+                    if effective_total > 0
+                    else 0
+                )
+
+            # Cap at 100% with warning log
+            if raw_pct_mapped > 100:
+                logger.warning(
+                    f"Project {proj.id} ({proj.name}) percent_mapped={raw_pct_mapped}% "
+                    f"exceeds 100% — capping. total_tasks={total}, mapped={mapped}"
+                )
+            if raw_pct_validated > 100:
+                logger.warning(
+                    f"Project {proj.id} ({proj.name}) percent_validated={raw_pct_validated}% "
+                    f"exceeds 100% — capping. total_tasks={total}, validated={validated}"
+                )
+
             proj_dict = {
                 "id": proj.id,
                 "name": proj.name,
@@ -336,10 +371,8 @@ class ReportsAPI(MethodView):
                 "tasks_mapped": mapped,
                 "tasks_validated": validated,
                 "tasks_invalidated": invalidated,
-                "percent_mapped": round(mapped / total * 100, 1) if total else 0,
-                "percent_validated": (
-                    round(validated / total * 100, 1) if total else 0
-                ),
+                "percent_mapped": min(raw_pct_mapped, 100),
+                "percent_validated": min(raw_pct_validated, 100),
                 "mapping_rate": proj.mapping_rate_per_task or 0,
                 "validation_rate": proj.validation_rate_per_task or 0,
                 "status": proj.status,

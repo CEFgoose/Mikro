@@ -281,6 +281,7 @@ class ProjectAPI(MethodView):
         project_name = project_info.get("name", f"Project {project_id}")
         # Use totalTasks from projectInfo if available (more accurate than counting features)
         total_tasks = project_info.get("totalTasks") or len(project_data.get("tasks", {}).get("features", []))
+        tasks_overlap = project_info.get("tasksOverlap", 0) or 0
 
         # Calculate budget
         if rate_type is True:
@@ -304,6 +305,7 @@ class ProjectAPI(MethodView):
             name=project_name,
             short_name=final_short_name,
             total_tasks=total_tasks,
+            tasks_overlap=tasks_overlap,
             max_payment=float(calculation),
             url=url,
             validation_rate_per_task=validation_rate,
@@ -584,7 +586,8 @@ class ProjectAPI(MethodView):
 
             # Use totalTasks from projectInfo if available (more accurate than counting features)
             total_tasks = project_info_total or features_count
-            current_app.logger.info(f"Using total_tasks: {total_tasks}")
+            tasks_overlap = project_info.get("tasksOverlap", 0) or 0
+            current_app.logger.info(f"Using total_tasks: {total_tasks}, tasks_overlap: {tasks_overlap}")
 
         if rate_type is True:
             mapping_rate = float(mapping_rate)
