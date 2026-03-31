@@ -487,8 +487,18 @@ class MapRouletteSync:
                 stats["errors"] += 1
 
         # -----------------------------------------------------------
-        # Step 6: Update sync cursor
+        # Step 6: Refresh total_tasks from MR API + update sync cursor
         # -----------------------------------------------------------
+        try:
+            mr_meta = self.fetch_challenge_metadata(challenge_id)
+            if mr_meta and mr_meta.get("task_count"):
+                project.total_tasks = mr_meta["task_count"]
+        except Exception as e:
+            current_app.logger.warning(
+                f"Could not refresh total_tasks for MR challenge "
+                f"{challenge_id}: {e}"
+            )
+
         try:
             project.update(last_sync_cursor=datetime.now(timezone.utc))
         except Exception as e:

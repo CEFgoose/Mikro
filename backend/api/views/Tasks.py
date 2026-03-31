@@ -647,6 +647,26 @@ class TaskAPI(MethodView):
                 # Also check existing tasks for invalidation via status/history
                 # This handles tasks created before the TM4 enhancement
                 self.get_invalidated_TM4_tasks(project_id, user)
+
+                # Refresh total_tasks and tasks_overlap from TM4 project endpoint
+                try:
+                    proj_url = f"{base_url}/projects/{project_id}/"
+                    proj_resp = requests.get(proj_url, headers=headers, timeout=30)
+                    if proj_resp.ok:
+                        proj_data = proj_resp.json()
+                        proj_info = proj_data.get("projectInfo", {})
+                        new_total = proj_info.get("totalTasks")
+                        new_overlap = proj_info.get("tasksOverlap", 0) or 0
+                        project = Project.query.get(project_id)
+                        if project and new_total:
+                            project.total_tasks = new_total
+                            project.tasks_overlap = new_overlap
+                            db.session.commit()
+                except Exception as e:
+                    current_app.logger.warning(
+                        f"Could not refresh total_tasks for TM4 project {project_id}: {e}"
+                    )
+
                 return {"message": "updated!"}
             else:
                 current_app.logger.error(
