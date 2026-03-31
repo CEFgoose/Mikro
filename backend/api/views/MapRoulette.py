@@ -228,8 +228,22 @@ class MapRouletteSync:
             name = data.get("name", f"MR Challenge {challenge_id}")
             description = data.get("description", "")
 
-            # Task count: try various fields the MR API may return
-            task_count = data.get("taskCount") or data.get("tasksRemaining") or 0
+            # MR API does NOT return a totalTasks field.
+            # It returns tasksRemaining and completionPercentage.
+            # Derive total from these:
+            tasks_remaining = data.get("tasksRemaining", 0) or 0
+            completion_pct = data.get("completionPercentage", 0) or 0
+
+            if completion_pct > 0 and completion_pct < 100:
+                # total = remaining / (1 - completion%)
+                task_count = round(tasks_remaining / (1 - completion_pct / 100))
+            elif completion_pct == 100:
+                # Challenge fully complete — remaining is 0, can't derive total.
+                # Return 0 here; caller should count synced Task records instead.
+                task_count = 0
+            else:
+                # 0% complete — remaining IS the total
+                task_count = tasks_remaining
 
             return {
                 "name": name,
@@ -491,8 +505,15 @@ class MapRouletteSync:
         # -----------------------------------------------------------
         try:
             mr_meta = self.fetch_challenge_metadata(challenge_id)
-            if mr_meta and mr_meta.get("task_count"):
-                project.total_tasks = mr_meta["task_count"]
+            if mr_meta:
+                new_total = mr_meta.get("task_count", 0)
+                if new_total and new_total > 0:
+                    project.total_tasks = new_total
+                else:
+                    # 100% complete challenge — can't derive from API, count our records
+                    synced_count = Task.query.filter_by(project_id=project.id).count()
+                    if synced_count > 0:
+                        project.total_tasks = synced_count
         except Exception as e:
             current_app.logger.warning(
                 f"Could not refresh total_tasks for MR challenge "

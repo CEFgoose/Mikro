@@ -552,7 +552,15 @@ def run_mr_metadata_backfill(app, job):
         # Update project with real metadata
         old_name = project.name
         project.name = mr_data.get("name", project.name)
-        project.total_tasks = mr_data.get("task_count", 0)
+        new_total = mr_data.get("task_count", 0)
+        if new_total and new_total > 0:
+            project.total_tasks = new_total
+        else:
+            # 100% complete — count synced task records
+            from ..database import Task
+            synced_count = Task.query.filter_by(project_id=project.id).count()
+            if synced_count > 0:
+                project.total_tasks = synced_count
 
         # Recalculate budget with real task count
         if project.total_tasks > 0:
