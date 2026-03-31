@@ -474,7 +474,6 @@ export default function AdminReportsPage() {
   const [showManageChannels, setShowManageChannels] = useState(false);
   const [newChannelName, setNewChannelName] = useState("");
   const [newChannelUrl, setNewChannelUrl] = useState("");
-  const [newChannelType, setNewChannelType] = useState("rss");
   const [channelSummaries, setChannelSummaries] = useState<Array<{ id: number; name: string; summary: string | null; summary_date: string | null; post_count: number; last_fetched: string | null }>>([]);
   const [refreshingChannelId, setRefreshingChannelId] = useState<number | null>(null);
 
@@ -1605,31 +1604,20 @@ export default function AdminReportsPage() {
                         placeholder="RSS feed URL"
                         className="w-full px-3 py-1.5 text-sm border border-border rounded-lg bg-background focus:outline-none focus:ring-1 focus:ring-kaart-orange"
                       />
-                      <div className="flex items-center gap-2">
-                        <select
-                          value={newChannelType}
-                          onChange={(e) => setNewChannelType(e.target.value)}
-                          className="px-3 py-1.5 text-sm border border-border rounded-lg bg-background focus:outline-none focus:ring-1 focus:ring-kaart-orange"
-                        >
-                          <option value="rss">RSS</option>
-                          <option value="forum">Forum</option>
-                          <option value="api">API</option>
-                        </select>
-                        <button
-                          onClick={async () => {
-                            if (!newChannelName || !newChannelUrl) return;
-                            try {
-                              await addChannel({ name: newChannelName, url: newChannelUrl, channel_type: newChannelType });
-                              setNewChannelName("");
-                              setNewChannelUrl("");
-                              refetchChannels();
-                            } catch { /* ignore */ }
-                          }}
-                          className="px-3 py-1.5 text-sm rounded-lg bg-kaart-orange text-white hover:bg-kaart-orange-dark transition-colors"
-                        >
-                          Add
-                        </button>
-                      </div>
+                      <button
+                        onClick={async () => {
+                          if (!newChannelName || !newChannelUrl) return;
+                          try {
+                            await addChannel({ name: newChannelName, url: newChannelUrl, channel_type: "rss" });
+                            setNewChannelName("");
+                            setNewChannelUrl("");
+                            refetchChannels();
+                          } catch { /* ignore */ }
+                        }}
+                        className="px-3 py-1.5 text-sm rounded-lg bg-kaart-orange text-white hover:bg-kaart-orange-dark transition-colors"
+                      >
+                        Add
+                      </button>
                     </div>
 
                     {/* Channel list */}
@@ -1646,9 +1634,6 @@ export default function AdminReportsPage() {
                             </p>
                           </div>
                           <div className="flex items-center gap-2">
-                            <span className="text-xs bg-muted px-2 py-0.5 rounded">
-                              {ch.channel_type}
-                            </span>
                             <button
                               onClick={async () => {
                                 try {
