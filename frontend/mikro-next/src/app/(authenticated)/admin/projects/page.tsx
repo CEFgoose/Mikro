@@ -453,17 +453,18 @@ export default function AdminProjectsPage() {
     );
   };
 
-  /** Calculate completion % for a project (TM4 or MR). */
+  /** Calculate completion % for a project (TM4 or MR). Capped at 100%. */
   const getCompletionPct = (project: Project): number | null => {
     try {
       if (!project.total_tasks || project.total_tasks === 0) return null;
       if (project.source === "mr" && project.mr_status_breakdown && typeof project.mr_status_breakdown === "object" && !Array.isArray(project.mr_status_breakdown)) {
         const breakdown = project.mr_status_breakdown as Record<string, number>;
-        const fixed = (breakdown["1"] ?? 0) + (breakdown["5"] ?? 0);
-        return Math.round((fixed / project.total_tasks) * 100);
+        // Count all trackable MR statuses: Fixed(1), FalsePositive(2), Skipped(3), AlreadyFixed(5), CantComplete(6)
+        const completed = (breakdown["1"] ?? 0) + (breakdown["2"] ?? 0) + (breakdown["3"] ?? 0) + (breakdown["5"] ?? 0) + (breakdown["6"] ?? 0);
+        return Math.min(Math.round((completed / project.total_tasks) * 100), 100);
       }
       const validated = project.total_validated ?? 0;
-      return Math.round((validated / project.total_tasks) * 100);
+      return Math.min(Math.round((validated / project.total_tasks) * 100), 100);
     } catch {
       return null;
     }
