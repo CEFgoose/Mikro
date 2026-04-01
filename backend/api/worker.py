@@ -552,15 +552,30 @@ def run_mr_metadata_backfill(app, job):
         # Update project with real metadata
         old_name = project.name
         project.name = mr_data.get("name", project.name)
-        new_total = mr_data.get("task_count", 0)
-        if new_total and new_total > 0:
-            project.total_tasks = new_total
-        else:
-            # 100% complete — count synced task records
-            from ..database import Task
-            synced_count = Task.query.filter_by(project_id=project.id).count()
-            if synced_count > 0:
-                project.total_tasks = synced_count
+
+        # Count ALL tasks by paginating the challenge tasks endpoint
+        try:
+            mr_sync = MapRouletteSync()
+            mr_base = mr_sync._get_mr_base_url()
+            mr_headers = mr_sync._get_mr_headers()
+            total_count = 0
+            count_page = 0
+            while True:
+                count_url = f"{mr_base}/challenge/{challenge_id}/tasks?limit=200&page={count_page}"
+                count_resp = requests.get(count_url, headers=mr_headers, timeout=30)
+                if not count_resp.ok:
+                    break
+                page_tasks = count_resp.json()
+                if not isinstance(page_tasks, list) or len(page_tasks) == 0:
+                    break
+                total_count += len(page_tasks)
+                if len(page_tasks) < 200:
+                    break
+                count_page += 1
+            if total_count > 0:
+                project.total_tasks = total_count
+        except Exception as e:
+            logger.warning(f"Could not count MR tasks for {challenge_id}: {e}")
 
         # Recalculate budget with real task count
         if project.total_tasks > 0:

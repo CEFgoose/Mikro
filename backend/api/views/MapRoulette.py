@@ -228,22 +228,24 @@ class MapRouletteSync:
             name = data.get("name", f"MR Challenge {challenge_id}")
             description = data.get("description", "")
 
-            # MR API does NOT return a totalTasks field.
-            # It returns tasksRemaining and completionPercentage.
-            # Derive total from these:
-            tasks_remaining = data.get("tasksRemaining", 0) or 0
-            completion_pct = data.get("completionPercentage", 0) or 0
-
-            if completion_pct > 0 and completion_pct < 100:
-                # total = remaining / (1 - completion%)
-                task_count = round(tasks_remaining / (1 - completion_pct / 100))
-            elif completion_pct == 100:
-                # Challenge fully complete — remaining is 0, can't derive total.
-                # Return 0 here; caller should count synced Task records instead.
-                task_count = 0
-            else:
-                # 0% complete — remaining IS the total
-                task_count = tasks_remaining
+            # MR API does NOT return a reliable totalTasks field.
+            # Count all tasks by paginating the challenge tasks endpoint.
+            base_url = self._get_mr_base_url()
+            headers = self._get_mr_headers()
+            task_count = 0
+            count_page = 0
+            while True:
+                count_url = f"{base_url}/challenge/{challenge_id}/tasks?limit=200&page={count_page}"
+                count_resp = requests.get(count_url, headers=headers, timeout=30)
+                if not count_resp.ok:
+                    break
+                page_tasks = count_resp.json()
+                if not isinstance(page_tasks, list) or len(page_tasks) == 0:
+                    break
+                task_count += len(page_tasks)
+                if len(page_tasks) < 200:
+                    break
+                count_page += 1
 
             return {
                 "name": name,
@@ -501,19 +503,36 @@ class MapRouletteSync:
                 stats["errors"] += 1
 
         # -----------------------------------------------------------
-        # Step 6: Refresh total_tasks from MR API + update sync cursor
+        # Step 6: Count ALL tasks in challenge + update sync cursor
         # -----------------------------------------------------------
+        # The MR API does not return a reliable total task count field.
+        # We must paginate the challenge tasks endpoint and count everything
+        # (including Created/non-trackable tasks) to get the true total.
         try:
-            mr_meta = self.fetch_challenge_metadata(challenge_id)
-            if mr_meta:
-                new_total = mr_meta.get("task_count", 0)
-                if new_total and new_total > 0:
-                    project.total_tasks = new_total
-                else:
-                    # 100% complete challenge — can't derive from API, count our records
-                    synced_count = Task.query.filter_by(project_id=project.id).count()
-                    if synced_count > 0:
-                        project.total_tasks = synced_count
+            total_count = 0
+            count_page = 0
+            count_limit = 200
+            while True:
+                count_url = (
+                    f"{base_url}/challenge/{challenge_id}/tasks"
+                    f"?limit={count_limit}&page={count_page}"
+                )
+                count_resp = requests.get(count_url, headers=headers, timeout=30)
+                if not count_resp.ok:
+                    break
+                page_tasks = count_resp.json()
+                if not isinstance(page_tasks, list) or len(page_tasks) == 0:
+                    break
+                total_count += len(page_tasks)
+                if len(page_tasks) < count_limit:
+                    break
+                count_page += 1
+
+            if total_count > 0:
+                project.total_tasks = total_count
+                current_app.logger.info(
+                    f"MR challenge {challenge_id}: updated total_tasks to {total_count}"
+                )
         except Exception as e:
             current_app.logger.warning(
                 f"Could not refresh total_tasks for MR challenge "
