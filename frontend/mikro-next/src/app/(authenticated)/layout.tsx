@@ -2,6 +2,7 @@ import { auth0 } from "@/lib/auth0";
 import { redirect } from "next/navigation";
 import { Header } from "@/components/layout/Header";
 import { Sidebar } from "@/components/layout/Sidebar";
+import { AprilFools } from "@/components/layout/AprilFools";
 
 const BACKEND_URL = process.env.FLASK_BACKEND_URL || "http://localhost:5004";
 
@@ -80,6 +81,7 @@ export default async function AuthenticatedLayout({
 
   return (
     <div style={{ minHeight: "100vh", backgroundColor: "var(--muted)" }}>
+      <AprilFools />
       <Header />
       <Sidebar role={role as "user" | "validator" | "admin"} paymentsVisible={paymentsVisible} />
       <main
