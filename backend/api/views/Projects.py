@@ -1650,11 +1650,12 @@ class ProjectAPI(MethodView):
         ]
 
         # Find projects where user has validated tasks but is not assigned
-        all_org_tasks = Task.query.filter_by(org_id=g.user.org_id).all()
         validated_project_ids = set(
-            task.project_id
-            for task in all_org_tasks
-            if task.validated_by == g.user.osm_username
+            row[0]
+            for row in db.session.query(Task.project_id.distinct()).filter(
+                Task.org_id == g.user.org_id,
+                Task.validated_by == g.user.osm_username,
+            ).all()
         )
         unassigned_validation_project_ids = validated_project_ids - set(all_user_project_ids)
 

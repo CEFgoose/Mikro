@@ -483,6 +483,54 @@ export default function AdminChecklistsPage() {
     );
   };
 
+  const ROWS_PER_PAGE = 50;
+
+  const PaginatedChecklistGrid = ({ list, showConfirm = false, emptyMessage }: { list: Checklist[]; showConfirm?: boolean; emptyMessage: string }) => {
+    const [currentPage, setCurrentPage] = useState(1);
+    const prevSearchRef = useRef(searchTerm);
+    if (prevSearchRef.current !== searchTerm) {
+      prevSearchRef.current = searchTerm;
+      if (currentPage !== 1) setCurrentPage(1);
+    }
+    const filtered = filterChecklists(list);
+    const totalPages = Math.ceil(filtered.length / ROWS_PER_PAGE);
+    const paginated = filtered.slice((currentPage - 1) * ROWS_PER_PAGE, currentPage * ROWS_PER_PAGE);
+    const showingStart = filtered.length === 0 ? 0 : (currentPage - 1) * ROWS_PER_PAGE + 1;
+    const showingEnd = Math.min(currentPage * ROWS_PER_PAGE, filtered.length);
+
+    if (filtered.length === 0) {
+      return (
+        <Card>
+          <CardContent className="py-12 text-center text-muted-foreground">
+            {searchTerm ? `No matching ${emptyMessage.toLowerCase()}` : emptyMessage}
+          </CardContent>
+        </Card>
+      );
+    }
+
+    return (
+      <>
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          {paginated.map((checklist) => (
+            <ChecklistCard key={checklist.id} checklist={checklist} showConfirm={showConfirm} />
+          ))}
+        </div>
+        {filtered.length > ROWS_PER_PAGE && (
+          <div className="flex items-center justify-between mt-4 px-2">
+            <span className="text-sm text-muted-foreground">
+              Showing {showingStart}–{showingEnd} of {filtered.length}
+            </span>
+            <div className="flex items-center gap-2">
+              <Button variant="outline" size="sm" disabled={currentPage === 1} onClick={() => setCurrentPage(p => p - 1)}>Previous</Button>
+              <span className="text-sm text-muted-foreground">Page {currentPage} of {totalPages}</span>
+              <Button variant="outline" size="sm" disabled={currentPage >= totalPages} onClick={() => setCurrentPage(p => p + 1)}>Next</Button>
+            </div>
+          </div>
+        )}
+      </>
+    );
+  };
+
   if (loading) {
     return (
       <div className="space-y-6">
@@ -575,99 +623,27 @@ export default function AdminChecklistsPage() {
         </TabsList>
 
         <TabsContent value="active">
-          {filterChecklists(activeChecklists).length > 0 ? (
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-              {filterChecklists(activeChecklists).map((checklist) => (
-                <ChecklistCard key={checklist.id} checklist={checklist} />
-              ))}
-            </div>
-          ) : (
-            <Card>
-              <CardContent className="py-12 text-center text-muted-foreground">
-                {searchTerm ? "No matching active checklists" : "No active checklists"}
-              </CardContent>
-            </Card>
-          )}
+          <PaginatedChecklistGrid list={activeChecklists} emptyMessage="No active checklists" />
         </TabsContent>
 
         <TabsContent value="mine">
-          {filterChecklists(myChecklists).length > 0 ? (
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-              {filterChecklists(myChecklists).map((checklist) => (
-                <ChecklistCard key={checklist.id} checklist={checklist} />
-              ))}
-            </div>
-          ) : (
-            <Card>
-              <CardContent className="py-12 text-center text-muted-foreground">
-                {searchTerm ? "No matching checklists" : "No checklists created by you"}
-              </CardContent>
-            </Card>
-          )}
+          <PaginatedChecklistGrid list={myChecklists} emptyMessage="No checklists created by you" />
         </TabsContent>
 
         <TabsContent value="pending">
-          {filterChecklists(completedChecklists).length > 0 ? (
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-              {filterChecklists(completedChecklists).map((checklist) => (
-                <ChecklistCard key={checklist.id} checklist={checklist} showConfirm />
-              ))}
-            </div>
-          ) : (
-            <Card>
-              <CardContent className="py-12 text-center text-muted-foreground">
-                {searchTerm ? "No matching checklists" : "No checklists pending confirmation"}
-              </CardContent>
-            </Card>
-          )}
+          <PaginatedChecklistGrid list={completedChecklists} showConfirm emptyMessage="No checklists pending confirmation" />
         </TabsContent>
 
         <TabsContent value="confirmed">
-          {filterChecklists(confirmedChecklists).length > 0 ? (
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-              {filterChecklists(confirmedChecklists).map((checklist) => (
-                <ChecklistCard key={checklist.id} checklist={checklist} />
-              ))}
-            </div>
-          ) : (
-            <Card>
-              <CardContent className="py-12 text-center text-muted-foreground">
-                {searchTerm ? "No matching checklists" : "No confirmed checklists"}
-              </CardContent>
-            </Card>
-          )}
+          <PaginatedChecklistGrid list={confirmedChecklists} emptyMessage="No confirmed checklists" />
         </TabsContent>
 
         <TabsContent value="inactive">
-          {filterChecklists(inactiveChecklists).length > 0 ? (
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-              {filterChecklists(inactiveChecklists).map((checklist) => (
-                <ChecklistCard key={checklist.id} checklist={checklist} />
-              ))}
-            </div>
-          ) : (
-            <Card>
-              <CardContent className="py-12 text-center text-muted-foreground">
-                {searchTerm ? "No matching checklists" : "No inactive checklists"}
-              </CardContent>
-            </Card>
-          )}
+          <PaginatedChecklistGrid list={inactiveChecklists} emptyMessage="No inactive checklists" />
         </TabsContent>
 
         <TabsContent value="stale">
-          {filterChecklists(staleChecklists).length > 0 ? (
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-              {filterChecklists(staleChecklists).map((checklist) => (
-                <ChecklistCard key={checklist.id} checklist={checklist} />
-              ))}
-            </div>
-          ) : (
-            <Card>
-              <CardContent className="py-12 text-center text-muted-foreground">
-                {searchTerm ? "No matching checklists" : "No stale checklists"}
-              </CardContent>
-            </Card>
-          )}
+          <PaginatedChecklistGrid list={staleChecklists} emptyMessage="No stale checklists" />
         </TabsContent>
       </Tabs>
 

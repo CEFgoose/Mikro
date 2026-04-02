@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import {
   Card,
   CardContent,
@@ -400,89 +400,118 @@ export default function AdminTrainingPage() {
     </TableHead>
   );
 
+  const ROWS_PER_PAGE = 50;
+
   const TrainingTable = ({ trainingList }: { trainingList: Training[] }) => {
-    const sorted = filterAndSort(trainingList);
+    const [currentPage, setCurrentPage] = useState(1);
+    const filtered = filterAndSort(trainingList);
+    const totalPages = Math.ceil(filtered.length / ROWS_PER_PAGE);
+    const paginated = filtered.slice((currentPage - 1) * ROWS_PER_PAGE, currentPage * ROWS_PER_PAGE);
+    const showingStart = filtered.length === 0 ? 0 : (currentPage - 1) * ROWS_PER_PAGE + 1;
+    const showingEnd = Math.min(currentPage * ROWS_PER_PAGE, filtered.length);
+
+    // Reset page when search/sort changes
+    const prevFilterLen = useRef(filtered.length);
+    if (filtered.length !== prevFilterLen.current) {
+      prevFilterLen.current = filtered.length;
+      if (currentPage !== 1) setCurrentPage(1);
+    }
+
     return (
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <SortHeader label="Title" sortField="title" />
-            <SortHeader label="Difficulty" sortField="difficulty" />
-            <SortHeader label="Points" sortField="points" />
-            <SortHeader label="Questions" sortField="questions" />
-            <SortHeader label="Created By" sortField="created_by" />
-            <TableHead>URL</TableHead>
-            <TableHead className="text-right">Actions</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {sorted.map((training) => (
-            <TableRow key={training.id}>
-              <TableCell className="font-medium">{training.title}</TableCell>
-              <TableCell>
-                <div className="flex items-center gap-1">
-                  <Badge
-                    variant={
-                      training.difficulty === "Easy"
-                        ? "success"
-                        : training.difficulty === "Medium"
-                        ? "warning"
-                        : "destructive"
-                    }
-                  >
-                    {training.difficulty}
-                  </Badge>
-                  {(training as Training & { assigned_locations?: number }).assigned_locations ? (
-                    <Badge variant="secondary" className="text-[10px]">
-                      {(training as Training & { assigned_locations?: number }).assigned_locations} loc
-                    </Badge>
-                  ) : null}
-                </div>
-              </TableCell>
-              <TableCell>{training.point_value}</TableCell>
-              <TableCell>{formatNumber(training.questions?.length ?? 0)}</TableCell>
-              <TableCell className="text-sm text-muted-foreground">{training.created_by || "\u2014"}</TableCell>
-              <TableCell>
-                <a
-                  href={training.training_url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-kaart-orange hover:underline"
-                >
-                  View
-                </a>
-              </TableCell>
-              <TableCell className="text-right">
-                <div className="flex justify-end gap-2">
-                  <Button size="sm" variant="outline" onClick={() => openEditModal(training, "questions")}>
-                    Questions
-                  </Button>
-                  <Button size="sm" variant="outline" onClick={() => openEditModal(training)}>
-                    Edit
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="destructive"
-                    onClick={() => {
-                      setSelectedTraining(training);
-                      setShowDeleteModal(true);
-                    }}
-                  >
-                    Delete
-                  </Button>
-                </div>
-              </TableCell>
-            </TableRow>
-          ))}
-          {sorted.length === 0 && (
+      <>
+        <Table>
+          <TableHeader>
             <TableRow>
-              <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
-                No trainings found
-              </TableCell>
+              <SortHeader label="Title" sortField="title" />
+              <SortHeader label="Difficulty" sortField="difficulty" />
+              <SortHeader label="Points" sortField="points" />
+              <SortHeader label="Questions" sortField="questions" />
+              <SortHeader label="Created By" sortField="created_by" />
+              <TableHead>URL</TableHead>
+              <TableHead className="text-right">Actions</TableHead>
             </TableRow>
-          )}
-        </TableBody>
-      </Table>
+          </TableHeader>
+          <TableBody>
+            {paginated.map((training) => (
+              <TableRow key={training.id}>
+                <TableCell className="font-medium">{training.title}</TableCell>
+                <TableCell>
+                  <div className="flex items-center gap-1">
+                    <Badge
+                      variant={
+                        training.difficulty === "Easy"
+                          ? "success"
+                          : training.difficulty === "Medium"
+                          ? "warning"
+                          : "destructive"
+                      }
+                    >
+                      {training.difficulty}
+                    </Badge>
+                    {(training as Training & { assigned_locations?: number }).assigned_locations ? (
+                      <Badge variant="secondary" className="text-[10px]">
+                        {(training as Training & { assigned_locations?: number }).assigned_locations} loc
+                      </Badge>
+                    ) : null}
+                  </div>
+                </TableCell>
+                <TableCell>{training.point_value}</TableCell>
+                <TableCell>{formatNumber(training.questions?.length ?? 0)}</TableCell>
+                <TableCell className="text-sm text-muted-foreground">{training.created_by || "\u2014"}</TableCell>
+                <TableCell>
+                  <a
+                    href={training.training_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-kaart-orange hover:underline"
+                  >
+                    View
+                  </a>
+                </TableCell>
+                <TableCell className="text-right">
+                  <div className="flex justify-end gap-2">
+                    <Button size="sm" variant="outline" onClick={() => openEditModal(training, "questions")}>
+                      Questions
+                    </Button>
+                    <Button size="sm" variant="outline" onClick={() => openEditModal(training)}>
+                      Edit
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="destructive"
+                      onClick={() => {
+                        setSelectedTraining(training);
+                        setShowDeleteModal(true);
+                      }}
+                    >
+                      Delete
+                    </Button>
+                  </div>
+                </TableCell>
+              </TableRow>
+            ))}
+            {filtered.length === 0 && (
+              <TableRow>
+                <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
+                  No trainings found
+                </TableCell>
+              </TableRow>
+            )}
+          </TableBody>
+        </Table>
+        {filtered.length > ROWS_PER_PAGE && (
+          <div className="flex items-center justify-between mt-4 px-2">
+            <span className="text-sm text-muted-foreground">
+              Showing {showingStart}–{showingEnd} of {filtered.length}
+            </span>
+            <div className="flex items-center gap-2">
+              <Button variant="outline" size="sm" disabled={currentPage === 1} onClick={() => setCurrentPage(p => p - 1)}>Previous</Button>
+              <span className="text-sm text-muted-foreground">Page {currentPage} of {totalPages}</span>
+              <Button variant="outline" size="sm" disabled={currentPage >= totalPages} onClick={() => setCurrentPage(p => p + 1)}>Next</Button>
+            </div>
+          </div>
+        )}
+      </>
     );
   };
 

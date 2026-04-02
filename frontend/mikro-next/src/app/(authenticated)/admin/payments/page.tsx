@@ -157,11 +157,20 @@ export default function AdminPaymentsPage() {
   const [sortBy, setSortBy] = useState<"date" | "amount" | "user">("date");
   const [expandedProjects, setExpandedProjects] = useState<Set<number>>(new Set());
 
+  // Pagination
+  const [currentPage, setCurrentPage] = useState(1);
+  const ROWS_PER_PAGE = 50;
+
   const requests = useMemo(() => transactions?.requests ?? [], [transactions?.requests]);
   const payments = useMemo(() => transactions?.payments ?? [], [transactions?.payments]);
 
   const totalPending = useMemo(() => requests.reduce((sum, r) => sum + r.amount_requested, 0), [requests]);
   const totalPaid = useMemo(() => payments.reduce((sum, p) => sum + p.amount_paid, 0), [payments]);
+
+  // Reset page when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, sortBy]);
 
   // Filter and sort requests
   const filteredRequests = useMemo(() => {
@@ -194,6 +203,18 @@ export default function AdminPaymentsPage() {
       )
       .toSorted((a, b) => new Date(b.date_paid).getTime() - new Date(a.date_paid).getTime());
   }, [payments, searchTerm]);
+
+  // Paginate requests
+  const requestsTotalPages = Math.max(1, Math.ceil(filteredRequests.length / ROWS_PER_PAGE));
+  const requestsStart = (currentPage - 1) * ROWS_PER_PAGE;
+  const requestsEnd = Math.min(currentPage * ROWS_PER_PAGE, filteredRequests.length);
+  const paginatedRequests = filteredRequests.slice(requestsStart, requestsEnd);
+
+  // Paginate payments
+  const paymentsTotalPages = Math.max(1, Math.ceil(filteredPayments.length / ROWS_PER_PAGE));
+  const paymentsStart = (currentPage - 1) * ROWS_PER_PAGE;
+  const paymentsEnd = Math.min(currentPage * ROWS_PER_PAGE, filteredPayments.length);
+  const paginatedPayments = filteredPayments.slice(paymentsStart, paymentsEnd);
 
   // Calculate monthly stats
   const monthlyStats = useMemo(() => {
@@ -499,7 +520,7 @@ export default function AdminPaymentsPage() {
       </div>
 
       {/* Tabs for Requests and History */}
-      <Tabs defaultValue="requests">
+      <Tabs defaultValue="requests" onValueChange={() => setCurrentPage(1)}>
         <TabsList>
           <TabsTrigger value="requests">Pending Requests ({filteredRequests.length})</TabsTrigger>
           <TabsTrigger value="history">Payment History ({filteredPayments.length})</TabsTrigger>
@@ -521,7 +542,7 @@ export default function AdminPaymentsPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filteredRequests.map((request) => (
+                  {paginatedRequests.map((request) => (
                     <TableRow key={request.id}>
                       <TableCell className="font-medium">{request.user}</TableCell>
                       <TableCell>{request.osm_username}</TableCell>
@@ -568,6 +589,18 @@ export default function AdminPaymentsPage() {
                   )}
                 </TableBody>
               </Table>
+              {filteredRequests.length > ROWS_PER_PAGE && (
+                <div className="flex items-center justify-between mt-4 px-2 pb-4">
+                  <span className="text-sm text-muted-foreground">
+                    Showing {requestsStart + 1}–{requestsEnd} of {filteredRequests.length}
+                  </span>
+                  <div className="flex items-center gap-2">
+                    <Button variant="outline" size="sm" disabled={currentPage === 1} onClick={() => setCurrentPage(p => p - 1)}>Previous</Button>
+                    <span className="text-sm text-muted-foreground">Page {currentPage} of {requestsTotalPages}</span>
+                    <Button variant="outline" size="sm" disabled={currentPage >= requestsTotalPages} onClick={() => setCurrentPage(p => p + 1)}>Next</Button>
+                  </div>
+                </div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
@@ -588,7 +621,7 @@ export default function AdminPaymentsPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filteredPayments.map((payment) => (
+                  {paginatedPayments.map((payment) => (
                     <TableRow key={payment.id}>
                       <TableCell className="font-medium">{payment.user}</TableCell>
                       <TableCell>{payment.osm_username}</TableCell>
@@ -622,6 +655,18 @@ export default function AdminPaymentsPage() {
                   )}
                 </TableBody>
               </Table>
+              {filteredPayments.length > ROWS_PER_PAGE && (
+                <div className="flex items-center justify-between mt-4 px-2 pb-4">
+                  <span className="text-sm text-muted-foreground">
+                    Showing {paymentsStart + 1}–{paymentsEnd} of {filteredPayments.length}
+                  </span>
+                  <div className="flex items-center gap-2">
+                    <Button variant="outline" size="sm" disabled={currentPage === 1} onClick={() => setCurrentPage(p => p - 1)}>Previous</Button>
+                    <span className="text-sm text-muted-foreground">Page {currentPage} of {paymentsTotalPages}</span>
+                    <Button variant="outline" size="sm" disabled={currentPage >= paymentsTotalPages} onClick={() => setCurrentPage(p => p + 1)}>Next</Button>
+                  </div>
+                </div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>

@@ -58,6 +58,8 @@ export default function AdminTeamsPage() {
   const { data: filterOptions, loading: filterOptionsLoading } = useFetchFilterOptions();
 
   const [search, setSearch] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const ROWS_PER_PAGE = 50;
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [editingTeam, setEditingTeam] = useState<Team | null>(null);
   const [membersTeam, setMembersTeam] = useState<Team | null>(null);
@@ -380,7 +382,7 @@ export default function AdminTeamsPage() {
             <Input
               placeholder="Search teams..."
               value={search}
-              onChange={(e) => setSearch(e.target.value)}
+              onChange={(e) => { setSearch(e.target.value); setCurrentPage(1); }}
               className="max-w-sm"
             />
           </div>
@@ -398,95 +400,122 @@ export default function AdminTeamsPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredTeams.map((team) => (
-                <TableRow key={team.id}>
-                  <TableCell>
-                    <Link
-                      href={`/admin/teams/${team.id}`}
-                      className="font-medium text-kaart-orange hover:underline"
-                      title="View team details"
-                    >
-                      {team.name}
-                    </Link>
-                  </TableCell>
-                  <TableCell
-                    className="text-muted-foreground max-w-xs truncate"
-                    title={team.description || ""}
-                  >
-                    {team.description || "—"}
-                  </TableCell>
-                  <TableCell>
-                    {team.lead_name || (
-                      <span className="text-muted-foreground">None</span>
+              {(() => {
+                const filtered = filteredTeams;
+                const totalPages = Math.ceil(filtered.length / ROWS_PER_PAGE);
+                const paginated = filtered.slice((currentPage - 1) * ROWS_PER_PAGE, currentPage * ROWS_PER_PAGE);
+                const showingStart = filtered.length === 0 ? 0 : (currentPage - 1) * ROWS_PER_PAGE + 1;
+                const showingEnd = Math.min(currentPage * ROWS_PER_PAGE, filtered.length);
+                return (
+                  <>
+                    {paginated.map((team) => (
+                      <TableRow key={team.id}>
+                        <TableCell>
+                          <Link
+                            href={`/admin/teams/${team.id}`}
+                            className="font-medium text-kaart-orange hover:underline"
+                            title="View team details"
+                          >
+                            {team.name}
+                          </Link>
+                        </TableCell>
+                        <TableCell
+                          className="text-muted-foreground max-w-xs truncate"
+                          title={team.description || ""}
+                        >
+                          {team.description || "—"}
+                        </TableCell>
+                        <TableCell>
+                          {team.lead_name || (
+                            <span className="text-muted-foreground">None</span>
+                          )}
+                        </TableCell>
+                        <TableCell className="text-center">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => openMembersModal(team)}
+                          >
+                            <Badge variant="secondary">{formatNumber(team.member_count)}</Badge>
+                          </Button>
+                        </TableCell>
+                        <TableCell className="text-muted-foreground">
+                          {team.created_at
+                            ? new Date(team.created_at).toLocaleDateString()
+                            : "—"}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <div className="flex justify-end gap-2">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => openEditModal(team)}
+                            >
+                              Edit
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => openMembersModal(team)}
+                            >
+                              Members
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => openTrainingsModal(team)}
+                            >
+                              Trainings
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => openChecklistsModal(team)}
+                            >
+                              Checklists
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="destructive"
+                              onClick={() => setDeleteTarget(team)}
+                            >
+                              Delete
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                    {filtered.length === 0 && (
+                      <TableRow>
+                        <TableCell
+                          colSpan={6}
+                          className="text-center py-8 text-muted-foreground"
+                        >
+                          {search
+                            ? "No teams match your search"
+                            : "No teams yet. Create one to get started."}
+                        </TableCell>
+                      </TableRow>
                     )}
-                  </TableCell>
-                  <TableCell className="text-center">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => openMembersModal(team)}
-                    >
-                      <Badge variant="secondary">{formatNumber(team.member_count)}</Badge>
-                    </Button>
-                  </TableCell>
-                  <TableCell className="text-muted-foreground">
-                    {team.created_at
-                      ? new Date(team.created_at).toLocaleDateString()
-                      : "—"}
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <div className="flex justify-end gap-2">
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => openEditModal(team)}
-                      >
-                        Edit
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => openMembersModal(team)}
-                      >
-                        Members
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => openTrainingsModal(team)}
-                      >
-                        Trainings
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => openChecklistsModal(team)}
-                      >
-                        Checklists
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="destructive"
-                        onClick={() => setDeleteTarget(team)}
-                      >
-                        Delete
-                      </Button>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))}
-              {filteredTeams.length === 0 && (
-                <TableRow>
-                  <TableCell
-                    colSpan={6}
-                    className="text-center py-8 text-muted-foreground"
-                  >
-                    {search
-                      ? "No teams match your search"
-                      : "No teams yet. Create one to get started."}
-                  </TableCell>
-                </TableRow>
-              )}
+                    {filtered.length > ROWS_PER_PAGE && (
+                      <TableRow>
+                        <TableCell colSpan={6}>
+                          <div className="flex items-center justify-between mt-4 px-2 py-3">
+                            <span className="text-sm text-muted-foreground">
+                              Showing {showingStart}–{showingEnd} of {filtered.length}
+                            </span>
+                            <div className="flex items-center gap-2">
+                              <Button variant="outline" size="sm" disabled={currentPage === 1} onClick={() => setCurrentPage(p => p - 1)}>Previous</Button>
+                              <span className="text-sm text-muted-foreground">Page {currentPage} of {totalPages}</span>
+                              <Button variant="outline" size="sm" disabled={currentPage >= totalPages} onClick={() => setCurrentPage(p => p + 1)}>Next</Button>
+                            </div>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    )}
+                  </>
+                );
+              })()}
             </TableBody>
           </Table>
         </CardContent>

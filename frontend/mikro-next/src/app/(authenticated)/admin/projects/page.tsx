@@ -118,9 +118,18 @@ export default function AdminProjectsPage() {
   const [editTab, setEditTab] = useState<"settings" | "users" | "teams" | "training" | "locations">("settings");
   const [showMyProjects, setShowMyProjects] = useState(false);
   const [projectSearch, setProjectSearch] = useState("");
+  const [activePageNum, setActivePageNum] = useState(1);
+  const [inactivePageNum, setInactivePageNum] = useState(1);
+  const ROWS_PER_PAGE = 50;
   const [newProjectId, setNewProjectId] = useState<number | null>(null);
   const [addTab, setAddTab] = useState<"details" | "locations" | "teams">("details");
   const [addProjectTeams, setAddProjectTeams] = useState<ProjectTeamItem[]>([]);
+
+  // Reset pagination when search or filters change
+  useEffect(() => {
+    setActivePageNum(1);
+    setInactivePageNum(1);
+  }, [projectSearch, filtersBody, showMyProjects]);
 
   // Re-fetch projects when filters or "my projects" toggle change
   useEffect(() => {
@@ -489,7 +498,16 @@ export default function AdminProjectsPage() {
     { key: "difficulty", label: "Difficulty", width: "w-[10%]" },
   ];
 
-  const ProjectTable = ({ projectList }: { projectList: Project[] }) => (
+  const ProjectTable = ({ projectList, currentPage, setCurrentPage }: { projectList: Project[]; currentPage: number; setCurrentPage: (v: number | ((p: number) => number)) => void }) => {
+    const totalPages = Math.ceil(projectList.length / ROWS_PER_PAGE);
+    const paginatedProjects = projectList.slice(
+      (currentPage - 1) * ROWS_PER_PAGE,
+      currentPage * ROWS_PER_PAGE
+    );
+    const showingStart = projectList.length > 0 ? (currentPage - 1) * ROWS_PER_PAGE + 1 : 0;
+    const showingEnd = Math.min(currentPage * ROWS_PER_PAGE, projectList.length);
+
+    return (<>
     <Table className="table-fixed">
       <TableHeader>
         <TableRow>
@@ -514,7 +532,7 @@ export default function AdminProjectsPage() {
         </TableRow>
       </TableHeader>
       <TableBody>
-        {projectList.map((project) => (
+        {paginatedProjects.map((project) => (
           <TableRow key={project.id}>
             <TableCell className="max-w-0">
               <div className="min-w-0">
@@ -641,7 +659,36 @@ export default function AdminProjectsPage() {
         )}
       </TableBody>
     </Table>
-  );
+    {projectList.length > ROWS_PER_PAGE && (
+      <div className="flex items-center justify-between mt-4 px-2">
+        <span className="text-sm text-muted-foreground">
+          Showing {showingStart}–{showingEnd} of {projectList.length} projects
+        </span>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={currentPage === 1}
+            onClick={() => setCurrentPage((p: number) => p - 1)}
+          >
+            Previous
+          </Button>
+          <span className="text-sm text-muted-foreground">
+            Page {currentPage} of {totalPages}
+          </span>
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={currentPage >= totalPages}
+            onClick={() => setCurrentPage((p: number) => p + 1)}
+          >
+            Next
+          </Button>
+        </div>
+      </div>
+    )}
+    </>);
+  };
 
   if (loading && !projects) {
     return (
@@ -768,14 +815,14 @@ export default function AdminProjectsPage() {
         <TabsContent value="active">
           <Card>
             <CardContent className="p-0">
-              <ProjectTable projectList={sortProjects(filterProjectsBySearch(activeProjects))} />
+              <ProjectTable projectList={sortProjects(filterProjectsBySearch(activeProjects))} currentPage={activePageNum} setCurrentPage={setActivePageNum} />
             </CardContent>
           </Card>
         </TabsContent>
         <TabsContent value="inactive">
           <Card>
             <CardContent className="p-0">
-              <ProjectTable projectList={sortProjects(filterProjectsBySearch(inactiveProjects))} />
+              <ProjectTable projectList={sortProjects(filterProjectsBySearch(inactiveProjects))} currentPage={inactivePageNum} setCurrentPage={setInactivePageNum} />
             </CardContent>
           </Card>
         </TabsContent>

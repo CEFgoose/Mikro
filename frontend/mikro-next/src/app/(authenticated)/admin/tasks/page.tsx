@@ -11,6 +11,8 @@ export default function AdminTasksPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [showPurgeModal, setShowPurgeModal] = useState(false);
   const [isPurging, setIsPurging] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const ROWS_PER_PAGE = 50;
   const toast = useToastActions();
 
   useEffect(() => {
@@ -137,29 +139,56 @@ export default function AdminTasksPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
-                {externalValidations.map((task) => (
-                  <tr
-                    key={task.id}
-                    onClick={() => handleSelectTask(task.id)}
-                    onDoubleClick={() => task.project_id && goToSource(getProjectExternalUrl(task.project_id))}
-                    className={`cursor-pointer hover:bg-muted/50 transition-colors ${
-                      selectedTask === task.id ? "bg-kaart-orange/10" : ""
-                    }`}
-                  >
-                    <td className="px-4 py-3">{task.id}</td>
-                    <td className="px-4 py-3 font-medium">{task.project_name}</td>
-                    <td className="px-4 py-3">{task.project_id}</td>
-                    <td className="px-4 py-3">{task.mapped_by ?? "-"}</td>
-                    <td className="px-4 py-3">{task.validated_by ?? "-"}</td>
-                  </tr>
-                ))}
-                {externalValidations.length === 0 && (
-                  <tr>
-                    <td colSpan={5} className="px-4 py-8 text-center text-muted-foreground">
-                      No external validations pending
-                    </td>
-                  </tr>
-                )}
+                {(() => {
+                  const filtered = externalValidations;
+                  const totalPages = Math.ceil(filtered.length / ROWS_PER_PAGE);
+                  const paginated = filtered.slice((currentPage - 1) * ROWS_PER_PAGE, currentPage * ROWS_PER_PAGE);
+                  const showingStart = filtered.length === 0 ? 0 : (currentPage - 1) * ROWS_PER_PAGE + 1;
+                  const showingEnd = Math.min(currentPage * ROWS_PER_PAGE, filtered.length);
+                  return (
+                    <>
+                      {paginated.map((task) => (
+                        <tr
+                          key={task.id}
+                          onClick={() => handleSelectTask(task.id)}
+                          onDoubleClick={() => task.project_id && goToSource(getProjectExternalUrl(task.project_id))}
+                          className={`cursor-pointer hover:bg-muted/50 transition-colors ${
+                            selectedTask === task.id ? "bg-kaart-orange/10" : ""
+                          }`}
+                        >
+                          <td className="px-4 py-3">{task.id}</td>
+                          <td className="px-4 py-3 font-medium">{task.project_name}</td>
+                          <td className="px-4 py-3">{task.project_id}</td>
+                          <td className="px-4 py-3">{task.mapped_by ?? "-"}</td>
+                          <td className="px-4 py-3">{task.validated_by ?? "-"}</td>
+                        </tr>
+                      ))}
+                      {filtered.length === 0 && (
+                        <tr>
+                          <td colSpan={5} className="px-4 py-8 text-center text-muted-foreground">
+                            No external validations pending
+                          </td>
+                        </tr>
+                      )}
+                      {filtered.length > ROWS_PER_PAGE && (
+                        <tr>
+                          <td colSpan={5}>
+                            <div className="flex items-center justify-between mt-4 px-2 py-3">
+                              <span className="text-sm text-muted-foreground">
+                                Showing {showingStart}–{showingEnd} of {filtered.length}
+                              </span>
+                              <div className="flex items-center gap-2">
+                                <Button variant="outline" size="sm" disabled={currentPage === 1} onClick={() => setCurrentPage(p => p - 1)}>Previous</Button>
+                                <span className="text-sm text-muted-foreground">Page {currentPage} of {totalPages}</span>
+                                <Button variant="outline" size="sm" disabled={currentPage >= totalPages} onClick={() => setCurrentPage(p => p + 1)}>Next</Button>
+                              </div>
+                            </div>
+                          </td>
+                        </tr>
+                      )}
+                    </>
+                  );
+                })()}
               </tbody>
             </table>
           </div>
