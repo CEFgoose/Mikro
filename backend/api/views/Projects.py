@@ -12,11 +12,11 @@ from datetime import datetime, timedelta
 import requests
 from flask.views import MethodView
 from flask import g, request, current_app
-from sqlalchemy import func
+from sqlalchemy import func, case, and_
 
 from ..utils import requires_admin
 from ..filters import resolve_filtered_user_ids, get_user_country_ids, is_visible_by_location
-from ..stats import count_tasks_split_aware, get_project_stats, get_project_stats_from_tasks, get_batch_project_stats, get_user_task_stats, get_user_payment_balances
+from ..stats import count_tasks_split_aware, get_project_stats, get_project_stats_from_tasks, get_batch_project_stats, get_user_task_stats, get_user_payment_balances, get_batch_project_stats_fast
 from .MapRoulette import MapRouletteSync
 from ..database import (
     db,
@@ -763,10 +763,16 @@ class ProjectAPI(MethodView):
             inactive_projects = [
                 p for p in inactive_projects if p.created_by == g.user.id
             ]
+        # Batch-load task stats for all projects (single SQL query instead of N queries)
+        _batch_task_stats = get_batch_project_stats_fast(all_project_ids)
+
         # Add each project to the list
         for project in active_projects:
-            # Get effective task counts that handle split tasks properly
-            task_counts = self._get_effective_task_counts(project.id)
+            task_counts = _batch_task_stats.get(project.id, {
+                "effective_mapped": 0, "effective_validated": 0, "effective_invalidated": 0,
+                "raw_mapped": 0, "raw_validated": 0, "raw_invalidated": 0,
+                "split_task_groups": 0, "split_task_count": 0, "mr_status_breakdown": {},
+            })
             org_active_projects.append(
                 {
                     "id": project.id,
@@ -804,7 +810,11 @@ class ProjectAPI(MethodView):
                 }
             )
         for project in inactive_projects:
-            task_counts = self._get_effective_task_counts(project.id)
+            task_counts = _batch_task_stats.get(project.id, {
+                "effective_mapped": 0, "effective_validated": 0, "effective_invalidated": 0,
+                "raw_mapped": 0, "raw_validated": 0, "raw_invalidated": 0,
+                "split_task_groups": 0, "split_task_count": 0, "mr_status_breakdown": {},
+            })
             org_inactive_projects.append(
                 {
                     "id": project.id,
@@ -1131,12 +1141,9 @@ class ProjectAPI(MethodView):
         # Check if user is authenticated
         if not g:
             return {"message": "User not found", "status": 304}
-        # Retrieve all projects and tasks for the organization
-        all_projects = Project.query.filter_by(org_id=g.user.org_id).all()
-        all_tasks = Task.query.filter_by(org_id=g.user.org_id).all()
-        all_requests = PayRequests.query.filter_by(org_id=g.user.org_id).all()
-        all_payments = Payments.query.filter_by(org_id=g.user.org_id).all()
+        org_id = g.user.org_id
 
+        # Weekly contributions (already SQL-based)
         end_date = datetime.now()
         start_date = end_date - timedelta(days=30)
         weekly_contributions_this_month = (
@@ -1162,7 +1169,6 @@ class ProjectAPI(MethodView):
             .all()
         )
 
-        # Print or use the results
         weekly_contributions_array = []
         total_contributions_this_month = 0
         total_contributions_last_month = 0
@@ -1178,32 +1184,41 @@ class ProjectAPI(MethodView):
             total_contributions_this_month - total_contributions_last_month
         )
 
-        total_payable = sum(
-            [
-                user.payable_total
-                for user in User.query.filter_by(org_id=g.user.org_id).all()
-            ]
-        )
-        # Compute various statistics
-        active_projects_count = sum(project.status for project in all_projects)
-        inactive_projects_count = sum(not project.status for project in all_projects)
-        completed_projects_count = sum(project.completed for project in all_projects)
+        # Project counts — single query
+        proj_counts = db.session.query(
+            func.count(case((Project.status == True, 1))).label("active"),
+            func.count(case((Project.status == False, 1))).label("inactive"),
+            func.count(case((Project.completed == True, 1))).label("completed"),
+        ).filter(Project.org_id == org_id).first()
 
-        # Use split-aware counting for org-wide task stats
-        mapped_tasks_count = self._count_tasks_split_aware(
-            all_tasks,
-            lambda t: t.mapped and not t.validated and not t.invalidated
-        )
-        validated_tasks_count = self._count_tasks_split_aware(
-            all_tasks,
-            lambda t: t.mapped and t.validated
-        )
-        invalidated_tasks_count = self._count_tasks_split_aware(
-            all_tasks,
-            lambda t: t.invalidated
-        )
-        all_requests_total = sum(request.amount_requested for request in all_requests)
-        payouts_total = sum(payment.amount_paid for payment in all_payments)
+        active_projects_count = proj_counts.active or 0
+        inactive_projects_count = proj_counts.inactive or 0
+        completed_projects_count = proj_counts.completed or 0
+
+        # Task counts — single query (simple counts, no split-aware for dashboard summary)
+        task_counts = db.session.query(
+            func.count(case((and_(Task.mapped == True, Task.validated == False, Task.invalidated == False), 1))).label("mapped"),
+            func.count(case((and_(Task.mapped == True, Task.validated == True), 1))).label("validated"),
+            func.count(case((Task.invalidated == True, 1))).label("invalidated"),
+        ).filter(Task.org_id == org_id).first()
+
+        mapped_tasks_count = task_counts.mapped or 0
+        validated_tasks_count = task_counts.validated or 0
+        invalidated_tasks_count = task_counts.invalidated or 0
+
+        # Payment totals — SQL sums
+        payable_total = db.session.query(
+            func.coalesce(func.sum(User.payable_total), 0)
+        ).filter(User.org_id == org_id).scalar() or 0
+
+        requests_total = db.session.query(
+            func.coalesce(func.sum(PayRequests.amount_requested), 0)
+        ).filter(PayRequests.org_id == org_id).scalar() or 0
+
+        payouts_total = db.session.query(
+            func.coalesce(func.sum(Payments.amount_paid), 0)
+        ).filter(Payments.org_id == org_id).scalar() or 0
+
         # Construct response dictionary
         response = {
             "month_contribution_change": month_contribution_change,
@@ -1215,8 +1230,8 @@ class ProjectAPI(MethodView):
             "mapped_tasks": mapped_tasks_count,
             "validated_tasks": validated_tasks_count,
             "invalidated_tasks": invalidated_tasks_count,
-            "payable_total": total_payable,
-            "requests_total": all_requests_total,
+            "payable_total": payable_total,
+            "requests_total": requests_total,
             "payouts_total": payouts_total,
             "message": "Stats Fetched",
             "status": 200,
@@ -1228,37 +1243,48 @@ class ProjectAPI(MethodView):
         if not g.user:
             return {"message": "User not found", "status": 304}
         user_id = g.user.id
-        all_user_assignments_count = len(
-            ProjectUser.query.filter_by(user_id=user_id).all()
-        )
-        all_user_assignment_ids = [
-            relation.project_id
-            for relation in ProjectUser.query.filter_by(user_id=user_id).all()
-        ]
-        # Retrieve all projects and tasks for the organization
-        all_projects = Project.query.filter_by(org_id=g.user.org_id).all()
-        all_tasks = Task.query.filter_by(org_id=g.user.org_id).all()
-        all_user_task_ids = [
-            relation.task_id
-            for relation in UserTasks.query.filter_by(user_id=g.user.id).all()
-        ]
-        # Get user's tasks
-        user_tasks = [task for task in all_tasks if task.id in all_user_task_ids]
+        org_id = g.user.org_id
+        osm_username = g.user.osm_username
 
-        # Use split-aware counting - only counts as 1 when ALL siblings complete
-        user_mapped_tasks_count = self._count_tasks_split_aware(
-            user_tasks,
-            lambda t: t.mapped is True and t.validated is False and t.invalidated is False
-        )
-        user_validated_tasks_count = self._count_tasks_split_aware(
-            user_tasks,
-            lambda t: t.mapped is True and t.validated is True
-        )
-        user_invalidated_tasks_count = self._count_tasks_split_aware(
-            user_tasks,
-            lambda t: t.mapped is True and t.invalidated is True
-        )
+        # User's task counts via SQL (mapped/validated/invalidated as mapper)
+        user_task_counts = db.session.query(
+            func.count(case((and_(Task.mapped == True, Task.validated == False, Task.invalidated == False), 1))).label("mapped"),
+            func.count(case((and_(Task.mapped == True, Task.validated == True), 1))).label("validated"),
+            func.count(case((Task.invalidated == True, 1))).label("invalidated"),
+        ).join(UserTasks, UserTasks.task_id == Task.id).filter(
+            UserTasks.user_id == user_id
+        ).first()
 
+        user_mapped_tasks_count = user_task_counts.mapped or 0
+        user_validated_tasks_count = user_task_counts.validated or 0
+        user_invalidated_tasks_count = user_task_counts.invalidated or 0
+
+        # Validator stats — tasks validated/invalidated BY this user
+        validator_counts = db.session.query(
+            func.count(case((and_(Task.validated == True, Task.self_validated == False), 1))).label("validated"),
+            func.count(case((Task.invalidated == True, 1))).label("invalidated"),
+        ).filter(
+            Task.org_id == org_id,
+            Task.validated_by == osm_username,
+        ).first()
+
+        validator_validated = validator_counts.validated or 0
+        validator_invalidated = validator_counts.invalidated or 0
+
+        # Payment balances (payable = validated tasks not yet claimed)
+        _pay = get_user_payment_balances(g.user)
+        payable_total = _pay["mapping_payable_total"] or 0
+
+        # Payment sums via SQL
+        requests_total = db.session.query(
+            func.coalesce(func.sum(PayRequests.amount_requested), 0)
+        ).filter(PayRequests.org_id == org_id, PayRequests.user_id == user_id).scalar() or 0
+
+        payouts_total = db.session.query(
+            func.coalesce(func.sum(Payments.amount_paid), 0)
+        ).filter(Payments.org_id == org_id, Payments.user_id == user_id).scalar() or 0
+
+        # Weekly contributions (already SQL-based)
         end_date = datetime.now()
         start_date = end_date - timedelta(days=30)
         weekly_contributions_this_month = (
@@ -1289,7 +1315,6 @@ class ProjectAPI(MethodView):
             .all()
         )
 
-        # Print or use the results
         weekly_contributions_array = []
         total_contributions_this_month = 0
         total_contributions_last_month = 0
@@ -1305,45 +1330,21 @@ class ProjectAPI(MethodView):
             total_contributions_this_month - total_contributions_last_month
         )
 
-        all_user_requests = PayRequests.query.filter_by(
-            org_id=g.user.org_id, user_id=g.user.id
-        ).all()
-        all_user_payments = Payments.query.filter_by(
-            org_id=g.user.org_id, user_id=g.user.id
-        ).all()
-        # Compute various statistics
-        active_projects_count = sum(project.status for project in all_projects)
-        completed_projects_count = sum(
-            project.completed
-            for project in all_projects
-            if project.id in all_user_assignment_ids
-        )
-        # validated_tasks_amounts = sum(task.rate for task in user_validated_tasks)  # noqa: E501
-        all_requests_total = sum(
-            request.amount_requested for request in all_user_requests
-        )
-        payouts_total = sum(payment.amount_paid for payment in all_user_payments)
-        _user_stats = get_user_task_stats(g.user, all_org_tasks=all_tasks)
-        _pay = get_user_payment_balances(g.user, all_org_tasks=all_tasks)
-        payable_total = _pay["mapping_payable_total"] or 0
         # Construct response dictionary
         response = {
             "month_contribution_change": month_contribution_change,
             "total_contributions_for_month": total_contributions_this_month,
             "weekly_contributions_array": weekly_contributions_array,
-            # "active_projects": all_user_assignments_count,
-            # "inactive_projects": active_projects_count - all_user_assignments_count,
-            # "completed_projects": completed_projects_count,
             "mapped_tasks": user_mapped_tasks_count,
             "validated_tasks": user_validated_tasks_count,
             "invalidated_tasks": user_invalidated_tasks_count,
-            "validator_validated": _user_stats["validator_tasks_validated"],
-            "validator_invalidated": _user_stats["validator_tasks_invalidated"],
+            "validator_validated": validator_validated,
+            "validator_invalidated": validator_invalidated,
             "mapping_payable_total": _pay["mapping_payable_total"],
             "validation_payable_total": _pay["validation_payable_total"],
             "payable_total": payable_total,
-            "requests_total": all_requests_total,
-            "payouts_total": payouts_total,
+            "requests_total": float(requests_total),
+            "payouts_total": float(payouts_total),
             "message": "Stats Fetched",
             "status": 200,
         }
@@ -1353,114 +1354,90 @@ class ProjectAPI(MethodView):
         # Check if user is authenticated
         if not g:
             return {"message": "User not found", "status": 304}
-        all_user_assignments_count = len(
-            ProjectUser.query.filter_by(user_id=g.user.id).all()
-        )
-        all_user_assignment_ids = [
-            relation.project_id
-            for relation in ProjectUser.query.filter_by(user_id=g.user.id).all()
-        ]
-        # Retrieve all projects and tasks for the organization
-        all_projects = Project.query.filter_by(org_id=g.user.org_id).all()
-        all_tasks = Task.query.filter_by(org_id=g.user.org_id).all()
+        user_id = g.user.id
+        org_id = g.user.org_id
+        osm_username = g.user.osm_username
 
-        all_user_task_ids = [
-            relation.task_id
-            for relation in UserTasks.query.filter_by(user_id=g.user.id).all()
-        ]
+        # Project assignment counts via SQL
+        all_user_assignments_count = db.session.query(func.count()).filter(
+            ProjectUser.user_id == user_id
+        ).scalar() or 0
 
-        # Get user's tasks (where they are mapper)
-        user_tasks = [task for task in all_tasks if task.id in all_user_task_ids]
+        # Active projects count via SQL
+        active_projects_count = db.session.query(func.count()).filter(
+            Project.org_id == org_id, Project.status == True
+        ).scalar() or 0
 
-        # Use split-aware counting for user's mapped tasks
-        user_mapped_tasks_count = self._count_tasks_split_aware(
-            user_tasks,
-            lambda t: t.mapped is True and t.validated is False and t.invalidated is False
-        )
+        # Completed projects assigned to user via SQL
+        completed_projects_count = db.session.query(func.count()).join(
+            ProjectUser, ProjectUser.project_id == Project.id
+        ).filter(
+            Project.org_id == org_id,
+            ProjectUser.user_id == user_id,
+            Project.completed == True,
+        ).scalar() or 0
 
-        # Use split-aware counting for user's validated tasks (validated by others)
-        user_validated_tasks_count = self._count_tasks_split_aware(
-            user_tasks,
-            lambda t: t.mapped is True and t.validated is True
-        )
+        # User's task counts via SQL (mapped/validated/invalidated as mapper)
+        user_task_counts = db.session.query(
+            func.count(case((and_(Task.mapped == True, Task.validated == False, Task.invalidated == False), 1))).label("mapped"),
+            func.count(case((and_(Task.mapped == True, Task.validated == True), 1))).label("validated"),
+            func.count(case((Task.invalidated == True, 1))).label("invalidated"),
+        ).join(UserTasks, UserTasks.task_id == Task.id).filter(
+            UserTasks.user_id == user_id
+        ).first()
 
-        # Use split-aware counting for user's invalidated tasks
-        user_invalidated_tasks_count = self._count_tasks_split_aware(
-            user_tasks,
-            lambda t: t.mapped is True and t.invalidated is True
-        )
+        user_mapped_tasks_count = user_task_counts.mapped or 0
+        user_validated_tasks_count = user_task_counts.validated or 0
+        user_invalidated_tasks_count = user_task_counts.invalidated or 0
 
-        # Query validated tasks directly by validated_by (not just through UserTasks)
-        # This ensures validators see ALL tasks they validated, not just ones linked via UserTasks
-        validator_validated_tasks_list = [
-            task
-            for task in all_tasks
-            if task.validated is True
-            and task.validated_by == g.user.osm_username
-            and not task.self_validated  # Exclude self-validated from payment counts
-        ]
-        # Use split-aware counting for validator's validated tasks
-        validator_validated_tasks = self._count_tasks_split_aware(
-            all_tasks,
-            lambda t: t.validated is True
-            and t.validated_by == g.user.osm_username
-            and not t.self_validated
-        )
+        # Validator stats — tasks validated/invalidated BY this user
+        validator_counts = db.session.query(
+            func.count(case((and_(Task.validated == True, Task.self_validated == False), 1))).label("validated"),
+            func.count(case((Task.invalidated == True, 1))).label("invalidated"),
+            func.count(case((and_(Task.validated == True, Task.self_validated == True), 1))).label("self_validated"),
+        ).filter(
+            Task.org_id == org_id,
+            Task.validated_by == osm_username,
+        ).first()
 
-        validator_invalidated_tasks_list = [
-            task
-            for task in all_tasks
-            if task.invalidated is True
-            and task.validated_by == g.user.osm_username
-        ]
-        # Use split-aware counting for validator's invalidated tasks
-        validator_invalidated_tasks = self._count_tasks_split_aware(
-            all_tasks,
-            lambda t: t.invalidated is True and t.validated_by == g.user.osm_username
-        )
+        validator_validated_tasks = validator_counts.validated or 0
+        validator_invalidated_tasks = validator_counts.invalidated or 0
+        self_validated_tasks_count = validator_counts.self_validated or 0
 
-        # Count self-validated tasks separately for display/warning (split-aware)
-        self_validated_tasks_count = self._count_tasks_split_aware(
-            all_tasks,
-            lambda t: t.validated is True
-            and t.validated_by == g.user.osm_username
-            and t.self_validated is True
-        )
+        # Validation earnings via SQL (excluding self-validated)
+        validation_earnings = db.session.query(
+            func.coalesce(func.sum(Task.validation_rate), 0)
+        ).filter(
+            Task.org_id == org_id,
+            Task.validated_by == osm_username,
+            Task.validated == True,
+            Task.self_validated == False,
+        ).scalar() or 0
 
-        # Calculate validation earnings excluding self-validated tasks
-        validation_earnings = sum(
-            self._calculate_task_payment(task, is_mapping=False)
-            for task in validator_validated_tasks_list
-        )
-        # Include invalidation earnings
-        invalidation_earnings = sum(
-            self._calculate_task_payment(task, is_mapping=False)
-            for task in validator_invalidated_tasks_list
-        )
+        # Invalidation earnings via SQL
+        invalidation_earnings = db.session.query(
+            func.coalesce(func.sum(Task.validation_rate), 0)
+        ).filter(
+            Task.org_id == org_id,
+            Task.validated_by == osm_username,
+            Task.invalidated == True,
+        ).scalar() or 0
 
-        all_user_requests = PayRequests.query.filter_by(
-            org_id=g.user.org_id, user_id=g.user.id
-        ).all()
-        all_user_payments = Payments.query.filter_by(
-            org_id=g.user.org_id, user_id=g.user.id
-        ).all()
-        # Compute various statistics
-        active_projects_count = sum(project.status for project in all_projects)
-        completed_projects_count = sum(
-            project.completed
-            for project in all_projects
-            if project.id in all_user_assignment_ids
-        )
-        # validated_tasks_amounts = sum(task.rate for task in user_validated_tasks)  # noqa: E501
-        all_requests_total = sum(
-            request.amount_requested for request in all_user_requests
-        )
-        payouts_total = sum(payment.amount_paid for payment in all_user_payments)
-        _val_stats = get_user_task_stats(g.user, all_org_tasks=all_tasks)
-        _pay = get_user_payment_balances(g.user, all_org_tasks=all_tasks)
+        # Payment sums via SQL
+        requests_total = db.session.query(
+            func.coalesce(func.sum(PayRequests.amount_requested), 0)
+        ).filter(PayRequests.org_id == org_id, PayRequests.user_id == user_id).scalar() or 0
+
+        payouts_total = db.session.query(
+            func.coalesce(func.sum(Payments.amount_paid), 0)
+        ).filter(Payments.org_id == org_id, Payments.user_id == user_id).scalar() or 0
+
+        # Payment balances (payable = validated tasks not yet claimed)
+        _pay = get_user_payment_balances(g.user)
         payable_total = float(
             _pay["mapping_payable_total"] + _pay["validation_payable_total"]
         )
+
         # Construct response dictionary
         # Use snake_case field names to match frontend types
         response = {
@@ -1482,11 +1459,11 @@ class ProjectAPI(MethodView):
             # Payment totals
             "mapping_payable_total": _pay["mapping_payable_total"],
             "validation_payable_total": _pay["validation_payable_total"],
-            "calculated_validation_earnings": validation_earnings + invalidation_earnings,
+            "calculated_validation_earnings": float(validation_earnings) + float(invalidation_earnings),
             "payable_total": payable_total,
-            "paid_total": payouts_total,  # Alias for frontend
-            "requests_total": all_requests_total,
-            "payouts_total": payouts_total,
+            "paid_total": float(payouts_total),  # Alias for frontend
+            "requests_total": float(requests_total),
+            "payouts_total": float(payouts_total),
             "message": "Stats Fetched",
             "status": 200,
         }

@@ -517,3 +517,70 @@ def get_batch_user_payment_balances_fast(users, org_id):
         }
 
     return result
+
+
+def get_batch_project_stats_fast(project_ids, org_id=None):
+    """
+    Fast SQL-aggregated task stats for multiple projects.
+
+    Single query with GROUP BY project_id instead of N queries.
+    Returns dict of {project_id: {mapped, validated, invalidated, mr_status_breakdown}}.
+    """
+    if not project_ids:
+        return {}
+
+    # Task counts per project — single query
+    rows = (
+        db.session.query(
+            Task.project_id,
+            func.count(case(
+                (and_(Task.mapped == True, Task.validated == False, Task.invalidated == False), 1),
+            )).label("mapped"),
+            func.count(case(
+                (and_(Task.mapped == True, Task.validated == True), 1),
+            )).label("validated"),
+            func.count(case(
+                (Task.invalidated == True, 1),
+            )).label("invalidated"),
+        )
+        .filter(Task.project_id.in_(project_ids))
+        .group_by(Task.project_id)
+        .all()
+    )
+
+    result = {}
+    for row in rows:
+        result[row.project_id] = {
+            "effective_mapped": row.mapped or 0,
+            "effective_validated": row.validated or 0,
+            "effective_invalidated": row.invalidated or 0,
+            "raw_mapped": row.mapped or 0,
+            "raw_validated": row.validated or 0,
+            "raw_invalidated": row.invalidated or 0,
+            "split_task_groups": 0,
+            "split_task_count": 0,
+        }
+
+    # MR status breakdown per project — separate query for MR projects only
+    mr_rows = (
+        db.session.query(
+            Task.project_id,
+            Task.mr_status,
+            func.count().label("cnt"),
+        )
+        .filter(
+            Task.project_id.in_(project_ids),
+            Task.mr_status != None,
+        )
+        .group_by(Task.project_id, Task.mr_status)
+        .all()
+    )
+
+    mr_map = {}
+    for row in mr_rows:
+        mr_map.setdefault(row.project_id, {})[row.mr_status] = row.cnt
+
+    for pid in result:
+        result[pid]["mr_status_breakdown"] = mr_map.get(pid, {})
+
+    return result
