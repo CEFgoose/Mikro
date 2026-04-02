@@ -22,9 +22,9 @@ import {
   useFetchUserActivityChart,
   useFetchUserTaskHistory,
   useFetchCountries,
-  useAdminUpdateUserProfile,
   useEditTimeEntry,
   useVoidTimeEntry,
+  useUpdateUserDetails,
 } from "@/hooks/useApi";
 import {
   ComposedChart,
@@ -46,7 +46,7 @@ import type {
   ActivityDataPoint,
   TaskHistoryEntry,
 } from "@/types";
-import { formatNumber, formatCurrency, displayRole } from "@/lib/utils";
+import { formatNumber, formatCurrency } from "@/lib/utils";
 
 const MappingHeatmap = dynamic(() => import("@/components/MappingHeatmap"), {
   ssr: false,
@@ -162,10 +162,9 @@ export default function UserProfilePage() {
   const { mutate: fetchActivity } = useFetchUserActivityChart();
   const { mutate: fetchTaskHistory } = useFetchUserTaskHistory();
   const { data: countriesData } = useFetchCountries();
-  const { mutate: updateProfile, loading: updateProfileLoading } =
-    useAdminUpdateUserProfile();
   const { mutate: editTimeEntry, loading: editingTimeEntry } = useEditTimeEntry();
   const { mutate: voidTimeEntry } = useVoidTimeEntry();
+  const { mutate: updateUserDetails, loading: updateDetailsLoading } = useUpdateUserDetails();
   const toast = useToastActions();
 
   const [user, setUser] = useState<UserProfileData | null>(null);
@@ -218,12 +217,17 @@ export default function UserProfilePage() {
     [number, number, number][]
   >([]);
 
-  // Location edit modal state
-  const [locationModalOpen, setLocationModalOpen] = useState(false);
-  const [mapillaryModalOpen, setMapillaryModalOpen] = useState(false);
-  const [editCountryId, setEditCountryId] = useState<string>("");
-  const [editTimezone, setEditTimezone] = useState<string>("");
-  const [editMapillaryUsername, setEditMapillaryUsername] = useState("");
+  // Full edit modal state
+  const [editModalOpen, setEditModalOpen] = useState(false);
+  const [editFirstName, setEditFirstName] = useState("");
+  const [editLastName, setEditLastName] = useState("");
+  const [editEmail, setEditEmail] = useState("");
+  const [editOsmUsername, setEditOsmUsername] = useState("");
+  const [editMapillaryUsername2, setEditMapillaryUsername2] = useState("");
+  const [editRole, setEditRole] = useState("user");
+  const [editTimezone2, setEditTimezone2] = useState("");
+  const [editCountryId2, setEditCountryId2] = useState("");
+  const [editPaymentsVisible, setEditPaymentsVisible] = useState(false);
 
   // Time entry edit modal state
   const [editingEntry, setEditingEntry] = useState<TimeEntry | null>(null);
@@ -431,64 +435,43 @@ export default function UserProfilePage() {
     URL.revokeObjectURL(url);
   };
 
-  const openLocationModal = useCallback(() => {
-    if (user) {
-      setEditCountryId(user.country_id ? String(user.country_id) : "");
-      setEditTimezone(user.timezone || "");
-      setLocationModalOpen(true);
-    }
-  }, [user]);
+  const openEditModal = () => {
+    if (!user) return;
+    setEditFirstName(user.first_name || "");
+    setEditLastName(user.last_name || "");
+    setEditEmail(user.email || "");
+    setEditOsmUsername(user.osm_username || "");
+    setEditMapillaryUsername2(user.mapillary_username || "");
+    setEditRole(user.role || "user");
+    setEditTimezone2(user.timezone || "");
+    setEditCountryId2(user.country_id ? String(user.country_id) : "");
+    setEditPaymentsVisible(user.payments_visible ?? false);
+    setEditModalOpen(true);
+  };
 
-  const openMapillaryModal = useCallback(() => {
-    if (user) {
-      setEditMapillaryUsername(user.mapillary_username || "");
-      setMapillaryModalOpen(true);
-    }
-  }, [user]);
-
-  const handleCountryChange = useCallback(
-    (value: string) => {
-      setEditCountryId(value);
-      // Auto-fill timezone from the selected country's default
-      const countries = countriesData?.countries || [];
-      const selected = countries.find((c) => String(c.id) === value);
-      if (selected?.default_timezone) {
-        setEditTimezone(selected.default_timezone);
-      }
-    },
-    [countriesData]
-  );
-
-  const handleSaveLocation = useCallback(async () => {
+  const handleSaveEditModal = async () => {
     try {
-      await updateProfile({
-        userId: userId,
-        countryId: editCountryId ? Number(editCountryId) : null,
-        timezone: editTimezone || null,
+      await updateUserDetails({
+        user_id: userId,
+        first_name: editFirstName,
+        last_name: editLastName,
+        email: editEmail,
+        osm_username: editOsmUsername,
+        mapillary_username: editMapillaryUsername2 || null,
+        role: editRole,
+        timezone: editTimezone2 || null,
+        country_id: editCountryId2 ? Number(editCountryId2) : null,
+        payments_visible: editPaymentsVisible,
       });
-      toast.success("Location updated successfully");
-      setLocationModalOpen(false);
-      const res = await fetchProfile({ userId });
-      if (res?.user) setUser(res.user);
-    } catch {
-      toast.error("Failed to update location");
-    }
-  }, [userId, editCountryId, editTimezone, updateProfile, fetchProfile, toast]);
-
-  const handleSaveMapillary = useCallback(async () => {
-    try {
-      await updateProfile({
-        userId: userId,
-        mapillary_username: editMapillaryUsername.trim() || null,
+      toast.success("User updated");
+      setEditModalOpen(false);
+      fetchProfile({ userId }).then((res) => {
+        if (res?.user) setUser(res.user);
       });
-      toast.success("Mapillary username updated successfully");
-      setMapillaryModalOpen(false);
-      const res = await fetchProfile({ userId });
-      if (res?.user) setUser(res.user);
     } catch {
-      toast.error("Failed to update Mapillary username");
+      toast.error("Failed to update user");
     }
-  }, [userId, editMapillaryUsername, updateProfile, fetchProfile, toast]);
+  };
 
   const countryOptions = useMemo(() => {
     const countries = countriesData?.countries || [];
@@ -500,17 +483,6 @@ export default function UserProfilePage() {
       })),
     ];
   }, [countriesData]);
-
-  const initials = useMemo(() => {
-    if (!user) return "?";
-    const first = user.first_name?.[0] || "";
-    const last = user.last_name?.[0] || "";
-    return (
-      (first + last).toUpperCase() ||
-      user.full_name?.[0]?.toUpperCase() ||
-      "?"
-    );
-  }, [user]);
 
   if (pageLoading) {
     return (
@@ -541,7 +513,6 @@ export default function UserProfilePage() {
   if (!user) return null;
 
   const isValidator = user.role === "validator" || user.role === "admin";
-  const locationParts = [user.city, user.country].filter(Boolean).join(", ");
   const displayedChangesets = showAllChangesets
     ? changesets
     : changesets.slice(0, 10);
@@ -563,163 +534,141 @@ export default function UserProfilePage() {
           >
             {"\u2190"} Back to Users
           </Link>
-          <div className="flex items-start gap-4">
-            <div className="w-16 h-16 rounded-full bg-kaart-orange/20 flex items-center justify-center text-kaart-orange text-xl font-bold shrink-0">
-              {initials}
-            </div>
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-3 flex-wrap">
-                <h1 className="text-2xl font-bold text-foreground">
-                  {user.full_name ||
-                    `${user.first_name} ${user.last_name}`}
-                </h1>
-                <span
-                  className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                    user.role === "admin"
-                      ? "bg-purple-100 text-purple-800"
-                      : user.role === "validator"
-                        ? "bg-blue-100 text-blue-800"
-                        : "bg-green-100 text-green-800"
-                  }`}
-                >
-                  {displayRole(user.role)}
-                </span>
-                {user.is_tracked_only && (
-                  <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800">
-                    Tracked Only
-                  </span>
-                )}
-                {user.mapper_level != null && (
-                  <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
-                    Level {user.mapper_level}
-                  </span>
-                )}
+          <div className="flex items-start justify-between gap-4">
+            <div className="flex items-center gap-4">
+              <div className="w-16 h-16 rounded-full bg-kaart-orange flex items-center justify-center text-white text-xl font-bold shrink-0">
+                {(user.first_name?.[0] || user.email?.[0] || "?").toUpperCase()}
               </div>
-              {user.email && !user.is_tracked_only && (
-                <p className="text-muted-foreground mt-1">{user.email}</p>
-              )}
-              <div className="flex items-center gap-2 text-sm text-muted-foreground mt-1 flex-wrap">
-                {user.osm_username && (
-                  <a
-                    href={`https://www.openstreetmap.org/user/${user.osm_username}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-kaart-orange hover:underline"
-                  >
-                    OSM: {user.osm_username}
-                  </a>
-                )}
-                {user.osm_username && locationParts && (
-                  <span className="text-gray-300">|</span>
-                )}
-                {locationParts && <span>{locationParts}</span>}
-                {(locationParts || user.region_name || user.timezone) && (
-                  <button
-                    onClick={openLocationModal}
-                    className="ml-1 text-muted-foreground hover:text-kaart-orange transition-colors"
-                    title="Edit location"
-                  >
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      width="14"
-                      height="14"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    >
-                      <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" />
-                      <path d="m15 5 4 4" />
-                    </svg>
-                  </button>
-                )}
-                {!locationParts && !user.region_name && !user.timezone && (
-                  <button
-                    onClick={openLocationModal}
-                    className="text-muted-foreground hover:text-kaart-orange transition-colors text-xs flex items-center gap-1"
-                    title="Set location"
-                  >
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      width="14"
-                      height="14"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    >
-                      <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" />
-                      <path d="m15 5 4 4" />
-                    </svg>
-                    Set location
-                  </button>
-                )}
-              </div>
-              {(user.region_name || user.timezone) && (
-                <p className="text-sm text-muted-foreground mt-0.5">
-                  {[user.region_name, user.timezone].filter(Boolean).join(" · ")}
-                </p>
-              )}
-              {user.joined && (
-                <p className="text-sm text-muted-foreground mt-1">
-                  Joined: {formatDate(user.joined)}
-                </p>
-              )}
-              {user.payment_email && !user.is_tracked_only && (
-                <p className="text-sm text-muted-foreground mt-1">
-                  Payment email:{" "}
-                  <span className="font-medium text-foreground">
-                    {user.payment_email}
+              <div>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <h1 className="text-2xl font-bold tracking-tight">
+                    {user.full_name || user.email || user.id}
+                  </h1>
+                  <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                    user.role === "admin" ? "bg-purple-100 text-purple-800" :
+                    user.role === "validator" ? "bg-blue-100 text-blue-800" :
+                    "bg-gray-100 text-gray-800"
+                  }`}>
+                    {user.role}
                   </span>
-                </p>
-              )}
-              {(user.mapper_points != null || user.validator_points != null) && (
-                <div className="flex items-center gap-3 text-sm text-muted-foreground mt-1">
-                  {user.mapper_points != null && (
-                    <span>Mapper pts: <span className="font-medium text-foreground">{user.mapper_points}</span></span>
+                  {user.is_tracked_only && (
+                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                      Tracked Only
+                    </span>
                   )}
-                  {user.validator_points != null && user.validator_points > 0 && (
-                    <span>Validator pts: <span className="font-medium text-foreground">{user.validator_points}</span></span>
+                  {user.mapper_level > 0 && (
+                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                      Level {user.mapper_level}
+                    </span>
                   )}
                 </div>
-              )}
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Section: Mapillary */}
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between pb-2">
-          <CardTitle className="text-base">Mapillary</CardTitle>
-          <Button size="sm" variant="outline" onClick={openMapillaryModal}>
-            {user.mapillary_username ? "Edit" : "Link Account"}
-          </Button>
-        </CardHeader>
-        <CardContent>
-          {user.mapillary_username ? (
-            <div className="flex items-center gap-3">
-              <div>
-                <p className="text-sm text-muted-foreground">Username</p>
-                <a
-                  href={`https://www.mapillary.com/app/user/${user.mapillary_username}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-kaart-orange hover:underline font-medium"
-                >
-                  {user.mapillary_username}
-                </a>
               </div>
             </div>
-          ) : (
-            <p className="text-sm text-muted-foreground">
-              No Mapillary account linked
-            </p>
-          )}
+            <button
+              onClick={openEditModal}
+              className="p-2 rounded-lg hover:bg-muted transition-colors text-muted-foreground hover:text-kaart-orange"
+              title="Edit user"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                  d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                  d="m15 5 4 4" />
+              </svg>
+            </button>
+          </div>
+
+          {/* 3-column info grid */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
+            {/* Accounts */}
+            <div className="border border-border rounded-lg p-3">
+              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Accounts</p>
+              <div className="space-y-1.5">
+                {!user.is_tracked_only && user.email && (
+                  <div>
+                    <span className="text-xs text-muted-foreground">Email</span>
+                    <p className="text-sm">{user.email}</p>
+                  </div>
+                )}
+                {user.osm_username && (
+                  <div>
+                    <span className="text-xs text-muted-foreground">OSM</span>
+                    <p className="text-sm">
+                      <a
+                        href={`https://www.openstreetmap.org/user/${user.osm_username}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-kaart-orange hover:underline"
+                      >
+                        {user.osm_username}
+                      </a>
+                    </p>
+                  </div>
+                )}
+                {user.mapillary_username && (
+                  <div>
+                    <span className="text-xs text-muted-foreground">Mapillary</span>
+                    <p className="text-sm">
+                      <a
+                        href={`https://www.mapillary.com/app/user/${user.mapillary_username}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-kaart-orange hover:underline"
+                      >
+                        {user.mapillary_username}
+                      </a>
+                    </p>
+                  </div>
+                )}
+                {!user.is_tracked_only && user.payment_email && (
+                  <div>
+                    <span className="text-xs text-muted-foreground">Payment Email</span>
+                    <p className="text-sm">{user.payment_email}</p>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Location */}
+            <div className="border border-border rounded-lg p-3">
+              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Location</p>
+              <div className="space-y-1.5">
+                <div>
+                  <span className="text-xs text-muted-foreground">Country</span>
+                  <p className="text-sm">{user.country_name || user.country || "Not set"}</p>
+                </div>
+                {user.region_name && (
+                  <div>
+                    <span className="text-xs text-muted-foreground">Region</span>
+                    <p className="text-sm">{user.region_name}</p>
+                  </div>
+                )}
+                <div>
+                  <span className="text-xs text-muted-foreground">Timezone</span>
+                  <p className="text-sm">{user.timezone || "Not set"}</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Stats */}
+            <div className="border border-border rounded-lg p-3">
+              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Stats</p>
+              <div className="space-y-1.5">
+                <div>
+                  <span className="text-xs text-muted-foreground">Joined</span>
+                  <p className="text-sm">{user.joined ? new Date(user.joined).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) : "Unknown"}</p>
+                </div>
+                <div>
+                  <span className="text-xs text-muted-foreground">Mapper Points</span>
+                  <p className="text-sm font-medium">{user.mapper_points ?? 0}</p>
+                </div>
+                <div>
+                  <span className="text-xs text-muted-foreground">Validator Points</span>
+                  <p className="text-sm font-medium">{user.validator_points ?? 0}</p>
+                </div>
+              </div>
+            </div>
+          </div>
         </CardContent>
       </Card>
 
@@ -1531,85 +1480,6 @@ export default function UserProfilePage() {
         </Card>
       </div>
 
-      {/* Location Edit Modal */}
-      <Modal
-        isOpen={locationModalOpen}
-        onClose={() => setLocationModalOpen(false)}
-        title="Edit Location"
-        description="Update the user's country and timezone."
-        size="sm"
-        footer={
-          <>
-            <Button
-              variant="outline"
-              onClick={() => setLocationModalOpen(false)}
-              disabled={updateProfileLoading}
-            >
-              Cancel
-            </Button>
-            <Button
-              variant="primary"
-              onClick={handleSaveLocation}
-              isLoading={updateProfileLoading}
-            >
-              Save
-            </Button>
-          </>
-        }
-      >
-        <div className="space-y-4">
-          <Select
-            label="Country"
-            options={countryOptions}
-            value={editCountryId}
-            onChange={handleCountryChange}
-            placeholder="Select a country"
-          />
-          <Input
-            label="Timezone"
-            value={editTimezone}
-            onChange={(e) => setEditTimezone(e.target.value)}
-            placeholder="e.g. America/Bogota"
-          />
-        </div>
-      </Modal>
-
-      {/* Mapillary Edit Modal */}
-      <Modal
-        isOpen={mapillaryModalOpen}
-        onClose={() => setMapillaryModalOpen(false)}
-        title="Edit Mapillary Username"
-        description="Link or update this user's Mapillary account."
-        size="sm"
-        footer={
-          <>
-            <Button
-              variant="outline"
-              onClick={() => setMapillaryModalOpen(false)}
-              disabled={updateProfileLoading}
-            >
-              Cancel
-            </Button>
-            <Button
-              variant="primary"
-              onClick={handleSaveMapillary}
-              isLoading={updateProfileLoading}
-            >
-              Save
-            </Button>
-          </>
-        }
-      >
-        <div className="space-y-4">
-          <Input
-            label="Mapillary Username"
-            value={editMapillaryUsername}
-            onChange={(e) => setEditMapillaryUsername(e.target.value)}
-            placeholder="e.g. jorge_mapper"
-          />
-        </div>
-      </Modal>
-
       {/* Edit Time Entry Modal */}
       <Modal
         isOpen={!!editingEntry}
@@ -1689,6 +1559,111 @@ export default function UserProfilePage() {
             </div>
           </div>
         )}
+      </Modal>
+
+      {/* Full Edit User Modal */}
+      <Modal
+        isOpen={editModalOpen}
+        onClose={() => setEditModalOpen(false)}
+        title="Edit User"
+        size="lg"
+        footer={
+          <div className="flex justify-end gap-2">
+            <Button variant="outline" onClick={() => setEditModalOpen(false)}>
+              Cancel
+            </Button>
+            <Button variant="primary" onClick={handleSaveEditModal} disabled={updateDetailsLoading}>
+              {updateDetailsLoading ? "Saving..." : "Save Changes"}
+            </Button>
+          </div>
+        }
+      >
+        <div className="space-y-4">
+          <div className="grid grid-cols-2 gap-4">
+            <Input
+              label="First Name"
+              value={editFirstName}
+              onChange={(e) => setEditFirstName(e.target.value)}
+              placeholder="First name"
+            />
+            <Input
+              label="Last Name"
+              value={editLastName}
+              onChange={(e) => setEditLastName(e.target.value)}
+              placeholder="Last name"
+            />
+          </div>
+          <Input
+            label="Email"
+            value={editEmail}
+            onChange={(e) => setEditEmail(e.target.value)}
+            placeholder="user@example.com"
+          />
+          <div className="grid grid-cols-2 gap-4">
+            <Input
+              label="OSM Username"
+              value={editOsmUsername}
+              onChange={(e) => setEditOsmUsername(e.target.value)}
+              placeholder="osm_username"
+            />
+            <Input
+              label="Mapillary Username"
+              value={editMapillaryUsername2}
+              onChange={(e) => setEditMapillaryUsername2(e.target.value)}
+              placeholder="mapillary_username"
+            />
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <Select
+              label="Role"
+              value={editRole}
+              onChange={setEditRole}
+              options={[
+                { value: "user", label: "User" },
+                { value: "validator", label: "Validator" },
+                { value: "admin", label: "Admin" },
+              ]}
+            />
+            <Select
+              label="Timezone"
+              value={editTimezone2}
+              onChange={setEditTimezone2}
+              options={(() => {
+                try {
+                  return Intl.supportedValuesOf("timeZone").map((tz) => ({ value: tz, label: tz }));
+                } catch {
+                  return [];
+                }
+              })()}
+              placeholder="Select timezone"
+            />
+          </div>
+          <Select
+            label="Country"
+            value={editCountryId2}
+            onChange={setEditCountryId2}
+            options={countryOptions}
+            placeholder="Select country"
+          />
+          <div className="flex items-center justify-between p-3 border border-border rounded-lg">
+            <div>
+              <p className="text-sm font-medium">Payment Enabled</p>
+              <p className="text-xs text-muted-foreground">User can see payment information and request payments</p>
+            </div>
+            <div
+              onClick={() => setEditPaymentsVisible(!editPaymentsVisible)}
+              className={`w-11 h-6 rounded-full transition-colors relative cursor-pointer ${
+                editPaymentsVisible ? "bg-green-500" : "bg-muted"
+              }`}
+            >
+              <div
+                className={`w-5 h-5 rounded-full bg-white shadow absolute top-0.5 transition-transform ${
+                  editPaymentsVisible ? "translate-x-5" : "translate-x-0.5"
+                }`}
+              />
+            </div>
+          </div>
+        </div>
       </Modal>
     </div>
   );
