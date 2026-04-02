@@ -107,12 +107,20 @@ class LoginAPI(MethodView):
                 db_priority = role_priority.get(user.role, 0)
                 new_role = role if token_priority > db_priority else user.role
 
-                user.update(
-                    email=email,
-                    first_name=first_name,
-                    last_name=last_name,
-                    role=new_role,
-                )
+                updates = {
+                    "email": email,
+                    "role": new_role,
+                }
+
+                # Only set first/last name from Auth0 if the user doesn't
+                # already have them set — prevents overwriting admin edits
+                # with Auth0's default (which is often just the email address)
+                if not user.first_name or user.first_name == user.email:
+                    updates["first_name"] = first_name
+                if not user.last_name:
+                    updates["last_name"] = last_name
+
+                user.update(**updates)
             except Exception as e:
                 current_app.logger.warning(f"Error updating user: {e}")
 
