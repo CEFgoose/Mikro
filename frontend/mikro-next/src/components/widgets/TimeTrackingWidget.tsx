@@ -10,6 +10,7 @@ import {
   useActiveTimeSession,
   useApiCall,
   useCustomTopics,
+  useFetchMyTimeHistory,
 } from "@/hooks";
 
 interface TimeTrackingWidgetProps {
@@ -37,6 +38,25 @@ function formatElapsedTime(seconds: number): string {
     .padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
 }
 
+function formatHoursMinutes(totalSeconds: number): string {
+  const h = Math.floor(totalSeconds / 3600);
+  const m = Math.floor((totalSeconds % 3600) / 60);
+  return `${h}h ${m}m`;
+}
+
+function getMonday(d: Date): Date {
+  const date = new Date(d);
+  const day = date.getDay();
+  const diff = date.getDate() - day + (day === 0 ? -6 : 1);
+  date.setDate(diff);
+  date.setHours(0, 0, 0, 0);
+  return date;
+}
+
+function toDateStr(d: Date): string {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
 export function TimeTrackingWidget({
   projects = [],
 }: TimeTrackingWidgetProps) {
@@ -55,6 +75,9 @@ export function TimeTrackingWidget({
   const [activeSessionProjectName, setActiveSessionProjectName] = useState<string>("");
   const [activeSessionTopic, setActiveSessionTopic] = useState<string>("");
   const [activeSessionTaskName, setActiveSessionTaskName] = useState<string>("");
+  const [todaySeconds, setTodaySeconds] = useState(0);
+  const [weekSeconds, setWeekSeconds] = useState(0);
+  const [switchMode, setSwitchMode] = useState(false);
 
   const { data: activeSession, loading: sessionLoading, refetch: refetchSession } = useActiveTimeSession();
   const { mutate: clockIn, loading: clockingIn } = useClockIn();
@@ -81,6 +104,7 @@ export function TimeTrackingWidget({
   }>("/checklist/fetch_user_checklists", { immediate: false });
 
   const { data: customTopicsData } = useCustomTopics();
+  const { mutate: fetchHistory } = useFetchMyTimeHistory();
 
   // Listen for sync events from sidebar clock or other instances
   useEffect(() => {
@@ -144,6 +168,37 @@ export function TimeTrackingWidget({
     }
   }, [selectedTopic]);
 
+  // Fetch daily/weekly totals when clocked in
+  const fetchTotals = useCallback(async () => {
+    try {
+      const today = toDateStr(new Date());
+      const monday = toDateStr(getMonday(new Date()));
+
+      const [todayResult, weekResult] = await Promise.all([
+        fetchHistory({ startDate: today, endDate: today, limit: 1000 }),
+        fetchHistory({ startDate: monday, endDate: today, limit: 1000 }),
+      ]);
+
+      const todayTotal = (todayResult?.entries || [])
+        .filter((e) => e.status === "completed")
+        .reduce((sum, e) => sum + (e.durationSeconds || 0), 0);
+      const weekTotal = (weekResult?.entries || [])
+        .filter((e) => e.status === "completed")
+        .reduce((sum, e) => sum + (e.durationSeconds || 0), 0);
+
+      setTodaySeconds(todayTotal);
+      setWeekSeconds(weekTotal);
+    } catch {
+      // Silently fail — totals are nice-to-have
+    }
+  }, [fetchHistory]);
+
+  useEffect(() => {
+    if (isClockedIn) {
+      fetchTotals();
+    }
+  }, [isClockedIn, fetchTotals]);
+
   const handleClockIn = useCallback(async () => {
     if (!selectedTopic) return;
     const needsProject = ["editing", "validating", "qc_review"].includes(selectedTopic);
@@ -171,10 +226,12 @@ export function TimeTrackingWidget({
       );
       setActiveSessionTaskName(taskName || "");
       window.dispatchEvent(new Event("clock-state-changed"));
+      setSwitchMode(false);
+      fetchTotals();
     } catch (err) {
       setApiError(err instanceof Error ? err.message : "Failed to clock in");
     }
-  }, [selectedProject, selectedTopic, taskName, taskRefType, taskRefId, clockIn, projects]);
+  }, [selectedProject, selectedTopic, taskName, taskRefType, taskRefId, clockIn, projects, fetchTotals]);
 
   const handleClockOut = useCallback(async () => {
     setApiError(null);
@@ -196,6 +253,26 @@ export function TimeTrackingWidget({
       setApiError(err instanceof Error ? err.message : "Failed to clock out");
     }
   }, [clockOut]);
+
+  const handleSwitchTasks = useCallback(async () => {
+    setApiError(null);
+    try {
+      await clockOut({});
+      // Don't show confirmation — go straight to clock-in form
+      setIsClockedIn(false);
+      setSwitchMode(true);
+      setSelectedTopic("");
+      setSelectedProject("");
+      setTaskName("");
+      setTaskRefType(null);
+      setTaskRefId(null);
+      window.dispatchEvent(new Event("clock-state-changed"));
+      // Refresh totals for the new form
+      fetchTotals();
+    } catch (err) {
+      setApiError(err instanceof Error ? err.message : "Failed to switch tasks");
+    }
+  }, [clockOut, fetchTotals]);
 
   // Handle task selection for training
   const handleTrainingSelect = useCallback(
@@ -445,41 +522,40 @@ export function TimeTrackingWidget({
               {activeSessionTopic}
             </p>
             {activeSessionTaskName && (
-              <p className="text-xs text-muted-foreground mb-4">
+              <p className="text-xs text-muted-foreground mb-2">
                 {activeSessionTaskName}
               </p>
             )}
-            {!activeSessionTaskName && <div className="mb-4" />}
+            <div className="flex justify-center gap-3 text-xs text-muted-foreground mb-4">
+              <span>Today: {formatHoursMinutes(todaySeconds + elapsedSeconds)}</span>
+              <span>·</span>
+              <span>Week: {formatHoursMinutes(weekSeconds + elapsedSeconds)}</span>
+            </div>
             {apiError && (
               <p className="text-xs text-red-600 mb-2">{apiError}</p>
             )}
-            <Button
-              variant="destructive"
-              onClick={handleClockOut}
-              disabled={clockingOut}
-              className="w-full"
-            >
-              <svg
-                className="w-4 h-4 mr-2"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                onClick={handleSwitchTasks}
+                disabled={clockingOut}
+                className="flex-1"
               >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                />
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M9 10h6v4H9z"
-                />
-              </svg>
-              {clockingOut ? "Clocking Out..." : "Clock Out"}
-            </Button>
+                Switch Tasks
+              </Button>
+              <Button
+                variant="destructive"
+                onClick={handleClockOut}
+                disabled={clockingOut}
+                className="flex-1"
+              >
+                <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 10h6v4H9z" />
+                </svg>
+                {clockingOut ? "..." : "Clock Out"}
+              </Button>
+            </div>
           </div>
         </CardContent>
       </Card>
@@ -545,6 +621,13 @@ export function TimeTrackingWidget({
         <div className="space-y-3">
           {apiError && (
             <p className="text-xs text-red-600">{apiError}</p>
+          )}
+          {switchMode && (
+            <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-2 text-center">
+              <p className="text-xs text-blue-700 dark:text-blue-300">
+                Previous task saved — select your new task below
+              </p>
+            </div>
           )}
           <Select
             label="Topic"

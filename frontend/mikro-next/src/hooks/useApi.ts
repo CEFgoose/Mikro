@@ -621,6 +621,10 @@ export function useMyTimeHistory() {
   return { ...result, refetch };
 }
 
+export function useFetchMyTimeHistory() {
+  return useApiMutation<TimeTrackingHistoryResponse>("/timetracking/my_history");
+}
+
 // Admin: get all active sessions
 export function useAdminActiveSessions() {
   return useApiCall<TimeTrackingActiveSessionsResponse>("/timetracking/active_sessions");

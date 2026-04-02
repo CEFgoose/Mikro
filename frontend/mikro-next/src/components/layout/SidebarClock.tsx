@@ -1,7 +1,17 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { useActiveTimeSession, useClockIn, useClockOut, useUserProjects } from "@/hooks";
+import { useActiveTimeSession, useClockIn, useClockOut, useUserProjects, useFetchMyTimeHistory } from "@/hooks";
+
+function formatHoursMinutes(totalSeconds: number): string {
+  const h = Math.floor(totalSeconds / 3600);
+  const m = Math.floor((totalSeconds % 3600) / 60);
+  return `${h}h ${m}m`;
+}
+
+function toDateStr(d: Date): string {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
 
 function formatElapsedTime(seconds: number): string {
   const hours = Math.floor(seconds / 3600);
@@ -43,6 +53,8 @@ export function SidebarClock() {
   const [showConfirmation, setShowConfirmation] = useState(false);
   const [selectedProject, setSelectedProject] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("");
+  const [todaySeconds, setTodaySeconds] = useState(0);
+  const { mutate: fetchHistory } = useFetchMyTimeHistory();
 
   const projectList: { id: number; name: string }[] =
     projects?.user_projects?.map((p: { id: number; name: string }) => ({
@@ -71,6 +83,22 @@ export function SidebarClock() {
     window.addEventListener("clock-state-changed", handler);
     return () => window.removeEventListener("clock-state-changed", handler);
   }, [refetch]);
+
+  // Fetch today's completed hours
+  useEffect(() => {
+    if (!isClockedIn) return;
+    const fetchTodayTotal = async () => {
+      try {
+        const today = toDateStr(new Date());
+        const result = await fetchHistory({ startDate: today, endDate: today, limit: 1000 });
+        const total = (result?.entries || [])
+          .filter((e: { status: string; durationSeconds: number | null }) => e.status === "completed")
+          .reduce((sum: number, e: { durationSeconds: number | null }) => sum + (e.durationSeconds || 0), 0);
+        setTodaySeconds(total);
+      } catch { /* ignore */ }
+    };
+    fetchTodayTotal();
+  }, [isClockedIn, fetchHistory]);
 
   // Timer
   useEffect(() => {
@@ -161,6 +189,11 @@ export function SidebarClock() {
           backgroundColor: "rgba(34, 197, 94, 0.05)",
         }}
       >
+        <div style={{ textAlign: "center", marginBottom: 2 }}>
+          <span style={{ fontSize: 10, color: "var(--muted-foreground)" }}>
+            Today: {formatHoursMinutes(todaySeconds + elapsedSeconds)}
+          </span>
+        </div>
         <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 4, justifyContent: "center" }}>
           <span style={{ position: "relative", display: "inline-flex", width: 7, height: 7 }}>
             <span
