@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
-import { Card, CardContent, CardHeader, CardTitle, Button, Modal, useToastActions } from "@/components/ui";
+import { Card, CardContent, CardHeader, CardTitle, Button, Modal, useToastActions, Skeleton, TableSkeleton } from "@/components/ui";
 import { FilterBar } from "@/components/filters";
 import { useFilters, useFetchFilterOptions, useFetchCountries } from "@/hooks";
 import { formatNumber, formatCurrency, displayRole } from "@/lib/utils";
@@ -47,6 +47,8 @@ export default function AdminUsersPage() {
   const [showTrackModal, setShowTrackModal] = useState(false);
   const [trackOsmUsername, setTrackOsmUsername] = useState("");
   const [trackDisplayName, setTrackDisplayName] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const ROWS_PER_PAGE = 50;
   const toast = useToastActions();
   const { activeFilters, setActiveFilters, filtersBody, clearFilters } = useFilters();
   const { data: filterOptions, loading: filterOptionsLoading } = useFetchFilterOptions();
@@ -127,6 +129,10 @@ export default function AdminUsersPage() {
         (u.email || "").toLowerCase().includes(search)
     );
   };
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [userSearch, filtersBody]);
 
   useEffect(() => {
     fetchUsers();
@@ -431,11 +437,25 @@ export default function AdminUsersPage() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-kaart-orange" />
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <Skeleton className="h-8 w-48" />
+          <Skeleton className="h-8 w-32" />
+        </div>
+        <Skeleton className="h-10 w-full" />
+        <TableSkeleton rows={10} />
       </div>
     );
   }
+
+  const filteredUsers = sortUsers(filterUsersBySearch(users));
+  const totalPages = Math.ceil(filteredUsers.length / ROWS_PER_PAGE);
+  const paginatedUsers = filteredUsers.slice(
+    (currentPage - 1) * ROWS_PER_PAGE,
+    currentPage * ROWS_PER_PAGE
+  );
+  const showingStart = filteredUsers.length > 0 ? (currentPage - 1) * ROWS_PER_PAGE + 1 : 0;
+  const showingEnd = Math.min(currentPage * ROWS_PER_PAGE, filteredUsers.length);
 
   return (
     <div className="space-y-8">
@@ -533,7 +553,7 @@ export default function AdminUsersPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-border bg-card">
-                {sortUsers(filterUsersBySearch(users)).map((user) => (
+                {paginatedUsers.map((user) => (
                   <tr
                     key={user.id}
                     onClick={() => handleSelectUser(user.id)}
@@ -608,6 +628,35 @@ export default function AdminUsersPage() {
           </div>
         </CardContent>
       </Card>
+
+      {filteredUsers.length > ROWS_PER_PAGE && (
+        <div className="flex items-center justify-between mt-4 px-2">
+          <span className="text-sm text-muted-foreground">
+            Showing {showingStart}–{showingEnd} of {filteredUsers.length} users
+          </span>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={currentPage === 1}
+              onClick={() => setCurrentPage((p) => p - 1)}
+            >
+              Previous
+            </Button>
+            <span className="text-sm text-muted-foreground">
+              Page {currentPage} of {totalPages}
+            </span>
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={currentPage >= totalPages}
+              onClick={() => setCurrentPage((p) => p + 1)}
+            >
+              Next
+            </Button>
+          </div>
+        </div>
+      )}
 
       {/* Add User Modal */}
       <Modal isOpen={showAddModal} onClose={() => { setShowAddModal(false); setInviteEmail(""); }} title="Invite User">

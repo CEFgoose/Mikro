@@ -30,7 +30,7 @@ from ..database import (
     db,
 )
 from ..filters import resolve_filtered_user_ids
-from ..stats import get_user_task_stats, get_batch_user_task_stats, get_user_payment_balances, get_batch_user_payment_balances
+from ..stats import get_user_task_stats, get_batch_user_task_stats, get_user_payment_balances, get_batch_user_payment_balances, get_batch_user_task_stats_fast, get_batch_user_payment_balances_fast
 
 
 def _auto_assign_country(user, country_text):
@@ -454,9 +454,9 @@ class UserAPI(MethodView):
         country_cache = {}
         region_cache = {}
 
-        # Batch-compute live task stats for all users (avoids N+1 queries)
-        batch_stats = get_batch_user_task_stats(users_in_org, g.user.org_id)
-        batch_pay = get_batch_user_payment_balances(users_in_org, g.user.org_id)
+        # Batch-compute live task stats using SQL aggregation (fast path for list view)
+        batch_stats = get_batch_user_task_stats_fast(users_in_org, g.user.org_id)
+        batch_pay = get_batch_user_payment_balances_fast(users_in_org, g.user.org_id)
 
         # Initialize an empty list to store information about the users
         org_users = []

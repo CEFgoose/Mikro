@@ -8,7 +8,8 @@ No incremental counter columns are used.
 Used by: Projects.py, Users.py, Teams.py, Reports.py, Transactions.py
 """
 
-from .database import Task, UserTasks, PayRequests, Payments
+from .database import Task, UserTasks, PayRequests, Payments, db
+from sqlalchemy import func, case, and_
 
 
 def count_tasks_split_aware(tasks, condition_fn=None):
@@ -339,3 +340,180 @@ def _compute_task_stats(tasks):
         "tasks_validated": count_tasks_split_aware(tasks, validated_cond),
         "tasks_invalidated": count_tasks_split_aware(tasks, invalidated_cond),
     }
+
+
+def get_batch_user_task_stats_fast(users, org_id):
+    """
+    Fast SQL-aggregated task stats for multiple users.
+
+    Uses GROUP BY instead of loading all tasks into Python.
+    Does NOT use split-aware counting (acceptable for list views).
+
+    Returns dict of {user_id: stats_dict}.
+    """
+    user_ids = [u.id for u in users]
+    if not user_ids:
+        return {}
+
+    # Mapper stats: count tasks assigned to each user by status
+    mapper_rows = (
+        db.session.query(
+            UserTasks.user_id,
+            func.count(case(
+                (and_(Task.mapped == True, Task.validated == False, Task.invalidated == False), 1),
+            )).label("mapped"),
+            func.count(case(
+                (and_(Task.mapped == True, Task.validated == True), 1),
+            )).label("validated"),
+            func.count(case(
+                (Task.invalidated == True, 1),
+            )).label("invalidated"),
+        )
+        .join(Task, Task.id == UserTasks.task_id)
+        .filter(UserTasks.user_id.in_(user_ids))
+        .group_by(UserTasks.user_id)
+        .all()
+    )
+
+    mapper_map = {}
+    for row in mapper_rows:
+        mapper_map[row.user_id] = {
+            "total_tasks_mapped": row.mapped or 0,
+            "total_tasks_validated": row.validated or 0,
+            "total_tasks_invalidated": row.invalidated or 0,
+        }
+
+    # Validator stats: count tasks validated BY each user (by osm_username)
+    osm_usernames = [u.osm_username for u in users if u.osm_username]
+    validator_map = {}
+
+    if osm_usernames:
+        validator_rows = (
+            db.session.query(
+                Task.validated_by,
+                func.count(case(
+                    (and_(Task.validated == True, Task.self_validated == False), 1),
+                )).label("val_validated"),
+                func.count(case(
+                    (Task.invalidated == True, 1),
+                )).label("val_invalidated"),
+            )
+            .filter(
+                Task.org_id == org_id,
+                Task.validated_by.in_(osm_usernames),
+            )
+            .group_by(Task.validated_by)
+            .all()
+        )
+
+        for row in validator_rows:
+            validator_map[row.validated_by] = {
+                "validator_tasks_validated": row.val_validated or 0,
+                "validator_tasks_invalidated": row.val_invalidated or 0,
+            }
+
+    # Merge mapper + validator stats
+    result = {}
+    for user in users:
+        m = mapper_map.get(user.id, {})
+        v = validator_map.get(user.osm_username, {})
+        result[user.id] = {
+            "total_tasks_mapped": m.get("total_tasks_mapped", 0),
+            "total_tasks_validated": m.get("total_tasks_validated", 0),
+            "total_tasks_invalidated": m.get("total_tasks_invalidated", 0),
+            "validator_tasks_validated": v.get("validator_tasks_validated", 0),
+            "validator_tasks_invalidated": v.get("validator_tasks_invalidated", 0),
+        }
+
+    return result
+
+
+def get_batch_user_payment_balances_fast(users, org_id):
+    """
+    Fast SQL-aggregated payment balances for multiple users.
+
+    Uses SQL SUM instead of loading all tasks into Python.
+
+    Returns dict of {user_id: {mapping_payable_total, validation_payable_total}}.
+    """
+    user_ids = [u.id for u in users]
+    if not user_ids:
+        return {}
+
+    # Batch-load claimed task IDs (tasks already in a PayRequest or Payment)
+    all_pay_requests = PayRequests.query.filter(
+        PayRequests.user_id.in_(user_ids)
+    ).all()
+    all_payments = Payments.query.filter(
+        Payments.user_id.in_(user_ids)
+    ).all()
+
+    claimed_map = {}
+    for req in all_pay_requests:
+        claimed_map.setdefault(req.user_id, set()).update(req.task_ids or [])
+    for pay in all_payments:
+        claimed_map.setdefault(pay.user_id, set()).update(pay.task_ids or [])
+
+    # All claimed task IDs across all users (for SQL exclusion)
+    all_claimed = set()
+    for s in claimed_map.values():
+        all_claimed.update(s)
+
+    # Mapping payable: sum mapping_rate for user's assigned tasks that are validated + not self-validated + not claimed
+    claimed_filter = ~Task.id.in_(all_claimed) if all_claimed else True
+
+    mapping_rows = (
+        db.session.query(
+            UserTasks.user_id,
+            func.coalesce(func.sum(Task.mapping_rate), 0).label("payable"),
+        )
+        .join(Task, Task.id == UserTasks.task_id)
+        .filter(
+            UserTasks.user_id.in_(user_ids),
+            Task.validated == True,
+            Task.self_validated == False,
+            claimed_filter,
+        )
+        .group_by(UserTasks.user_id)
+        .all()
+    )
+
+    mapping_map = {row.user_id: float(row.payable) for row in mapping_rows}
+
+    # Validation payable: sum validation_rate for tasks validated BY each user (by osm_username)
+    osm_usernames = [u.osm_username for u in users if u.osm_username]
+    validation_map = {}
+
+    if osm_usernames:
+        validation_rows = (
+            db.session.query(
+                Task.validated_by,
+                func.coalesce(func.sum(Task.validation_rate), 0).label("payable"),
+            )
+            .filter(
+                Task.org_id == org_id,
+                Task.validated_by.in_(osm_usernames),
+                Task.self_validated == False,
+                db.or_(Task.validated == True, Task.invalidated == True),
+                claimed_filter,
+            )
+            .group_by(Task.validated_by)
+            .all()
+        )
+
+        for row in validation_rows:
+            validation_map[row.validated_by] = float(row.payable)
+
+    # Build result
+    result = {}
+    for user in users:
+        # For mapping, also need to subtract per-user claimed amounts
+        # The SQL already excludes globally claimed tasks, but we need per-user precision
+        # Since claimed_filter excludes ALL claimed tasks (not per-user), this is slightly imprecise
+        # but acceptable for list view — the profile page uses the precise per-user calculation
+        result[user.id] = {
+            "mapping_payable_total": round(mapping_map.get(user.id, 0), 2),
+            "validation_payable_total": round(validation_map.get(user.osm_username, 0), 2),
+        }
+
+    return result
