@@ -259,6 +259,12 @@ class TimeTrackingAPI(MethodView):
         project_id = data.get("project_id")
         category = data.get("category", "").lower()
 
+        logger.info(
+            f"[CLOCK] clock_in called by user={g.user.id} "
+            f"({g.user.osm_username or g.user.email}) "
+            f"project_id={project_id} category={category}"
+        )
+
         # Validate category
         if category not in VALID_CATEGORIES:
             return jsonify({
@@ -280,6 +286,10 @@ class TimeTrackingAPI(MethodView):
             user_id=g.user.id, status="active"
         ).first()
         if active:
+            logger.info(
+                f"[CLOCK] clock_in REJECTED — user={g.user.id} already has active session "
+                f"id={active.id} clock_in={active.clock_in}"
+            )
             return jsonify({
                 "message": "You already have an active session. Clock out first.",
                 "status": 409,
@@ -310,6 +320,11 @@ class TimeTrackingAPI(MethodView):
                 topic.created_by = g.user.id
                 topic.save()
 
+        logger.info(
+            f"[CLOCK] clock_in SUCCESS — user={g.user.id} session_id={entry.id} "
+            f"clock_in={entry.clock_in} project={project_id} category={category}"
+        )
+
         return jsonify({
             "message": "Clocked in successfully",
             "status": 200,
@@ -325,6 +340,11 @@ class TimeTrackingAPI(MethodView):
         data = request.get_json() or {}
         session_id = data.get("session_id")
 
+        logger.info(
+            f"[CLOCK] clock_out called by user={g.user.id} "
+            f"({g.user.osm_username or g.user.email}) session_id={session_id}"
+        )
+
         # Find active session
         if session_id:
             entry = TimeEntry.query.filter_by(
@@ -336,10 +356,19 @@ class TimeTrackingAPI(MethodView):
             ).first()
 
         if not entry:
+            logger.warning(
+                f"[CLOCK] clock_out FAILED — no active session found for user={g.user.id} "
+                f"session_id_requested={session_id}"
+            )
             return jsonify({
                 "message": "No active session found",
                 "status": 404,
             }), 404
+
+        logger.info(
+            f"[CLOCK] clock_out PROCESSING — user={g.user.id} session_id={entry.id} "
+            f"clock_in={entry.clock_in} project={entry.project_id} category={entry.category}"
+        )
 
         # Clock out
         now = datetime.utcnow()
@@ -358,6 +387,12 @@ class TimeTrackingAPI(MethodView):
 
         entry.save()
 
+        logger.info(
+            f"[CLOCK] clock_out SUCCESS — user={g.user.id} session_id={entry.id} "
+            f"duration={entry.duration_seconds}s changesets={entry.changeset_count} "
+            f"changes={entry.changes_count}"
+        )
+
         return jsonify({
             "message": "Clocked out successfully",
             "status": 200,
@@ -373,6 +408,16 @@ class TimeTrackingAPI(MethodView):
         entry = TimeEntry.query.filter_by(
             user_id=g.user.id, status="active"
         ).first()
+
+        if entry:
+            logger.debug(
+                f"[CLOCK] active_session CHECK — user={g.user.id} "
+                f"found session_id={entry.id} clock_in={entry.clock_in}"
+            )
+        else:
+            logger.debug(
+                f"[CLOCK] active_session CHECK — user={g.user.id} NO active session"
+            )
 
         return jsonify({
             "status": 200,
@@ -527,6 +572,12 @@ class TimeTrackingAPI(MethodView):
                 "status": 404,
             }), 404
 
+        logger.warning(
+            f"[CLOCK] FORCE clock_out — admin={g.user.id} ({g.user.osm_username or g.user.email}) "
+            f"forcing clock_out on session_id={entry.id} owned by user={entry.user_id} "
+            f"clock_in={entry.clock_in}"
+        )
+
         now = datetime.utcnow()
         entry.clock_out = now
         entry.duration_seconds = int((now - entry.clock_in).total_seconds())
@@ -578,6 +629,10 @@ class TimeTrackingAPI(MethodView):
                 "status": 400,
             }), 400
 
+        logger.warning(
+            f"[CLOCK] VOID entry — admin={g.user.id} voiding entry_id={entry.id} "
+            f"owned by user={entry.user_id} status_was={entry.status}"
+        )
         entry.status = "voided"
         entry.voided_by = g.user.id
         entry.voided_at = datetime.utcnow()
