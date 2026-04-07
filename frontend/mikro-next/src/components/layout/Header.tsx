@@ -4,7 +4,11 @@ import Link from "next/link";
 import Image from "next/image";
 import { useUser } from "@auth0/nextjs-auth0/client";
 
-export function Header() {
+interface HeaderProps {
+  displayName?: string;
+}
+
+export function Header({ displayName }: HeaderProps) {
   const { user, isLoading } = useUser();
 
   return (
@@ -44,7 +48,7 @@ export function Header() {
           ) : user ? (
             <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
               <span className="hide-mobile" style={{ fontSize: 14, color: "var(--muted-foreground)" }}>
-                {user.name || user.email}
+                {displayName || user.name || user.email}
               </span>
               <Link
                 href="/account"

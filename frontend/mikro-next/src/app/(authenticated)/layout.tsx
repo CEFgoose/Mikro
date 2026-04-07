@@ -15,6 +15,7 @@ interface UserInfo {
 interface SyncResult {
   role: string;
   paymentsVisible: boolean;
+  displayName: string;
 }
 
 async function syncUserWithBackend(accessToken: string, userInfo?: UserInfo): Promise<SyncResult> {
@@ -32,13 +33,14 @@ async function syncUserWithBackend(accessToken: string, userInfo?: UserInfo): Pr
       return {
         role: data.role || "user",
         paymentsVisible: data.payments_visible ?? false,
+        displayName: data.name || "",
       };
     }
     console.error("Failed to sync user with backend:", response.status);
-    return { role: "user", paymentsVisible: false };
+    return { role: "user", paymentsVisible: false, displayName: "" };
   } catch (error) {
     console.error("Error syncing user with backend:", error);
-    return { role: "user", paymentsVisible: false };
+    return { role: "user", paymentsVisible: false, displayName: "" };
   }
 }
 
@@ -56,6 +58,7 @@ export default async function AuthenticatedLayout({
   // Sync user with backend and get role from database
   let role = "user";
   let paymentsVisible = false;
+  let displayName = "";
   try {
     const tokenResponse = await auth0.getAccessToken();
     if (!tokenResponse?.token) {
@@ -70,6 +73,7 @@ export default async function AuthenticatedLayout({
     const syncResult = await syncUserWithBackend(tokenResponse.token, userInfo);
     role = syncResult.role;
     paymentsVisible = syncResult.paymentsVisible;
+    displayName = syncResult.displayName;
   } catch {
     // Token retrieval failed — session expired, force re-login
     redirect("/auth/logout");
@@ -84,7 +88,7 @@ export default async function AuthenticatedLayout({
     <div style={{ minHeight: "100vh", backgroundColor: "var(--muted)" }}>
       <AuthGuard />
       <AprilFools />
-      <Header />
+      <Header displayName={displayName} />
       <Sidebar role={role as "user" | "validator" | "admin"} paymentsVisible={paymentsVisible} />
       <main
         className="main-content"
