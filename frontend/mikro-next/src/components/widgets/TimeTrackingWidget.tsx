@@ -107,7 +107,7 @@ export function TimeTrackingWidget({
     return () => window.removeEventListener("clock-state-changed", handler);
   }, [refetchSession]);
 
-  // Restore active session on mount
+  // Restore active session on mount / sync with refetch results
   useEffect(() => {
     if (activeSession?.session) {
       const session = activeSession.session;
@@ -119,6 +119,14 @@ export function TimeTrackingWidget({
       if (session.projectId) {
         setSelectedProject(session.projectId.toString());
       }
+    } else if (activeSession && !activeSession.session) {
+      // Session ended externally (e.g. sidebar clock-out)
+      setIsClockedIn(false);
+      setClockInTime(null);
+      setElapsedSeconds(0);
+      setActiveSessionProjectName("");
+      setActiveSessionTopic("");
+      setActiveSessionTaskName("");
     }
   }, [activeSession]);
 
