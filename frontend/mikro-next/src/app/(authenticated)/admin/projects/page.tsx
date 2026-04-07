@@ -871,10 +871,10 @@ export default function AdminProjectsPage() {
         <Tabs defaultValue="details" value={addTab} onValueChange={(v) => setAddTab(v as "details" | "locations" | "teams")}>
           <TabsList className="mb-4">
             <TabsTrigger value="details">Project Details</TabsTrigger>
-            <TabsTrigger value="locations" disabled={!newProjectId}>
+            <TabsTrigger value="locations">
               Locations
             </TabsTrigger>
-            <TabsTrigger value="teams" disabled={!newProjectId}>
+            <TabsTrigger value="teams">
               Teams{newProjectId ? ` (${addProjectTeams.filter(t => t.assigned === "Assigned").length})` : ""}
             </TabsTrigger>
           </TabsList>
@@ -996,13 +996,21 @@ export default function AdminProjectsPage() {
           </TabsContent>
 
           <TabsContent value="locations">
-            {newProjectId && (
+            {newProjectId ? (
               <LocationsTab resourceId={newProjectId} resourceType="project" />
+            ) : (
+              <p className="text-muted-foreground text-center py-8">
+                Create the project first, then assign locations here.
+              </p>
             )}
           </TabsContent>
 
           <TabsContent value="teams">
-            {!newProjectId ? null : loadingTeams ? (
+            {!newProjectId ? (
+              <p className="text-muted-foreground text-center py-8">
+                Create the project first, then assign teams here.
+              </p>
+            ) : loadingTeams ? (
               <div className="space-y-2">
                 {[1, 2, 3].map((i) => (
                   <Skeleton key={i} className="h-12 w-full" />
