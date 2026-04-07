@@ -17,17 +17,9 @@ interface TimeTrackingWidgetProps {
   projects?: { id: number; name: string; short_name?: string }[];
 }
 
-const TOPIC_OPTIONS: SelectOption[] = [
-  { value: "editing", label: "Editing" },
-  { value: "validating", label: "Validating" },
-  { value: "training", label: "Training" },
-  { value: "checklist", label: "Checklist" },
-  { value: "qc_review", label: "QC / Review" },
-  { value: "meeting", label: "Meeting" },
-  { value: "documentation", label: "Documentation" },
-  { value: "imagery_capture", label: "Imagery Capture" },
-  { value: "other", label: "Other" },
-];
+import { TOPIC_OPTIONS as _TOPIC_OPTIONS, topicRequiresProject } from "@/lib/timeTracking";
+
+const TOPIC_OPTIONS: SelectOption[] = _TOPIC_OPTIONS.map((t) => ({ value: t.value, label: t.label }));
 
 function formatElapsedTime(seconds: number): string {
   const hours = Math.floor(seconds / 3600);
@@ -163,7 +155,7 @@ export function TimeTrackingWidget({
     setTaskRefId(null);
     setCustomTopicInput("");
     setIsAddingCustomTopic(false);
-    if (!["editing", "validating", "qc_review"].includes(selectedTopic)) {
+    if (!topicRequiresProject(selectedTopic)) {
       setSelectedProject("");
     }
   }, [selectedTopic]);
@@ -201,7 +193,7 @@ export function TimeTrackingWidget({
 
   const handleClockIn = useCallback(async () => {
     if (!selectedTopic) return;
-    const needsProject = ["editing", "validating", "qc_review"].includes(selectedTopic);
+    const needsProject = topicRequiresProject(selectedTopic);
     if (needsProject && !selectedProject) return;
     setApiError(null);
 
@@ -280,7 +272,7 @@ export function TimeTrackingWidget({
   const switchAutoClockRef = useRef(false);
   useEffect(() => {
     if (!switchMode || !selectedTopic || isClockedIn || clockingIn) return;
-    const needsProject = ["editing", "validating", "qc_review"].includes(selectedTopic);
+    const needsProject = topicRequiresProject(selectedTopic);
     if (needsProject && !selectedProject) return;
     // Prevent double-fire
     if (switchAutoClockRef.current) return;
@@ -381,7 +373,7 @@ export function TimeTrackingWidget({
     if (!selectedTopic) return null;
 
     // Project-based topics — no task selector needed, project already selected above
-    if (["editing", "validating", "qc_review"].includes(selectedTopic)) {
+    if (topicRequiresProject(selectedTopic)) {
       return null;
     }
 
@@ -652,7 +644,7 @@ export function TimeTrackingWidget({
             onChange={setSelectedTopic}
             placeholder="Select topic"
           />
-          {selectedTopic && ["editing", "validating", "qc_review"].includes(selectedTopic) && (
+          {selectedTopic && topicRequiresProject(selectedTopic) && (
             <Select
               label="Project"
               options={projectOptions}
@@ -665,7 +657,7 @@ export function TimeTrackingWidget({
           <Button
             variant="primary"
             onClick={handleClockIn}
-            disabled={!selectedTopic || (["editing", "validating", "qc_review"].includes(selectedTopic) && !selectedProject) || clockingIn}
+            disabled={!selectedTopic || (topicRequiresProject(selectedTopic) && !selectedProject) || clockingIn}
             className="w-full mt-2"
           >
             <svg

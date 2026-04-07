@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useActiveTimeSession, useClockIn, useClockOut, useUserProjects, useFetchMyTimeHistory } from "@/hooks";
+import { TOPIC_OPTIONS, topicRequiresProject } from "@/lib/timeTracking";
 
 function formatHoursMinutes(totalSeconds: number): string {
   const h = Math.floor(totalSeconds / 3600);
@@ -21,14 +22,6 @@ function formatElapsedTime(seconds: number): string {
     .toString()
     .padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
 }
-
-const CATEGORIES = [
-  { value: "mapping", label: "Mapping" },
-  { value: "validation", label: "Validation" },
-  { value: "review", label: "Review" },
-  { value: "training", label: "Training" },
-  { value: "other", label: "Other" },
-];
 
 const selectStyle: React.CSSProperties = {
   width: "100%",
@@ -51,8 +44,8 @@ export function SidebarClock() {
   const [clockInTime, setClockInTime] = useState<Date | null>(null);
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
   const [showConfirmation, setShowConfirmation] = useState(false);
+  const [selectedTopic, setSelectedTopic] = useState("");
   const [selectedProject, setSelectedProject] = useState("");
-  const [selectedCategory, setSelectedCategory] = useState("");
   const [todaySeconds, setTodaySeconds] = useState(0);
   const { mutate: fetchHistory } = useFetchMyTimeHistory();
 
@@ -61,6 +54,8 @@ export function SidebarClock() {
       id: p.id,
       name: p.name,
     })) ?? [];
+
+  const needsProject = topicRequiresProject(selectedTopic);
 
   // Restore active session on mount / refetch
   useEffect(() => {
@@ -115,22 +110,23 @@ export function SidebarClock() {
   }, [isClockedIn, clockInTime]);
 
   const handleClockIn = useCallback(async () => {
-    if (!selectedProject || !selectedCategory) return;
+    if (!selectedTopic) return;
+    if (needsProject && !selectedProject) return;
     try {
       await clockIn({
-        project_id: parseInt(selectedProject),
-        category: selectedCategory,
+        project_id: selectedProject ? parseInt(selectedProject) : null,
+        category: selectedTopic,
       });
       setClockInTime(new Date());
       setIsClockedIn(true);
       setElapsedSeconds(0);
+      setSelectedTopic("");
       setSelectedProject("");
-      setSelectedCategory("");
       window.dispatchEvent(new Event("clock-state-changed"));
     } catch {
       // Silently handle — dashboard/time page will show full errors
     }
-  }, [selectedProject, selectedCategory, clockIn]);
+  }, [selectedTopic, selectedProject, needsProject, clockIn]);
 
   const handleClockOut = useCallback(async () => {
     try {
@@ -147,6 +143,13 @@ export function SidebarClock() {
       // Silently handle
     }
   }, [clockOut]);
+
+  // Clear project when switching to a non-project topic
+  useEffect(() => {
+    if (selectedTopic && !topicRequiresProject(selectedTopic)) {
+      setSelectedProject("");
+    }
+  }, [selectedTopic]);
 
   if (sessionLoading) {
     return (
@@ -251,37 +254,41 @@ export function SidebarClock() {
     );
   }
 
-  // Not clocked in — show project/category selects + clock in button
+  // Not clocked in — topic first, then conditional project
+  const canClockIn = selectedTopic && (!needsProject || selectedProject) && !clockingIn;
+
   return (
     <div style={{ padding: "10px 12px", borderTop: "1px solid var(--border)" }}>
       <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
         <select
           style={selectStyle}
-          value={selectedProject}
-          onChange={(e) => setSelectedProject(e.target.value)}
+          value={selectedTopic}
+          onChange={(e) => setSelectedTopic(e.target.value)}
         >
-          <option value="">Project...</option>
-          {projectList.map((p) => (
-            <option key={p.id} value={p.id.toString()}>
-              {p.name}
+          <option value="">Topic...</option>
+          {TOPIC_OPTIONS.map((t) => (
+            <option key={t.value} value={t.value}>
+              {t.label}
             </option>
           ))}
         </select>
-        <select
-          style={selectStyle}
-          value={selectedCategory}
-          onChange={(e) => setSelectedCategory(e.target.value)}
-        >
-          <option value="">Category...</option>
-          {CATEGORIES.map((c) => (
-            <option key={c.value} value={c.value}>
-              {c.label}
-            </option>
-          ))}
-        </select>
+        {needsProject && (
+          <select
+            style={selectStyle}
+            value={selectedProject}
+            onChange={(e) => setSelectedProject(e.target.value)}
+          >
+            <option value="">Project...</option>
+            {projectList.map((p) => (
+              <option key={p.id} value={p.id.toString()}>
+                {p.name}
+              </option>
+            ))}
+          </select>
+        )}
         <button
           onClick={handleClockIn}
-          disabled={!selectedProject || !selectedCategory || clockingIn}
+          disabled={!canClockIn}
           style={{
             width: "100%",
             padding: "5px 0",
@@ -291,8 +298,8 @@ export function SidebarClock() {
             backgroundColor: "#ff6b35",
             border: "none",
             borderRadius: 5,
-            cursor: !selectedProject || !selectedCategory || clockingIn ? "not-allowed" : "pointer",
-            opacity: !selectedProject || !selectedCategory || clockingIn ? 0.6 : 1,
+            cursor: !canClockIn ? "not-allowed" : "pointer",
+            opacity: !canClockIn ? 0.6 : 1,
             transition: "opacity 0.15s",
           }}
         >
