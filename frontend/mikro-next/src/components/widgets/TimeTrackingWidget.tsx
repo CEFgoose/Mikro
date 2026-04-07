@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Select, SelectOption } from "@/components/ui/Select";
@@ -259,9 +259,10 @@ export function TimeTrackingWidget({
     try {
       await clockOut({});
       // Don't show confirmation — go straight to clock-in form
+      // Keep the topic pre-selected so user only changes what's different
       setIsClockedIn(false);
       setSwitchMode(true);
-      setSelectedTopic("");
+      // Clear project/task selection but keep topic
       setSelectedProject("");
       setTaskName("");
       setTaskRefType(null);
@@ -273,6 +274,21 @@ export function TimeTrackingWidget({
       setApiError(err instanceof Error ? err.message : "Failed to switch tasks");
     }
   }, [clockOut, fetchTotals]);
+
+  // Auto-clock-in when switching tasks: once topic is set and project is
+  // selected (or topic doesn't need a project), clock in automatically
+  const switchAutoClockRef = useRef(false);
+  useEffect(() => {
+    if (!switchMode || !selectedTopic || isClockedIn || clockingIn) return;
+    const needsProject = ["editing", "validating", "qc_review"].includes(selectedTopic);
+    if (needsProject && !selectedProject) return;
+    // Prevent double-fire
+    if (switchAutoClockRef.current) return;
+    switchAutoClockRef.current = true;
+    handleClockIn().finally(() => {
+      switchAutoClockRef.current = false;
+    });
+  }, [switchMode, selectedTopic, selectedProject, isClockedIn, clockingIn, handleClockIn]);
 
   // Handle task selection for training
   const handleTrainingSelect = useCallback(
