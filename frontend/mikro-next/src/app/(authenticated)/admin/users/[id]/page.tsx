@@ -13,6 +13,7 @@ import {
   Button,
   Select,
   Input,
+  Skeleton,
   useToastActions,
 } from "@/components/ui";
 import {
@@ -484,15 +485,7 @@ export default function UserProfilePage() {
     ];
   }, [countriesData]);
 
-  if (pageLoading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-kaart-orange" />
-      </div>
-    );
-  }
-
-  if (profileError && !user) {
+  if (profileError && !user && !pageLoading) {
     return (
       <div className="space-y-4">
         <Link
@@ -510,9 +503,7 @@ export default function UserProfilePage() {
     );
   }
 
-  if (!user) return null;
-
-  const isValidator = user.role === "validator" || user.role === "admin";
+  const isValidator = user?.role === "validator" || user?.role === "admin";
   const displayedChangesets = showAllChangesets
     ? changesets
     : changesets.slice(0, 10);
@@ -534,6 +525,23 @@ export default function UserProfilePage() {
           >
             {"\u2190"} Back to Users
           </Link>
+          {!user ? (
+            <div className="space-y-4">
+              <div className="flex items-center gap-4">
+                <Skeleton className="w-16 h-16 rounded-full" />
+                <div className="space-y-2">
+                  <Skeleton className="h-7 w-48" />
+                  <Skeleton className="h-4 w-32" />
+                </div>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
+                <Skeleton className="h-32 rounded-lg" />
+                <Skeleton className="h-32 rounded-lg" />
+                <Skeleton className="h-32 rounded-lg" />
+              </div>
+            </div>
+          ) : (
+          <>
           <div className="flex items-start justify-between gap-4">
             <div className="flex items-center gap-4">
               <div className="w-16 h-16 rounded-full bg-kaart-orange flex items-center justify-center text-white text-xl font-bold shrink-0">
@@ -669,10 +677,13 @@ export default function UserProfilePage() {
               </div>
             </div>
           </div>
+          </>
+          )}
         </CardContent>
       </Card>
 
       {/* Section 2: All-time Task Stats */}
+      {user && (<>
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <StatCard label="Tasks Mapped" value={formatNumber(user.total_tasks_mapped ?? 0)} />
         <StatCard
@@ -1479,6 +1490,7 @@ export default function UserProfilePage() {
           </CardContent>
         </Card>
       </div>
+      </>)}
 
       {/* Edit Time Entry Modal */}
       <Modal
