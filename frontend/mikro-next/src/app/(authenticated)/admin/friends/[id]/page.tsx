@@ -103,7 +103,7 @@ export default function FriendDetailPage() {
 
   const [data, setData] = useState<FriendDetailResponse | null>(null);
   const [pageLoading, setPageLoading] = useState(true);
-  const [expandedDiscussions, setExpandedDiscussions] = useState<Set<string>>(new Set());
+  const [expandedDiscussions, setExpandedDiscussions] = useState<Set<number>>(new Set());
 
   useEffect(() => {
     if (id) {
@@ -394,9 +394,11 @@ export default function FriendDetailPage() {
             <CardContent>
               {data.discussions && data.discussions.length > 0 ? (
                 <div className="space-y-3" style={{ maxHeight: 600, overflowY: "auto" }}>
-                  {data.discussions.map((disc, i) => (
+                  {data.discussions.map((disc, i) => {
+                    const isExpanded = expandedDiscussions.has(i);
+                    return (
                     <div
-                      key={i}
+                      key={`${disc.link}-${disc.commentId || i}`}
                       className={`border rounded-lg p-3 ${
                         disc.flagged
                           ? "border-l-4 border-l-kaart-orange border-t border-r border-b border-border bg-orange-50/30 dark:bg-orange-950/10"
@@ -438,28 +440,29 @@ export default function FriendDetailPage() {
                       </div>
                       <p
                         className={`text-sm text-muted-foreground whitespace-pre-line ${
-                          !expandedDiscussions.has(disc.link) ? "line-clamp-3" : ""
+                          !isExpanded ? "line-clamp-3" : ""
                         }`}
                       >
                         {disc.description || "\u2014"}
                       </p>
-                      {disc.description && disc.description.length > 200 && (
+                      {disc.description && disc.description.length > 100 && (
                         <button
                           onClick={() =>
                             setExpandedDiscussions((prev) => {
                               const next = new Set(prev);
-                              if (next.has(disc.link)) next.delete(disc.link);
-                              else next.add(disc.link);
+                              if (next.has(i)) next.delete(i);
+                              else next.add(i);
                               return next;
                             })
                           }
                           className="text-xs text-kaart-orange hover:underline mt-1"
                         >
-                          {expandedDiscussions.has(disc.link) ? "Show less" : "Show more"}
+                          {isExpanded ? "Show less" : "Show more"}
                         </button>
                       )}
                     </div>
-                  ))}
+                    );
+                  })}
                 </div>
               ) : (
                 <p className="text-muted-foreground text-center py-8">

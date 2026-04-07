@@ -499,36 +499,59 @@ class PunkAPI(MethodView):
         if last_active_row:
             punk.cached_last_active = last_active_row.created_at
 
-        # 6. Fetch discussion comments from neis-one RSS feed
+        # 6. Fetch discussion comments directly from OSM API
+        #    For each of this punk's recent changesets, fetch with
+        #    include_discussion=true and collect comments from OTHER users.
         discussions = []
-        if uid:
+        punk_username = punk.osm_username
+        recent_cs = (
+            PunkChangeset.query.filter_by(punk_id=punk.id)
+            .order_by(PunkChangeset.created_at.desc())
+            .limit(100)
+            .all()
+        )
+        for cs in recent_cs:
             try:
-                disc_url = (
-                    f"https://resultmaps.neis-one.org/osm-discussion-comments.php"
-                    f"?uid={uid}&feed=yes"
+                cs_url = (
+                    f"{OSM_API_BASE}/changeset/{cs.changeset_id}"
+                    f"?include_discussion=true"
                 )
-                disc_resp = http_requests.get(
-                    disc_url, headers=OSM_HEADERS, timeout=OSM_TIMEOUT
+                cs_resp = http_requests.get(
+                    cs_url, headers=OSM_HEADERS, timeout=OSM_TIMEOUT
                 )
-                if disc_resp.status_code == 200:
-                    disc_root = ET.fromstring(disc_resp.content)
-                    channel = disc_root.find("channel")
-                    if channel is not None:
-                        for item in channel.findall("item"):
-                            discussions.append({
-                                "title": item.findtext("title", ""),
-                                "link": item.findtext("link", ""),
-                                "description": item.findtext("description", ""),
-                                "pubDate": item.findtext("pubDate", ""),
-                            })
+                if cs_resp.status_code != 200:
+                    continue
+                cs_root = ET.fromstring(cs_resp.content)
+                cs_elem = cs_root.find("changeset")
+                if cs_elem is None:
+                    continue
+                disc_elem = cs_elem.find("discussion")
+                if disc_elem is None:
+                    continue
+                for comment in disc_elem.findall("comment"):
+                    comment_user = comment.get("user", "")
+                    # Skip the punk's own comments
+                    if comment_user.lower() == (punk_username or "").lower():
+                        continue
+                    comment_date = comment.get("date", "")
+                    comment_text = comment.findtext("text", "")
+                    comment_id = comment.get("id", "")
+                    discussions.append({
+                        "title": f"Changeset {cs.changeset_id} — comment by {comment_user}",
+                        "link": f"https://www.openstreetmap.org/changeset/{cs.changeset_id}",
+                        "description": comment_text,
+                        "pubDate": comment_date,
+                        "commentId": comment_id,
+                        "author": comment_user,
+                    })
             except Exception as e:
                 current_app.logger.warning(
-                    f"Failed to fetch discussions for uid {uid}: {e}"
+                    f"Failed to fetch discussion for changeset {cs.changeset_id}: {e}"
                 )
 
-        # Sort discussions newest first by pubDate
+        # Sort discussions newest first by comment date
         discussions.sort(
-            key=lambda d: _parse_rss_date(d.get("pubDate", "")),
+            key=lambda d: d.get("pubDate", ""),
             reverse=True,
         )
 

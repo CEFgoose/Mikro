@@ -898,6 +898,8 @@ export interface PunkDetailResponse {
     description: string;
     pubDate: string;
     flagged: boolean;
+    commentId?: string;
+    author?: string;
   }>;
   status: number;
 }
@@ -949,6 +951,8 @@ export interface FriendDetailResponse {
     description: string;
     pubDate: string;
     flagged: boolean;
+    commentId?: string;
+    author?: string;
   }>;
   status: number;
 }
