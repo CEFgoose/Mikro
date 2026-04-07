@@ -44,10 +44,13 @@ import {
   useCheckSyncStatus,
   useFilters,
   useFetchFilterOptions,
+  useFetchTeams,
+  useFetchCountries,
+  useAssignProjectLocations,
 } from "@/hooks";
 import Link from "next/link";
 import { formatNumber, formatCurrency, getProjectExternalUrl } from "@/lib/utils";
-import type { Project, ProjectTeamItem } from "@/types";
+import type { Project, ProjectTeamItem, TeamsResponse } from "@/types";
 
 interface ProjectUserItem {
   id: string;
@@ -125,6 +128,14 @@ export default function AdminProjectsPage() {
   const [addTab, setAddTab] = useState<"details" | "locations" | "teams">("details");
   const [addProjectTeams, setAddProjectTeams] = useState<ProjectTeamItem[]>([]);
 
+  // Pre-creation location & team selection
+  const { data: allTeamsData } = useFetchTeams();
+  const { data: countriesData } = useFetchCountries();
+  const { mutate: assignProjectLocations } = useAssignProjectLocations();
+  const [preSelectedCountryIds, setPreSelectedCountryIds] = useState<Set<number>>(new Set());
+  const [preSelectedTeamIds, setPreSelectedTeamIds] = useState<Set<number>>(new Set());
+  const [addLocationSearch, setAddLocationSearch] = useState("");
+
   // Reset pagination when search or filters change
   useEffect(() => {
     setActivePageNum(1);
@@ -191,15 +202,50 @@ export default function AdminProjectsPage() {
         visibility: formData.visibility,
         payments_enabled: formData.payments_enabled,
       });
-      toast.success("Project created — you can now assign locations and teams");
-      setNewProjectId(result.project_id);
-      // Fetch teams for the new project
-      try {
-        const teamsResponse = await fetchProjectTeams({ projectId: result.project_id });
-        setAddProjectTeams(teamsResponse?.teams ?? []);
-      } catch {
-        setAddProjectTeams([]);
+
+      const projectId = result.project_id;
+      const assignResults: string[] = [];
+
+      // Assign pre-selected locations
+      if (preSelectedCountryIds.size > 0) {
+        try {
+          const locResult = await assignProjectLocations({
+            resourceId: projectId,
+            countryIds: Array.from(preSelectedCountryIds),
+            regionIds: [],
+          });
+          assignResults.push(`${locResult.created} location(s)`);
+        } catch {
+          assignResults.push("locations failed");
+        }
       }
+
+      // Assign pre-selected teams
+      for (const teamId of preSelectedTeamIds) {
+        try {
+          await assignTeamToProject({ teamId, projectId });
+        } catch {
+          // continue with other teams
+        }
+      }
+      if (preSelectedTeamIds.size > 0) {
+        assignResults.push(`${preSelectedTeamIds.size} team(s)`);
+      }
+
+      const suffix = assignResults.length > 0 ? ` — assigned ${assignResults.join(", ")}` : "";
+      toast.success(`Project created${suffix}`);
+
+      // Close modal and reset
+      setShowAddModal(false);
+      setFormData(defaultFormData);
+      setBudgetCalculation("");
+      setNewProjectId(null);
+      setAddTab("details");
+      setAddProjectTeams([]);
+      setPreSelectedCountryIds(new Set());
+      setPreSelectedTeamIds(new Set());
+      setAddLocationSearch("");
+      refetch(filtersBody ? { filters: filtersBody } : {});
     } catch (err) {
       const message = err instanceof Error ? err.message : "Failed to create project";
       toast.error(message);
@@ -835,59 +881,39 @@ export default function AdminProjectsPage() {
           setShowAddModal(false);
           setFormData(defaultFormData);
           setBudgetCalculation("");
-          if (newProjectId) refetch(filtersBody ? { filters: filtersBody } : {});
           setNewProjectId(null);
           setAddTab("details");
           setAddProjectTeams([]);
+          setPreSelectedCountryIds(new Set());
+          setPreSelectedTeamIds(new Set());
+          setAddLocationSearch("");
         }}
-        title={newProjectId ? "Project Created — Assign Locations & Teams" : "Add New Project"}
-        description={newProjectId ? "Optionally assign locations and teams before closing" : "Add a TM4 or MapRoulette project to Mikro for payment tracking"}
+        title="Add New Project"
+        description="Add a TM4 or MapRoulette project to Mikro for payment tracking"
         size="lg"
         footer={
-          newProjectId ? (
-            <Button onClick={() => {
-              setShowAddModal(false);
-              setFormData(defaultFormData);
-              setBudgetCalculation("");
-              refetch(filtersBody ? { filters: filtersBody } : {});
-              setNewProjectId(null);
-              setAddTab("details");
-              setAddProjectTeams([]);
-            }}>
-              Done
+          <>
+            <Button variant="outline" onClick={() => setShowAddModal(false)}>
+              Cancel
             </Button>
-          ) : (
-            <>
-              <Button variant="outline" onClick={() => setShowAddModal(false)}>
-                Cancel
-              </Button>
-              <Button onClick={handleCreateProject} isLoading={creating}>
-                Create Project
-              </Button>
-            </>
-          )
+            <Button onClick={handleCreateProject} isLoading={creating}>
+              Create Project
+            </Button>
+          </>
         }
       >
         <Tabs defaultValue="details" value={addTab} onValueChange={(v) => setAddTab(v as "details" | "locations" | "teams")}>
           <TabsList className="mb-4">
             <TabsTrigger value="details">Project Details</TabsTrigger>
             <TabsTrigger value="locations">
-              Locations
+              Locations{preSelectedCountryIds.size > 0 ? ` (${preSelectedCountryIds.size})` : ""}
             </TabsTrigger>
             <TabsTrigger value="teams">
-              Teams{newProjectId ? ` (${addProjectTeams.filter(t => t.assigned === "Assigned").length})` : ""}
+              Teams{preSelectedTeamIds.size > 0 ? ` (${preSelectedTeamIds.size})` : ""}
             </TabsTrigger>
           </TabsList>
 
           <TabsContent value="details">
-            {newProjectId ? (
-              <div className="text-center py-8">
-                <Badge variant="success" className="text-sm px-3 py-1 mb-3">Created</Badge>
-                <p className="text-muted-foreground">
-                  Project created successfully. Use the Locations and Teams tabs to assign before closing, or click Done.
-                </p>
-              </div>
-            ) : (
               <div className="space-y-4">
                 <div>
                   <label className="text-sm font-medium mb-2 block">Project Source</label>
@@ -992,31 +1018,65 @@ export default function AdminProjectsPage() {
                   )}
                 </div>
               </div>
-            )}
           </TabsContent>
 
           <TabsContent value="locations">
-            {newProjectId ? (
-              <LocationsTab resourceId={newProjectId} resourceType="project" />
-            ) : (
-              <p className="text-muted-foreground text-center py-8">
-                Create the project first, then assign locations here.
-              </p>
-            )}
+            <div className="space-y-4">
+              <div>
+                <Input
+                  placeholder="Search countries..."
+                  value={addLocationSearch}
+                  onChange={(e) => setAddLocationSearch(e.target.value)}
+                />
+              </div>
+              {preSelectedCountryIds.size > 0 && (
+                <div className="space-y-1">
+                  <p className="text-sm font-medium">Selected ({preSelectedCountryIds.size})</p>
+                  <div className="flex flex-wrap gap-1">
+                    {Array.from(preSelectedCountryIds).map((id) => {
+                      const c = countriesData?.countries?.find((c) => c.id === id);
+                      return c ? (
+                        <Badge key={id} variant="success" className="cursor-pointer" onClick={() => {
+                          const next = new Set(preSelectedCountryIds);
+                          next.delete(id);
+                          setPreSelectedCountryIds(next);
+                        }}>
+                          {c.name} &times;
+                        </Badge>
+                      ) : null;
+                    })}
+                  </div>
+                </div>
+              )}
+              <div className="max-h-60 overflow-y-auto border rounded-md">
+                {(countriesData?.countries || [])
+                  .filter((c) => !preSelectedCountryIds.has(c.id))
+                  .filter((c) => {
+                    if (!addLocationSearch.trim()) return true;
+                    const q = addLocationSearch.toLowerCase();
+                    return c.name.toLowerCase().includes(q) || (c.iso_code && c.iso_code.toLowerCase().includes(q));
+                  })
+                  .map((country) => (
+                    <button
+                      key={country.id}
+                      type="button"
+                      className="flex w-full items-center justify-between px-3 py-2 text-sm hover:bg-accent hover:text-accent-foreground border-b last:border-b-0"
+                      onClick={() => {
+                        const next = new Set(preSelectedCountryIds);
+                        next.add(country.id);
+                        setPreSelectedCountryIds(next);
+                      }}
+                    >
+                      <span>{country.name}</span>
+                      <span className="text-xs text-muted-foreground">{country.iso_code || ""}</span>
+                    </button>
+                  ))}
+              </div>
+            </div>
           </TabsContent>
 
           <TabsContent value="teams">
-            {!newProjectId ? (
-              <p className="text-muted-foreground text-center py-8">
-                Create the project first, then assign teams here.
-              </p>
-            ) : loadingTeams ? (
-              <div className="space-y-2">
-                {[1, 2, 3].map((i) => (
-                  <Skeleton key={i} className="h-12 w-full" />
-                ))}
-              </div>
-            ) : addProjectTeams.length === 0 ? (
+            {!(allTeamsData as TeamsResponse)?.teams?.length ? (
               <p className="text-muted-foreground text-center py-8">No teams in organization</p>
             ) : (
               <div className="max-h-80 overflow-y-auto">
@@ -1026,36 +1086,38 @@ export default function AdminProjectsPage() {
                       <TableHead>Team</TableHead>
                       <TableHead className="text-center">Members</TableHead>
                       <TableHead>Lead</TableHead>
-                      <TableHead className="text-center">Status</TableHead>
-                      <TableHead className="text-right">Action</TableHead>
+                      <TableHead className="text-right">Assign</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {addProjectTeams.map((team) => (
-                      <TableRow key={team.id}>
-                        <TableCell className="font-medium">{team.name}</TableCell>
-                        <TableCell className="text-center">
-                          <Badge variant="secondary">{team.member_count}</Badge>
-                        </TableCell>
-                        <TableCell className="text-muted-foreground">
-                          {team.lead_name || "None"}
-                        </TableCell>
-                        <TableCell className="text-center">
-                          <Badge variant={team.assigned === "Assigned" ? "success" : "secondary"}>
-                            {team.assigned}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <Button
-                            size="sm"
-                            variant={team.assigned === "Assigned" ? "destructive" : "primary"}
-                            onClick={() => handleToggleAddTeamAssignment(team.id, team.assigned)}
-                          >
-                            {team.assigned === "Assigned" ? "Unassign" : "Assign"}
-                          </Button>
-                        </TableCell>
-                      </TableRow>
-                    ))}
+                    {((allTeamsData as TeamsResponse)?.teams || []).map((team) => {
+                      const isSelected = preSelectedTeamIds.has(team.id);
+                      return (
+                        <TableRow key={team.id}>
+                          <TableCell className="font-medium">{team.name}</TableCell>
+                          <TableCell className="text-center">
+                            <Badge variant="secondary">{team.member_count}</Badge>
+                          </TableCell>
+                          <TableCell className="text-muted-foreground">
+                            {team.lead_name || "None"}
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <Button
+                              size="sm"
+                              variant={isSelected ? "destructive" : "primary"}
+                              onClick={() => {
+                                const next = new Set(preSelectedTeamIds);
+                                if (isSelected) next.delete(team.id);
+                                else next.add(team.id);
+                                setPreSelectedTeamIds(next);
+                              }}
+                            >
+                              {isSelected ? "Remove" : "Assign"}
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
                   </TableBody>
                 </Table>
               </div>
