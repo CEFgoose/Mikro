@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useUser } from "@auth0/nextjs-auth0/client";
 import { SidebarClock } from "./SidebarClock";
 
 interface SidebarProps {
@@ -129,6 +130,7 @@ const iconMap: Record<string, React.ReactNode> = {
 
 export function Sidebar({ role, paymentsVisible = true }: SidebarProps) {
   const pathname = usePathname();
+  const { user: clientUser } = useUser();
 
   const allNavItems =
     role === "admin"
@@ -199,6 +201,21 @@ export function Sidebar({ role, paymentsVisible = true }: SidebarProps) {
                     target="_blank"
                     rel="noopener noreferrer"
                     style={getNavLinkStyle(false)}
+                  >
+                    {iconMap[item.icon]}
+                    <span>{item.label}</span>
+                  </a>
+                );
+              }
+
+              // If client-side auth is lost, use hard navigation so
+              // middleware can properly redirect to login
+              if (!clientUser) {
+                return (
+                  <a
+                    key={item.href}
+                    href={item.href}
+                    style={getNavLinkStyle(isActive)}
                   >
                     {iconMap[item.icon]}
                     <span>{item.label}</span>
