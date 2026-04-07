@@ -282,6 +282,7 @@ export default function UserProfilePage() {
       setChangesetsLoading(true);
       setChangesetsError(null);
       try {
+        // Fast first pass — no per-changeset detail fetching
         const res = await fetchChangesets({ userId, startDate, endDate });
         if (res?.changesets) {
           setChangesets(res.changesets);
@@ -289,6 +290,17 @@ export default function UserProfilePage() {
           setHashtagSummary(res.hashtagSummary || {});
           if (res.heatmapPoints) {
             setHeatmapPoints(res.heatmapPoints);
+          }
+          // Background pass — fetch added/modified/deleted details
+          if (res.changesets.length > 0) {
+            fetchChangesets({ userId, startDate, endDate, includeDetails: true })
+              .then((detailRes) => {
+                if (detailRes?.changesets) {
+                  setChangesets(detailRes.changesets);
+                  setChangesetSummary(detailRes.summary || null);
+                }
+              })
+              .catch(() => {}); // silently fail — we already have the base data
           }
         }
         if (res?.message && !res.changesets?.length) {
