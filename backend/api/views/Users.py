@@ -900,9 +900,15 @@ class UserAPI(MethodView):
     # ─── User Profile ─────────────────────────────────────
 
     @staticmethod
-    def _format_time_entry(entry):
+    @staticmethod
+    def _format_time_entry(entry, project_cache=None):
         """Format a TimeEntry for the profile response."""
-        project = Project.query.get(entry.project_id) if entry.project_id else None
+        project = None
+        if entry.project_id:
+            if project_cache is not None:
+                project = project_cache.get(entry.project_id)
+            else:
+                project = Project.query.get(entry.project_id)
         duration = None
         if entry.duration_seconds is not None:
             hours = entry.duration_seconds // 3600
@@ -936,42 +942,98 @@ class UserAPI(MethodView):
         if not user or user.org_id != g.user.org_id:
             return {"message": "User not found in your organization", "status": 404}
 
-        # Build per-project breakdown from Task table
+        # Build per-project breakdown using SQL aggregation (not N+1 loops)
         projects_data = []
         osm_username = user.osm_username
         if osm_username:
-            # Get all projects in org
-            org_projects = Project.query.filter_by(org_id=g.user.org_id).all()
-            for proj in org_projects:
-                tasks = Task.query.filter_by(project_id=proj.id).all()
-                mapped = 0
-                validated = 0
-                invalidated = 0
-                mapping_earnings = 0.0
-                validation_earnings = 0.0
-                for t in tasks:
-                    if t.mapped_by == osm_username and t.mapped:
-                        mapped += 1
-                        mapping_earnings += (t.mapping_rate or 0)
-                    if t.validated_by == osm_username and t.validated:
-                        validated += 1
-                        validation_earnings += (t.validation_rate or 0)
-                    if t.validated_by == osm_username and t.invalidated:
-                        invalidated += 1
+            # Mapped tasks per project
+            mapped_agg = (
+                db.session.query(
+                    Task.project_id,
+                    db.func.count(Task.id),
+                    db.func.coalesce(db.func.sum(Task.mapping_rate), 0),
+                )
+                .filter(
+                    Task.mapped_by == osm_username,
+                    Task.mapped == True,
+                )
+                .group_by(Task.project_id)
+                .all()
+            )
+            # Validated tasks per project (as mapper)
+            validated_agg = (
+                db.session.query(
+                    Task.project_id,
+                    db.func.count(Task.id),
+                )
+                .filter(
+                    Task.mapped_by == osm_username,
+                    Task.validated == True,
+                )
+                .group_by(Task.project_id)
+                .all()
+            )
+            # Invalidated tasks per project
+            invalidated_agg = (
+                db.session.query(
+                    Task.project_id,
+                    db.func.count(Task.id),
+                )
+                .filter(
+                    Task.mapped_by == osm_username,
+                    Task.invalidated == True,
+                )
+                .group_by(Task.project_id)
+                .all()
+            )
+            # Validated as validator per project
+            val_as_validator_agg = (
+                db.session.query(
+                    Task.project_id,
+                    db.func.count(Task.id),
+                    db.func.coalesce(db.func.sum(Task.validation_rate), 0),
+                )
+                .filter(
+                    Task.validated_by == osm_username,
+                    Task.validated == True,
+                )
+                .group_by(Task.project_id)
+                .all()
+            )
 
-                if mapped > 0 or validated > 0 or invalidated > 0:
+            # Merge into per-project dict
+            proj_map = {}
+            for pid, cnt, earn in mapped_agg:
+                proj_map.setdefault(pid, {"mapped": 0, "validated": 0, "invalidated": 0, "map_earn": 0.0, "val_earn": 0.0})
+                proj_map[pid]["mapped"] = cnt
+                proj_map[pid]["map_earn"] = float(earn)
+            for pid, cnt in validated_agg:
+                proj_map.setdefault(pid, {"mapped": 0, "validated": 0, "invalidated": 0, "map_earn": 0.0, "val_earn": 0.0})
+                proj_map[pid]["validated"] = cnt
+            for pid, cnt in invalidated_agg:
+                proj_map.setdefault(pid, {"mapped": 0, "validated": 0, "invalidated": 0, "map_earn": 0.0, "val_earn": 0.0})
+                proj_map[pid]["invalidated"] = cnt
+            for pid, cnt, earn in val_as_validator_agg:
+                proj_map.setdefault(pid, {"mapped": 0, "validated": 0, "invalidated": 0, "map_earn": 0.0, "val_earn": 0.0})
+                proj_map[pid]["val_earn"] = float(earn)
+
+            # Bulk-load project names
+            if proj_map:
+                proj_objs = {p.id: p for p in Project.query.filter(Project.id.in_(proj_map.keys())).all()}
+                for pid, stats in proj_map.items():
+                    proj = proj_objs.get(pid)
                     projects_data.append({
-                        "id": proj.id,
-                        "name": proj.name,
-                        "url": proj.url,
-                        "tasks_mapped": mapped,
-                        "tasks_validated": validated,
-                        "tasks_invalidated": invalidated,
-                        "mapping_earnings": round(mapping_earnings, 2),
-                        "validation_earnings": round(validation_earnings, 2),
+                        "id": pid,
+                        "name": proj.name if proj else f"Project {pid}",
+                        "url": proj.url if proj else "",
+                        "tasks_mapped": stats["mapped"],
+                        "tasks_validated": stats["validated"],
+                        "tasks_invalidated": stats["invalidated"],
+                        "mapping_earnings": round(stats["map_earn"], 2),
+                        "validation_earnings": round(stats["val_earn"], 2),
                     })
 
-        # Get recent time entries
+        # Get recent time entries (limited)
         time_entries = (
             TimeEntry.query
             .filter_by(user_id=user_id)
@@ -980,6 +1042,13 @@ class UserAPI(MethodView):
             .limit(50)
             .all()
         )
+
+        # Bulk-load projects for time entries
+        te_project_ids = {e.project_id for e in time_entries if e.project_id}
+        te_project_cache = {}
+        if te_project_ids:
+            for p in Project.query.filter(Project.id.in_(te_project_ids)).all():
+                te_project_cache[p.id] = p
 
         full_name = _format_user_name(user)
 
@@ -1034,7 +1103,7 @@ class UserAPI(MethodView):
                 "validator_points": user.validator_points or 0,
                 # Nested
                 "projects": projects_data,
-                "time_entries": [self._format_time_entry(e) for e in time_entries],
+                "time_entries": [self._format_time_entry(e, te_project_cache) for e in time_entries],
             },
         }
 
@@ -1179,12 +1248,19 @@ class UserAPI(MethodView):
         total_seconds = sum(e.duration_seconds or 0 for e in entries)
         total_hours = round(total_seconds / 3600, 1)
 
-        # Per-project breakdown
+        # Bulk-load all referenced projects in one query
+        project_ids = {e.project_id for e in entries if e.project_id}
+        project_cache = {}
+        if project_ids:
+            for p in Project.query.filter(Project.id.in_(project_ids)).all():
+                project_cache[p.id] = p
+
+        # Per-project breakdown (using cache, no N+1)
         project_hours = {}
         for e in entries:
             pid = e.project_id or 0
             if pid not in project_hours:
-                proj = Project.query.get(pid) if pid else None
+                proj = project_cache.get(pid)
                 project_hours[pid] = {
                     "id": pid,
                     "name": proj.name if proj else "No Project",
@@ -1204,7 +1280,7 @@ class UserAPI(MethodView):
             for v in sorted(project_hours.values(), key=lambda x: x["total_seconds"], reverse=True)
         ]
 
-        # Date-filtered task stats
+        # Date-filtered task stats — use SQL aggregation instead of loading all rows
         osm_username = user.osm_username
         tasks_mapped_in_range = 0
         tasks_validated_in_range = 0
@@ -1214,32 +1290,37 @@ class UserAPI(MethodView):
         validation_earnings_in_range = 0.0
 
         if osm_username:
-            mapped_tasks = Task.query.filter(
+            tasks_mapped_in_range = Task.query.filter(
                 Task.mapped_by == osm_username,
                 Task.mapped == True,
                 Task.date_mapped >= start_date,
                 Task.date_mapped < end_date,
-            ).all()
-            tasks_mapped_in_range = len(mapped_tasks)
-            mapping_earnings_in_range = sum(
-                t.mapping_rate or 0 for t in mapped_tasks if t.validated
-            )
+            ).count()
 
-            validated_tasks = Task.query.filter(
+            mapping_earnings_row = db.session.query(
+                db.func.coalesce(db.func.sum(Task.mapping_rate), 0)
+            ).filter(
+                Task.mapped_by == osm_username,
+                Task.mapped == True,
+                Task.validated == True,
+                Task.date_mapped >= start_date,
+                Task.date_mapped < end_date,
+            ).scalar()
+            mapping_earnings_in_range = float(mapping_earnings_row or 0)
+
+            tasks_validated_in_range = Task.query.filter(
                 Task.mapped_by == osm_username,
                 Task.validated == True,
                 Task.date_validated >= start_date,
                 Task.date_validated < end_date,
-            ).all()
-            tasks_validated_in_range = len(validated_tasks)
+            ).count()
 
-            invalidated_tasks = Task.query.filter(
+            tasks_invalidated_in_range = Task.query.filter(
                 Task.mapped_by == osm_username,
                 Task.invalidated == True,
                 Task.date_validated >= start_date,
                 Task.date_validated < end_date,
-            ).all()
-            tasks_invalidated_in_range = len(invalidated_tasks)
+            ).count()
 
             validator_validated_in_range = Task.query.filter(
                 Task.validated_by == osm_username,
@@ -1248,15 +1329,19 @@ class UserAPI(MethodView):
                 Task.date_validated < end_date,
             ).count()
 
-            validation_earnings_in_range = sum(
-                t.validation_rate or 0
-                for t in Task.query.filter(
-                    Task.validated_by == osm_username,
-                    Task.validated == True,
-                    Task.date_validated >= start_date,
-                    Task.date_validated < end_date,
-                ).all()
-            )
+            validation_earnings_row = db.session.query(
+                db.func.coalesce(db.func.sum(Task.validation_rate), 0)
+            ).filter(
+                Task.validated_by == osm_username,
+                Task.validated == True,
+                Task.date_validated >= start_date,
+                Task.date_validated < end_date,
+            ).scalar()
+            validation_earnings_in_range = float(validation_earnings_row or 0)
+
+        # Paginate time entries — return max 100, with total count
+        page_size = 100
+        paginated_entries = entries[:page_size]
 
         return {
             "status": 200,
@@ -1265,7 +1350,8 @@ class UserAPI(MethodView):
                 "endDate": end_date_str,
                 "total_hours": total_hours,
                 "entries_count": len(entries),
-                "time_entries": [self._format_time_entry(e) for e in entries],
+                "time_entries": [self._format_time_entry(e, project_cache) for e in paginated_entries],
+                "has_more_entries": len(entries) > page_size,
                 "projects": projects_list,
                 "tasks_mapped": tasks_mapped_in_range,
                 "tasks_validated": tasks_validated_in_range,
@@ -1419,9 +1505,11 @@ class UserAPI(MethodView):
             except Exception:
                 return cs_id, None, None, None, None
 
-        # Concurrently fetch details (max 5 workers)
+        # Only fetch per-changeset details if explicitly requested
+        # (each one is an HTTP call to OSM API — very slow for many changesets)
+        include_details = data.get("includeDetails", False)
         detail_map = {}
-        if changeset_metas:
+        if include_details and changeset_metas:
             with ThreadPoolExecutor(max_workers=5) as executor:
                 futures = {
                     executor.submit(fetch_changeset_details, cs["id"]): cs["id"]
@@ -1432,11 +1520,11 @@ class UserAPI(MethodView):
                     cs_id = result[0]
                     detail_map[cs_id] = result[1:]
 
-        # Merge details into changeset metadata
-        for cs in changeset_metas:
-            details = detail_map.get(cs["id"])
-            if details:
-                cs["added"], cs["modified"], cs["deleted"], cs["elements"] = details
+            # Merge details into changeset metadata
+            for cs in changeset_metas:
+                details = detail_map.get(cs["id"])
+                if details:
+                    cs["added"], cs["modified"], cs["deleted"], cs["elements"] = details
 
         # Compute summary
         total_changesets = len(changeset_metas)
