@@ -791,7 +791,7 @@ export default function UserProfilePage() {
           </CardHeader>
           <CardContent className="p-0">
             <div className="overflow-x-auto">
-              <table className="w-full">
+              <table className="w-full text-sm" style={{ minWidth: 600 }}>
                 <thead className="bg-muted border-b border-border">
                   <tr>
                     <th className="px-6 py-3 text-left text-sm font-semibold text-muted-foreground">
@@ -1057,7 +1057,7 @@ export default function UserProfilePage() {
 
             {filteredEntries.length > 0 ? (
               <div className="overflow-x-auto">
-                <table className="w-full text-sm">
+                <table className="w-full text-sm" style={{ minWidth: 500 }}>
                   <thead className="bg-muted border-b border-border">
                     <tr>
                       <th className="px-4 py-2 text-left font-semibold text-muted-foreground">
@@ -1159,7 +1159,7 @@ export default function UserProfilePage() {
                   Per-project hours
                 </h4>
                 <div className="overflow-x-auto">
-                  <table className="w-full text-sm">
+                  <table className="w-full text-sm" style={{ minWidth: 500 }}>
                     <thead className="bg-muted border-b border-border">
                       <tr>
                         <th className="px-4 py-2 text-left font-semibold text-muted-foreground">
@@ -1212,7 +1212,7 @@ export default function UserProfilePage() {
             ) : taskHistory.length > 0 ? (
               <div className="space-y-3">
                 <div className="overflow-x-auto">
-                  <table className="w-full text-sm">
+                  <table className="w-full text-sm" style={{ minWidth: 500 }}>
                     <thead className="bg-muted border-b border-border">
                       <tr>
                         <th className="px-4 py-2 text-left font-semibold text-muted-foreground">
@@ -1363,7 +1363,7 @@ export default function UserProfilePage() {
             {displayedChangesets.length > 0 && (
               <>
                 <div className="overflow-x-auto">
-                  <table className="w-full text-sm">
+                  <table className="w-full text-sm" style={{ minWidth: 500 }}>
                     <thead className="bg-muted border-b border-border">
                       <tr>
                         <th className="px-4 py-2 text-left font-semibold text-muted-foreground">

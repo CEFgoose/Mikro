@@ -516,7 +516,7 @@ export default function AdminUsersPage() {
       <Card>
         <CardContent className="p-0">
           <div className="overflow-x-auto">
-            <table className="w-full">
+            <table className="w-full" style={{ minWidth: 900 }}>
               <thead className="bg-muted border-b border-border">
                 <tr>
                   {[
@@ -536,7 +536,7 @@ export default function AdminUsersPage() {
                   ].map((col, i) => (
                     <th
                       key={`${col.label}-${i}`}
-                      className={`px-6 py-4 text-left text-sm font-semibold text-foreground ${col.key ? "cursor-pointer select-none hover:text-kaart-orange transition-colors" : ""}`}
+                      className={`px-2 py-1.5 text-left text-xs font-semibold text-foreground whitespace-nowrap ${col.key ? "cursor-pointer select-none hover:text-kaart-orange transition-colors" : ""}`}
                       onClick={col.key ? () => handleSort(col.key) : undefined}
                     >
                       <span className="inline-flex items-center gap-1">
@@ -563,18 +563,18 @@ export default function AdminUsersPage() {
                         : "hover:bg-muted/50"
                     }`}
                   >
-                    <td className="px-6 py-5">
+                    <td className="px-2 py-1.5 max-w-[120px] truncate">
                       <Link
                         href={`/admin/users/${user.id}`}
                         onClick={(e) => e.stopPropagation()}
                         className="font-medium text-kaart-orange hover:underline"
-                        title="View user profile"
+                        title={user.name?.trim() || user.email || "Unknown"}
                       >
                         {user.name?.trim() || user.email || "Unknown"}
                       </Link>
                     </td>
-                    <td className="px-6 py-5 text-sm text-foreground">{user.osm_username || "\u2014"}</td>
-                    <td className="px-6 py-5">
+                    <td className="px-2 py-1.5 text-sm text-foreground max-w-[120px] truncate" title={user.osm_username || ""}>{user.osm_username || "\u2014"}</td>
+                    <td className="px-2 py-1.5">
                       <div className="flex items-center gap-1.5">
                         <span
                           className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
@@ -594,24 +594,24 @@ export default function AdminUsersPage() {
                         )}
                       </div>
                     </td>
-                    <td className="px-6 py-5">
+                    <td className="px-2 py-1.5">
                       {user.payments_visible ? (
                         <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">Yes</span>
                       ) : (
                         <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-500">No</span>
                       )}
                     </td>
-                    <td className="px-6 py-5 text-foreground">{user.country_name || "\u2014"}</td>
-                    <td className="px-6 py-5 text-foreground">{user.region_name || "\u2014"}</td>
-                    <td className="px-6 py-5 text-foreground">{user.timezone || "\u2014"}</td>
-                    <td className="px-6 py-5 text-foreground">{formatNumber(user.assigned_projects)}</td>
-                    <td className="px-6 py-5 text-foreground">{formatNumber(user.total_tasks_mapped)}</td>
-                    <td className="px-6 py-5 text-foreground">{formatNumber(user.total_tasks_validated)}</td>
-                    <td className="px-6 py-5 text-foreground">{formatNumber(user.total_tasks_invalidated)}</td>
-                    <td className="px-6 py-5 text-foreground">
+                    <td className="px-2 py-1.5 text-foreground max-w-[120px] truncate" title={user.country_name || ""}>{user.country_name || "\u2014"}</td>
+                    <td className="px-2 py-1.5 text-foreground">{user.region_name || "\u2014"}</td>
+                    <td className="px-2 py-1.5 text-foreground">{user.timezone || "\u2014"}</td>
+                    <td className="px-2 py-1.5 text-foreground">{formatNumber(user.assigned_projects)}</td>
+                    <td className="px-2 py-1.5 text-foreground">{formatNumber(user.total_tasks_mapped)}</td>
+                    <td className="px-2 py-1.5 text-foreground">{formatNumber(user.total_tasks_validated)}</td>
+                    <td className="px-2 py-1.5 text-foreground">{formatNumber(user.total_tasks_invalidated)}</td>
+                    <td className="px-2 py-1.5 text-foreground">
                       {formatCurrency(user.awaiting_payment)}
                     </td>
-                    <td className="px-6 py-5 text-foreground">
+                    <td className="px-2 py-1.5 text-foreground">
                       {formatCurrency(user.total_payout)}
                     </td>
                   </tr>

@@ -285,7 +285,7 @@ export function AdminTimeManagement() {
               </p>
             ) : sessions.length > 0 ? (
               <div className="overflow-auto max-h-[384px]">
-                <table className="w-full text-sm">
+                <table className="w-full text-sm" style={{ minWidth: 500 }}>
                   <thead className="sticky top-0 bg-background z-10">
                     <tr className="border-b border-border">
                       <th className="text-left py-2 px-3 font-medium text-muted-foreground">User</th>
@@ -347,7 +347,7 @@ export function AdminTimeManagement() {
               </p>
             ) : historyEntries.length > 0 ? (
               <div className="overflow-auto max-h-[384px]">
-                <table className="w-full text-sm">
+                <table className="w-full text-sm" style={{ minWidth: 500 }}>
                   <thead className="sticky top-0 bg-background z-10">
                     <tr className="border-b border-border">
                       <th className="text-left py-2 px-3 font-medium text-muted-foreground">User</th>

@@ -544,10 +544,10 @@ export default function AdminPaymentsPage() {
                 <TableBody>
                   {paginatedRequests.map((request) => (
                     <TableRow key={request.id}>
-                      <TableCell className="font-medium">{request.user}</TableCell>
-                      <TableCell>{request.osm_username}</TableCell>
-                      <TableCell>{formatDate(request.date_requested)}</TableCell>
-                      <TableCell className="font-bold">
+                      <TableCell className="font-medium max-w-[150px] truncate">{request.user}</TableCell>
+                      <TableCell className="max-w-[150px] truncate">{request.osm_username}</TableCell>
+                      <TableCell className="whitespace-nowrap">{formatDate(request.date_requested)}</TableCell>
+                      <TableCell className="font-bold whitespace-nowrap">
                         {formatCurrency(request.amount_requested)}
                       </TableCell>
                       <TableCell>
@@ -623,13 +623,13 @@ export default function AdminPaymentsPage() {
                 <TableBody>
                   {paginatedPayments.map((payment) => (
                     <TableRow key={payment.id}>
-                      <TableCell className="font-medium">{payment.user}</TableCell>
-                      <TableCell>{payment.osm_username}</TableCell>
-                      <TableCell>{formatDate(payment.date_paid)}</TableCell>
-                      <TableCell className="font-bold text-green-600">
+                      <TableCell className="font-medium max-w-[150px] truncate">{payment.user}</TableCell>
+                      <TableCell className="max-w-[150px] truncate">{payment.osm_username}</TableCell>
+                      <TableCell className="whitespace-nowrap">{formatDate(payment.date_paid)}</TableCell>
+                      <TableCell className="font-bold text-green-600 whitespace-nowrap">
                         {formatCurrency(payment.amount_paid)}
                       </TableCell>
-                      <TableCell className="max-w-xs truncate">
+                      <TableCell className="max-w-[150px] truncate">
                         {payment.notes || "-"}
                       </TableCell>
                       <TableCell>
@@ -702,16 +702,16 @@ export default function AdminPaymentsPage() {
                   <TableBody>
                     {archivedPayments.map((payment) => (
                       <TableRow key={payment.id} className="opacity-60">
-                        <TableCell className="font-medium">{payment.user}</TableCell>
-                        <TableCell>{payment.osm_username}</TableCell>
-                        <TableCell>{formatDate(payment.date_paid)}</TableCell>
-                        <TableCell className="font-bold">
+                        <TableCell className="font-medium max-w-[150px] truncate">{payment.user}</TableCell>
+                        <TableCell className="max-w-[150px] truncate">{payment.osm_username}</TableCell>
+                        <TableCell className="whitespace-nowrap">{formatDate(payment.date_paid)}</TableCell>
+                        <TableCell className="font-bold whitespace-nowrap">
                           {formatCurrency(payment.amount_paid)}
                         </TableCell>
-                        <TableCell>
+                        <TableCell className="whitespace-nowrap">
                           {payment.archived_date ? formatDate(payment.archived_date) : "-"}
                         </TableCell>
-                        <TableCell className="max-w-xs truncate">
+                        <TableCell className="max-w-[150px] truncate">
                           {payment.notes || "-"}
                         </TableCell>
                       </TableRow>
@@ -897,9 +897,9 @@ export default function AdminPaymentsPage() {
                                   )}
                                 </div>
                               </TableCell>
-                              <TableCell className="text-sm">{task.mapped_by}</TableCell>
-                              <TableCell className="text-sm">{task.validated_by || "-"}</TableCell>
-                              <TableCell className="text-sm text-right font-medium">
+                              <TableCell className="text-sm max-w-[150px] truncate">{task.mapped_by}</TableCell>
+                              <TableCell className="text-sm max-w-[150px] truncate">{task.validated_by || "-"}</TableCell>
+                              <TableCell className="text-sm text-right font-medium whitespace-nowrap">
                                 {task.self_validated ? (
                                   <span className="text-yellow-600">(excluded)</span>
                                 ) : task.is_mapping_earning ? (

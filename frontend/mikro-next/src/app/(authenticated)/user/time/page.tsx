@@ -390,25 +390,25 @@ export default function UserTimePage() {
                     key={entry.id}
                     className={isVoided ? "opacity-50" : ""}
                   >
-                    <TableCell className={isVoided ? "line-through" : ""}>
+                    <TableCell className={`whitespace-nowrap ${isVoided ? "line-through" : ""}`}>
                       {entry.clockIn ? formatDateDisplay(entry.clockIn) : "--"}
                     </TableCell>
-                    <TableCell className={isVoided ? "line-through" : ""}>
+                    <TableCell className={`max-w-[120px] truncate ${isVoided ? "line-through" : ""}`}>
                       {entry.projectName || "--"}
                     </TableCell>
                     <TableCell>
                       <Badge variant="secondary">{entry.category || "--"}</Badge>
                     </TableCell>
-                    <TableCell className="text-muted-foreground">
+                    <TableCell className="max-w-[120px] truncate text-muted-foreground">
                       {entry.taskName || "—"}
                     </TableCell>
-                    <TableCell className={`text-muted-foreground ${isVoided ? "line-through" : ""}`}>
+                    <TableCell className={`whitespace-nowrap text-muted-foreground ${isVoided ? "line-through" : ""}`}>
                       {entry.clockIn ? formatTime(entry.clockIn) : "--"}
                     </TableCell>
-                    <TableCell className={`text-muted-foreground ${isVoided ? "line-through" : ""}`}>
+                    <TableCell className={`whitespace-nowrap text-muted-foreground ${isVoided ? "line-through" : ""}`}>
                       {entry.clockOut ? formatTime(entry.clockOut) : "--"}
                     </TableCell>
-                    <TableCell>
+                    <TableCell className="whitespace-nowrap">
                       <span className={`font-mono ${isVoided ? "line-through" : ""}`}>
                         {formatDuration(entry.durationSeconds)}
                       </span>

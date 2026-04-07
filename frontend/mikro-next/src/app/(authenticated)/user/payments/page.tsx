@@ -242,12 +242,12 @@ export default function UserPaymentsPage() {
                 <TableBody>
                   {requests.map((request) => (
                     <TableRow key={request.id}>
-                      <TableCell className="font-medium">#{request.id}</TableCell>
-                      <TableCell>{formatDate(request.date_requested)}</TableCell>
-                      <TableCell className="font-bold">
+                      <TableCell className="font-medium whitespace-nowrap">#{request.id}</TableCell>
+                      <TableCell className="whitespace-nowrap">{formatDate(request.date_requested)}</TableCell>
+                      <TableCell className="font-bold whitespace-nowrap">
                         {formatCurrency(request.amount_requested)}
                       </TableCell>
-                      <TableCell className="max-w-xs truncate">
+                      <TableCell className="max-w-[120px] truncate">
                         {request.notes || "-"}
                       </TableCell>
                       <TableCell>
@@ -284,12 +284,12 @@ export default function UserPaymentsPage() {
                 <TableBody>
                   {payments.map((payment) => (
                     <TableRow key={payment.id}>
-                      <TableCell className="font-medium">#{payment.id}</TableCell>
-                      <TableCell>{formatDate(payment.date_paid)}</TableCell>
-                      <TableCell className="font-bold text-green-600">
+                      <TableCell className="font-medium whitespace-nowrap">#{payment.id}</TableCell>
+                      <TableCell className="whitespace-nowrap">{formatDate(payment.date_paid)}</TableCell>
+                      <TableCell className="font-bold text-green-600 whitespace-nowrap">
                         {formatCurrency(payment.amount_paid)}
                       </TableCell>
-                      <TableCell className="max-w-xs truncate">
+                      <TableCell className="max-w-[120px] truncate">
                         {payment.notes || "-"}
                       </TableCell>
                       <TableCell>

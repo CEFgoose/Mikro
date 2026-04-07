@@ -996,7 +996,7 @@ export default function AdminReportsPage() {
                 </CardHeader>
                 <CardContent className="p-0">
                   <div className="overflow-x-auto">
-                    <table className="w-full">
+                    <table className="w-full text-sm" style={{ minWidth: 500 }}>
                       <thead className="bg-muted border-b border-border">
                         <tr>
                           <th className="px-6 py-3 text-left text-sm font-semibold text-foreground">
@@ -1123,7 +1123,7 @@ export default function AdminReportsPage() {
                 </CardHeader>
                 <CardContent className="p-0">
                   <div className="overflow-x-auto">
-                    <table className="w-full">
+                    <table className="w-full text-sm" style={{ minWidth: 500 }}>
                       <thead className="bg-muted border-b border-border">
                         <tr>
                           <th className="px-6 py-3 text-left text-sm font-semibold text-foreground">
@@ -2046,7 +2046,7 @@ export default function AdminReportsPage() {
                 </CardHeader>
                 <CardContent className="p-0">
                   <div className="overflow-x-auto">
-                    <table className="w-full">
+                    <table className="w-full text-sm" style={{ minWidth: 500 }}>
                       <thead className="bg-muted border-b border-border">
                         <tr>
                           <th className="px-6 py-3 text-left text-sm font-semibold text-foreground w-8"></th>
@@ -2403,7 +2403,7 @@ export default function AdminReportsPage() {
                 </CardHeader>
                 <CardContent className="p-0">
                   <div className="overflow-x-auto">
-                    <table className="w-full">
+                    <table className="w-full text-sm" style={{ minWidth: 500 }}>
                       <thead className="bg-muted border-b border-border">
                         <tr>
                           <th className="px-6 py-3 text-left text-sm font-semibold text-foreground">
@@ -2507,7 +2507,7 @@ export default function AdminReportsPage() {
                 </CardHeader>
                 <CardContent className="p-0">
                   <div className="overflow-x-auto">
-                    <table className="w-full">
+                    <table className="w-full text-sm" style={{ minWidth: 500 }}>
                       <thead className="bg-muted border-b border-border">
                         <tr>
                           <th className="px-6 py-3 text-left text-sm font-semibold text-foreground">

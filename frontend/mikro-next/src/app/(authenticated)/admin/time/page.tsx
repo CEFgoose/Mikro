@@ -899,25 +899,25 @@ export default function AdminTimePage() {
                 </p>
               ) : (
                 <div className="overflow-auto">
-                  <table className="w-full text-sm">
+                  <table className="w-full text-sm" style={{ minWidth: 600 }}>
                     <thead>
                       <tr className="border-b border-border">
-                        <th className="text-left py-2 px-3 font-medium text-muted-foreground">
+                        <th className="text-left py-1.5 px-2 text-xs whitespace-nowrap font-medium text-muted-foreground">
                           User
                         </th>
-                        <th className="text-left py-2 px-3 font-medium text-muted-foreground">
+                        <th className="text-left py-1.5 px-2 text-xs whitespace-nowrap font-medium text-muted-foreground">
                           Project
                         </th>
-                        <th className="text-left py-2 px-3 font-medium text-muted-foreground">
+                        <th className="text-left py-1.5 px-2 text-xs whitespace-nowrap font-medium text-muted-foreground">
                           Category
                         </th>
-                        <th className="text-left py-2 px-3 font-medium text-muted-foreground">
+                        <th className="text-left py-1.5 px-2 text-xs whitespace-nowrap font-medium text-muted-foreground">
                           Clocked In
                         </th>
-                        <th className="text-left py-2 px-3 font-medium text-muted-foreground">
+                        <th className="text-left py-1.5 px-2 text-xs whitespace-nowrap font-medium text-muted-foreground">
                           Live Duration
                         </th>
-                        <th className="text-left py-2 px-3 font-medium text-muted-foreground">
+                        <th className="text-left py-1.5 px-2 text-xs whitespace-nowrap font-medium text-muted-foreground">
                           Actions
                         </th>
                       </tr>
@@ -928,7 +928,7 @@ export default function AdminTimePage() {
                           key={session.id}
                           className="border-b border-border last:border-0"
                         >
-                          <td className="py-3 px-3">
+                          <td className="py-2 px-2">
                             <div className="flex items-center gap-2">
                               <span className="relative flex h-2 w-2">
                                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
@@ -939,27 +939,27 @@ export default function AdminTimePage() {
                               </span>
                             </div>
                           </td>
-                          <td className="py-3 px-3">
+                          <td className="py-2 px-2">
                             {session.projectName || "--"}
                           </td>
-                          <td className="py-3 px-3">
+                          <td className="py-2 px-2">
                             <Badge variant="secondary">
                               {session.category}
                             </Badge>
                           </td>
-                          <td className="py-3 px-3 text-muted-foreground">
+                          <td className="py-2 px-2 text-muted-foreground">
                             {session.clockIn
                               ? formatDateTime(session.clockIn)
                               : "--"}
                           </td>
-                          <td className="py-3 px-3">
+                          <td className="py-2 px-2">
                             <span className="font-mono text-green-600 font-medium">
                               {liveDurations[session.id] ||
                                 session.duration ||
                                 "--"}
                             </span>
                           </td>
-                          <td className="py-3 px-3">
+                          <td className="py-2 px-2">
                             <Button
                               variant="destructive"
                               size="sm"
@@ -1029,11 +1029,11 @@ export default function AdminTimePage() {
                     className={isVoided ? "opacity-50" : ""}
                   >
                     <TableCell
-                      className={`font-medium ${isVoided ? "line-through" : ""}`}
+                      className={`font-medium max-w-[120px] truncate ${isVoided ? "line-through" : ""}`}
                     >
                       {entry.userName || "--"}
                     </TableCell>
-                    <TableCell className={isVoided ? "line-through" : ""}>
+                    <TableCell className={`max-w-[120px] truncate ${isVoided ? "line-through" : ""}`}>
                       {entry.projectName || "--"}
                     </TableCell>
                     <TableCell>
@@ -1041,20 +1041,20 @@ export default function AdminTimePage() {
                         {entry.category || "--"}
                       </Badge>
                     </TableCell>
-                    <TableCell className="text-muted-foreground">
+                    <TableCell className="text-muted-foreground max-w-[120px] truncate">
                       {entry.taskName || "\u2014"}
                     </TableCell>
                     <TableCell
-                      className={`text-muted-foreground ${isVoided ? "line-through" : ""}`}
+                      className={`text-muted-foreground whitespace-nowrap ${isVoided ? "line-through" : ""}`}
                     >
                       {entry.clockIn ? formatDateTime(entry.clockIn) : "--"}
                     </TableCell>
                     <TableCell
-                      className={`text-muted-foreground ${isVoided ? "line-through" : ""}`}
+                      className={`text-muted-foreground whitespace-nowrap ${isVoided ? "line-through" : ""}`}
                     >
                       {entry.clockOut ? formatDateTime(entry.clockOut) : "--"}
                     </TableCell>
-                    <TableCell>
+                    <TableCell className="whitespace-nowrap">
                       <span
                         className={`font-mono ${isVoided ? "line-through" : ""}`}
                       >

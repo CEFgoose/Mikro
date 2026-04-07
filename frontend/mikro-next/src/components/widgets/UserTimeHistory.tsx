@@ -104,7 +104,7 @@ export function UserTimeHistory() {
         <CardContent>
           {recentEntries.length > 0 ? (
             <div className="overflow-x-auto">
-              <table className="w-full text-sm">
+              <table className="w-full text-sm" style={{ minWidth: 500 }}>
                 <thead>
                   <tr className="border-b border-border">
                     <th className="text-left py-1.5 px-2 font-medium text-muted-foreground">Date</th>
@@ -178,7 +178,7 @@ export function UserTimeHistory() {
 
         {entries.length > 0 ? (
           <div className="overflow-x-auto">
-            <table className="w-full text-sm">
+            <table className="w-full text-sm" style={{ minWidth: 500 }}>
               <thead>
                 <tr className="border-b border-border">
                   <th className="text-left py-2 px-3 font-medium text-muted-foreground">Project</th>

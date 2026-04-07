@@ -542,17 +542,17 @@ export default function ValidatorDashboard() {
         </CardHeader>
         <CardContent className="p-0">
           <div className="overflow-x-auto">
-            <table className="w-full">
+            <table className="w-full text-sm" style={{ minWidth: 600 }}>
               <thead className="bg-muted">
                 <tr>
-                  <th className="px-4 py-3 text-left text-sm font-medium">Project</th>
-                  {paymentsVisible && <th className="px-4 py-3 text-left text-sm font-medium">Map Rate</th>}
-                  {paymentsVisible && <th className="px-4 py-3 text-left text-sm font-medium">Val Rate</th>}
-                  <th className="px-4 py-3 text-left text-sm font-medium">Total Tasks</th>
-                  <th className="px-4 py-3 text-left text-sm font-medium">Your Mapped</th>
-                  <th className="px-4 py-3 text-left text-sm font-medium">Your Validated</th>
-                  {paymentsVisible && <th className="px-4 py-3 text-left text-sm font-medium">Your Earnings</th>}
-                  <th className="px-4 py-3 text-left text-sm font-medium">Status</th>
+                  <th className="px-2 py-2 text-left text-xs font-medium whitespace-nowrap">Project</th>
+                  {paymentsVisible && <th className="px-2 py-2 text-left text-xs font-medium whitespace-nowrap">Map Rate</th>}
+                  {paymentsVisible && <th className="px-2 py-2 text-left text-xs font-medium whitespace-nowrap">Val Rate</th>}
+                  <th className="px-2 py-2 text-left text-xs font-medium whitespace-nowrap">Total Tasks</th>
+                  <th className="px-2 py-2 text-left text-xs font-medium whitespace-nowrap">Your Mapped</th>
+                  <th className="px-2 py-2 text-left text-xs font-medium whitespace-nowrap">Your Validated</th>
+                  {paymentsVisible && <th className="px-2 py-2 text-left text-xs font-medium whitespace-nowrap">Your Earnings</th>}
+                  <th className="px-2 py-2 text-left text-xs font-medium whitespace-nowrap">Status</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
@@ -562,7 +562,7 @@ export default function ValidatorDashboard() {
                     className="cursor-pointer hover:bg-muted/50 transition-colors"
                     onDoubleClick={() => goToSource(getProjectExternalUrl(project.id, project.source))}
                   >
-                    <td className="px-4 py-3 font-medium">
+                    <td className="px-2 py-2 font-medium">
                       <Link
                         href={`/user/projects/${project.id}`}
                         className="text-kaart-orange hover:underline"
@@ -571,15 +571,15 @@ export default function ValidatorDashboard() {
                         {project.name}
                       </Link>
                     </td>
-                    {paymentsVisible && <td className="px-4 py-3">{formatCurrency(project.mapping_rate_per_task)}</td>}
-                    {paymentsVisible && <td className="px-4 py-3">{formatCurrency(project.validation_rate_per_task)}</td>}
-                    <td className="px-4 py-3">{formatNumber(project.total_tasks)}</td>
-                    <td className="px-4 py-3">{formatNumber(project.tasks_mapped ?? 0)}</td>
-                    <td className="px-4 py-3">{formatNumber(project.tasks_validated ?? 0)}</td>
-                    {paymentsVisible && <td className="px-4 py-3 text-kaart-orange font-medium">
+                    {paymentsVisible && <td className="px-2 py-2">{formatCurrency(project.mapping_rate_per_task)}</td>}
+                    {paymentsVisible && <td className="px-2 py-2">{formatCurrency(project.validation_rate_per_task)}</td>}
+                    <td className="px-2 py-2">{formatNumber(project.total_tasks)}</td>
+                    <td className="px-2 py-2">{formatNumber(project.tasks_mapped ?? 0)}</td>
+                    <td className="px-2 py-2">{formatNumber(project.tasks_validated ?? 0)}</td>
+                    {paymentsVisible && <td className="px-2 py-2 text-kaart-orange font-medium">
                       {formatCurrency(project.user_earnings ?? 0)}
                     </td>}
-                    <td className="px-4 py-3">
+                    <td className="px-2 py-2">
                       {(project as Project & { unassigned?: boolean }).unassigned ? (
                         <Badge variant="outline">Unassigned</Badge>
                       ) : (
