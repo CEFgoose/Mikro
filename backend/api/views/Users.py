@@ -743,7 +743,12 @@ class UserAPI(MethodView):
         if "osm_username" in request.json:
             updates["osm_username"] = (request.json["osm_username"] or "").strip() or None
         if "email" in request.json:
-            updates["email"] = (request.json["email"] or "").strip()
+            new_email = (request.json["email"] or "").strip()
+            if new_email and new_email != user.email:
+                existing = User.query.filter(User.email == new_email, User.id != user_id).first()
+                if existing:
+                    return {"message": f"Email '{new_email}' is already in use by another user", "status": 400}
+            updates["email"] = new_email
         if "timezone" in request.json:
             updates["timezone"] = (request.json["timezone"] or "").strip() or None
         if "mapillary_username" in request.json:

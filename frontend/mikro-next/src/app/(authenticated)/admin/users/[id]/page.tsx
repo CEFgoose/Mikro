@@ -24,7 +24,7 @@ import {
   useFetchCountries,
   useEditTimeEntry,
   useVoidTimeEntry,
-  useUpdateUserDetails,
+  useModifyUserRole,
 } from "@/hooks/useApi";
 import {
   ComposedChart,
@@ -164,7 +164,7 @@ export default function UserProfilePage() {
   const { data: countriesData } = useFetchCountries();
   const { mutate: editTimeEntry, loading: editingTimeEntry } = useEditTimeEntry();
   const { mutate: voidTimeEntry } = useVoidTimeEntry();
-  const { mutate: updateUserDetails, loading: updateDetailsLoading } = useUpdateUserDetails();
+  const { mutate: modifyUser, loading: updateDetailsLoading } = useModifyUserRole();
   const toast = useToastActions();
 
   const [user, setUser] = useState<UserProfileData | null>(null);
@@ -451,7 +451,7 @@ export default function UserProfilePage() {
 
   const handleSaveEditModal = async () => {
     try {
-      await updateUserDetails({
+      await modifyUser({
         user_id: userId,
         first_name: editFirstName,
         last_name: editLastName,
