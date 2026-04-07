@@ -18,12 +18,18 @@ import requests as http_requests
 import xml.etree.ElementTree as ET
 
 
-def _parse_rss_date(date_str):
-    """Parse an RFC 822 date string from an RSS feed."""
+def _parse_date(date_str):
+    """Parse a date string — handles ISO 8601 (from OSM API) and RFC 822 (legacy RSS)."""
+    if not date_str:
+        return ""
     try:
-        return parsedate_to_datetime(date_str)
+        return datetime.fromisoformat(date_str.replace("Z", "+00:00")).isoformat()
     except Exception:
-        return datetime.min
+        pass
+    try:
+        return parsedate_to_datetime(date_str).isoformat()
+    except Exception:
+        return ""
 
 
 OSM_API_BASE = "https://api.openstreetmap.org/api/0.6"
@@ -278,15 +284,9 @@ class FriendAPI(MethodView):
         for disc in discussions:
             disc["flagged"] = disc.get("link", "") in flagged_links
 
-        # Sort: flagged first, then newest first
-        discussions.sort(
-            key=lambda d: (
-                not d.get("flagged", False),
-                -_parse_rss_date(d.get("pubDate", "")).timestamp()
-                if d.get("pubDate")
-                else 0,
-            ),
-        )
+        # Sort: flagged first, then newest first (by ISO date string)
+        discussions.sort(key=lambda d: d.get("pubDate", "") or "", reverse=True)
+        discussions.sort(key=lambda d: not d.get("flagged", False))
 
         return {
             "status": 200,

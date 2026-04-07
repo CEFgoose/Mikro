@@ -18,12 +18,20 @@ import requests as http_requests
 import xml.etree.ElementTree as ET
 
 
-def _parse_rss_date(date_str):
-    """Parse an RFC 822 date string from an RSS feed."""
+def _parse_date(date_str):
+    """Parse a date string — handles ISO 8601 (from OSM API) and RFC 822 (legacy RSS)."""
+    if not date_str:
+        return ""
     try:
-        return parsedate_to_datetime(date_str)
+        # ISO 8601: 2014-11-15T11:43:09Z
+        return datetime.fromisoformat(date_str.replace("Z", "+00:00")).isoformat()
     except Exception:
-        return datetime.min
+        pass
+    try:
+        # RFC 822: legacy RSS format
+        return parsedate_to_datetime(date_str).isoformat()
+    except Exception:
+        return ""
 
 
 OSM_API_BASE = "https://api.openstreetmap.org/api/0.6"
@@ -49,6 +57,8 @@ class PunkAPI(MethodView):
             return self.refresh_punk_activity()
         elif path == "toggle_discussion_flag":
             return self.toggle_discussion_flag()
+        elif path == "purge_all_discussions":
+            return self.purge_all_discussions()
         return {"message": "Unknown path", "status": 404}
 
     # ─── List all punks ──────────────────────────────────
@@ -278,15 +288,20 @@ class PunkAPI(MethodView):
         for disc in discussions:
             disc["flagged"] = disc.get("link", "") in flagged_links
 
-        # Sort: flagged first, then newest first
+        # Sort: flagged first, then newest first (by ISO date string)
         discussions.sort(
             key=lambda d: (
                 not d.get("flagged", False),
-                -_parse_rss_date(d.get("pubDate", "")).timestamp()
-                if d.get("pubDate")
-                else 0,
+                d.get("pubDate", "") or "",
             ),
+            reverse=False,
         )
+        # Reverse so newest dates are first (but flagged stay at top)
+        # Since flagged=False > flagged=True (not False=True, not True=False),
+        # flagged items sort first. Within each group, we want newest first.
+        # Use a two-pass: stable sort by date desc, then by flagged.
+        discussions.sort(key=lambda d: d.get("pubDate", "") or "", reverse=True)
+        discussions.sort(key=lambda d: not d.get("flagged", False))
 
         return {
             "status": 200,
@@ -356,6 +371,21 @@ class PunkAPI(MethodView):
         db.session.commit()
 
         return {"status": 200, "flagged": is_flagged, "message": "Flag toggled"}
+
+    # ─── Purge all discussions ───────────────────────────
+
+    @requires_admin
+    def purge_all_discussions(self):
+        """Clear cached discussions from ALL punks. Dev tool."""
+        punks = Punk.query.filter(Punk.org_id == g.user.org_id).all()
+        count = 0
+        for punk in punks:
+            if punk.cached_discussions:
+                punk.cached_discussions = None
+                punk.flagged_discussions = None
+                count += 1
+        db.session.commit()
+        return {"status": 200, "message": f"Purged discussions from {count} punk(s)"}
 
     # ─── Internal refresh logic ──────────────────────────
 

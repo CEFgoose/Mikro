@@ -1000,6 +1000,9 @@ export function useRefreshPunkActivity() {
 export function useToggleDiscussionFlag() {
   return useApiMutation("/punk/toggle_discussion_flag");
 }
+export function usePurgeAllDiscussions() {
+  return useApiMutation("/punk/purge_all_discussions");
+}
 
 // Friends List
 export function useFriendsList() {
