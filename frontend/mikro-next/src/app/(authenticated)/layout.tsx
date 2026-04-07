@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { Header } from "@/components/layout/Header";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { AprilFools } from "@/components/layout/AprilFools";
+import { AuthGuard } from "@/components/AuthGuard";
 
 const BACKEND_URL = process.env.FLASK_BACKEND_URL || "http://localhost:5004";
 
@@ -49,7 +50,7 @@ export default async function AuthenticatedLayout({
   const session = await auth0.getSession();
 
   if (!session) {
-    redirect("/auth/login");
+    redirect("/auth/logout");
   }
 
   // Sync user with backend and get role from database
@@ -59,7 +60,7 @@ export default async function AuthenticatedLayout({
     const tokenResponse = await auth0.getAccessToken();
     if (!tokenResponse?.token) {
       // No valid access token — session is stale, force re-login
-      redirect("/auth/login");
+      redirect("/auth/logout");
     }
     // Pass user info from session to backend for syncing
     const userInfo = {
@@ -71,7 +72,7 @@ export default async function AuthenticatedLayout({
     paymentsVisible = syncResult.paymentsVisible;
   } catch {
     // Token retrieval failed — session expired, force re-login
-    redirect("/auth/login");
+    redirect("/auth/logout");
   }
 
   // Admins always see payments
@@ -81,6 +82,7 @@ export default async function AuthenticatedLayout({
 
   return (
     <div style={{ minHeight: "100vh", backgroundColor: "var(--muted)" }}>
+      <AuthGuard />
       <AprilFools />
       <Header />
       <Sidebar role={role as "user" | "validator" | "admin"} paymentsVisible={paymentsVisible} />

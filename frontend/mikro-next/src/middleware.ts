@@ -24,16 +24,22 @@ export default async function proxy(request: NextRequest) {
   // Protected routes require authentication
   const session = await auth0.getSession(request);
   if (!session) {
+    // No session at all — send to logout to ensure any stale cookies are cleared
     const { origin } = new URL(request.url);
-    return NextResponse.redirect(`${origin}/auth/login`);
+    return NextResponse.redirect(`${origin}/auth/logout`);
   }
 
-  // Check if access token is expired — getSession() returns stale sessions,
-  // so users see the app "logged in" but all API calls fail
+  // Check if access token is missing or expired — getSession() can return
+  // stale sessions where the token is expired, so users appear "logged in"
+  // but all API calls fail. Kill the session entirely.
+  const accessToken = session.tokenSet?.accessToken;
   const expiresAt = session.tokenSet?.expiresAt;
-  if (expiresAt && expiresAt < Math.floor(Date.now() / 1000)) {
+  if (
+    !accessToken ||
+    (expiresAt && expiresAt < Math.floor(Date.now() / 1000))
+  ) {
     const { origin } = new URL(request.url);
-    return NextResponse.redirect(`${origin}/auth/login`);
+    return NextResponse.redirect(`${origin}/auth/logout`);
   }
 
   return authRes;

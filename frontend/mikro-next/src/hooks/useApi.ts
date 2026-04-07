@@ -73,9 +73,11 @@ export function useApiCall<T>(
           body: JSON.stringify(overrideBody || options?.body || {}),
         });
 
-        // Auth failure — force re-login immediately
+        // Auth failure — kill session and force full logout
         if (response.status === 401) {
-          window.location.href = "/auth/login";
+          try { localStorage.clear(); } catch {}
+          try { sessionStorage.clear(); } catch {}
+          window.location.href = "/auth/logout";
           return undefined as unknown as T;
         }
 

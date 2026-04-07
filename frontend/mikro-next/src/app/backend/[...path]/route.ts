@@ -16,7 +16,7 @@ async function handleRequest(
   try {
     const session = await auth0.getSession(request);
 
-    if (!session) {
+    if (!session || !session.tokenSet?.accessToken) {
       return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
     }
 

@@ -1,0 +1,93 @@
+"use client";
+
+import { useEffect, useRef } from "react";
+import { useUser } from "@auth0/nextjs-auth0/client";
+
+/**
+ * AuthGuard — aggressive session integrity checker.
+ *
+ * If ANY sign of a broken/missing/stale session is detected:
+ *   1. Clears all client-side storage
+ *   2. Redirects to /auth/logout (kills Auth0 server session too)
+ *
+ * Checks run:
+ *   - On mount (lightweight API ping)
+ *   - On tab/window refocus
+ *   - When useUser() reports no user after loading completes
+ */
+
+function nukeAndLogout() {
+  // Prevent multiple redirects
+  if (sessionStorage.getItem("__mikro_logging_out")) return;
+  sessionStorage.setItem("__mikro_logging_out", "1");
+
+  // Wipe everything client-side
+  try {
+    localStorage.clear();
+  } catch {}
+  try {
+    sessionStorage.clear();
+  } catch {}
+
+  // Kill server session via Auth0 logout (not just /auth/login)
+  window.location.href = "/auth/logout";
+}
+
+async function verifySession(): Promise<boolean> {
+  try {
+    const res = await fetch("/backend/user/fetch_user_role", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: "{}",
+    });
+    return res.status !== 401;
+  } catch {
+    // Network error — don't nuke on transient failures
+    return true;
+  }
+}
+
+export function AuthGuard() {
+  const { user, isLoading } = useUser();
+  const hadUser = useRef(false);
+
+  // Track whether we ever had a user
+  useEffect(() => {
+    if (user) hadUser.current = true;
+  }, [user]);
+
+  // If useUser() finishes loading and there's no user, nuke it
+  useEffect(() => {
+    if (!isLoading && !user) {
+      nukeAndLogout();
+    }
+  }, [isLoading, user]);
+
+  // Verify session on mount
+  useEffect(() => {
+    verifySession().then((valid) => {
+      if (!valid) nukeAndLogout();
+    });
+  }, []);
+
+  // Re-verify on tab focus / visibility change
+  useEffect(() => {
+    const handleFocus = () => {
+      verifySession().then((valid) => {
+        if (!valid) nukeAndLogout();
+      });
+    };
+
+    window.addEventListener("focus", handleFocus);
+    document.addEventListener("visibilitychange", () => {
+      if (document.visibilityState === "visible") handleFocus();
+    });
+
+    return () => {
+      window.removeEventListener("focus", handleFocus);
+      document.removeEventListener("visibilitychange", handleFocus);
+    };
+  }, []);
+
+  return null;
+}
