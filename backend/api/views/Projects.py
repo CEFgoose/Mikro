@@ -935,7 +935,7 @@ class ProjectAPI(MethodView):
 
         # Per-user time entries
         user_time = {}
-        if all_user_ids:
+        if True:
             time_rows = (
                 db.session.query(
                     TimeEntry.user_id,
