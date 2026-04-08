@@ -372,6 +372,12 @@ export function useSyncProject() {
   );
 }
 
+export function useSyncUserProjects() {
+  return useApiMutation<{ message: string; syncs?: Array<{ project_id: number; project_name: string; job_id: number }>; status: number }>(
+    "/task/sync_user_projects"
+  );
+}
+
 export function useCheckSyncStatus() {
   return useApiMutation<{
     job_id?: number;

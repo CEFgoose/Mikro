@@ -26,6 +26,7 @@ import {
   useEditTimeEntry,
   useVoidTimeEntry,
   useModifyUserRole,
+  useSyncUserProjects,
 } from "@/hooks/useApi";
 import {
   ComposedChart,
@@ -166,6 +167,7 @@ export default function UserProfilePage() {
   const { mutate: editTimeEntry, loading: editingTimeEntry } = useEditTimeEntry();
   const { mutate: voidTimeEntry } = useVoidTimeEntry();
   const { mutate: modifyUser, loading: updateDetailsLoading } = useModifyUserRole();
+  const { mutate: syncUserProjects, loading: syncing } = useSyncUserProjects();
   const toast = useToastActions();
 
   const [user, setUser] = useState<UserProfileData | null>(null);
@@ -584,18 +586,38 @@ export default function UserProfilePage() {
                 </div>
               </div>
             </div>
-            <button
-              onClick={openEditModal}
-              className="p-2 rounded-lg hover:bg-muted transition-colors text-muted-foreground hover:text-kaart-orange"
-              title="Edit user"
-            >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-                  d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" />
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-                  d="m15 5 4 4" />
-              </svg>
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={async () => {
+                  try {
+                    const res = await syncUserProjects({ user_id: userId });
+                    toast.success(res.message || "Sync queued");
+                  } catch {
+                    toast.error("Failed to queue sync");
+                  }
+                }}
+                disabled={syncing}
+                className="p-2 rounded-lg hover:bg-muted transition-colors text-muted-foreground hover:text-kaart-orange"
+                title="Sync all assigned projects"
+              >
+                <svg className={`w-5 h-5 ${syncing ? "animate-spin" : ""}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                    d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                </svg>
+              </button>
+              <button
+                onClick={openEditModal}
+                className="p-2 rounded-lg hover:bg-muted transition-colors text-muted-foreground hover:text-kaart-orange"
+                title="Edit user"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                    d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                    d="m15 5 4 4" />
+                </svg>
+              </button>
+            </div>
           </div>
 
           {/* 3-column info grid */}

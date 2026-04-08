@@ -18,6 +18,8 @@ from ..database import (
     Project,
     Task,
     ProjectUser,
+    ProjectTeam,
+    TeamUser,
     UserTasks,
     User,
     ValidatorTaskAction,
@@ -66,6 +68,8 @@ class TaskAPI(MethodView):
             return self.purge_all_task_stats()
         elif path == "sync_project":
             return self.sync_project()
+        elif path == "sync_user_projects":
+            return self.sync_user_projects()
         return {
             "message": "Invalid path",
             "status": 405,
@@ -827,6 +831,61 @@ class TaskAPI(MethodView):
         return {
             "message": f"Sync queued for {project.name}",
             "job_id": job.id,
+            "status": 200,
+        }
+
+    @requires_admin
+    def sync_user_projects(self):
+        """Sync all projects a user is assigned to (direct + team)."""
+        user_id = (request.json or {}).get("user_id")
+        if not user_id:
+            return {"message": "user_id required", "status": 400}
+
+        user = User.query.get(user_id)
+        if not user or user.org_id != g.user.org_id:
+            return {"message": "User not found", "status": 404}
+
+        # Direct project assignments
+        direct_ids = {
+            pu.project_id
+            for pu in ProjectUser.query.filter_by(user_id=user_id).all()
+        }
+
+        # Team-based project assignments
+        team_ids = {
+            tu.team_id
+            for tu in TeamUser.query.filter_by(user_id=user_id).all()
+        }
+        team_project_ids = set()
+        if team_ids:
+            team_project_ids = {
+                pt.project_id
+                for pt in ProjectTeam.query.filter(
+                    ProjectTeam.team_id.in_(team_ids)
+                ).all()
+            }
+
+        all_project_ids = direct_ids | team_project_ids
+        if not all_project_ids:
+            return {"message": "User has no project assignments", "status": 200}
+
+        # Queue a sync for each project
+        queued = []
+        for pid in all_project_ids:
+            project = Project.query.get(pid)
+            if not project or project.org_id != g.user.org_id:
+                continue
+            job = SyncJob.create(
+                org_id=g.user.org_id,
+                status="queued",
+                job_type="project_sync",
+                target_id=pid,
+            )
+            queued.append({"project_id": pid, "project_name": project.name, "job_id": job.id})
+
+        return {
+            "message": f"Queued sync for {len(queued)} project(s)",
+            "syncs": queued,
             "status": 200,
         }
 
