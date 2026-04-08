@@ -902,56 +902,52 @@ class ProjectAPI(MethodView):
 
         # Per-user task aggregates
         user_task_stats = {}
-        if True:
-            # Mapping stats
-            map_rows = (
-                db.session.query(Task.mapped_by, func.count())
-                .filter(
-                    Task.project_id == project.id,
-                    Task.mapped == True,
-                )
-                .group_by(Task.mapped_by)
-                .all()
+        map_rows = (
+            db.session.query(Task.mapped_by, func.count())
+            .filter(
+                Task.project_id == project.id,
+                Task.mapped == True,
             )
-            for osm_un, cnt in map_rows:
-                if osm_un:
-                    user_task_stats.setdefault(osm_un, {"mapped": 0, "validated": 0})
-                    user_task_stats[osm_un]["mapped"] = cnt
+            .group_by(Task.mapped_by)
+            .all()
+        )
+        for osm_un, cnt in map_rows:
+            if osm_un:
+                user_task_stats.setdefault(osm_un, {"mapped": 0, "validated": 0})
+                user_task_stats[osm_un]["mapped"] = cnt
 
-            # Validation stats
-            val_rows = (
-                db.session.query(Task.validated_by, func.count())
-                .filter(
-                    Task.project_id == project.id,
-                    Task.validated == True,
-                )
-                .group_by(Task.validated_by)
-                .all()
+        val_rows = (
+            db.session.query(Task.validated_by, func.count())
+            .filter(
+                Task.project_id == project.id,
+                Task.validated == True,
             )
-            for osm_un, cnt in val_rows:
-                if osm_un:
-                    user_task_stats.setdefault(osm_un, {"mapped": 0, "validated": 0})
-                    user_task_stats[osm_un]["validated"] = cnt
+            .group_by(Task.validated_by)
+            .all()
+        )
+        for osm_un, cnt in val_rows:
+            if osm_un:
+                user_task_stats.setdefault(osm_un, {"mapped": 0, "validated": 0})
+                user_task_stats[osm_un]["validated"] = cnt
 
         # Per-user time entries
         user_time = {}
-        if True:
-            time_rows = (
-                db.session.query(
-                    TimeEntry.user_id,
-                    func.sum(TimeEntry.duration_seconds),
-                )
-                .filter(
-                    TimeEntry.project_id == project.id,
-                    TimeEntry.status == "completed",
-                    TimeEntry.duration_seconds != None,
-                )
-                .group_by(TimeEntry.user_id)
-                .all()
+        time_rows = (
+            db.session.query(
+                TimeEntry.user_id,
+                func.sum(TimeEntry.duration_seconds),
             )
-            for uid, secs in time_rows:
-                if uid and secs:
-                    user_time[uid] = secs
+            .filter(
+                TimeEntry.project_id == project.id,
+                TimeEntry.status == "completed",
+                TimeEntry.duration_seconds != None,
+            )
+            .group_by(TimeEntry.user_id)
+            .all()
+        )
+        for uid, secs in time_rows:
+            if uid and secs:
+                user_time[uid] = secs
 
         # Build user list — only assigned users + users with actual contributions
         # Find user IDs that have task stats or time logged
