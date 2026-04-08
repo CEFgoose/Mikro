@@ -175,20 +175,30 @@ def run_project_sync_job(app, job):
 
         total_users = len(users)
         synced = 0
-        for i, user in enumerate(users, 1):
-            job.progress = f"Syncing {project.name}: user {i}/{total_users}"
-            db.session.commit()
 
+        if project.source == "mr":
+            # MR sync handles all users in one call — no per-user loop needed
+            job.progress = f"Syncing {project.name} (MapRoulette)..."
+            db.session.commit()
             try:
-                if project.source == "mr":
-                    MapRouletteSync().sync_challenge_tasks(project, user)
-                else:
-                    task_api.TM4_payment_call(project.id, user)
-                synced += 1
+                MapRouletteSync().sync_challenge_tasks(project)
+                synced = total_users
             except Exception as e:
                 logger.error(
-                    f"Project sync error - project {project.id}, user {user.id}: {e}"
+                    f"Project sync error - MR project {project.id}: {e}"
                 )
+        else:
+            # TM4 needs per-user sync
+            for i, user in enumerate(users, 1):
+                job.progress = f"Syncing {project.name}: user {i}/{total_users}"
+                db.session.commit()
+                try:
+                    task_api.TM4_payment_call(project.id, user)
+                    synced += 1
+                except Exception as e:
+                    logger.error(
+                        f"Project sync error - project {project.id}, user {user.id}: {e}"
+                    )
 
         job.status = "completed"
         job.completed_at = datetime.now(timezone.utc)
