@@ -893,6 +893,7 @@ class TaskAPI(MethodView):
                 status="queued",
                 job_type="project_sync",
                 target_id=pid,
+                progress=f"user:{user_id}",
             )
             queued.append({"project_id": pid, "project_name": project.name, "job_id": job.id})
 

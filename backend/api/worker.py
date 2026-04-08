@@ -173,32 +173,28 @@ def run_project_sync_job(app, job):
                 if u.id not in user_ids_set:
                     users.append(u)
 
+        # If job was created by sync_user_projects, it has "user:{id}" in progress
+        if job.progress and job.progress.startswith("user:"):
+            target_user_id = job.progress.split(":", 1)[1]
+            target_user = User.query.get(target_user_id)
+            users = [target_user] if target_user else []
+
         total_users = len(users)
         synced = 0
 
-        if project.source == "mr":
-            # MR sync handles all users in one call — no per-user loop needed
-            job.progress = f"Syncing {project.name} (MapRoulette)..."
+        for i, user in enumerate(users, 1):
+            job.progress = f"Syncing {project.name}: user {i}/{total_users}"
             db.session.commit()
             try:
-                MapRouletteSync().sync_challenge_tasks(project)
-                synced = total_users
+                if project.source == "mr":
+                    MapRouletteSync().sync_challenge_tasks(project, user)
+                else:
+                    task_api.TM4_payment_call(project.id, user)
+                synced += 1
             except Exception as e:
                 logger.error(
-                    f"Project sync error - MR project {project.id}: {e}"
+                    f"Project sync error - project {project.id}, user {user.id}: {e}"
                 )
-        else:
-            # TM4 needs per-user sync
-            for i, user in enumerate(users, 1):
-                job.progress = f"Syncing {project.name}: user {i}/{total_users}"
-                db.session.commit()
-                try:
-                    task_api.TM4_payment_call(project.id, user)
-                    synced += 1
-                except Exception as e:
-                    logger.error(
-                        f"Project sync error - project {project.id}, user {user.id}: {e}"
-                    )
 
         job.status = "completed"
         job.completed_at = datetime.now(timezone.utc)
