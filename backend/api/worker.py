@@ -145,6 +145,11 @@ def run_project_sync_job(app, job):
     task_api = TaskAPI()
 
     try:
+        # Read target user BEFORE overwriting progress
+        target_user_id = None
+        if job.progress and job.progress.startswith("user:"):
+            target_user_id = job.progress.split(":", 1)[1]
+
         job.status = "running"
         job.started_at = datetime.now(timezone.utc)
         job.progress = "Starting project sync..."
@@ -158,26 +163,24 @@ def run_project_sync_job(app, job):
             db.session.commit()
             return
 
-        # Get assigned users
-        assigned_user_ids = [
-            pu.user_id
-            for pu in ProjectUser.query.filter_by(project_id=project.id).all()
-        ]
-        users = User.query.filter(User.id.in_(assigned_user_ids)).all() if assigned_user_ids else []
-
-        # Include all org users if project is visible
-        if project.visibility:
-            user_ids_set = set(assigned_user_ids)
-            all_org_users = User.query.filter_by(org_id=job.org_id).all()
-            for u in all_org_users:
-                if u.id not in user_ids_set:
-                    users.append(u)
-
-        # If job was created by sync_user_projects, it has "user:{id}" in progress
-        if job.progress and job.progress.startswith("user:"):
-            target_user_id = job.progress.split(":", 1)[1]
+        # If this job targets a specific user, sync only that user
+        if target_user_id:
             target_user = User.query.get(target_user_id)
             users = [target_user] if target_user else []
+        else:
+            # Full project sync — all assigned users
+            assigned_user_ids = [
+                pu.user_id
+                for pu in ProjectUser.query.filter_by(project_id=project.id).all()
+            ]
+            users = User.query.filter(User.id.in_(assigned_user_ids)).all() if assigned_user_ids else []
+
+            if project.visibility:
+                user_ids_set = set(assigned_user_ids)
+                all_org_users = User.query.filter_by(org_id=job.org_id).all()
+                for u in all_org_users:
+                    if u.id not in user_ids_set:
+                        users.append(u)
 
         total_users = len(users)
         synced = 0
