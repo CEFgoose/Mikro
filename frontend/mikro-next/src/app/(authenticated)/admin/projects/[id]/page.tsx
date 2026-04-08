@@ -11,7 +11,8 @@ import {
   Badge,
   Button,
 } from "@/components/ui";
-import { useFetchProjectProfile } from "@/hooks/useApi";
+import { useFetchProjectProfile, useSyncProject } from "@/hooks/useApi";
+import { useToastActions } from "@/components/ui";
 import { formatNumber, formatCurrency, displayRole } from "@/lib/utils";
 import type { ProjectProfileResponse } from "@/types";
 
@@ -104,6 +105,8 @@ export default function AdminProjectProfilePage() {
     loading: profileLoading,
     error: profileError,
   } = useFetchProjectProfile();
+  const { mutate: syncProject, loading: syncing } = useSyncProject();
+  const toast = useToastActions();
 
   const [data, setData] = useState<ProjectProfileResponse | null>(null);
   const [pageLoading, setPageLoading] = useState(true);
@@ -191,6 +194,25 @@ export default function AdminProjectProfilePage() {
           </div>
 
           <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={syncing}
+              onClick={async () => {
+                try {
+                  const res = await syncProject({ project_id: projectId });
+                  toast.success(res.message || "Sync queued");
+                } catch {
+                  toast.error("Failed to queue sync");
+                }
+              }}
+            >
+              <svg className={`w-4 h-4 mr-1 ${syncing ? "animate-spin" : ""}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                  d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+              </svg>
+              {syncing ? "Syncing..." : "Sync Tasks"}
+            </Button>
             {proj.url && (
               <a
                 href={proj.url}
