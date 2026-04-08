@@ -146,49 +146,55 @@ class MapRouletteSync:
             return None
         return User.query.filter_by(osm_username=osm_username).first()
 
-    def _fetch_task_history(self, task_id):
+    def _fetch_task_history(self, task_id, base_url=None, headers=None, app=None):
         """
         Fetch the action history for a single MapRoulette task.
 
         Calls GET /task/{task_id}/history with error handling.
-
-        Args:
-            task_id: The MR task ID to fetch history for.
-
-        Returns:
-            list: List of history action dicts, or empty list on error.
+        When called from a thread, pass base_url, headers, and app
+        to avoid Flask application context issues.
         """
-        base_url = self._get_mr_base_url()
-        headers = self._get_mr_headers()
-        url = f"{base_url}/task/{task_id}/history"
-
+        if app:
+            ctx = app.app_context()
+            ctx.push()
         try:
-            response = requests.get(url, headers=headers, timeout=30)
+            _base_url = base_url or self._get_mr_base_url()
+            _headers = headers or self._get_mr_headers()
+            url = f"{_base_url}/task/{task_id}/history"
+
+            response = requests.get(url, headers=_headers, timeout=30)
             if response.ok:
                 data = response.json()
                 if isinstance(data, list):
                     return data
-                current_app.logger.warning(
-                    f"MR task history for {task_id} returned non-list: "
-                    f"{type(data)}"
-                )
+                if app:
+                    app.logger.warning(
+                        f"MR task history for {task_id} returned non-list: "
+                        f"{type(data)}"
+                    )
                 return []
             else:
-                current_app.logger.warning(
-                    f"MR task history fetch failed for task {task_id}: "
-                    f"HTTP {response.status_code}"
-                )
+                if app:
+                    app.logger.warning(
+                        f"MR task history fetch failed for task {task_id}: "
+                        f"HTTP {response.status_code}"
+                    )
                 return []
         except requests.RequestException as e:
-            current_app.logger.error(
-                f"MR API error fetching history for task {task_id}: {e}"
-            )
+            if app:
+                app.logger.error(
+                    f"MR API error fetching history for task {task_id}: {e}"
+                )
             return []
         except (ValueError, KeyError) as e:
-            current_app.logger.error(
-                f"MR JSON parse error for task {task_id} history: {e}"
-            )
+            if app:
+                app.logger.error(
+                    f"MR JSON parse error for task {task_id} history: {e}"
+                )
             return []
+        finally:
+            if app:
+                ctx.pop()
 
     def fetch_challenge_metadata(self, challenge_id):
         """
@@ -379,12 +385,20 @@ class MapRouletteSync:
         batch_size = 3  # Matches ThreadPoolExecutor max_workers
         task_ids = [t.get("id") for t in all_actionable_tasks if t.get("id")]
 
+        # Resolve these BEFORE spawning threads (they need current_app)
+        mr_base_url = self._get_mr_base_url()
+        mr_headers = self._get_mr_headers()
+        app = current_app._get_current_object()
+
         for batch_start in range(0, len(task_ids), batch_size):
             batch = task_ids[batch_start : batch_start + batch_size]
 
             with ThreadPoolExecutor(max_workers=3) as executor:
                 future_to_task = {
-                    executor.submit(self._fetch_task_history, tid): tid
+                    executor.submit(
+                        self._fetch_task_history, tid,
+                        base_url=mr_base_url, headers=mr_headers, app=app,
+                    ): tid
                     for tid in batch
                 }
 
