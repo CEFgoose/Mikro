@@ -437,6 +437,13 @@ export interface UserProfileData {
   mapper_points: number;
   validator_points: number;
   projects: UserProjectBreakdown[];
+  assigned_projects?: Array<{
+    id: number;
+    name: string;
+    short_name?: string;
+    source?: string;
+    status?: boolean;
+  }>;
   time_entries: TimeEntry[];
 }
 

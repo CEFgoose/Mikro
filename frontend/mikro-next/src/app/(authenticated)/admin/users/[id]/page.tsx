@@ -783,7 +783,39 @@ export default function UserProfilePage() {
         </Card>
       )}
 
-      {/* Section 5: Projects */}
+      {/* Section 5a: Assigned Projects */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Assigned Projects ({user.assigned_projects?.length ?? 0})</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {user.assigned_projects && user.assigned_projects.length > 0 ? (
+            <div className="flex flex-wrap gap-2">
+              {user.assigned_projects.map((proj: { id: number; name: string; short_name?: string; source?: string; status?: boolean }) => (
+                <Link
+                  key={proj.id}
+                  href={`/admin/projects/${proj.id}`}
+                  className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-sm transition-colors hover:border-kaart-orange hover:text-kaart-orange ${
+                    proj.status === false ? "opacity-50 border-dashed" : "border-border"
+                  }`}
+                >
+                  {proj.short_name || proj.name}
+                  {proj.source === "mr" && (
+                    <span className="text-[10px] font-medium px-1 py-0.5 rounded bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300">MR</span>
+                  )}
+                  {proj.status === false && (
+                    <span className="text-[10px] font-medium text-muted-foreground">(inactive)</span>
+                  )}
+                </Link>
+              ))}
+            </div>
+          ) : (
+            <p className="text-sm text-muted-foreground">No projects assigned to this user.</p>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Section 5b: Project Contribution Stats */}
       {user.projects && user.projects.length > 0 && (
         <Card>
           <CardHeader>

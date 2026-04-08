@@ -929,6 +929,27 @@ class UserAPI(MethodView):
             "notes": entry.notes,
         }
 
+    @staticmethod
+    def _get_assigned_projects(user):
+        """Get all projects this user is assigned to (via ProjectUser table)."""
+        relations = ProjectUser.query.filter_by(user_id=user.id).all()
+        if not relations:
+            return []
+        project_ids = [r.project_id for r in relations]
+        projects = {p.id: p for p in Project.query.filter(Project.id.in_(project_ids)).all()}
+        result = []
+        for pid in project_ids:
+            p = projects.get(pid)
+            if p:
+                result.append({
+                    "id": p.id,
+                    "name": p.name,
+                    "short_name": p.short_name,
+                    "source": p.source,
+                    "status": p.status,
+                })
+        return result
+
     @requires_admin
     def fetch_user_profile_by_id(self):
         """Fetch comprehensive profile data for a specific user."""
@@ -1103,6 +1124,7 @@ class UserAPI(MethodView):
                 "validator_points": user.validator_points or 0,
                 # Nested
                 "projects": projects_data,
+                "assigned_projects": self._get_assigned_projects(user),
                 "time_entries": [self._format_time_entry(e, te_project_cache) for e in time_entries],
             },
         }
