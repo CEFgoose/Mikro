@@ -869,14 +869,27 @@ class TaskAPI(MethodView):
         if not all_project_ids:
             return {"message": "User has no project assignments", "status": 200}
 
-        # Queue a sync for each project
+        org_id = g.user.org_id
+
+        # Clear any stale running/queued jobs first
+        stale_jobs = SyncJob.query.filter(
+            SyncJob.org_id == org_id,
+            SyncJob.status.in_(["running", "queued"]),
+        ).all()
+        for sj in stale_jobs:
+            sj.status = "failed"
+            sj.error = "Cleared by sync_user_projects"
+        if stale_jobs:
+            db.session.commit()
+
+        # Queue ONE job per unique project
         queued = []
         for pid in all_project_ids:
             project = Project.query.get(pid)
-            if not project or project.org_id != g.user.org_id:
+            if not project or project.org_id != org_id:
                 continue
             job = SyncJob.create(
-                org_id=g.user.org_id,
+                org_id=org_id,
                 status="queued",
                 job_type="project_sync",
                 target_id=pid,
