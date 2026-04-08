@@ -168,19 +168,51 @@ def run_project_sync_job(app, job):
             target_user = User.query.get(target_user_id)
             users = [target_user] if target_user else []
         else:
-            # Full project sync — all assigned users
-            assigned_user_ids = [
+            # Full project sync — assigned users (direct + team) + contributors
+            from .database import ProjectTeam, TeamUser, Task
+
+            # Direct assignments
+            direct_ids = set(
                 pu.user_id
                 for pu in ProjectUser.query.filter_by(project_id=project.id).all()
-            ]
-            users = User.query.filter(User.id.in_(assigned_user_ids)).all() if assigned_user_ids else []
+            )
 
-            if project.visibility:
-                user_ids_set = set(assigned_user_ids)
-                all_org_users = User.query.filter_by(org_id=job.org_id).all()
-                for u in all_org_users:
-                    if u.id not in user_ids_set:
-                        users.append(u)
+            # Team-based assignments
+            team_ids = [
+                pt.team_id
+                for pt in ProjectTeam.query.filter_by(project_id=project.id).all()
+            ]
+            team_user_ids = set()
+            if team_ids:
+                team_user_ids = set(
+                    tu.user_id
+                    for tu in TeamUser.query.filter(TeamUser.team_id.in_(team_ids)).all()
+                )
+
+            # Contributors — users who have tasks on this project
+            contributor_osm_names = set()
+            for row in db.session.query(Task.mapped_by).filter(
+                Task.project_id == project.id, Task.mapped_by != None
+            ).distinct().all():
+                if row[0]:
+                    contributor_osm_names.add(row[0])
+            for row in db.session.query(Task.validated_by).filter(
+                Task.project_id == project.id, Task.validated_by != None
+            ).distinct().all():
+                if row[0]:
+                    contributor_osm_names.add(row[0])
+
+            contributor_user_ids = set()
+            if contributor_osm_names:
+                contributor_user_ids = set(
+                    u.id for u in User.query.filter(
+                        User.osm_username.in_(contributor_osm_names),
+                        User.org_id == job.org_id,
+                    ).all()
+                )
+
+            all_user_ids = direct_ids | team_user_ids | contributor_user_ids
+            users = User.query.filter(User.id.in_(all_user_ids)).all() if all_user_ids else []
 
         total_users = len(users)
         synced = 0
