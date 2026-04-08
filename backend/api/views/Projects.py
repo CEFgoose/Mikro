@@ -898,18 +898,11 @@ class ProjectAPI(MethodView):
 
         # --- Assigned users with per-user stats ---
         assigned_pu = ProjectUser.query.filter_by(project_id=project.id).all()
-        assigned_user_ids = [pu.user_id for pu in assigned_pu]
-
-        # Also include org users if project is visible (they can see & work on it)
-        if project.visibility:
-            all_org_users = User.query.filter_by(org_id=g.user.org_id).all()
-            all_user_ids = list(set(assigned_user_ids + [u.id for u in all_org_users]))
-        else:
-            all_user_ids = assigned_user_ids
+        assigned_user_ids = set(pu.user_id for pu in assigned_pu)
 
         # Per-user task aggregates
         user_task_stats = {}
-        if all_user_ids:
+        if True:
             # Mapping stats
             map_rows = (
                 db.session.query(Task.mapped_by, func.count())
@@ -960,7 +953,20 @@ class ProjectAPI(MethodView):
                 if uid and secs:
                     user_time[uid] = secs
 
-        # Build user list
+        # Build user list — only assigned users + users with actual contributions
+        # Find user IDs that have task stats or time logged
+        osm_usernames_with_stats = set(user_task_stats.keys())
+        user_ids_with_time = set(user_time.keys())
+
+        # Map OSM usernames to user IDs for contributors not in assigned list
+        contributor_users = []
+        if osm_usernames_with_stats:
+            contributor_users = User.query.filter(
+                User.osm_username.in_(osm_usernames_with_stats),
+                User.org_id == g.user.org_id,
+            ).all()
+
+        all_user_ids = assigned_user_ids | user_ids_with_time | {u.id for u in contributor_users}
         users_data = []
         users = User.query.filter(User.id.in_(all_user_ids)).all() if all_user_ids else []
         for u in users:
