@@ -659,6 +659,7 @@ export function TimeTrackingWidget({
               value={selectedProject}
               onChange={setSelectedProject}
               placeholder="Select a project"
+              searchable
             />
           )}
           {renderTaskSelector()}

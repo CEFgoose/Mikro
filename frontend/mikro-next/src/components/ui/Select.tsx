@@ -18,6 +18,7 @@ export interface SelectProps {
   error?: string;
   className?: string;
   label?: string;
+  searchable?: boolean;
 }
 
 const Select = forwardRef<HTMLDivElement, SelectProps>(
@@ -31,13 +32,22 @@ const Select = forwardRef<HTMLDivElement, SelectProps>(
       error,
       className,
       label,
+      searchable = false,
     },
     ref
   ) => {
     const [isOpen, setIsOpen] = useState(false);
+    const [search, setSearch] = useState("");
     const selectRef = useRef<HTMLDivElement>(null);
+    const searchRef = useRef<HTMLInputElement>(null);
 
     const selectedOption = options.find((opt) => opt.value === value);
+
+    const filteredOptions = searchable && search.trim()
+      ? options.filter((opt) =>
+          opt.label.toLowerCase().includes(search.toLowerCase())
+        )
+      : options;
 
     useEffect(() => {
       const handleClickOutside = (event: MouseEvent) => {
@@ -46,6 +56,7 @@ const Select = forwardRef<HTMLDivElement, SelectProps>(
           !selectRef.current.contains(event.target as Node)
         ) {
           setIsOpen(false);
+          setSearch("");
         }
       };
 
@@ -98,26 +109,46 @@ const Select = forwardRef<HTMLDivElement, SelectProps>(
 
           {isOpen && (
             <div className="absolute z-50 mt-1 w-full rounded-lg border border-input bg-background shadow-md">
+              {searchable && (
+                <div className="p-2 border-b border-input">
+                  <input
+                    ref={searchRef}
+                    type="text"
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                    placeholder="Search..."
+                    className="w-full px-2 py-1.5 text-sm rounded border border-input bg-background outline-none focus:ring-1 focus:ring-ring"
+                    autoFocus
+                  />
+                </div>
+              )}
               <div className="max-h-60 overflow-auto py-1">
-                {options.map((option) => (
-                  <button
-                    key={option.value}
-                    type="button"
-                    disabled={option.disabled}
-                    onClick={() => {
-                      onChange?.(option.value);
-                      setIsOpen(false);
-                    }}
-                    className={cn(
-                      "flex w-full items-center px-3 py-2 text-sm",
-                      "hover:bg-accent hover:text-accent-foreground",
-                      "disabled:cursor-not-allowed disabled:opacity-50",
-                      option.value === value && "bg-accent"
-                    )}
-                  >
-                    {option.label}
-                  </button>
-                ))}
+                {filteredOptions.length === 0 ? (
+                  <div className="px-3 py-2 text-sm text-muted-foreground">
+                    No matches
+                  </div>
+                ) : (
+                  filteredOptions.map((option) => (
+                    <button
+                      key={option.value}
+                      type="button"
+                      disabled={option.disabled}
+                      onClick={() => {
+                        onChange?.(option.value);
+                        setIsOpen(false);
+                        setSearch("");
+                      }}
+                      className={cn(
+                        "flex w-full items-center px-3 py-2 text-sm",
+                        "hover:bg-accent hover:text-accent-foreground",
+                        "disabled:cursor-not-allowed disabled:opacity-50",
+                        option.value === value && "bg-accent"
+                      )}
+                    >
+                      {option.label}
+                    </button>
+                  ))
+                )}
               </div>
             </div>
           )}
