@@ -420,6 +420,15 @@ class MapRouletteSync:
         # -----------------------------------------------------------
         # Step 3: Process each actionable task
         # -----------------------------------------------------------
+        # Verbose logging for user-scoped sync
+        user_filter_name = f"{user.osm_username} (id={user.id})" if user else "ALL"
+        current_app.logger.info(
+            f"[SYNC-DEBUG] Processing {len(all_actionable_tasks)} tasks "
+            f"for challenge {challenge_id}, user filter: {user_filter_name}"
+        )
+        skipped_wrong_user = 0
+        skipped_no_mapper = 0
+
         for mr_task in all_actionable_tasks:
             try:
                 mr_task_id = mr_task.get("id")
@@ -440,12 +449,37 @@ class MapRouletteSync:
 
                 # If user filter is set, skip tasks not involving that user
                 if user:
+                    if not mapper_username and not history:
+                        skipped_no_mapper += 1
+                        current_app.logger.debug(
+                            f"[SYNC-DEBUG] Task {mr_task_id}: no history returned, "
+                            f"mapper=None"
+                        )
+                    elif not mapper_username:
+                        skipped_no_mapper += 1
+                        current_app.logger.debug(
+                            f"[SYNC-DEBUG] Task {mr_task_id}: history has "
+                            f"{len(history)} entries but no mapper extracted"
+                        )
+
                     mapper_obj = self._resolve_user(mapper_username)
                     if mapper_obj and mapper_obj.id != user.id:
                         # Also check if user is the reviewer
                         reviewer_obj = self._resolve_user(reviewer_username)
                         if not reviewer_obj or reviewer_obj.id != user.id:
+                            skipped_wrong_user += 1
                             continue
+
+                    # Log what we're seeing for this user
+                    if mapper_username:
+                        resolved = "MATCHED" if (mapper_obj and mapper_obj.id == user.id) else (
+                            f"RESOLVED to {mapper_obj.osm_username} (id={mapper_obj.id})" if mapper_obj else
+                            f"NOT FOUND in Mikro"
+                        )
+                        current_app.logger.info(
+                            f"[SYNC-DEBUG] Task {mr_task_id}: MR mapper='{mapper_username}', "
+                            f"user filter='{user.osm_username}', resolve={resolved}"
+                        )
 
                 # -------------------------------------------------
                 # Step 4: Create or update Task record
@@ -497,7 +531,11 @@ class MapRouletteSync:
 
                 else:
                     # Task exists — update mapper if we now have a valid one
-                    # (fixes tasks stuck with mapped_by="unknown" from failed fetches)
+                    current_app.logger.debug(
+                        f"[SYNC-DEBUG] Task {mr_task_id} EXISTS: "
+                        f"mapped_by='{task_record.mapped_by}', "
+                        f"new mapper='{mapper_username}'"
+                    )
                     if mapper_username and task_record.mapped_by in (None, "", "unknown"):
                         task_record.mapped_by = mapper_username
                         task_record.update()
@@ -590,6 +628,14 @@ class MapRouletteSync:
             f"invalidated={stats['tasks_invalidated']}, "
             f"errors={stats['errors']}"
         )
+        if user:
+            current_app.logger.info(
+                f"[SYNC-DEBUG] User filter summary for '{user.osm_username}': "
+                f"total_actionable={len(all_actionable_tasks)}, "
+                f"skipped_wrong_user={skipped_wrong_user}, "
+                f"skipped_no_mapper={skipped_no_mapper}, "
+                f"processed={stats['tasks_processed']}"
+            )
 
         return {"message": "sync complete", **stats}
 
