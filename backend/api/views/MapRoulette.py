@@ -658,6 +658,16 @@ class MapRouletteSync:
         if not history:
             return None
 
+        # Dump first task's full history for debugging
+        if not hasattr(self, '_dumped_sample') or not self._dumped_sample:
+            import json
+            current_app.logger.info(
+                f"[SYNC-DEBUG] SAMPLE HISTORY for task {mr_task_id} "
+                f"(target_status={target_status}): "
+                f"{json.dumps(history[:3], default=str)[:2000]}"
+            )
+            self._dumped_sample = True
+
         for action in history:
             try:
                 action_type = action.get("actionType")
