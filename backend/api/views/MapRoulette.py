@@ -495,6 +495,27 @@ class MapRouletteSync:
                         f"for challenge {challenge_id}, mapper={mapper_username}"
                     )
 
+                else:
+                    # Task exists — update mapper if we now have a valid one
+                    # (fixes tasks stuck with mapped_by="unknown" from failed fetches)
+                    if mapper_username and task_record.mapped_by in (None, "", "unknown"):
+                        task_record.mapped_by = mapper_username
+                        task_record.update()
+                        # Also create UserTasks link if missing
+                        mapper = self._resolve_user(mapper_username)
+                        if mapper:
+                            existing_link = UserTasks.query.filter_by(
+                                user_id=mapper.id, task_id=task_record.id
+                            ).first()
+                            if not existing_link:
+                                UserTasks.create(
+                                    user_id=mapper.id, task_id=task_record.id
+                                )
+                        current_app.logger.info(
+                            f"Updated MR task {mr_task_id} mapper: "
+                            f"unknown -> {mapper_username}"
+                        )
+
                 # -------------------------------------------------
                 # Step 5: Process review status (validation/invalidation)
                 # -------------------------------------------------
