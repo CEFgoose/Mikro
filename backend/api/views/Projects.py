@@ -351,26 +351,10 @@ class ProjectAPI(MethodView):
             if mapping_rate < 0.01 or validation_rate < 0.01:
                 return {"message": "Rate per task insufficient when payments enabled", "status": 400}
 
-        # Try to fetch challenge metadata, but don't block on failure
-        mr_data = None
-        needs_backfill = False
-        try:
-            mr_data = MapRouletteSync().fetch_challenge_metadata(challenge_id)
-        except Exception as e:
-            current_app.logger.error(f"MR API error during create (will backfill): {e}")
-
-        if mr_data:
-            project_name = mr_data.get("name", f"MR Challenge {challenge_id}")
-            total_tasks = mr_data.get("task_count", 0)
-        else:
-            # MR API timed out or failed — create with defaults, backfill later
-            project_name = f"MR Challenge {challenge_id}"
-            total_tasks = 0
-            needs_backfill = True
-            current_app.logger.info(
-                f"Creating MR project {challenge_id} with defaults — "
-                f"queuing metadata backfill"
-            )
+        # Create project immediately with defaults — metadata fetched by
+        # background worker (MR API is too slow/unreliable for web requests)
+        project_name = f"MR Challenge {challenge_id}"
+        total_tasks = 0
 
         # Calculate budget
         if rate_type is True:
@@ -403,20 +387,16 @@ class ProjectAPI(MethodView):
 
         _auto_assign_country(challenge_id, parsed_country)
 
-        # Queue background metadata backfill if MR API failed
-        if needs_backfill:
-            from api.database import SyncJob
-            SyncJob.create(
-                org_id=g.user.org_id,
-                status="queued",
-                job_type="mr_metadata_backfill",
-                target_id=challenge_id,
-            )
+        # Queue background metadata backfill (name + task count from MR API)
+        from api.database import SyncJob
+        SyncJob.create(
+            org_id=g.user.org_id,
+            status="queued",
+            job_type="mr_metadata_backfill",
+            target_id=challenge_id,
+        )
 
-        msg = "Project created"
-        if needs_backfill:
-            msg += " (name and task count will update shortly)"
-        return {"message": msg, "project_id": challenge_id, "status": 200}
+        return {"message": "Project created — metadata loading in background", "project_id": challenge_id, "status": 200}
 
     @requires_admin
     def update_project(self):
