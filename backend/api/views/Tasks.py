@@ -706,14 +706,34 @@ class TaskAPI(MethodView):
             (Project.id.in_(assigned_project_ids)) | (Project.visibility == True)
         ).all()
 
-        # Process all projects (TM4 only - TM3 support removed)
-        for project in user_projects:
-            if project.source == "mr":
-                MapRouletteSync().sync_challenge_tasks(project, g.user)
-            else:
-                self.TM4_payment_call(project.id, g.user)
+        # Queue background sync jobs instead of running inline
+        # (MR syncs can take minutes and kill the gunicorn worker)
+        org_id = g.user.org_id
+        user_id = g.user.id
 
-        return {"message": "updated", "status": 200}
+        # Clear stale jobs first
+        stale = SyncJob.query.filter(
+            SyncJob.org_id == org_id,
+            SyncJob.status.in_(["running", "queued"]),
+        ).all()
+        for sj in stale:
+            sj.status = "failed"
+            sj.error = "Cleared by update_user_tasks"
+        if stale:
+            db.session.commit()
+
+        queued = 0
+        for project in user_projects:
+            SyncJob.create(
+                org_id=org_id,
+                status="queued",
+                job_type="project_sync",
+                target_id=project.id,
+                progress=f"user:{user_id}",
+            )
+            queued += 1
+
+        return {"message": f"Sync queued for {queued} project(s)", "status": 200}
 
     @requires_admin
     def admin_update_all_user_tasks(self):
