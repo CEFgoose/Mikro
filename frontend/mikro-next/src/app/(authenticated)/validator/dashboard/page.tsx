@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useUser } from "@auth0/nextjs-auth0/client";
-import { Card, CardContent, CardHeader, CardTitle, Skeleton, Badge, Button } from "@/components/ui";
+import { Card, CardContent, CardHeader, CardTitle, Skeleton, Badge, Button, Val } from "@/components/ui";
 import { useToastActions } from "@/components/ui";
 import { TimeTrackingWidget } from "@/components/widgets/TimeTrackingWidget";
 import { UserTimeHistory } from "@/components/widgets/UserTimeHistory";
@@ -142,7 +142,7 @@ export default function ValidatorDashboard() {
             </p>
           </div>
           <p className="text-sm text-yellow-700 dark:text-yellow-300">
-            {formatNumber(stats.self_validated_count)} task(s) you validated were mapped by you and are not eligible for payment.
+            {formatNumber(stats.self_validated_count).text} task(s) you validated were mapped by you and are not eligible for payment.
           </p>
         </div>
       )}
@@ -162,7 +162,7 @@ export default function ValidatorDashboard() {
             ) : (
               <>
                 <div className="text-2xl font-bold text-kaart-orange">
-                  {formatNumber(stats?.tasks_mapped ?? 0)}
+                  <Val>{formatNumber(stats?.tasks_mapped)}</Val>
                 </div>
                 <p className="text-xs text-muted-foreground">
                   Your mapping contributions
@@ -185,10 +185,10 @@ export default function ValidatorDashboard() {
             ) : (
               <>
                 <div className="text-2xl font-bold text-green-600">
-                  {formatNumber(stats?.tasks_validated ?? 0)}
+                  <Val>{formatNumber(stats?.tasks_validated)}</Val>
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  {formatNumber(stats?.tasks_invalidated ?? 0)} invalidated
+                  <Val>{formatNumber(stats?.tasks_invalidated)}</Val> invalidated
                 </p>
               </>
             )}
@@ -211,7 +211,7 @@ export default function ValidatorDashboard() {
               ) : (
                 <>
                   <div className="text-2xl font-bold">
-                    {formatCurrency(payable?.payable_total ?? stats?.payable_total ?? 0)}
+                    <Val>{formatCurrency(payable?.payable_total ?? stats?.payable_total)}</Val>
                   </div>
                   <p className="text-xs text-muted-foreground">
                     {(stats?.requests_total ?? 0) > 0 ? "Request pending" : "Available for payout"}
@@ -261,7 +261,7 @@ export default function ValidatorDashboard() {
               ) : (
                 <>
                   <div className="text-2xl font-bold text-blue-600">
-                    {formatNumber(stats?.validator_validated ?? 0)}
+                    <Val>{formatNumber(stats?.validator_validated)}</Val>
                   </div>
                   <p className="text-xs text-muted-foreground">
                     Tasks approved by you
@@ -284,7 +284,7 @@ export default function ValidatorDashboard() {
               ) : (
                 <>
                   <div className="text-2xl font-bold text-purple-600">
-                    {formatNumber(stats?.validator_invalidated ?? 0)}
+                    <Val>{formatNumber(stats?.validator_invalidated)}</Val>
                   </div>
                   <p className="text-xs text-muted-foreground">
                     Sent back for fixes
@@ -308,7 +308,7 @@ export default function ValidatorDashboard() {
                 ) : (
                   <>
                     <div className="text-2xl font-bold text-green-600">
-                      {formatCurrency(stats?.calculated_validation_earnings ?? stats?.validation_payable_total ?? 0)}
+                      <Val>{formatCurrency(stats?.calculated_validation_earnings ?? stats?.validation_payable_total)}</Val>
                     </div>
                     <p className="text-xs text-muted-foreground">
                       From validation work
@@ -330,7 +330,7 @@ export default function ValidatorDashboard() {
               <Skeleton className="h-6 w-20" />
             ) : (
               <div style={{ fontSize: 20, fontWeight: 700, color: "#ff6b35" }}>
-                {formatCurrency(payable?.mapping_earnings ?? stats?.mapping_payable_total ?? 0)}
+                <Val>{formatCurrency(payable?.mapping_earnings ?? stats?.mapping_payable_total)}</Val>
               </div>
             )}
           </div>
@@ -343,7 +343,7 @@ export default function ValidatorDashboard() {
               <Skeleton className="h-6 w-20" />
             ) : (
               <div style={{ fontSize: 20, fontWeight: 700, color: "#2563eb" }}>
-                {formatCurrency(payable?.validation_earnings ?? stats?.validation_payable_total ?? 0)}
+                <Val>{formatCurrency(payable?.validation_earnings ?? stats?.validation_payable_total)}</Val>
               </div>
             )}
           </div>
@@ -356,7 +356,7 @@ export default function ValidatorDashboard() {
               <Skeleton className="h-6 w-20" />
             ) : (
               <div style={{ fontSize: 20, fontWeight: 700, color: "#ca8a04" }}>
-                {formatCurrency(stats?.requests_total ?? 0)}
+                <Val>{formatCurrency(stats?.requests_total)}</Val>
               </div>
             )}
           </div>
@@ -369,7 +369,7 @@ export default function ValidatorDashboard() {
               <Skeleton className="h-6 w-20" />
             ) : (
               <div style={{ fontSize: 20, fontWeight: 700, color: "#16a34a" }}>
-                {formatCurrency(stats?.paid_total ?? stats?.payouts_total ?? 0)}
+                <Val>{formatCurrency(stats?.paid_total ?? stats?.payouts_total)}</Val>
               </div>
             )}
           </div>
@@ -419,7 +419,7 @@ export default function ValidatorDashboard() {
                         >
                           #{project.id}
                         </a>
-                        {" "}&bull; {formatNumber(project.total_tasks)} tasks
+                        {" "}&bull; {formatNumber(project.total_tasks).text} tasks
                       </p>
                     </div>
                     <div className="flex items-center gap-2">
@@ -435,7 +435,7 @@ export default function ValidatorDashboard() {
                             : "destructive"
                         }
                       >
-                        {project.difficulty || "Unknown"}
+                        <Val fallback="Unknown">{project.difficulty}</Val>
                       </Badge>
                     </div>
                   </div>
@@ -467,19 +467,19 @@ export default function ValidatorDashboard() {
                       </p>
                     </div>
                     <p className="text-sm text-yellow-700 dark:text-yellow-300">
-                      You have a pending request for {formatCurrency(stats?.requests_total ?? 0)}.
+                      You have a pending request for {formatCurrency(stats?.requests_total).text}.
                       You can submit a new request after this one is processed.
                     </p>
                     {(payable?.payable_total ?? 0) > 0 && (
                       <p className="text-sm text-yellow-600 dark:text-yellow-400 mt-2">
-                        Additional earnings: {formatCurrency(payable?.payable_total ?? 0)}
+                        Additional earnings: {formatCurrency(payable?.payable_total).text}
                       </p>
                     )}
                   </div>
                 ) : (payable?.payable_total ?? stats?.payable_total ?? 0) > 0 ? (
                   <div className="rounded-lg bg-green-50 dark:bg-green-950 p-4">
                     <p className="font-medium text-green-800 dark:text-green-200">
-                      You have {formatCurrency(payable?.payable_total ?? stats?.payable_total ?? 0)} available!
+                      You have {formatCurrency(payable?.payable_total ?? stats?.payable_total).text} available!
                     </p>
                     <Button
                       variant="primary"
@@ -571,13 +571,13 @@ export default function ValidatorDashboard() {
                         {project.name}
                       </Link>
                     </td>
-                    {paymentsVisible && <td className="px-2 py-2">{formatCurrency(project.mapping_rate_per_task)}</td>}
-                    {paymentsVisible && <td className="px-2 py-2">{formatCurrency(project.validation_rate_per_task)}</td>}
-                    <td className="px-2 py-2">{formatNumber(project.total_tasks)}</td>
-                    <td className="px-2 py-2">{formatNumber(project.tasks_mapped ?? 0)}</td>
-                    <td className="px-2 py-2">{formatNumber(project.tasks_validated ?? 0)}</td>
+                    {paymentsVisible && <td className="px-2 py-2"><Val>{formatCurrency(project.mapping_rate_per_task)}</Val></td>}
+                    {paymentsVisible && <td className="px-2 py-2"><Val>{formatCurrency(project.validation_rate_per_task)}</Val></td>}
+                    <td className="px-2 py-2"><Val>{formatNumber(project.total_tasks)}</Val></td>
+                    <td className="px-2 py-2"><Val>{formatNumber(project.tasks_mapped)}</Val></td>
+                    <td className="px-2 py-2"><Val>{formatNumber(project.tasks_validated)}</Val></td>
                     {paymentsVisible && <td className="px-2 py-2 text-kaart-orange font-medium">
-                      {formatCurrency(project.user_earnings ?? 0)}
+                      <Val>{formatCurrency(project.user_earnings)}</Val>
                     </td>}
                     <td className="px-2 py-2">
                       {(project as Project & { unassigned?: boolean }).unassigned ? (

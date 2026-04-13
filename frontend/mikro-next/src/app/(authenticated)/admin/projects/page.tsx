@@ -50,6 +50,7 @@ import {
 } from "@/hooks";
 import Link from "next/link";
 import { formatNumber, formatCurrency, getProjectExternalUrl } from "@/lib/utils";
+import { Val } from "@/components/ui";
 import type { Project, ProjectTeamItem, TeamsResponse } from "@/types";
 
 interface ProjectUserItem {
@@ -607,7 +608,7 @@ export default function AdminProjectsPage() {
               {project.total_tasks === 0 && !project.last_synced ? (
                 <span className="text-muted-foreground italic text-sm" title="Tasks haven't been synced from the source yet">Pending sync</span>
               ) : (
-                formatNumber(project.total_tasks)
+                <Val>{formatNumber(project.total_tasks)}</Val>
               )}
             </TableCell>
             <TableCell>
@@ -615,17 +616,17 @@ export default function AdminProjectsPage() {
                 <span className="text-muted-foreground italic text-sm">—</span>
               ) : project.source === "mr" ? (
                 <div className="text-sm space-y-0.5">
-                  <p className="text-green-600">{formatNumber(project.mr_status_breakdown?.["1"] ?? 0)} Fixed</p>
-                  <p className="text-emerald-500">{formatNumber(project.mr_status_breakdown?.["5"] ?? 0)} Already Fixed</p>
-                  <p className="text-amber-600">{formatNumber(project.mr_status_breakdown?.["2"] ?? 0)} Not an Issue</p>
-                  <p className="text-orange-500">{formatNumber(project.mr_status_breakdown?.["6"] ?? 0)} Can&apos;t Complete</p>
-                  <p className="text-gray-400">{formatNumber(project.mr_status_breakdown?.["3"] ?? 0)} Skipped</p>
+                  <p className="text-green-600"><Val>{formatNumber(project.mr_status_breakdown?.["1"] ?? 0)}</Val> Fixed</p>
+                  <p className="text-emerald-500"><Val>{formatNumber(project.mr_status_breakdown?.["5"] ?? 0)}</Val> Already Fixed</p>
+                  <p className="text-amber-600"><Val>{formatNumber(project.mr_status_breakdown?.["2"] ?? 0)}</Val> Not an Issue</p>
+                  <p className="text-orange-500"><Val>{formatNumber(project.mr_status_breakdown?.["6"] ?? 0)}</Val> Can&apos;t Complete</p>
+                  <p className="text-gray-400"><Val>{formatNumber(project.mr_status_breakdown?.["3"] ?? 0)}</Val> Skipped</p>
                 </div>
               ) : (
                 <div className="text-sm">
-                  <p className="text-green-600">{formatNumber(project.total_mapped)} mapped</p>
-                  <p className="text-blue-600">{formatNumber(project.total_validated)} validated</p>
-                  <p className="text-red-600">{formatNumber(project.total_invalidated)} invalidated</p>
+                  <p className="text-green-600"><Val>{formatNumber(project.total_mapped)}</Val> mapped</p>
+                  <p className="text-blue-600"><Val>{formatNumber(project.total_validated)}</Val> validated</p>
+                  <p className="text-red-600"><Val>{formatNumber(project.total_invalidated)}</Val> invalidated</p>
                 </div>
               )}
             </TableCell>
@@ -645,16 +646,16 @@ export default function AdminProjectsPage() {
                 <Badge variant="secondary">Stats Only</Badge>
               ) : (
                 <div className="text-sm">
-                  <p>Map: {formatCurrency(project.mapping_rate_per_task)}</p>
-                  <p>Val: {formatCurrency(project.validation_rate_per_task)}</p>
+                  <p>Map: <Val>{formatCurrency(project.mapping_rate_per_task)}</Val></p>
+                  <p>Val: <Val>{formatCurrency(project.validation_rate_per_task)}</Val></p>
                 </div>
               )}
             </TableCell>
             <TableCell>
               <div className="text-sm">
-                <p>Max: {formatCurrency(project.max_payment ?? 0)}</p>
+                <p>Max: <Val>{formatCurrency(project.max_payment)}</Val></p>
                 <p className="text-muted-foreground">
-                  Paid: {formatCurrency(project.total_payout ?? 0)}
+                  Paid: <Val>{formatCurrency(project.total_payout)}</Val>
                 </p>
               </div>
             </TableCell>
@@ -777,7 +778,7 @@ export default function AdminProjectsPage() {
             <CardTitle className="text-sm font-medium">Active Projects</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-green-600">{formatNumber(activeProjects.length)}</div>
+            <div className="text-2xl font-bold text-green-600"><Val>{formatNumber(activeProjects.length)}</Val></div>
           </CardContent>
         </Card>
         <Card>
@@ -785,7 +786,7 @@ export default function AdminProjectsPage() {
             <CardTitle className="text-sm font-medium">Inactive Projects</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-yellow-600">{formatNumber(inactiveProjects.length)}</div>
+            <div className="text-2xl font-bold text-yellow-600"><Val>{formatNumber(inactiveProjects.length)}</Val></div>
           </CardContent>
         </Card>
         <Card>
@@ -794,7 +795,7 @@ export default function AdminProjectsPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {formatNumber([...activeProjects, ...inactiveProjects].reduce((sum, p) => sum + p.total_tasks, 0))}
+              <Val>{formatNumber([...activeProjects, ...inactiveProjects].reduce((sum, p) => sum + p.total_tasks, 0))}</Val>
             </div>
           </CardContent>
         </Card>
@@ -810,11 +811,11 @@ export default function AdminProjectsPage() {
               return (
                 <div className="flex items-baseline gap-3">
                   <div>
-                    <span className="text-2xl font-bold">{formatNumber(tm4)}</span>
+                    <span className="text-2xl font-bold"><Val>{formatNumber(tm4)}</Val></span>
                     <Badge variant="secondary" className="ml-1 text-[10px]">TM4</Badge>
                   </div>
                   <div>
-                    <span className="text-2xl font-bold">{formatNumber(mr)}</span>
+                    <span className="text-2xl font-bold"><Val>{formatNumber(mr)}</Val></span>
                     <Badge variant="default" className="ml-1 text-[10px] bg-blue-500">MR</Badge>
                   </div>
                 </div>

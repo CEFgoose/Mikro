@@ -8,6 +8,7 @@ import {
   CardHeader,
   CardTitle,
   useToastActions,
+  Val,
 } from "@/components/ui";
 import {
   useSaveWeeklyReport,
@@ -661,7 +662,7 @@ export default function WeeklyReportBuilderPage() {
                   return (
                     <div key={label} className="border border-border rounded-lg p-3 text-center">
                       <p className="text-xs text-muted-foreground">{label}</p>
-                      <p className="text-lg font-bold">{typeof current === "number" ? formatNumber(Math.round(current * 10) / 10) : current}</p>
+                      <p className="text-lg font-bold">{typeof current === "number" ? <Val>{formatNumber(Math.round(current * 10) / 10)}</Val> : current}</p>
                       {delta !== null && (
                         <p className={`text-xs font-medium ${delta >= 0 ? "text-green-600" : "text-red-600"}`}>
                           {delta >= 0 ? "\u25B2" : "\u25BC"} {Math.abs(delta).toFixed(1)}% vs prior
@@ -855,7 +856,7 @@ export default function WeeklyReportBuilderPage() {
                             </a>
                           </td>
                           <td className="border border-border px-2 py-1 text-center">
-                            {formatNumber(p.total_tasks)}
+                            <Val>{formatNumber(p.total_tasks)}</Val>
                           </td>
                           <td className="border border-border px-2 py-1 text-center">
                             {pctMapped}%
@@ -1079,7 +1080,7 @@ export default function WeeklyReportBuilderPage() {
                       <p className="text-sm font-medium">{d.title}</p>
                       <p className="text-xs text-muted-foreground">
                         {d.start_date} to {d.end_date} &middot; Updated{" "}
-                        {d.updated_at ? new Date(d.updated_at).toLocaleDateString() : "—"}
+                        <Val>{d.updated_at ? new Date(d.updated_at).toLocaleDateString() : null}</Val>
                       </p>
                     </div>
                     <div className="flex items-center gap-2">

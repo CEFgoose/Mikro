@@ -13,6 +13,7 @@ import {
   TableRow,
   TableCell,
   Skeleton,
+  Val,
 } from "@/components/ui";
 import { useToastActions } from "@/components/ui";
 import { useMyTimeHistory, useRequestTimeAdjustment, useUserProjects } from "@/hooks";
@@ -297,7 +298,7 @@ export default function UserTimePage() {
           <div style={{ padding: "12px 16px" }}>
             <p style={{ fontSize: 12, color: "#6b7280", marginBottom: 4 }}>Total Hours</p>
             <div style={{ fontSize: 20, fontWeight: 700, color: "#ff6b35" }}>
-              {formatNumber(stats.totalHours)}h
+              {formatNumber(stats.totalHours).text}h
             </div>
             <p style={{ fontSize: 11, color: "#6b7280", marginTop: 4 }}>All time</p>
           </div>
@@ -307,7 +308,7 @@ export default function UserTimePage() {
           <div style={{ padding: "12px 16px" }}>
             <p style={{ fontSize: 12, color: "#6b7280", marginBottom: 4 }}>This Month</p>
             <div style={{ fontSize: 20, fontWeight: 700, color: "#2563eb" }}>
-              {formatNumber(stats.thisMonthHours)}h
+              {formatNumber(stats.thisMonthHours).text}h
             </div>
             <p style={{ fontSize: 11, color: "#6b7280", marginTop: 4 }}>
               {new Date().toLocaleDateString("en-US", { month: "long", year: "numeric" })}
@@ -319,7 +320,7 @@ export default function UserTimePage() {
           <div style={{ padding: "12px 16px" }}>
             <p style={{ fontSize: 12, color: "#6b7280", marginBottom: 4 }}>Pending Adjustments</p>
             <div style={{ fontSize: 20, fontWeight: 700, color: stats.pendingAdjustments > 0 ? "#ca8a04" : "#16a34a" }}>
-              {formatNumber(stats.pendingAdjustments)}
+              <Val>{formatNumber(stats.pendingAdjustments)}</Val>
             </div>
             <p style={{ fontSize: 11, color: "#6b7280", marginTop: 4 }}>
               {stats.pendingAdjustments > 0 ? "Awaiting review" : "No pending requests"}
@@ -394,13 +395,13 @@ export default function UserTimePage() {
                       {entry.clockIn ? formatDateDisplay(entry.clockIn) : "--"}
                     </TableCell>
                     <TableCell className={`max-w-[120px] truncate ${isVoided ? "line-through" : ""}`}>
-                      {entry.projectName || "--"}
+                      <Val fallback="--">{entry.projectName}</Val>
                     </TableCell>
                     <TableCell>
-                      <Badge variant="secondary">{entry.category || "--"}</Badge>
+                      <Badge variant="secondary"><Val fallback="--">{entry.category}</Val></Badge>
                     </TableCell>
                     <TableCell className="max-w-[120px] truncate text-muted-foreground">
-                      {entry.taskName || "—"}
+                      <Val>{entry.taskName}</Val>
                     </TableCell>
                     <TableCell className={`whitespace-nowrap text-muted-foreground ${isVoided ? "line-through" : ""}`}>
                       {entry.clockIn ? formatTime(entry.clockIn) : "--"}
@@ -514,8 +515,8 @@ export default function UserTimePage() {
       {totalEntries > 0 && (
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <p className="text-sm text-muted-foreground">
-            Showing {formatNumber(showingFrom)}-{formatNumber(showingTo)} of{" "}
-            {formatNumber(totalEntries)}
+            Showing {formatNumber(showingFrom).text}-{formatNumber(showingTo).text} of{" "}
+            {formatNumber(totalEntries).text}
           </p>
           <div style={{ display: "flex", gap: 8 }}>
             <Button

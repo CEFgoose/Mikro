@@ -16,6 +16,7 @@ import {
   TableHead,
   TableRow,
   TableCell,
+  Val,
 } from "@/components/ui";
 import { useToastActions } from "@/components/ui";
 import { formatNumber } from "@/lib/utils";
@@ -405,7 +406,7 @@ export default function AdminRegionsPage() {
                     <div>
                       <p className="font-medium">{region.name}</p>
                       <p className="text-sm text-muted-foreground">
-                        {formatNumber(region.countries.length)} {region.countries.length === 1 ? "country" : "countries"}
+                        <Val>{formatNumber(region.countries.length)}</Val> {region.countries.length === 1 ? "country" : "countries"}
                       </p>
                     </div>
                     <div className="flex gap-1" onClick={(e) => e.stopPropagation()}>
@@ -479,10 +480,10 @@ export default function AdminRegionsPage() {
                         </TableCell>
                         <TableCell>{country.iso_code}</TableCell>
                         <TableCell className="text-muted-foreground">
-                          {country.default_timezone || "—"}
+                          <Val>{country.default_timezone}</Val>
                         </TableCell>
                         <TableCell className="text-center">
-                          {formatNumber(country.user_count)}
+                          <Val>{formatNumber(country.user_count)}</Val>
                         </TableCell>
                         <TableCell className="text-right">
                           <div className="flex justify-end gap-1">

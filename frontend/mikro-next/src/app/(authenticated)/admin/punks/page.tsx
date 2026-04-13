@@ -19,6 +19,7 @@ import {
   TableRow,
   TableCell,
   Skeleton,
+  Val,
 } from "@/components/ui";
 import { useToastActions } from "@/components/ui";
 import {
@@ -293,7 +294,7 @@ export default function AdminPunksPage() {
             <CardTitle className="text-sm font-medium">Total Listed</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{formatNumber(punks.length)}</div>
+            <div className="text-2xl font-bold"><Val>{formatNumber(punks.length)}</Val></div>
           </CardContent>
         </Card>
         <Card>
@@ -302,7 +303,7 @@ export default function AdminPunksPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-kaart-orange">
-              {formatNumber(activeLast7Days)}
+              <Val>{formatNumber(activeLast7Days)}</Val>
             </div>
           </CardContent>
         </Card>
@@ -312,11 +313,11 @@ export default function AdminPunksPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-red-600">
-              {mostActive?.osm_username ?? "\u2014"}
+              <Val>{mostActive?.osm_username}</Val>
             </div>
             {mostActive?.cached_total_changesets != null && (
               <p className="text-xs text-muted-foreground">
-                {formatNumber(mostActive.cached_total_changesets)} changesets
+                <Val>{formatNumber(mostActive.cached_total_changesets)}</Val> changesets
               </p>
             )}
           </CardContent>
@@ -360,11 +361,11 @@ export default function AdminPunksPage() {
                     </Link>
                   </TableCell>
                   <TableCell className="text-muted-foreground max-w-[200px] truncate">
-                    {punk.notes
+                    <Val>{punk.notes
                       ? punk.notes.length > 60
                         ? `${punk.notes.slice(0, 60)}...`
                         : punk.notes
-                      : "\u2014"}
+                      : null}</Val>
                   </TableCell>
                   <TableCell>
                     <div className="flex flex-wrap gap-1">
@@ -376,16 +377,14 @@ export default function AdminPunksPage() {
                     </div>
                   </TableCell>
                   <TableCell className="text-sm text-muted-foreground">
-                    {punk.added_by_name || "\u2014"}
+                    <Val>{punk.added_by_name}</Val>
                   </TableCell>
                   <TableCell>{formatDate(punk.created_at)}</TableCell>
                   <TableCell>
                     {punk.cached_last_active ? formatDate(punk.cached_last_active) : "Never"}
                   </TableCell>
                   <TableCell>
-                    {punk.cached_total_changesets != null
-                      ? formatNumber(punk.cached_total_changesets)
-                      : "\u2014"}
+                    <Val>{formatNumber(punk.cached_total_changesets)}</Val>
                   </TableCell>
                   <TableCell className="text-right">
                     <div className="flex justify-end gap-2">

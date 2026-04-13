@@ -22,6 +22,8 @@ import {
   TableRow,
   TableCell,
   useToastActions,
+  Val,
+  StatCard,
 } from "@/components/ui";
 import { usePunkDetail, useRefreshPunkActivity, useToggleDiscussionFlag, usePurgeAllDiscussions } from "@/hooks";
 import type { PunkDetailResponse } from "@/types";
@@ -30,26 +32,6 @@ import { formatNumber } from "@/lib/utils";
 const MappingHeatmap = dynamic(() => import("@/components/MappingHeatmap"), {
   ssr: false,
 });
-
-function StatCard({
-  label,
-  value,
-  sub,
-}: {
-  label: string;
-  value: string | number;
-  sub?: string;
-}) {
-  return (
-    <Card>
-      <CardContent className="p-4 text-center">
-        <p className="text-sm text-muted-foreground">{label}</p>
-        <p className="text-2xl font-bold mt-1">{value}</p>
-        {sub && <p className="text-xs text-muted-foreground mt-1">{sub}</p>}
-      </CardContent>
-    </Card>
-  );
-}
 
 function formatDate(dateString: string): string {
   return new Date(dateString).toLocaleDateString("en-US", {
@@ -254,7 +236,7 @@ export default function PunkDetailPage() {
 
           <div className="flex flex-wrap gap-4 text-xs text-muted-foreground">
             <span>
-              Added by {punk.added_by_name || punk.added_by} on{" "}
+              Added by <Val>{punk.added_by_name || punk.added_by}</Val> on{" "}
               {formatDate(punk.created_at)}
             </span>
             <span>
@@ -294,7 +276,7 @@ export default function PunkDetailPage() {
         <StatCard
           label="Cached Changes"
           value={formatNumber(cachedChangesTotal)}
-          sub={`from ${formatNumber(changesets.length)} changesets`}
+          sub={`from ${formatNumber(changesets.length).text} changesets`}
         />
       </div>
 
@@ -302,10 +284,10 @@ export default function PunkDetailPage() {
       <Tabs defaultValue="heatmap">
         <TabsList>
           <TabsTrigger value="heatmap">Heatmap</TabsTrigger>
-          <TabsTrigger value="changesets">Changesets ({formatNumber(changesets.length)})</TabsTrigger>
+          <TabsTrigger value="changesets">Changesets ({formatNumber(changesets.length).text})</TabsTrigger>
           <TabsTrigger value="discussions">Discussions ({data.discussions?.length ?? 0})</TabsTrigger>
           {sortedHashtags.length > 0 && (
-            <TabsTrigger value="hashtags">Hashtags ({formatNumber(sortedHashtags.length)})</TabsTrigger>
+            <TabsTrigger value="hashtags">Hashtags ({formatNumber(sortedHashtags.length).text})</TabsTrigger>
           )}
         </TabsList>
 
@@ -357,13 +339,13 @@ export default function PunkDetailPage() {
                             </a>
                           </TableCell>
                           <TableCell className="max-w-xs truncate text-muted-foreground">
-                            {cs.comment || "\u2014"}
+                            <Val>{cs.comment}</Val>
                           </TableCell>
                           <TableCell className="whitespace-nowrap">
-                            {cs.editor || "\u2014"}
+                            <Val>{cs.editor}</Val>
                           </TableCell>
                           <TableCell className="text-right">
-                            {formatNumber(cs.changes_count)}
+                            <Val>{formatNumber(cs.changes_count)}</Val>
                           </TableCell>
                         </TableRow>
                       ))}
@@ -502,7 +484,7 @@ export default function PunkDetailPage() {
                 <div className="flex flex-wrap gap-2">
                   {sortedHashtags.map(([tag, count]) => (
                     <Badge key={tag} variant="secondary">
-                      #{tag} ({formatNumber(count)})
+                      #{tag} ({formatNumber(count).text})
                     </Badge>
                   ))}
                 </div>

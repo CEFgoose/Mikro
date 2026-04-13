@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
-import { Card, CardContent, CardHeader, CardTitle, Skeleton, Badge, Button, useToastActions, Tooltip } from "@/components/ui";
+import { Card, CardContent, CardHeader, CardTitle, Skeleton, Badge, Button, useToastActions, Tooltip, Val } from "@/components/ui";
 import { useAdminDashboardStats, useOrgTransactions, useUsersList, useOrgProjects, usePurgeTaskStats, useAdminSyncAllTasks, useCheckSyncStatus, useAdminTimeHistory, useAdminActiveSessions } from "@/hooks";
 import { TimeTrackingWidget } from "@/components/widgets/TimeTrackingWidget";
 import { AdminTimeManagement } from "@/components/widgets/AdminTimeManagement";
@@ -189,9 +189,9 @@ function DashboardStats() {
               <Skeleton className="h-8 w-16" />
             ) : (
               <>
-                <div className="text-2xl font-bold">{formatNumber(stats?.active_projects ?? 0)}</div>
+                <div className="text-2xl font-bold"><Val>{formatNumber(stats?.active_projects)}</Val></div>
                 <p className="text-xs text-muted-foreground">
-                  {formatNumber(stats?.inactive_projects ?? 0)} inactive, {formatNumber(stats?.completed_projects ?? 0)} completed
+                  <Val>{formatNumber(stats?.inactive_projects)}</Val> inactive, <Val>{formatNumber(stats?.completed_projects)}</Val> completed
                 </p>
               </>
             )}
@@ -223,7 +223,7 @@ function DashboardStats() {
               <Skeleton className="h-8 w-16" />
             ) : (
               <>
-                <div className="text-2xl font-bold">{formatNumber(users?.users?.length ?? 0)}</div>
+                <div className="text-2xl font-bold"><Val>{formatNumber(users?.users?.length ?? 0)}</Val></div>
                 <p className="text-xs text-muted-foreground">
                   In organization
                 </p>
@@ -256,11 +256,11 @@ function DashboardStats() {
             ) : (
               <>
                 <div className="text-2xl font-bold">
-                  {formatNumber(stats?.total_contributions_for_month ?? 0)}
+                  <Val>{formatNumber(stats?.total_contributions_for_month)}</Val>
                 </div>
                 <p className="text-xs text-muted-foreground">
                   {stats?.month_contribution_change !== undefined && stats.month_contribution_change >= 0 ? "+" : ""}
-                  {formatNumber(stats?.month_contribution_change ?? 0)} from last month
+                  <Val>{formatNumber(stats?.month_contribution_change)}</Val> from last month
                 </p>
               </>
             )}
@@ -311,7 +311,7 @@ function DashboardStats() {
             ) : (
               <>
                 <div className={`text-2xl font-bold ${timeStats.pendingAdjustments > 0 ? "text-yellow-600" : "text-muted-foreground"}`}>
-                  {formatNumber(timeStats.pendingAdjustments)}
+                  <Val>{formatNumber(timeStats.pendingAdjustments)}</Val>
                 </div>
                 <p className="text-xs text-muted-foreground">
                   {timeStats.pendingAdjustments > 0 ? "Awaiting admin review" : "No pending requests"}
@@ -338,7 +338,7 @@ function DashboardStats() {
             ) : (
               <>
                 <div className={`text-2xl font-bold ${timeStats.longRunning > 0 ? "text-red-600" : "text-muted-foreground"}`}>
-                  {formatNumber(timeStats.longRunning)}
+                  <Val>{formatNumber(timeStats.longRunning)}</Val>
                 </div>
                 <p className="text-xs text-muted-foreground">
                   {timeStats.longRunning > 0 ? "Sessions over 10 hours — review needed" : "No suspicious sessions"}
@@ -367,7 +367,7 @@ function DashboardStats() {
               <Skeleton className="h-10 w-20" />
             ) : (
               <div className="text-3xl font-bold text-kaart-orange">
-                {formatNumber(stats?.mapped_tasks ?? 0)}
+                <Val>{formatNumber(stats?.mapped_tasks)}</Val>
               </div>
             )}
           </CardContent>
@@ -384,7 +384,7 @@ function DashboardStats() {
               <Skeleton className="h-10 w-20" />
             ) : (
               <div className="text-3xl font-bold text-green-600">
-                {formatNumber(stats?.validated_tasks ?? 0)}
+                <Val>{formatNumber(stats?.validated_tasks)}</Val>
               </div>
             )}
           </CardContent>
@@ -401,7 +401,7 @@ function DashboardStats() {
               <Skeleton className="h-10 w-20" />
             ) : (
               <div className="text-3xl font-bold text-red-600">
-                {formatNumber(stats?.invalidated_tasks ?? 0)}
+                <Val>{formatNumber(stats?.invalidated_tasks)}</Val>
               </div>
             )}
           </CardContent>
@@ -420,7 +420,7 @@ function DashboardStats() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-yellow-700">
-              {formatNumber(stats.self_validated_count)}
+              <Val>{formatNumber(stats.self_validated_count)}</Val>
             </div>
             <p className="text-xs text-yellow-600 mt-1">
               Tasks flagged as self-validated (not payable)
@@ -442,7 +442,7 @@ function DashboardStats() {
               <Skeleton className="h-10 w-28" />
             ) : (
               <div className="text-3xl font-bold">
-                {formatCurrency(stats?.payable_total ?? 0)}
+                <Val>{formatCurrency(stats?.payable_total)}</Val>
               </div>
             )}
           </CardContent>
@@ -460,10 +460,10 @@ function DashboardStats() {
             ) : (
               <>
                 <div className="text-3xl font-bold text-yellow-600">
-                  {formatCurrency(stats?.requests_total ?? 0)}
+                  <Val>{formatCurrency(stats?.requests_total)}</Val>
                 </div>
                 <p className="text-xs text-muted-foreground mt-1">
-                  {formatNumber(transactions?.requests?.length ?? 0)} pending requests
+                  <Val>{formatNumber(transactions?.requests?.length ?? 0)}</Val> pending requests
                 </p>
               </>
             )}
@@ -481,7 +481,7 @@ function DashboardStats() {
               <Skeleton className="h-10 w-28" />
             ) : (
               <div className="text-3xl font-bold text-green-600">
-                {formatCurrency(stats?.payouts_total ?? 0)}
+                <Val>{formatCurrency(stats?.payouts_total)}</Val>
               </div>
             )}
           </CardContent>
@@ -524,7 +524,7 @@ function DashboardStats() {
                     </div>
                     <div className="text-right">
                       <p className="font-bold">
-                        {formatCurrency(request.amount_requested)}
+                        <Val>{formatCurrency(request.amount_requested)}</Val>
                       </p>
                       <Badge variant="warning">Pending</Badge>
                     </div>
@@ -573,7 +573,7 @@ function DashboardStats() {
                     </div>
                     <div className="text-right">
                       <p className="font-bold text-green-600">
-                        {formatCurrency(payment.amount_paid)}
+                        <Val>{formatCurrency(payment.amount_paid)}</Val>
                       </p>
                       <Badge variant="success">Paid</Badge>
                     </div>

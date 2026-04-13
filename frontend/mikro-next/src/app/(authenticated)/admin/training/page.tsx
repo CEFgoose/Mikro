@@ -23,6 +23,7 @@ import {
   TableRow,
   TableCell,
   Skeleton,
+  Val,
 } from "@/components/ui";
 import { useToastActions } from "@/components/ui";
 import LocationsTab from "@/components/LocationsTab";
@@ -456,8 +457,8 @@ export default function AdminTrainingPage() {
                   </div>
                 </TableCell>
                 <TableCell>{training.point_value}</TableCell>
-                <TableCell>{formatNumber(training.questions?.length ?? 0)}</TableCell>
-                <TableCell className="text-sm text-muted-foreground">{training.created_by || "\u2014"}</TableCell>
+                <TableCell><Val>{formatNumber(training.questions?.length ?? 0)}</Val></TableCell>
+                <TableCell className="text-sm text-muted-foreground"><Val>{training.created_by}</Val></TableCell>
                 <TableCell>
                   <a
                     href={training.training_url}
@@ -549,7 +550,7 @@ export default function AdminTrainingPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {formatNumber(mappingTrainings.length + validationTrainings.length + projectTrainings.length)}
+              <Val>{formatNumber(mappingTrainings.length + validationTrainings.length + projectTrainings.length)}</Val>
             </div>
           </CardContent>
         </Card>
@@ -558,7 +559,7 @@ export default function AdminTrainingPage() {
             <CardTitle className="text-sm font-medium">Mapping</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-kaart-orange">{formatNumber(mappingTrainings.length)}</div>
+            <div className="text-2xl font-bold text-kaart-orange"><Val>{formatNumber(mappingTrainings.length)}</Val></div>
           </CardContent>
         </Card>
         <Card>
@@ -566,7 +567,7 @@ export default function AdminTrainingPage() {
             <CardTitle className="text-sm font-medium">Validation</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-blue-600">{formatNumber(validationTrainings.length)}</div>
+            <div className="text-2xl font-bold text-blue-600"><Val>{formatNumber(validationTrainings.length)}</Val></div>
           </CardContent>
         </Card>
         <Card>
@@ -574,7 +575,7 @@ export default function AdminTrainingPage() {
             <CardTitle className="text-sm font-medium">Project Specific</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-purple-600">{formatNumber(projectTrainings.length)}</div>
+            <div className="text-2xl font-bold text-purple-600"><Val>{formatNumber(projectTrainings.length)}</Val></div>
           </CardContent>
         </Card>
       </div>
@@ -591,11 +592,11 @@ export default function AdminTrainingPage() {
       {/* Trainings Tabs */}
       <Tabs defaultValue="all">
         <TabsList>
-          <TabsTrigger value="all">All ({formatNumber(allTrainings.length)})</TabsTrigger>
-          <TabsTrigger value="mine">Created by Me ({formatNumber(myTrainings.length)})</TabsTrigger>
-          <TabsTrigger value="mapping">Mapping ({formatNumber(mappingTrainings.length)})</TabsTrigger>
-          <TabsTrigger value="validation">Validation ({formatNumber(validationTrainings.length)})</TabsTrigger>
-          <TabsTrigger value="project">Project Specific ({formatNumber(projectTrainings.length)})</TabsTrigger>
+          <TabsTrigger value="all">All ({formatNumber(allTrainings.length).text})</TabsTrigger>
+          <TabsTrigger value="mine">Created by Me ({formatNumber(myTrainings.length).text})</TabsTrigger>
+          <TabsTrigger value="mapping">Mapping ({formatNumber(mappingTrainings.length).text})</TabsTrigger>
+          <TabsTrigger value="validation">Validation ({formatNumber(validationTrainings.length).text})</TabsTrigger>
+          <TabsTrigger value="project">Project Specific ({formatNumber(projectTrainings.length).text})</TabsTrigger>
         </TabsList>
         <TabsContent value="all">
           <Card>
@@ -710,7 +711,7 @@ export default function AdminTrainingPage() {
           {/* Questions Section */}
           <div className="border-t border-border pt-4">
             <div className="flex justify-between items-center mb-4">
-              <h3 className="font-medium">Quiz Questions ({formatNumber(questions.length)})</h3>
+              <h3 className="font-medium">Quiz Questions ({formatNumber(questions.length).text})</h3>
               <Button size="sm" variant="outline" onClick={addQuestion}>
                 Add Question
               </Button>
@@ -799,7 +800,7 @@ export default function AdminTrainingPage() {
             <TabsTrigger value="settings">Settings</TabsTrigger>
             <TabsTrigger value="locations">Locations</TabsTrigger>
             <TabsTrigger value="questions">
-              Questions ({formatNumber(editQuestions.length)})
+              Questions ({formatNumber(editQuestions.length).text})
             </TabsTrigger>
           </TabsList>
 

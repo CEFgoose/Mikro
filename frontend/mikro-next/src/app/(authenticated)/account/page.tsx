@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useUser } from "@auth0/nextjs-auth0/client";
 import { useSearchParams } from "next/navigation";
-import { Card, CardContent, CardHeader, CardTitle, Button, Input } from "@/components/ui";
+import { Card, CardContent, CardHeader, CardTitle, Button, Input, Val } from "@/components/ui";
 import { useTheme } from "@/contexts/ThemeContext";
 import { usePaymentsVisible } from "@/hooks";
 
@@ -584,7 +584,7 @@ export default function AccountPage() {
                     placeholder="your-payoneer@email.com"
                   />
                 ) : (
-                  <p style={{ fontSize: 15, color: "var(--foreground)" }}>{profile?.payment_email || "-"}</p>
+                  <p style={{ fontSize: 15, color: "var(--foreground)" }}><Val fallback="-">{profile?.payment_email}</Val></p>
                 )}
               </div>
             )}
@@ -599,7 +599,7 @@ export default function AccountPage() {
                     placeholder="City"
                   />
                 ) : (
-                  <p style={{ fontSize: 15, color: "var(--foreground)" }}>{profile?.city || "-"}</p>
+                  <p style={{ fontSize: 15, color: "var(--foreground)" }}><Val fallback="-">{profile?.city}</Val></p>
                 )}
               </div>
               <div>
@@ -642,7 +642,7 @@ export default function AccountPage() {
                     })()}
                   </select>
                 ) : (
-                  <p style={{ fontSize: 15, color: "var(--foreground)" }}>{profile?.country || "-"}</p>
+                  <p style={{ fontSize: 15, color: "var(--foreground)" }}><Val fallback="-">{profile?.country}</Val></p>
                 )}
               </div>
             </div>
@@ -670,7 +670,7 @@ export default function AccountPage() {
                   ))}
                 </select>
               ) : (
-                <p style={{ fontSize: 15, color: "var(--foreground)" }}>{profile?.timezone?.replace(/_/g, " ") || "-"}</p>
+                <p style={{ fontSize: 15, color: "var(--foreground)" }}><Val fallback="-">{profile?.timezone?.replace(/_/g, " ")}</Val></p>
               )}
             </div>
           </div>

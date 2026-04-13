@@ -14,6 +14,7 @@ import {
   TabsTrigger,
   TabsContent,
   Skeleton,
+  Val,
 } from "@/components/ui";
 import { useToastActions } from "@/components/ui";
 import {
@@ -172,7 +173,7 @@ export default function UserChecklistsPage() {
         </CardHeader>
         <CardContent>
           <p className="text-sm text-muted-foreground mb-4 line-clamp-2">
-            {checklist.description || "No description"}
+            <Val fallback="No description">{checklist.description}</Val>
           </p>
 
           {/* Progress */}
@@ -195,7 +196,7 @@ export default function UserChecklistsPage() {
           <div className="space-y-2 text-sm mb-4">
             <div className="flex justify-between">
               <span className="text-muted-foreground">Reward:</span>
-              <span className="font-bold text-kaart-orange">{formatCurrency(checklist.completion_rate)}</span>
+              <span className="font-bold text-kaart-orange"><Val>{formatCurrency(checklist.completion_rate)}</Val></span>
             </div>
             {checklist.due_date && (
               <div className="flex justify-between">
@@ -268,25 +269,25 @@ export default function UserChecklistsPage() {
         <Card style={{ padding: 0 }}>
           <div style={{ padding: "12px 16px" }}>
             <p style={{ fontSize: 12, color: "#6b7280", marginBottom: 4 }}>Active</p>
-            <div style={{ fontSize: 20, fontWeight: 700, color: "#ff6b35" }}>{formatNumber(stats.active)}</div>
+            <div style={{ fontSize: 20, fontWeight: 700, color: "#ff6b35" }}><Val>{formatNumber(stats.active)}</Val></div>
           </div>
         </Card>
         <Card style={{ padding: 0 }}>
           <div style={{ padding: "12px 16px" }}>
             <p style={{ fontSize: 12, color: "#6b7280", marginBottom: 4 }}>Pending Review</p>
-            <div style={{ fontSize: 20, fontWeight: 700, color: "#eab308" }}>{formatNumber(stats.pending)}</div>
+            <div style={{ fontSize: 20, fontWeight: 700, color: "#eab308" }}><Val>{formatNumber(stats.pending)}</Val></div>
           </div>
         </Card>
         <Card style={{ padding: 0 }}>
           <div style={{ padding: "12px 16px" }}>
             <p style={{ fontSize: 12, color: "#6b7280", marginBottom: 4 }}>Confirmed</p>
-            <div style={{ fontSize: 20, fontWeight: 700, color: "#16a34a" }}>{formatNumber(stats.confirmed)}</div>
+            <div style={{ fontSize: 20, fontWeight: 700, color: "#16a34a" }}><Val>{formatNumber(stats.confirmed)}</Val></div>
           </div>
         </Card>
         <Card style={{ padding: 0 }}>
           <div style={{ padding: "12px 16px" }}>
             <p style={{ fontSize: 12, color: "#6b7280", marginBottom: 4 }}>Total Earned</p>
-            <div style={{ fontSize: 20, fontWeight: 700, color: "#16a34a" }}>{formatCurrency(stats.totalEarned)}</div>
+            <div style={{ fontSize: 20, fontWeight: 700, color: "#16a34a" }}><Val>{formatCurrency(stats.totalEarned)}</Val></div>
           </div>
         </Card>
       </div>
@@ -294,10 +295,10 @@ export default function UserChecklistsPage() {
       {/* Tabs */}
       <Tabs defaultValue="active">
         <TabsList>
-          <TabsTrigger value="available">Available ({formatNumber(availableChecklists.length)})</TabsTrigger>
-          <TabsTrigger value="active">In Progress ({formatNumber(activeChecklists.length)})</TabsTrigger>
-          <TabsTrigger value="pending">Pending Review ({formatNumber(completedChecklists.length)})</TabsTrigger>
-          <TabsTrigger value="confirmed">Confirmed ({formatNumber(confirmedChecklists.length)})</TabsTrigger>
+          <TabsTrigger value="available">Available ({formatNumber(availableChecklists.length).text})</TabsTrigger>
+          <TabsTrigger value="active">In Progress ({formatNumber(activeChecklists.length).text})</TabsTrigger>
+          <TabsTrigger value="pending">Pending Review ({formatNumber(completedChecklists.length).text})</TabsTrigger>
+          <TabsTrigger value="confirmed">Confirmed ({formatNumber(confirmedChecklists.length).text})</TabsTrigger>
         </TabsList>
 
         <TabsContent value="available">
@@ -323,12 +324,12 @@ export default function UserChecklistsPage() {
                   </CardHeader>
                   <CardContent>
                     <p className="text-sm text-muted-foreground mb-4 line-clamp-2">
-                      {checklist.description || "No description"}
+                      <Val fallback="No description">{checklist.description}</Val>
                     </p>
                     <div className="space-y-2 text-sm mb-4">
                       <div className="flex justify-between">
                         <span className="text-muted-foreground">Reward:</span>
-                        <span className="font-bold text-kaart-orange">{formatCurrency(checklist.completion_rate)}</span>
+                        <span className="font-bold text-kaart-orange"><Val>{formatCurrency(checklist.completion_rate)}</Val></span>
                       </div>
                       <div className="flex justify-between">
                         <span className="text-muted-foreground">Items:</span>
@@ -469,7 +470,7 @@ export default function UserChecklistsPage() {
             <div>
               <p className="text-sm text-muted-foreground">Reward</p>
               <p className="font-bold text-kaart-orange">
-                {formatCurrency(selectedChecklist?.completion_rate ?? 0)}
+                <Val>{formatCurrency(selectedChecklist?.completion_rate)}</Val>
               </p>
             </div>
             <div>
@@ -564,7 +565,7 @@ export default function UserChecklistsPage() {
             activeChecklists.some((c) => c.id === selectedChecklist?.id) && (
               <div className="rounded-lg bg-green-50 dark:bg-green-950 border border-green-200 dark:border-green-800 p-4 text-center">
                 <p className="text-green-700 dark:text-green-300 font-medium">
-                  All tasks complete! Submit this checklist for review to earn {formatCurrency(selectedChecklist?.completion_rate ?? 0)}.
+                  All tasks complete! Submit this checklist for review to earn {formatCurrency(selectedChecklist?.completion_rate).text}.
                 </p>
               </div>
             )}

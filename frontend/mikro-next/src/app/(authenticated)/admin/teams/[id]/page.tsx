@@ -3,30 +3,10 @@
 import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui";
+import { Card, CardContent, CardHeader, CardTitle, Val, StatCard } from "@/components/ui";
 import { useFetchTeamProfile } from "@/hooks/useApi";
 import type { TeamProfileData } from "@/types";
 import { formatNumber, formatCurrency, displayRole } from "@/lib/utils";
-
-function StatCard({
-  label,
-  value,
-  sub,
-}: {
-  label: string;
-  value: string | number;
-  sub?: string;
-}) {
-  return (
-    <Card>
-      <CardContent className="p-4 text-center">
-        <p className="text-sm text-muted-foreground">{label}</p>
-        <p className="text-2xl font-bold mt-1">{value}</p>
-        {sub && <p className="text-xs text-muted-foreground mt-1">{sub}</p>}
-      </CardContent>
-    </Card>
-  );
-}
 
 function formatDate(iso: string | null): string {
   if (!iso) return "-";
@@ -145,37 +125,37 @@ export default function AdminTeamProfilePage() {
             <div className="text-center">
               <p className="text-sm text-muted-foreground">Mapping</p>
               <p className="text-lg font-semibold">
-                {formatCurrency(aggregated_stats.mapping_payable_total ?? 0)}
+                <Val>{formatCurrency(aggregated_stats.mapping_payable_total)}</Val>
               </p>
             </div>
             <div className="text-center">
               <p className="text-sm text-muted-foreground">Validation</p>
               <p className="text-lg font-semibold">
-                {formatCurrency(aggregated_stats.validation_payable_total ?? 0)}
+                <Val>{formatCurrency(aggregated_stats.validation_payable_total)}</Val>
               </p>
             </div>
             <div className="text-center">
               <p className="text-sm text-muted-foreground">Checklists</p>
               <p className="text-lg font-semibold">
-                {formatCurrency(aggregated_stats.checklist_payable_total ?? 0)}
+                <Val>{formatCurrency(aggregated_stats.checklist_payable_total)}</Val>
               </p>
             </div>
             <div className="text-center">
               <p className="text-sm text-muted-foreground">Payable</p>
               <p className="text-lg font-semibold text-green-600">
-                {formatCurrency(aggregated_stats.payable_total ?? 0)}
+                <Val>{formatCurrency(aggregated_stats.payable_total)}</Val>
               </p>
             </div>
             <div className="text-center">
               <p className="text-sm text-muted-foreground">Requested</p>
               <p className="text-lg font-semibold text-yellow-600">
-                {formatCurrency(aggregated_stats.requested_total ?? 0)}
+                <Val>{formatCurrency(aggregated_stats.requested_total)}</Val>
               </p>
             </div>
             <div className="text-center">
               <p className="text-sm text-muted-foreground">Paid</p>
               <p className="text-lg font-semibold text-blue-600">
-                {formatCurrency(aggregated_stats.paid_total ?? 0)}
+                <Val>{formatCurrency(aggregated_stats.paid_total)}</Val>
               </p>
             </div>
           </div>
@@ -186,7 +166,7 @@ export default function AdminTeamProfilePage() {
       {members.length > 0 && (
         <Card>
           <CardHeader>
-            <CardTitle>Members ({formatNumber(members.length)})</CardTitle>
+            <CardTitle>Members (<Val>{formatNumber(members.length)}</Val>)</CardTitle>
           </CardHeader>
           <CardContent className="p-0">
             <div className="overflow-x-auto">
@@ -230,11 +210,11 @@ export default function AdminTeamProfilePage() {
                       <td className="px-6 py-4 text-foreground">
                         {member.osm_username || "-"}
                       </td>
-                      <td className="px-6 py-4 text-foreground">{formatNumber(member.total_tasks_mapped)}</td>
-                      <td className="px-6 py-4 text-foreground">{formatNumber(member.total_tasks_validated)}</td>
-                      <td className="px-6 py-4 text-foreground">{formatNumber(member.total_tasks_invalidated ?? 0)}</td>
+                      <td className="px-6 py-4 text-foreground"><Val>{formatNumber(member.total_tasks_mapped)}</Val></td>
+                      <td className="px-6 py-4 text-foreground"><Val>{formatNumber(member.total_tasks_validated)}</Val></td>
+                      <td className="px-6 py-4 text-foreground"><Val>{formatNumber(member.total_tasks_invalidated)}</Val></td>
                       <td className="px-6 py-4 text-foreground">
-                        {formatCurrency(member.payable_total ?? 0)}
+                        <Val>{formatCurrency(member.payable_total)}</Val>
                       </td>
                     </tr>
                   ))}
@@ -249,7 +229,7 @@ export default function AdminTeamProfilePage() {
       {projects.length > 0 && (
         <Card>
           <CardHeader>
-            <CardTitle>Projects ({formatNumber(projects.length)})</CardTitle>
+            <CardTitle>Projects (<Val>{formatNumber(projects.length)}</Val>)</CardTitle>
           </CardHeader>
           <CardContent className="p-0">
             <div className="overflow-x-auto">
@@ -272,10 +252,10 @@ export default function AdminTeamProfilePage() {
                       <td className="px-6 py-4">
                         <span className="font-medium text-kaart-orange">{proj.name}</span>
                       </td>
-                      <td className="px-6 py-4 text-foreground">{formatNumber(proj.team_tasks_mapped)}</td>
-                      <td className="px-6 py-4 text-foreground">{formatNumber(proj.team_tasks_validated)}</td>
+                      <td className="px-6 py-4 text-foreground"><Val>{formatNumber(proj.team_tasks_mapped)}</Val></td>
+                      <td className="px-6 py-4 text-foreground"><Val>{formatNumber(proj.team_tasks_validated)}</Val></td>
                       <td className="px-6 py-4 text-foreground">
-                        {formatCurrency(proj.team_earnings ?? 0)}
+                        <Val>{formatCurrency(proj.team_earnings)}</Val>
                       </td>
                     </tr>
                   ))}
@@ -290,7 +270,7 @@ export default function AdminTeamProfilePage() {
       {assigned_trainings.length > 0 && (
         <Card>
           <CardHeader>
-            <CardTitle>Assigned Trainings ({formatNumber(assigned_trainings.length)})</CardTitle>
+            <CardTitle>Assigned Trainings (<Val>{formatNumber(assigned_trainings.length)}</Val>)</CardTitle>
           </CardHeader>
           <CardContent className="p-0">
             <div className="overflow-x-auto">
@@ -343,7 +323,7 @@ export default function AdminTeamProfilePage() {
       {assigned_checklists.length > 0 && (
         <Card>
           <CardHeader>
-            <CardTitle>Assigned Checklists ({formatNumber(assigned_checklists.length)})</CardTitle>
+            <CardTitle>Assigned Checklists (<Val>{formatNumber(assigned_checklists.length)}</Val>)</CardTitle>
           </CardHeader>
           <CardContent className="p-0">
             <div className="overflow-x-auto">

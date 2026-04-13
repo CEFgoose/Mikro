@@ -10,31 +10,13 @@ import {
   CardTitle,
   Badge,
   Button,
+  Val,
+  StatCard,
 } from "@/components/ui";
 import { useFetchProjectProfile, useSyncProject } from "@/hooks/useApi";
 import { useToastActions } from "@/components/ui";
 import { formatNumber, formatCurrency, displayRole } from "@/lib/utils";
 import type { ProjectProfileResponse } from "@/types";
-
-function StatCard({
-  label,
-  value,
-  sub,
-}: {
-  label: string;
-  value: string | number;
-  sub?: string;
-}) {
-  return (
-    <Card>
-      <CardContent className="p-4 text-center">
-        <p className="text-sm text-muted-foreground">{label}</p>
-        <p className="text-2xl font-bold mt-1">{value}</p>
-        {sub && <p className="text-xs text-muted-foreground mt-1">{sub}</p>}
-      </CardContent>
-    </Card>
-  );
-}
 
 function ProgressBar({
   value,
@@ -235,12 +217,12 @@ export default function AdminProjectProfilePage() {
         <StatCard
           label="Mapped"
           value={`${pctMapped.toFixed(1)}%`}
-          sub={`${formatNumber(proj.effective_mapped)} / ${formatNumber(totalTasks)}`}
+          sub={`${formatNumber(proj.effective_mapped).text} / ${formatNumber(totalTasks).text}`}
         />
         <StatCard
           label="Validated"
           value={`${pctValidated.toFixed(1)}%`}
-          sub={`${formatNumber(proj.effective_validated)} / ${formatNumber(totalTasks)}`}
+          sub={`${formatNumber(proj.effective_validated).text} / ${formatNumber(totalTasks).text}`}
         />
         <StatCard
           label="Avg Time / Task"
@@ -258,27 +240,27 @@ export default function AdminProjectProfilePage() {
             <div>
               <p className="text-sm text-muted-foreground">Budget</p>
               <p className="text-xl font-semibold">
-                {formatCurrency(proj.max_payment || 0)}
+                <Val>{formatCurrency(proj.max_payment)}</Val>
               </p>
             </div>
             <div>
               <p className="text-sm text-muted-foreground">Paid Out</p>
               <p className="text-xl font-semibold text-green-600">
-                {formatCurrency(proj.total_payout || 0)}
+                <Val>{formatCurrency(proj.total_payout)}</Val>
               </p>
             </div>
             <div>
               <p className="text-sm text-muted-foreground">Remaining</p>
               <p className="text-xl font-semibold">
-                {formatCurrency(remaining)}
+                <Val>{formatCurrency(remaining)}</Val>
               </p>
             </div>
             <div>
               <p className="text-sm text-muted-foreground">Rates</p>
               <p className="text-sm">
-                Map: <span className="font-medium">{formatCurrency(proj.mapping_rate_per_task || 0)}</span>
+                Map: <span className="font-medium"><Val>{formatCurrency(proj.mapping_rate_per_task)}</Val></span>
                 {" / "}
-                Val: <span className="font-medium">{formatCurrency(proj.validation_rate_per_task || 0)}</span>
+                Val: <span className="font-medium"><Val>{formatCurrency(proj.validation_rate_per_task)}</Val></span>
               </p>
             </div>
           </div>
@@ -294,13 +276,14 @@ export default function AdminProjectProfilePage() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <p className="text-sm text-muted-foreground mb-1">
-                Mapped ({formatNumber(proj.effective_mapped)} / {formatNumber(totalTasks)})
+
+                Mapped (<Val>{formatNumber(proj.effective_mapped)}</Val> / <Val>{formatNumber(totalTasks)}</Val>)
               </p>
               <ProgressBar value={pctMapped} />
             </div>
             <div>
               <p className="text-sm text-muted-foreground mb-1">
-                Validated ({formatNumber(proj.effective_validated)} / {formatNumber(totalTasks)})
+                Validated (<Val>{formatNumber(proj.effective_validated)}</Val> / <Val>{formatNumber(totalTasks)}</Val>)
               </p>
               <ProgressBar value={pctValidated} color="bg-blue-500" />
             </div>
@@ -324,7 +307,7 @@ export default function AdminProjectProfilePage() {
                         <span className="text-sm font-medium">
                           {MR_STATUS_LABELS[Number(status)] || `Status ${status}`}
                         </span>
-                        <Badge variant="secondary">{formatNumber(count as number)}</Badge>
+                        <Badge variant="secondary"><Val>{formatNumber(count as number)}</Val></Badge>
                       </div>
                     )
                   )}
@@ -397,16 +380,16 @@ export default function AdminProjectProfilePage() {
                           <Badge variant="secondary">{displayRole(user.role)}</Badge>
                         </td>
                         <td className="px-4 py-3 text-right">
-                          {formatNumber(user.tasks_mapped)}
+                          <Val>{formatNumber(user.tasks_mapped)}</Val>
                         </td>
                         <td className="px-4 py-3 text-right">
-                          {formatNumber(user.tasks_validated)}
+                          <Val>{formatNumber(user.tasks_validated)}</Val>
                         </td>
                         <td className="px-4 py-3 text-right text-muted-foreground">
                           {formatDuration(user.time_logged_seconds)}
                         </td>
                         <td className="px-4 py-3 text-right font-medium">
-                          {formatCurrency(user.earnings)}
+                          <Val>{formatCurrency(user.earnings)}</Val>
                         </td>
                       </tr>
                     ))}

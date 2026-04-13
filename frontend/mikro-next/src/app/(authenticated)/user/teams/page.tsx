@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Card, CardContent, CardHeader, CardTitle, Input, Skeleton } from "@/components/ui";
+import { Card, CardContent, CardHeader, CardTitle, Input, Skeleton, Val } from "@/components/ui";
 import { useFetchUserTeams } from "@/hooks/useApi";
 import { formatNumber } from "@/lib/utils";
 
@@ -67,12 +67,12 @@ export default function UserTeamsPage() {
                       </Link>
                     </td>
                     <td className="px-6 py-4 text-muted-foreground max-w-xs truncate">
-                      {team.description || "—"}
+                      <Val>{team.description}</Val>
                     </td>
                     <td className="px-6 py-4 text-foreground">
                       {team.lead_name || <span className="text-muted-foreground">None</span>}
                     </td>
-                    <td className="px-6 py-4 text-center text-foreground">{formatNumber(team.member_count)}</td>
+                    <td className="px-6 py-4 text-center text-foreground"><Val>{formatNumber(team.member_count)}</Val></td>
                   </tr>
                 ))}
                 {filteredTeams.length === 0 && (

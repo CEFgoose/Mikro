@@ -14,6 +14,7 @@ import {
   TabsTrigger,
   TabsContent,
   Skeleton,
+  Val,
 } from "@/components/ui";
 import { useToastActions } from "@/components/ui";
 import {
@@ -214,13 +215,13 @@ export default function UserTrainingPage() {
         <Card style={{ padding: 0 }}>
           <div style={{ padding: "12px 16px" }}>
             <p style={{ fontSize: 12, color: "#6b7280", marginBottom: 4 }}>Total Trainings</p>
-            <div style={{ fontSize: 20, fontWeight: 700 }}>{formatNumber(stats.total)}</div>
+            <div style={{ fontSize: 20, fontWeight: 700 }}><Val>{formatNumber(stats.total)}</Val></div>
           </div>
         </Card>
         <Card style={{ padding: 0 }}>
           <div style={{ padding: "12px 16px" }}>
             <p style={{ fontSize: 12, color: "#6b7280", marginBottom: 4 }}>Completed</p>
-            <div style={{ fontSize: 20, fontWeight: 700, color: "#16a34a" }}>{formatNumber(stats.completed)}</div>
+            <div style={{ fontSize: 20, fontWeight: 700, color: "#16a34a" }}><Val>{formatNumber(stats.completed)}</Val></div>
             <div style={{ width: "100%", backgroundColor: "#e5e7eb", borderRadius: 4, height: 4, marginTop: 8 }}>
               <div
                 style={{
@@ -237,13 +238,13 @@ export default function UserTrainingPage() {
         <Card style={{ padding: 0 }}>
           <div style={{ padding: "12px 16px" }}>
             <p style={{ fontSize: 12, color: "#6b7280", marginBottom: 4 }}>Pending</p>
-            <div style={{ fontSize: 20, fontWeight: 700, color: "#ca8a04" }}>{formatNumber(stats.pending)}</div>
+            <div style={{ fontSize: 20, fontWeight: 700, color: "#ca8a04" }}><Val>{formatNumber(stats.pending)}</Val></div>
           </div>
         </Card>
         <Card style={{ padding: 0 }}>
           <div style={{ padding: "12px 16px" }}>
             <p style={{ fontSize: 12, color: "#6b7280", marginBottom: 4 }}>Points Earned</p>
-            <div style={{ fontSize: 20, fontWeight: 700, color: "#ff6b35" }}>{formatNumber(stats.totalPoints)}</div>
+            <div style={{ fontSize: 20, fontWeight: 700, color: "#ff6b35" }}><Val>{formatNumber(stats.totalPoints)}</Val></div>
           </div>
         </Card>
       </div>
@@ -251,10 +252,10 @@ export default function UserTrainingPage() {
       {/* Trainings Tabs */}
       <Tabs defaultValue="mapping">
         <TabsList>
-          <TabsTrigger value="mapping">Mapping ({formatNumber(mappingTrainings.length)})</TabsTrigger>
-          <TabsTrigger value="validation">Validation ({formatNumber(validationTrainings.length)})</TabsTrigger>
-          <TabsTrigger value="project">Project ({formatNumber(projectTrainings.length)})</TabsTrigger>
-          <TabsTrigger value="completed">Completed ({formatNumber(completedTrainings.length)})</TabsTrigger>
+          <TabsTrigger value="mapping">Mapping ({formatNumber(mappingTrainings.length).text})</TabsTrigger>
+          <TabsTrigger value="validation">Validation ({formatNumber(validationTrainings.length).text})</TabsTrigger>
+          <TabsTrigger value="project">Project ({formatNumber(projectTrainings.length).text})</TabsTrigger>
+          <TabsTrigger value="completed">Completed ({formatNumber(completedTrainings.length).text})</TabsTrigger>
         </TabsList>
         <TabsContent value="mapping">
           {mappingTrainings.length > 0 ? (

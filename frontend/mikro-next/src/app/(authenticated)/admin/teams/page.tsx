@@ -24,6 +24,7 @@ import {
 import { useToastActions } from "@/components/ui";
 import { FilterBar } from "@/components/filters";
 import { formatNumber, displayRole } from "@/lib/utils";
+import { Val } from "@/components/ui";
 import {
   useFetchTeams,
   useCreateTeam,
@@ -328,7 +329,7 @@ export default function AdminTeamsPage() {
             <CardTitle className="text-sm font-medium">Total Teams</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{formatNumber(teams.length)}</div>
+            <div className="text-2xl font-bold"><Val>{formatNumber(teams.length)}</Val></div>
           </CardContent>
         </Card>
         <Card>
@@ -339,7 +340,7 @@ export default function AdminTeamsPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {formatNumber(teams.reduce((sum, t) => sum + t.member_count, 0))}
+              <Val>{formatNumber(teams.reduce((sum, t) => sum + t.member_count, 0))}</Val>
             </div>
           </CardContent>
         </Card>
@@ -351,7 +352,7 @@ export default function AdminTeamsPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {formatNumber(teams.filter((t) => t.lead_id).length)}
+              <Val>{formatNumber(teams.filter((t) => t.lead_id).length)}</Val>
             </div>
           </CardContent>
         </Card>
@@ -436,7 +437,7 @@ export default function AdminTeamsPage() {
                             size="sm"
                             onClick={() => openMembersModal(team)}
                           >
-                            <Badge variant="secondary">{formatNumber(team.member_count)}</Badge>
+                            <Badge variant="secondary"><Val>{formatNumber(team.member_count)}</Val></Badge>
                           </Button>
                         </TableCell>
                         <TableCell className="text-muted-foreground">
@@ -783,7 +784,7 @@ export default function AdminTeamsPage() {
                         </Badge>
                       </TableCell>
                       <TableCell className="text-center">
-                        {formatNumber(training.point_value ?? 0)}
+                        <Val>{formatNumber(training.point_value)}</Val>
                       </TableCell>
                       <TableCell className="text-center">
                         <Badge

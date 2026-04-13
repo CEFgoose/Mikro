@@ -20,6 +20,7 @@ import {
   TableRow,
   TableCell,
   Skeleton,
+  Val,
 } from "@/components/ui";
 import { useToastActions } from "@/components/ui";
 import {
@@ -125,7 +126,7 @@ export default function UserPaymentsPage() {
           <div style={{ padding: "16px 20px" }}>
             <p style={{ fontSize: 12, color: "#6b7280", marginBottom: 8 }}>Available Balance</p>
             <div style={{ fontSize: 28, fontWeight: 700, color: requests.length > 0 ? "#ca8a04" : "#ff6b35" }}>
-              {formatCurrency(payable?.payable_total ?? 0)}
+              <Val>{formatCurrency(payable?.payable_total)}</Val>
             </div>
             <p style={{ fontSize: 11, color: "#6b7280", marginTop: 4 }}>
               {requests.length > 0 ? "Request pending" : "Ready for payout"}
@@ -158,10 +159,10 @@ export default function UserPaymentsPage() {
           <div style={{ padding: "12px 16px" }}>
             <p style={{ fontSize: 12, color: "#6b7280", marginBottom: 4 }}>Pending Requests</p>
             <div style={{ fontSize: 20, fontWeight: 700, color: "#ca8a04" }}>
-              {formatCurrency(pendingTotal)}
+              <Val>{formatCurrency(pendingTotal)}</Val>
             </div>
             <p style={{ fontSize: 11, color: "#6b7280", marginTop: 4 }}>
-              {formatNumber(requests.length)} awaiting approval
+              {formatNumber(requests.length).text} awaiting approval
             </p>
           </div>
         </Card>
@@ -170,7 +171,7 @@ export default function UserPaymentsPage() {
           <div style={{ padding: "12px 16px" }}>
             <p style={{ fontSize: 12, color: "#6b7280", marginBottom: 4 }}>Total Received</p>
             <div style={{ fontSize: 20, fontWeight: 700, color: "#16a34a" }}>
-              {formatCurrency(totalReceived)}
+              <Val>{formatCurrency(totalReceived)}</Val>
             </div>
             <p style={{ fontSize: 11, color: "#6b7280", marginTop: 4 }}>Lifetime earnings</p>
           </div>
@@ -179,7 +180,7 @@ export default function UserPaymentsPage() {
         <Card style={{ padding: 0 }}>
           <div style={{ padding: "12px 16px" }}>
             <p style={{ fontSize: 12, color: "#6b7280", marginBottom: 4 }}>Total Payments</p>
-            <div style={{ fontSize: 20, fontWeight: 700 }}>{formatNumber(payments.length)}</div>
+            <div style={{ fontSize: 20, fontWeight: 700 }}><Val>{formatNumber(payments.length)}</Val></div>
             <p style={{ fontSize: 11, color: "#6b7280", marginTop: 4 }}>Completed payouts</p>
           </div>
         </Card>
@@ -194,7 +195,7 @@ export default function UserPaymentsPage() {
         }}>
           <p style={{ fontSize: 12, color: "#15803d" }}>Mapping Earnings</p>
           <p style={{ fontSize: 20, fontWeight: 700, color: "#166534" }}>
-            {formatCurrency(payable?.mapping_earnings ?? 0)}
+            <Val>{formatCurrency(payable?.mapping_earnings)}</Val>
           </p>
         </div>
         <div style={{
@@ -204,7 +205,7 @@ export default function UserPaymentsPage() {
         }}>
           <p style={{ fontSize: 12, color: "#1d4ed8" }}>Validation Earnings</p>
           <p style={{ fontSize: 20, fontWeight: 700, color: "#1e40af" }}>
-            {formatCurrency(payable?.validation_earnings ?? 0)}
+            <Val>{formatCurrency(payable?.validation_earnings)}</Val>
           </p>
         </div>
         <div style={{
@@ -214,7 +215,7 @@ export default function UserPaymentsPage() {
         }}>
           <p style={{ fontSize: 12, color: "#7c3aed" }}>Checklist Earnings</p>
           <p style={{ fontSize: 20, fontWeight: 700, color: "#6d28d9" }}>
-            {formatCurrency(payable?.checklist_earnings ?? 0)}
+            <Val>{formatCurrency(payable?.checklist_earnings)}</Val>
           </p>
         </div>
       </div>
@@ -222,8 +223,8 @@ export default function UserPaymentsPage() {
       {/* Tabs for Requests and History */}
       <Tabs defaultValue="pending">
         <TabsList>
-          <TabsTrigger value="pending">Pending Requests ({formatNumber(requests.length)})</TabsTrigger>
-          <TabsTrigger value="history">Payment History ({formatNumber(payments.length)})</TabsTrigger>
+          <TabsTrigger value="pending">Pending Requests ({formatNumber(requests.length).text})</TabsTrigger>
+          <TabsTrigger value="history">Payment History ({formatNumber(payments.length).text})</TabsTrigger>
         </TabsList>
 
         <TabsContent value="pending">
@@ -245,10 +246,10 @@ export default function UserPaymentsPage() {
                       <TableCell className="font-medium whitespace-nowrap">#{request.id}</TableCell>
                       <TableCell className="whitespace-nowrap">{formatDate(request.date_requested)}</TableCell>
                       <TableCell className="font-bold whitespace-nowrap">
-                        {formatCurrency(request.amount_requested)}
+                        <Val>{formatCurrency(request.amount_requested)}</Val>
                       </TableCell>
                       <TableCell className="max-w-[120px] truncate">
-                        {request.notes || "-"}
+                        <Val fallback="-">{request.notes}</Val>
                       </TableCell>
                       <TableCell>
                         <Badge variant="warning">Pending</Badge>
@@ -287,10 +288,10 @@ export default function UserPaymentsPage() {
                       <TableCell className="font-medium whitespace-nowrap">#{payment.id}</TableCell>
                       <TableCell className="whitespace-nowrap">{formatDate(payment.date_paid)}</TableCell>
                       <TableCell className="font-bold text-green-600 whitespace-nowrap">
-                        {formatCurrency(payment.amount_paid)}
+                        <Val>{formatCurrency(payment.amount_paid)}</Val>
                       </TableCell>
                       <TableCell className="max-w-[120px] truncate">
-                        {payment.notes || "-"}
+                        <Val fallback="-">{payment.notes}</Val>
                       </TableCell>
                       <TableCell>
                         <Badge variant="success">Paid</Badge>
@@ -340,7 +341,7 @@ export default function UserPaymentsPage() {
           <div className="rounded-lg bg-kaart-orange/10 p-4">
             <p className="text-sm text-muted-foreground">You are requesting:</p>
             <p className="text-3xl font-bold text-kaart-orange">
-              {formatCurrency(payable?.payable_total ?? 0)}
+              <Val>{formatCurrency(payable?.payable_total)}</Val>
             </p>
           </div>
 
@@ -349,19 +350,19 @@ export default function UserPaymentsPage() {
             <div className="text-sm space-y-1 bg-muted p-3 rounded-lg">
               <div className="flex justify-between">
                 <span>Mapping:</span>
-                <span className="font-medium">{formatCurrency(payable?.mapping_earnings ?? 0)}</span>
+                <span className="font-medium"><Val>{formatCurrency(payable?.mapping_earnings)}</Val></span>
               </div>
               <div className="flex justify-between">
                 <span>Validation:</span>
-                <span className="font-medium">{formatCurrency(payable?.validation_earnings ?? 0)}</span>
+                <span className="font-medium"><Val>{formatCurrency(payable?.validation_earnings)}</Val></span>
               </div>
               <div className="flex justify-between">
                 <span>Checklist:</span>
-                <span className="font-medium">{formatCurrency(payable?.checklist_earnings ?? 0)}</span>
+                <span className="font-medium"><Val>{formatCurrency(payable?.checklist_earnings)}</Val></span>
               </div>
               <div className="border-t border-border pt-1 mt-1 flex justify-between font-bold">
                 <span>Total:</span>
-                <span>{formatCurrency(payable?.payable_total ?? 0)}</span>
+                <span><Val>{formatCurrency(payable?.payable_total)}</Val></span>
               </div>
             </div>
           </div>

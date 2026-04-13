@@ -12,6 +12,7 @@ import {
   TabsList,
   TabsTrigger,
   TabsContent,
+  Val,
 } from "@/components/ui";
 import {
   useFetchEditingStats,
@@ -817,11 +818,11 @@ export default function AdminReportsPage() {
                     </div>
                     <div className="text-center mt-2 space-y-1">
                       <p className="text-sm text-muted-foreground">
-                        {formatNumber(overallProgress?.totalMapped)} /{" "}
-                        {formatNumber(overallProgress?.totalTasks)} tasks
+                        <Val>{formatNumber(overallProgress?.totalMapped)}</Val> /{" "}
+                        <Val>{formatNumber(overallProgress?.totalTasks)}</Val> tasks
                       </p>
                       <p className="text-sm font-medium">
-                        {formatNumber(editingData.summary.active_projects)} active projects
+                        <Val>{formatNumber(editingData.summary.active_projects)}</Val> active projects
                       </p>
                     </div>
                   </CardContent>
@@ -836,7 +837,7 @@ export default function AdminReportsPage() {
                       {heatmapSummary && !heatmapLoading && (
                         <span className="text-xs text-muted-foreground">
                           {heatmapSummary.usersWithData} users &middot;{" "}
-                          {formatNumber(heatmapSummary.totalChangesets)} changesets
+                          <Val>{formatNumber(heatmapSummary.totalChangesets)}</Val> changesets
                         </span>
                       )}
                     </div>
@@ -866,26 +867,26 @@ export default function AdminReportsPage() {
                     <p className="text-foreground leading-relaxed mt-2">
                       During this time period, a total of{" "}
                       <span className="font-bold text-foreground">
-                        {formatNumber(editingData.summary.total_mapped)}
+                        <Val>{formatNumber(editingData.summary.total_mapped)}</Val>
                       </span>{" "}
                       tasks were mapped across{" "}
                       <span className="font-bold text-foreground">
-                        {formatNumber(editingData.summary.active_projects)}
+                        <Val>{formatNumber(editingData.summary.active_projects)}</Val>
                       </span>{" "}
                       active projects, with{" "}
                       <span className="font-bold text-foreground">
-                        {formatNumber(editingData.summary.total_validated)}
+                        <Val>{formatNumber(editingData.summary.total_validated)}</Val>
                       </span>{" "}
                       tasks validated and{" "}
                       <span className="font-bold text-foreground">
-                        {formatNumber(editingData.summary.total_invalidated)}
+                        <Val>{formatNumber(editingData.summary.total_invalidated)}</Val>
                       </span>{" "}
                       invalidated.
                     </p>
                     <div className="grid grid-cols-2 gap-3 mt-4">
                       <div className="bg-muted rounded-lg p-3 text-center">
                         <p className="text-xl font-bold text-foreground">
-                          {formatNumber(editingData.summary.total_mapped)}
+                          <Val>{formatNumber(editingData.summary.total_mapped)}</Val>
                         </p>
                         <p className="text-xs text-muted-foreground">
                           Tasks Mapped
@@ -903,7 +904,7 @@ export default function AdminReportsPage() {
                       </div>
                       <div className="bg-muted rounded-lg p-3 text-center">
                         <p className="text-xl font-bold text-foreground">
-                          {formatNumber(editingData.summary.total_validated)}
+                          <Val>{formatNumber(editingData.summary.total_validated)}</Val>
                         </p>
                         <p className="text-xs text-muted-foreground">
                           Validated
@@ -1102,10 +1103,10 @@ export default function AdminReportsPage() {
                                   : "\u2014"}
                               </td>
                               <td className="px-6 py-4 text-foreground">
-                                {formatCurrency(proj.mapping_rate)}
+                                <Val>{formatCurrency(proj.mapping_rate)}</Val>
                               </td>
                               <td className="px-6 py-4 text-foreground">
-                                {formatCurrency(proj.validation_rate)}
+                                <Val>{formatCurrency(proj.validation_rate)}</Val>
                               </td>
                             </tr>
                           );
@@ -1177,16 +1178,16 @@ export default function AdminReportsPage() {
                               {c.osm_username}
                             </td>
                             <td className="px-6 py-4 text-foreground">
-                              {formatNumber(c.tasks_mapped)}
+                              <Val>{formatNumber(c.tasks_mapped)}</Val>
                             </td>
                             <td className="px-6 py-4 text-foreground">
-                              {formatNumber(c.tasks_validated)}
+                              <Val>{formatNumber(c.tasks_validated)}</Val>
                             </td>
                             <td className="px-6 py-4 text-foreground">
-                              {formatNumber(c.tasks_invalidated)}
+                              <Val>{formatNumber(c.tasks_invalidated)}</Val>
                             </td>
                             <td className="px-6 py-4 text-foreground">
-                              {formatNumber(c.total_hours)}h
+                              <Val>{formatNumber(c.total_hours)}</Val>h
                             </td>
                           </tr>
                         ))}
@@ -1695,7 +1696,7 @@ export default function AdminReportsPage() {
                     </p>
                     <div className="flex items-baseline gap-3">
                       <p className="text-3xl font-bold">
-                        {formatNumber(timekeepingData.summary.total_hours)}h
+                        <Val>{formatNumber(timekeepingData.summary.total_hours)}</Val>h
                       </p>
                       <span
                         className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
@@ -1714,14 +1715,14 @@ export default function AdminReportsPage() {
                       </span>
                     </div>
                     <p className="text-sm text-muted-foreground mt-1">
-                      {formatNumber(timekeepingData.summary.total_entries)}{" "}
+                      <Val>{formatNumber(timekeepingData.summary.total_entries)}</Val>{" "}
                       entries
                     </p>
                     <div className="mt-4 p-3 bg-muted rounded-lg">
                       <p className="text-sm text-foreground leading-relaxed">
                         During this time period, a total of{" "}
                         <span className="font-bold">
-                          {formatNumber(timekeepingData.summary.total_hours)}{" "}
+                          {formatNumber(timekeepingData.summary.total_hours).text}{" "}
                           hours
                         </span>{" "}
                         were logged. This is{" "}
@@ -1732,7 +1733,7 @@ export default function AdminReportsPage() {
                     <div className="grid grid-cols-2 gap-3 mt-4">
                       <div className="text-center">
                         <p className="text-xl font-bold text-foreground">
-                          {formatNumber(timekeepingData.summary.total_changesets)}
+                          <Val>{formatNumber(timekeepingData.summary.total_changesets)}</Val>
                         </p>
                         <p className="text-xs text-muted-foreground">
                           Changesets
@@ -1750,7 +1751,7 @@ export default function AdminReportsPage() {
                       </div>
                       <div className="text-center">
                         <p className="text-xl font-bold text-foreground">
-                          {formatNumber(timekeepingData.summary.total_changes)}
+                          <Val>{formatNumber(timekeepingData.summary.total_changes)}</Val>
                         </p>
                         <p className="text-xs text-muted-foreground">
                           Changes
@@ -2110,19 +2111,19 @@ export default function AdminReportsPage() {
                                   </div>
                                 </td>
                                 <td className="px-6 py-4 text-foreground">
-                                  {formatNumber(u.total_hours)}h
+                                  <Val>{formatNumber(u.total_hours)}</Val>h
                                 </td>
                                 <td className="px-6 py-4 text-foreground">
-                                  {formatNumber(u.entries_count)}
+                                  <Val>{formatNumber(u.entries_count)}</Val>
                                 </td>
                                 <td className="px-6 py-4 text-foreground">
-                                  {formatNumber(u.changeset_count)}
+                                  <Val>{formatNumber(u.changeset_count)}</Val>
                                 </td>
                                 <td className="px-6 py-4 text-foreground">
-                                  {formatNumber(u.changes_count)}
+                                  <Val>{formatNumber(u.changes_count)}</Val>
                                 </td>
                                 <td className="px-6 py-4 text-foreground">
-                                  {u.osm_username || "\u2014"}
+                                  <Val>{u.osm_username}</Val>
                                 </td>
                               </tr>
                               {isExpanded && (
@@ -2205,25 +2206,25 @@ export default function AdminReportsPage() {
                 <Card>
                   <CardContent className="pt-6">
                     <p className="text-sm text-gray-500">Total Images</p>
-                    <p className="text-3xl font-bold">{formatNumber(mapillaryData.summary.total_images)}</p>
+                    <p className="text-3xl font-bold"><Val>{formatNumber(mapillaryData.summary.total_images)}</Val></p>
                   </CardContent>
                 </Card>
                 <Card>
                   <CardContent className="pt-6">
                     <p className="text-sm text-gray-500">Total Trips</p>
-                    <p className="text-3xl font-bold">{formatNumber(mapillaryData.summary.total_trips)}</p>
+                    <p className="text-3xl font-bold"><Val>{formatNumber(mapillaryData.summary.total_trips)}</Val></p>
                   </CardContent>
                 </Card>
                 <Card>
                   <CardContent className="pt-6">
                     <p className="text-sm text-gray-500">Active Contributors</p>
-                    <p className="text-3xl font-bold">{formatNumber(mapillaryData.summary.active_contributors)}</p>
+                    <p className="text-3xl font-bold"><Val>{formatNumber(mapillaryData.summary.active_contributors)}</Val></p>
                   </CardContent>
                 </Card>
                 <Card>
                   <CardContent className="pt-6">
                     <p className="text-sm text-gray-500">Total Sequences</p>
-                    <p className="text-3xl font-bold">{formatNumber(mapillaryData.summary.total_sequences)}</p>
+                    <p className="text-3xl font-bold"><Val>{formatNumber(mapillaryData.summary.total_sequences)}</Val></p>
                   </CardContent>
                 </Card>
               </div>
@@ -2292,8 +2293,8 @@ export default function AdminReportsPage() {
                               <td className="py-2">{trip.user_name}</td>
                               <td className="py-2 text-gray-500">{trip.mapillary_username}</td>
                               <td className="py-2">{trip.date}</td>
-                              <td className="py-2 text-right">{formatNumber(trip.image_count)}</td>
-                              <td className="py-2 text-right">{formatNumber(trip.sequence_count)}</td>
+                              <td className="py-2 text-right"><Val>{formatNumber(trip.image_count)}</Val></td>
+                              <td className="py-2 text-right"><Val>{formatNumber(trip.sequence_count)}</Val></td>
                             </tr>
                           ))}
                         </tbody>
@@ -2322,27 +2323,27 @@ export default function AdminReportsPage() {
               <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                 <StatCard
                   label="Fixed"
-                  value={formatNumber(mrData.summary.mr_status_summary?.["1"] ?? 0)}
+                  value={formatNumber(mrData.summary.mr_status_summary?.["1"] ?? 0).text}
                 />
                 <StatCard
                   label="Already Fixed"
-                  value={formatNumber(mrData.summary.mr_status_summary?.["5"] ?? 0)}
+                  value={formatNumber(mrData.summary.mr_status_summary?.["5"] ?? 0).text}
                 />
                 <StatCard
                   label="Not an Issue"
-                  value={formatNumber(mrData.summary.mr_status_summary?.["2"] ?? 0)}
+                  value={formatNumber(mrData.summary.mr_status_summary?.["2"] ?? 0).text}
                 />
                 <StatCard
                   label="Can't Complete"
-                  value={formatNumber(mrData.summary.mr_status_summary?.["6"] ?? 0)}
+                  value={formatNumber(mrData.summary.mr_status_summary?.["6"] ?? 0).text}
                 />
                 <StatCard
                   label="Skipped"
-                  value={formatNumber(mrData.summary.mr_status_summary?.["3"] ?? 0)}
+                  value={formatNumber(mrData.summary.mr_status_summary?.["3"] ?? 0).text}
                 />
                 <StatCard
                   label="Reviewed"
-                  value={formatNumber(mrData.summary.total_validated)}
+                  value={formatNumber(mrData.summary.total_validated).text}
                 />
               </div>
 
@@ -2471,25 +2472,25 @@ export default function AdminReportsPage() {
                                 </span>
                               </td>
                               <td className="px-6 py-4 text-right text-foreground">
-                                {formatNumber(bd["1"] || 0)}
+                                <Val>{formatNumber(bd["1"] || 0)}</Val>
                               </td>
                               <td className="px-6 py-4 text-right text-foreground">
-                                {formatNumber(bd["5"] || 0)}
+                                <Val>{formatNumber(bd["5"] || 0)}</Val>
                               </td>
                               <td className="px-6 py-4 text-right text-foreground">
-                                {formatNumber(bd["2"] || 0)}
+                                <Val>{formatNumber(bd["2"] || 0)}</Val>
                               </td>
                               <td className="px-6 py-4 text-right text-foreground">
-                                {formatNumber(bd["6"] || 0)}
+                                <Val>{formatNumber(bd["6"] || 0)}</Val>
                               </td>
                               <td className="px-6 py-4 text-right text-foreground">
-                                {formatNumber(bd["3"] || 0)}
+                                <Val>{formatNumber(bd["3"] || 0)}</Val>
                               </td>
                               <td className="px-6 py-4 text-foreground">
-                                {formatCurrency(proj.mapping_rate)}
+                                <Val>{formatCurrency(proj.mapping_rate)}</Val>
                               </td>
                               <td className="px-6 py-4 text-foreground">
-                                {formatCurrency(proj.validation_rate)}
+                                <Val>{formatCurrency(proj.validation_rate)}</Val>
                               </td>
                             </tr>
                           );
@@ -2569,22 +2570,22 @@ export default function AdminReportsPage() {
                                 {c.osm_username}
                               </td>
                               <td className="px-6 py-4 text-right text-foreground">
-                                {formatNumber(bd["1"] || 0)}
+                                <Val>{formatNumber(bd["1"] || 0)}</Val>
                               </td>
                               <td className="px-6 py-4 text-right text-foreground">
-                                {formatNumber(bd["5"] || 0)}
+                                <Val>{formatNumber(bd["5"] || 0)}</Val>
                               </td>
                               <td className="px-6 py-4 text-right text-foreground">
-                                {formatNumber(bd["2"] || 0)}
+                                <Val>{formatNumber(bd["2"] || 0)}</Val>
                               </td>
                               <td className="px-6 py-4 text-right text-foreground">
-                                {formatNumber(bd["6"] || 0)}
+                                <Val>{formatNumber(bd["6"] || 0)}</Val>
                               </td>
                               <td className="px-6 py-4 text-right text-foreground">
-                                {formatNumber(bd["3"] || 0)}
+                                <Val>{formatNumber(bd["3"] || 0)}</Val>
                               </td>
                               <td className="px-6 py-4 text-foreground">
-                                {formatNumber(c.total_hours)}h
+                                <Val>{formatNumber(c.total_hours)}</Val>h
                               </td>
                             </tr>
                           );

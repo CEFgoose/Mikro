@@ -1,7 +1,7 @@
 "use client";
 
 import { useUser } from "@auth0/nextjs-auth0/client";
-import { Card, CardContent, CardHeader, CardTitle, Skeleton, Badge, Button } from "@/components/ui";
+import { Card, CardContent, CardHeader, CardTitle, Skeleton, Badge, Button, Val } from "@/components/ui";
 import { useUserDashboardStats, useUserProjects, useUserPayable, useSubmitPaymentRequest, useSyncUserTasks, usePaymentsVisible } from "@/hooks";
 import { TimeTrackingWidget } from "@/components/widgets/TimeTrackingWidget";
 import { UserTimeHistory } from "@/components/widgets/UserTimeHistory";
@@ -117,10 +117,10 @@ export default function UserDashboard() {
             ) : (
               <>
                 <div className="text-2xl font-bold text-kaart-orange">
-                  {formatNumber(stats?.mapped_tasks ?? 0)}
+                  <Val>{formatNumber(stats?.mapped_tasks)}</Val>
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  {formatNumber(stats?.total_contributions_for_month ?? 0)} this month
+                  <Val>{formatNumber(stats?.total_contributions_for_month)}</Val> this month
                 </p>
               </>
             )}
@@ -150,10 +150,10 @@ export default function UserDashboard() {
             ) : (
               <>
                 <div className="text-2xl font-bold text-green-600">
-                  {formatNumber(stats?.validated_tasks ?? 0)}
+                  <Val>{formatNumber(stats?.validated_tasks)}</Val>
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  {formatNumber(stats?.invalidated_tasks ?? 0)} invalidated
+                  <Val>{formatNumber(stats?.invalidated_tasks)}</Val> invalidated
                 </p>
               </>
             )}
@@ -186,7 +186,7 @@ export default function UserDashboard() {
               ) : (
                 <>
                   <div className="text-2xl font-bold">
-                    {formatCurrency(payable?.payable_total ?? 0)}
+                    <Val>{formatCurrency(payable?.payable_total)}</Val>
                   </div>
                   <p className="text-xs text-muted-foreground">
                     {(stats?.requests_total ?? 0) > 0
@@ -240,7 +240,7 @@ export default function UserDashboard() {
               <Skeleton className="h-6 w-20" />
             ) : (
               <div style={{ fontSize: 18, fontWeight: 700, color: "#ff6b35" }}>
-                {formatCurrency(payable?.mapping_earnings ?? 0)}
+                <Val>{formatCurrency(payable?.mapping_earnings)}</Val>
               </div>
             )}
           </div>
@@ -253,7 +253,7 @@ export default function UserDashboard() {
               <Skeleton className="h-6 w-20" />
             ) : (
               <div style={{ fontSize: 18, fontWeight: 700, color: "#2563eb" }}>
-                {formatCurrency(payable?.validation_earnings ?? 0)}
+                <Val>{formatCurrency(payable?.validation_earnings)}</Val>
               </div>
             )}
           </div>
@@ -266,7 +266,7 @@ export default function UserDashboard() {
               <Skeleton className="h-6 w-20" />
             ) : (
               <div style={{ fontSize: 18, fontWeight: 700, color: "#9333ea" }}>
-                {formatCurrency(payable?.checklist_earnings ?? 0)}
+                <Val>{formatCurrency(payable?.checklist_earnings)}</Val>
               </div>
             )}
           </div>
@@ -279,7 +279,7 @@ export default function UserDashboard() {
               <Skeleton className="h-6 w-20" />
             ) : (
               <div style={{ fontSize: 18, fontWeight: 700, color: "#ca8a04" }}>
-                {formatCurrency(stats?.requests_total ?? 0)}
+                <Val>{formatCurrency(stats?.requests_total)}</Val>
               </div>
             )}
           </div>
@@ -292,7 +292,7 @@ export default function UserDashboard() {
               <Skeleton className="h-6 w-20" />
             ) : (
               <div style={{ fontSize: 18, fontWeight: 700, color: "#16a34a" }}>
-                {formatCurrency(stats?.payouts_total ?? 0)}
+                <Val>{formatCurrency(stats?.payouts_total)}</Val>
               </div>
             )}
           </div>
@@ -342,7 +342,7 @@ export default function UserDashboard() {
                         >
                           #{project.id}
                         </a>
-                        {" "}&bull; {formatNumber(project.total_tasks)} tasks
+                        {" "}&bull; {formatNumber(project.total_tasks).text} tasks
                       </p>
                     </div>
                     <Badge
@@ -354,7 +354,7 @@ export default function UserDashboard() {
                           : "destructive"
                       }
                     >
-                      {project.difficulty || "Unknown"}
+                      <Val fallback="Unknown">{project.difficulty}</Val>
                     </Badge>
                   </div>
                 ))}
@@ -385,13 +385,13 @@ export default function UserDashboard() {
                       </p>
                     </div>
                     <p className="text-xs text-yellow-700 dark:text-yellow-300">
-                      Pending: {formatCurrency(stats?.requests_total ?? 0)}
+                      Pending: {formatCurrency(stats?.requests_total).text}
                     </p>
                   </div>
                 ) : (payable?.payable_total ?? 0) > 0 ? (
                   <div className="rounded-lg bg-green-50 dark:bg-green-950 p-3">
                     <p className="font-medium text-sm text-green-800 dark:text-green-200">
-                      {formatCurrency(payable?.payable_total ?? 0)} available!
+                      {formatCurrency(payable?.payable_total).text} available!
                     </p>
                     <Button
                       variant="primary"
@@ -463,16 +463,16 @@ export default function UserDashboard() {
                   Contributions this month
                 </p>
                 <div className="text-3xl font-bold">
-                  {formatNumber(stats?.total_contributions_for_month ?? 0)}
+                  <Val>{formatNumber(stats?.total_contributions_for_month)}</Val>
                 </div>
                 <p className="text-xs mt-1">
                   {stats?.month_contribution_change !== undefined && stats.month_contribution_change >= 0 ? (
                     <span className="text-green-600">
-                      +{formatNumber(stats.month_contribution_change)} from last month
+                      +{formatNumber(stats.month_contribution_change).text} from last month
                     </span>
                   ) : (
                     <span className="text-red-600">
-                      {formatNumber(stats?.month_contribution_change ?? 0)} from last month
+                      {formatNumber(stats?.month_contribution_change).text} from last month
                     </span>
                   )}
                 </p>

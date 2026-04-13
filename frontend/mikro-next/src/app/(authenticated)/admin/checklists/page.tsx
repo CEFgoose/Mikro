@@ -17,6 +17,7 @@ import {
   TabsTrigger,
   TabsContent,
   Skeleton,
+  Val,
 } from "@/components/ui";
 import { useToastActions } from "@/components/ui";
 import LocationsTab from "@/components/LocationsTab";
@@ -409,11 +410,11 @@ export default function AdminChecklistsPage() {
           <div className="space-y-2 text-sm">
             <div className="flex justify-between">
               <span className="text-muted-foreground">Completion Rate:</span>
-              <span className="font-medium">{formatCurrency(checklist.completion_rate)}</span>
+              <span className="font-medium"><Val>{formatCurrency(checklist.completion_rate)}</Val></span>
             </div>
             <div className="flex justify-between">
               <span className="text-muted-foreground">Validation Rate:</span>
-              <span className="font-medium">{formatCurrency(checklist.validation_rate)}</span>
+              <span className="font-medium"><Val>{formatCurrency(checklist.validation_rate)}</Val></span>
             </div>
             {checklist.due_date && (
               <div className="flex justify-between">
@@ -573,7 +574,7 @@ export default function AdminChecklistsPage() {
             <CardTitle className="text-sm font-medium">Total Checklists</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{formatNumber(stats.total)}</div>
+            <div className="text-2xl font-bold"><Val>{formatNumber(stats.total)}</Val></div>
           </CardContent>
         </Card>
         <Card>
@@ -581,7 +582,7 @@ export default function AdminChecklistsPage() {
             <CardTitle className="text-sm font-medium">Active</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-kaart-orange">{formatNumber(stats.active)}</div>
+            <div className="text-2xl font-bold text-kaart-orange"><Val>{formatNumber(stats.active)}</Val></div>
           </CardContent>
         </Card>
         <Card>
@@ -589,7 +590,7 @@ export default function AdminChecklistsPage() {
             <CardTitle className="text-sm font-medium">Pending Confirmation</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-yellow-600">{formatNumber(stats.pendingConfirmation)}</div>
+            <div className="text-2xl font-bold text-yellow-600"><Val>{formatNumber(stats.pendingConfirmation)}</Val></div>
           </CardContent>
         </Card>
         <Card>
@@ -597,7 +598,7 @@ export default function AdminChecklistsPage() {
             <CardTitle className="text-sm font-medium">Total Paid Out</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-green-600">{formatCurrency(stats.totalPaid)}</div>
+            <div className="text-2xl font-bold text-green-600"><Val>{formatCurrency(stats.totalPaid)}</Val></div>
           </CardContent>
         </Card>
       </div>
@@ -614,12 +615,12 @@ export default function AdminChecklistsPage() {
       {/* Tabs */}
       <Tabs defaultValue="active">
         <TabsList>
-          <TabsTrigger value="active">Active ({formatNumber(activeChecklists.length)})</TabsTrigger>
-          <TabsTrigger value="mine">Created by Me ({formatNumber(myChecklists.length)})</TabsTrigger>
-          <TabsTrigger value="pending">Pending Confirmation ({formatNumber(completedChecklists.length)})</TabsTrigger>
-          <TabsTrigger value="confirmed">Confirmed ({formatNumber(confirmedChecklists.length)})</TabsTrigger>
-          <TabsTrigger value="inactive">Inactive ({formatNumber(inactiveChecklists.length)})</TabsTrigger>
-          <TabsTrigger value="stale">Stale ({formatNumber(staleChecklists.length)})</TabsTrigger>
+          <TabsTrigger value="active">Active ({formatNumber(activeChecklists.length).text})</TabsTrigger>
+          <TabsTrigger value="mine">Created by Me ({formatNumber(myChecklists.length).text})</TabsTrigger>
+          <TabsTrigger value="pending">Pending Confirmation ({formatNumber(completedChecklists.length).text})</TabsTrigger>
+          <TabsTrigger value="confirmed">Confirmed ({formatNumber(confirmedChecklists.length).text})</TabsTrigger>
+          <TabsTrigger value="inactive">Inactive ({formatNumber(inactiveChecklists.length).text})</TabsTrigger>
+          <TabsTrigger value="stale">Stale ({formatNumber(staleChecklists.length).text})</TabsTrigger>
         </TabsList>
 
         <TabsContent value="active">
@@ -921,11 +922,11 @@ export default function AdminChecklistsPage() {
           <div className="grid grid-cols-2 gap-4 bg-muted p-4 rounded-lg">
             <div>
               <p className="text-sm text-muted-foreground">Completion Rate</p>
-              <p className="font-bold">{formatCurrency(selectedChecklist?.completion_rate ?? 0)}</p>
+              <p className="font-bold"><Val>{formatCurrency(selectedChecklist?.completion_rate)}</Val></p>
             </div>
             <div>
               <p className="text-sm text-muted-foreground">Validation Rate</p>
-              <p className="font-bold">{formatCurrency(selectedChecklist?.validation_rate ?? 0)}</p>
+              <p className="font-bold"><Val>{formatCurrency(selectedChecklist?.validation_rate)}</Val></p>
             </div>
             <div>
               <p className="text-sm text-muted-foreground">Difficulty</p>

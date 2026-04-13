@@ -10,6 +10,8 @@ import {
   CardTitle,
   Badge,
   Button,
+  StatCard,
+  Val,
 } from "@/components/ui";
 import { useUser } from "@auth0/nextjs-auth0/client";
 import { useFetchProjectProfile } from "@/hooks/useApi";
@@ -20,26 +22,6 @@ import {
   getProjectExternalUrl,
 } from "@/lib/utils";
 import type { ProjectProfileResponse } from "@/types";
-
-function StatCard({
-  label,
-  value,
-  sub,
-}: {
-  label: string;
-  value: string | number;
-  sub?: string;
-}) {
-  return (
-    <Card>
-      <CardContent className="p-4 text-center">
-        <p className="text-sm text-muted-foreground">{label}</p>
-        <p className="text-2xl font-bold mt-1">{value}</p>
-        {sub && <p className="text-xs text-muted-foreground mt-1">{sub}</p>}
-      </CardContent>
-    </Card>
-  );
-}
 
 function ProgressBar({
   value,
@@ -183,12 +165,12 @@ export default function UserProjectProfilePage() {
         <StatCard
           label="Mapped"
           value={`${pctMapped.toFixed(1)}%`}
-          sub={`${formatNumber(proj.effective_mapped)} / ${formatNumber(totalTasks)}`}
+          sub={`${formatNumber(proj.effective_mapped).text} / ${formatNumber(totalTasks).text}`}
         />
         <StatCard
           label="Validated"
           value={`${pctValidated.toFixed(1)}%`}
-          sub={`${formatNumber(proj.effective_validated)} / ${formatNumber(totalTasks)}`}
+          sub={`${formatNumber(proj.effective_validated).text} / ${formatNumber(totalTasks).text}`}
         />
         <StatCard
           label="Difficulty"
@@ -211,20 +193,20 @@ export default function UserProjectProfilePage() {
                 <div>
                   <p className="text-sm text-muted-foreground">Tasks Mapped</p>
                   <p className="text-xl font-semibold">
-                    {formatNumber(me.tasks_mapped)}
+                    <Val>{formatNumber(me.tasks_mapped)}</Val>
                   </p>
                 </div>
                 <div>
                   <p className="text-sm text-muted-foreground">Tasks Validated</p>
                   <p className="text-xl font-semibold">
-                    {formatNumber(me.tasks_validated)}
+                    <Val>{formatNumber(me.tasks_validated)}</Val>
                   </p>
                 </div>
                 {paymentsVisible && proj.payments_enabled !== false && (
                   <div>
                     <p className="text-sm text-muted-foreground">Your Earnings</p>
                     <p className="text-xl font-semibold text-green-600">
-                      {formatCurrency(me.earnings)}
+                      <Val>{formatCurrency(me.earnings)}</Val>
                     </p>
                   </div>
                 )}
@@ -253,15 +235,15 @@ export default function UserProjectProfilePage() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <p className="text-sm text-muted-foreground mb-1">
-                Mapped ({formatNumber(proj.effective_mapped)} /{" "}
-                {formatNumber(totalTasks)})
+                Mapped ({formatNumber(proj.effective_mapped).text} /{" "}
+                {formatNumber(totalTasks).text})
               </p>
               <ProgressBar value={pctMapped} />
             </div>
             <div>
               <p className="text-sm text-muted-foreground mb-1">
-                Validated ({formatNumber(proj.effective_validated)} /{" "}
-                {formatNumber(totalTasks)})
+                Validated ({formatNumber(proj.effective_validated).text} /{" "}
+                {formatNumber(totalTasks).text})
               </p>
               <ProgressBar value={pctValidated} color="bg-blue-500" />
             </div>
@@ -287,7 +269,7 @@ export default function UserProjectProfilePage() {
                             `Status ${status}`}
                         </span>
                         <Badge variant="secondary">
-                          {formatNumber(count as number)}
+                          <Val>{formatNumber(count as number)}</Val>
                         </Badge>
                       </div>
                     )
@@ -318,7 +300,7 @@ export default function UserProjectProfilePage() {
                   Mapping Rate per Task
                 </p>
                 <p className="text-xl font-semibold">
-                  {formatCurrency(proj.mapping_rate_per_task || 0)}
+                  <Val>{formatCurrency(proj.mapping_rate_per_task)}</Val>
                 </p>
               </div>
               <div>
@@ -326,7 +308,7 @@ export default function UserProjectProfilePage() {
                   Validation Rate per Task
                 </p>
                 <p className="text-xl font-semibold">
-                  {formatCurrency(proj.validation_rate_per_task || 0)}
+                  <Val>{formatCurrency(proj.validation_rate_per_task)}</Val>
                 </p>
               </div>
             </div>

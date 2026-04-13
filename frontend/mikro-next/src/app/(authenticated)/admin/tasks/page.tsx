@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Card, CardContent, CardHeader, CardTitle, Button, Modal, useToastActions } from "@/components/ui";
+import { Card, CardContent, CardHeader, CardTitle, Button, Modal, useToastActions, Val } from "@/components/ui";
 import { Task } from "@/types";
 import { formatNumber, formatCurrency, getProjectExternalUrl } from "@/lib/utils";
 
@@ -159,8 +159,8 @@ export default function AdminTasksPage() {
                           <td className="px-4 py-3">{task.id}</td>
                           <td className="px-4 py-3 font-medium">{task.project_name}</td>
                           <td className="px-4 py-3">{task.project_id}</td>
-                          <td className="px-4 py-3">{task.mapped_by ?? "-"}</td>
-                          <td className="px-4 py-3">{task.validated_by ?? "-"}</td>
+                          <td className="px-4 py-3"><Val fallback="-">{task.mapped_by}</Val></td>
+                          <td className="px-4 py-3"><Val fallback="-">{task.validated_by}</Val></td>
                         </tr>
                       ))}
                       {filtered.length === 0 && (

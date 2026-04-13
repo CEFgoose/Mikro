@@ -3,30 +3,10 @@
 import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui";
+import { Card, CardContent, CardHeader, CardTitle, StatCard, Val } from "@/components/ui";
 import { useFetchUserTeamProfile } from "@/hooks/useApi";
 import type { TeamProfileData } from "@/types";
 import { formatNumber, formatCurrency, displayRole } from "@/lib/utils";
-
-function StatCard({
-  label,
-  value,
-  sub,
-}: {
-  label: string;
-  value: string | number;
-  sub?: string;
-}) {
-  return (
-    <Card>
-      <CardContent className="p-4 text-center">
-        <p className="text-sm text-muted-foreground">{label}</p>
-        <p className="text-2xl font-bold mt-1">{value}</p>
-        {sub && <p className="text-xs text-muted-foreground mt-1">{sub}</p>}
-      </CardContent>
-    </Card>
-  );
-}
 
 function formatDate(iso: string | null): string {
   if (!iso) return "-";
@@ -116,7 +96,7 @@ export default function UserTeamProfilePage() {
                   </span>
                 )}
                 <span>
-                  Members: <span className="font-medium text-foreground">{formatNumber(team.member_count)}</span>
+                  Members: <span className="font-medium text-foreground"><Val>{formatNumber(team.member_count)}</Val></span>
                 </span>
                 {team.created_at && (
                   <span>Created: {formatDate(team.created_at)}</span>
@@ -127,7 +107,7 @@ export default function UserTeamProfilePage() {
         </CardContent>
       </Card>
 
-      {/* Aggregated Stats — NO financials */}
+      {/* Aggregated Stats -- NO financials */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <StatCard label="Tasks Mapped" value={formatNumber(aggregated_stats.total_tasks_mapped)} />
         <StatCard label="Tasks Validated" value={formatNumber(aggregated_stats.total_tasks_validated)} />
@@ -170,9 +150,9 @@ export default function UserTeamProfilePage() {
                           {displayRole(member.role)}
                         </span>
                       </td>
-                      <td className="px-6 py-4 text-foreground">{member.osm_username || "-"}</td>
-                      <td className="px-6 py-4 text-foreground">{formatNumber(member.total_tasks_mapped)}</td>
-                      <td className="px-6 py-4 text-foreground">{formatNumber(member.total_tasks_validated)}</td>
+                      <td className="px-6 py-4 text-foreground"><Val fallback="-">{member.osm_username}</Val></td>
+                      <td className="px-6 py-4 text-foreground"><Val>{formatNumber(member.total_tasks_mapped)}</Val></td>
+                      <td className="px-6 py-4 text-foreground"><Val>{formatNumber(member.total_tasks_validated)}</Val></td>
                     </tr>
                   ))}
                 </tbody>
@@ -208,8 +188,8 @@ export default function UserTeamProfilePage() {
                       <td className="px-6 py-4">
                         <span className="font-medium text-kaart-orange">{proj.name}</span>
                       </td>
-                      <td className="px-6 py-4 text-foreground">{formatNumber(proj.team_tasks_mapped)}</td>
-                      <td className="px-6 py-4 text-foreground">{formatNumber(proj.team_tasks_validated)}</td>
+                      <td className="px-6 py-4 text-foreground"><Val>{formatNumber(proj.team_tasks_mapped)}</Val></td>
+                      <td className="px-6 py-4 text-foreground"><Val>{formatNumber(proj.team_tasks_validated)}</Val></td>
                     </tr>
                   ))}
                 </tbody>
@@ -246,7 +226,7 @@ export default function UserTeamProfilePage() {
                       <td className="px-6 py-4 font-medium text-kaart-orange">{training.title}</td>
                       <td className="px-6 py-4">
                         <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                          {training.training_type || "-"}
+                          <Val fallback="-">{training.training_type}</Val>
                         </span>
                       </td>
                       <td className="px-6 py-4">
@@ -262,7 +242,7 @@ export default function UserTeamProfilePage() {
                           {training.difficulty}
                         </span>
                       </td>
-                      <td className="px-6 py-4 text-foreground">{formatNumber(training.point_value)}</td>
+                      <td className="px-6 py-4 text-foreground"><Val>{formatNumber(training.point_value)}</Val></td>
                     </tr>
                   ))}
                 </tbody>

@@ -38,6 +38,7 @@ import {
   PaymentRequestProjectDetail,
 } from "@/hooks";
 import { formatNumber, formatCurrency } from "@/lib/utils";
+import { Val } from "@/components/ui";
 import type { PayRequest, Payment } from "@/types";
 
 function formatDate(dateString: string): string {
@@ -56,7 +57,7 @@ function generateCSV(details: PaymentRequestDetailsResponse): string {
   lines.push(`User,${details.user_name}`);
   lines.push(`OSM Username,${details.osm_username}`);
   lines.push(`Date Requested,${details.date_requested}`);
-  lines.push(`Amount Requested,${formatCurrency(details.amount_requested)}`);
+  lines.push(`Amount Requested,${formatCurrency(details.amount_requested).text}`);
   lines.push(`Payment Email,${details.payment_email || "N/A"}`);
   lines.push(``);
 
@@ -64,9 +65,9 @@ function generateCSV(details: PaymentRequestDetailsResponse): string {
   lines.push(`Summary`);
   lines.push(`Total Tasks,${details.summary.total_tasks}`);
   lines.push(`Total Projects,${details.summary.total_projects}`);
-  lines.push(`Mapping Earnings,${formatCurrency(details.summary.mapping_earnings)}`);
-  lines.push(`Validation Earnings,${formatCurrency(details.summary.validation_earnings)}`);
-  lines.push(`Total Earnings,${formatCurrency(details.summary.total_earnings)}`);
+  lines.push(`Mapping Earnings,${formatCurrency(details.summary.mapping_earnings).text}`);
+  lines.push(`Validation Earnings,${formatCurrency(details.summary.validation_earnings).text}`);
+  lines.push(`Total Earnings,${formatCurrency(details.summary.total_earnings).text}`);
   lines.push(``);
 
   // Task details header
@@ -77,7 +78,7 @@ function generateCSV(details: PaymentRequestDetailsResponse): string {
     for (const task of project.tasks) {
       const taskType = task.is_mapping_earning ? "Mapping" : task.is_validation_earning ? "Validation" : "Other";
       const rate = task.is_mapping_earning ? task.mapping_rate : task.validation_rate;
-      lines.push(`"${project.project_name}",${task.task_id},${taskType},${task.mapped_by},${task.validated_by},${formatCurrency(rate)}`);
+      lines.push(`"${project.project_name}",${task.task_id},${taskType},${task.mapped_by},${task.validated_by},${formatCurrency(rate).text}`);
     }
   }
 
@@ -292,7 +293,7 @@ export default function AdminPaymentsPage() {
 
     try {
       await processPayment(paymentData);
-      toast.success(`Payment of ${formatCurrency(selectedRequest.amount_requested)} approved`);
+      toast.success(`Payment of ${formatCurrency(selectedRequest.amount_requested).text} approved`);
       setShowApproveModal(false);
       setSelectedRequest(null);
       setPaymentNotes("");
@@ -432,7 +433,7 @@ export default function AdminPaymentsPage() {
             <CardTitle className="text-sm font-medium">Total Potential Payout</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-kaart-orange">{formatCurrency(totalPotentialPayout)}</div>
+            <div className="text-2xl font-bold text-kaart-orange"><Val>{formatCurrency(totalPotentialPayout)}</Val></div>
             <p className="text-xs text-muted-foreground">
               If all users cashed in now
             </p>
@@ -443,9 +444,9 @@ export default function AdminPaymentsPage() {
             <CardTitle className="text-sm font-medium">Pending Requests</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-yellow-600">{formatNumber(requests.length)}</div>
+            <div className="text-2xl font-bold text-yellow-600"><Val>{formatNumber(requests.length)}</Val></div>
             <p className="text-xs text-muted-foreground">
-              Total: {formatCurrency(totalPending)}
+              Total: <Val>{formatCurrency(totalPending)}</Val>
             </p>
           </CardContent>
         </Card>
@@ -454,9 +455,9 @@ export default function AdminPaymentsPage() {
             <CardTitle className="text-sm font-medium">Completed Payouts</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-green-600">{formatNumber(payments.length)}</div>
+            <div className="text-2xl font-bold text-green-600"><Val>{formatNumber(payments.length)}</Val></div>
             <p className="text-xs text-muted-foreground">
-              Total: {formatCurrency(totalPaid)}
+              Total: <Val>{formatCurrency(totalPaid)}</Val>
             </p>
           </CardContent>
         </Card>
@@ -466,10 +467,10 @@ export default function AdminPaymentsPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-kaart-orange">
-              {formatCurrency(monthlyStats.thisMonth)}
+              <Val>{formatCurrency(monthlyStats.thisMonth)}</Val>
             </div>
             <p className="text-xs text-muted-foreground">
-              {formatNumber(monthlyStats.count)} payments
+              <Val>{formatNumber(monthlyStats.count)}</Val> payments
             </p>
           </CardContent>
         </Card>
@@ -479,16 +480,16 @@ export default function AdminPaymentsPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {formatCurrency(monthlyStats.lastMonth)}
+              <Val>{formatCurrency(monthlyStats.lastMonth)}</Val>
             </div>
             <p className="text-xs text-muted-foreground">
               {monthlyStats.thisMonth > monthlyStats.lastMonth ? (
                 <span className="text-green-600">
-                  +{formatCurrency(monthlyStats.thisMonth - monthlyStats.lastMonth)} increase
+                  +<Val>{formatCurrency(monthlyStats.thisMonth - monthlyStats.lastMonth)}</Val> increase
                 </span>
               ) : monthlyStats.thisMonth < monthlyStats.lastMonth ? (
                 <span className="text-red-600">
-                  {formatCurrency(monthlyStats.thisMonth - monthlyStats.lastMonth)} decrease
+                  <Val>{formatCurrency(monthlyStats.thisMonth - monthlyStats.lastMonth)}</Val> decrease
                 </span>
               ) : (
                 "Same as this month"
@@ -548,7 +549,7 @@ export default function AdminPaymentsPage() {
                       <TableCell className="max-w-[150px] truncate">{request.osm_username}</TableCell>
                       <TableCell className="whitespace-nowrap">{formatDate(request.date_requested)}</TableCell>
                       <TableCell className="font-bold whitespace-nowrap">
-                        {formatCurrency(request.amount_requested)}
+                        <Val>{formatCurrency(request.amount_requested)}</Val>
                       </TableCell>
                       <TableCell>
                         <Badge variant="outline">{request.task_ids?.length || 0} tasks</Badge>
@@ -627,7 +628,7 @@ export default function AdminPaymentsPage() {
                       <TableCell className="max-w-[150px] truncate">{payment.osm_username}</TableCell>
                       <TableCell className="whitespace-nowrap">{formatDate(payment.date_paid)}</TableCell>
                       <TableCell className="font-bold text-green-600 whitespace-nowrap">
-                        {formatCurrency(payment.amount_paid)}
+                        <Val>{formatCurrency(payment.amount_paid)}</Val>
                       </TableCell>
                       <TableCell className="max-w-[150px] truncate">
                         {payment.notes || "-"}
@@ -706,7 +707,7 @@ export default function AdminPaymentsPage() {
                         <TableCell className="max-w-[150px] truncate">{payment.osm_username}</TableCell>
                         <TableCell className="whitespace-nowrap">{formatDate(payment.date_paid)}</TableCell>
                         <TableCell className="font-bold whitespace-nowrap">
-                          {formatCurrency(payment.amount_paid)}
+                          <Val>{formatCurrency(payment.amount_paid)}</Val>
                         </TableCell>
                         <TableCell className="whitespace-nowrap">
                           {payment.archived_date ? formatDate(payment.archived_date) : "-"}
@@ -793,13 +794,13 @@ export default function AdminPaymentsPage() {
                 <div>
                   <p className="text-xs text-muted-foreground">Mapping Earnings</p>
                   <p className="text-lg font-bold text-green-600">
-                    {formatCurrency(requestDetails.summary.mapping_earnings)}
+                    <Val>{formatCurrency(requestDetails.summary.mapping_earnings)}</Val>
                   </p>
                 </div>
                 <div>
                   <p className="text-xs text-muted-foreground">Validation Earnings</p>
                   <p className="text-lg font-bold text-blue-600">
-                    {formatCurrency(requestDetails.summary.validation_earnings)}
+                    <Val>{formatCurrency(requestDetails.summary.validation_earnings)}</Val>
                   </p>
                 </div>
               </div>
@@ -807,7 +808,7 @@ export default function AdminPaymentsPage() {
                 <div className="flex justify-between items-center">
                   <span className="font-medium">Total Requested</span>
                   <span className="text-xl font-bold text-kaart-orange">
-                    {formatCurrency(requestDetails.amount_requested)}
+                    <Val>{formatCurrency(requestDetails.amount_requested)}</Val>
                   </span>
                 </div>
               </div>
@@ -833,9 +834,9 @@ export default function AdminPaymentsPage() {
                     </div>
                     <div className="flex items-center gap-4">
                       <span className="text-sm">
-                        <span className="text-green-600">{formatCurrency(project.mapping_earnings)}</span>
+                        <span className="text-green-600"><Val>{formatCurrency(project.mapping_earnings)}</Val></span>
                         {" + "}
-                        <span className="text-blue-600">{formatCurrency(project.validation_earnings)}</span>
+                        <span className="text-blue-600"><Val>{formatCurrency(project.validation_earnings)}</Val></span>
                       </span>
                       <svg
                         className={`w-5 h-5 transition-transform ${expandedProjects.has(project.project_id) ? "rotate-180" : ""}`}
@@ -903,9 +904,9 @@ export default function AdminPaymentsPage() {
                                 {task.self_validated ? (
                                   <span className="text-yellow-600">(excluded)</span>
                                 ) : task.is_mapping_earning ? (
-                                  formatCurrency(task.mapping_rate)
+                                  <Val>{formatCurrency(task.mapping_rate)}</Val>
                                 ) : (
-                                  formatCurrency(task.validation_rate)
+                                  <Val>{formatCurrency(task.validation_rate)}</Val>
                                 )}
                               </TableCell>
                             </TableRow>
@@ -939,7 +940,7 @@ export default function AdminPaymentsPage() {
           setSelectedRequest(null);
         }}
         title="Approve Payment"
-        description={`Approve payment request of ${formatCurrency(selectedRequest?.amount_requested ?? 0)} for ${selectedRequest?.user}`}
+        description={`Approve payment request of ${formatCurrency(selectedRequest?.amount_requested).text} for ${selectedRequest?.user}`}
         footer={
           <>
             <Button variant="outline" onClick={() => setShowApproveModal(false)}>
@@ -960,7 +961,7 @@ export default function AdminPaymentsPage() {
               <strong>OSM Username:</strong> {selectedRequest?.osm_username}
             </p>
             <p className="text-sm text-green-800 dark:text-green-200">
-              <strong>Amount:</strong> {formatCurrency(selectedRequest?.amount_requested ?? 0)}
+              <strong>Amount:</strong> <Val>{formatCurrency(selectedRequest?.amount_requested)}</Val>
             </p>
             <p className="text-sm text-green-800 dark:text-green-200">
               <strong>Tasks:</strong> {selectedRequest?.task_ids?.length || 0} tasks
@@ -987,7 +988,7 @@ export default function AdminPaymentsPage() {
         }}
         onConfirm={handleReject}
         title="Reject Payment Request"
-        message={`Are you sure you want to reject the payment request of ${formatCurrency(selectedRequest?.amount_requested ?? 0)} from ${selectedRequest?.user}? This action will delete the request.`}
+        message={`Are you sure you want to reject the payment request of ${formatCurrency(selectedRequest?.amount_requested).text} from ${selectedRequest?.user}? This action will delete the request.`}
         confirmText="Reject"
         variant="destructive"
         isLoading={rejecting}
@@ -1002,7 +1003,7 @@ export default function AdminPaymentsPage() {
         }}
         onConfirm={handleDeletePayment}
         title="Delete Payment Record"
-        message={`Are you sure you want to permanently delete the payment record of ${formatCurrency(selectedPayment?.amount_paid ?? 0)} for ${selectedPayment?.user}? This action cannot be undone.`}
+        message={`Are you sure you want to permanently delete the payment record of ${formatCurrency(selectedPayment?.amount_paid).text} for ${selectedPayment?.user}? This action cannot be undone.`}
         confirmText="Delete"
         variant="destructive"
         isLoading={deleting}
@@ -1017,7 +1018,7 @@ export default function AdminPaymentsPage() {
         }}
         onConfirm={handleArchivePayment}
         title="Archive Payment Record"
-        message={`Archive the payment record of ${formatCurrency(selectedPayment?.amount_paid ?? 0)} for ${selectedPayment?.user}? The record will be moved to the Archive tab and can be accessed later if needed.`}
+        message={`Archive the payment record of ${formatCurrency(selectedPayment?.amount_paid).text} for ${selectedPayment?.user}? The record will be moved to the Archive tab and can be accessed later if needed.`}
         confirmText="Archive"
         variant="default"
         isLoading={archiving}

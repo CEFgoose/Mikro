@@ -18,22 +18,53 @@ export function displayRole(role: string): string {
 }
 
 /**
- * Format a number with thousand separators (e.g., 1234 → "1,234").
- * Returns "0" for null/undefined/NaN.
+ * A formatted value that carries whether it came from real data or a fallback.
+ * Use with the <Val> component to visually distinguish placeholders.
  */
-export function formatNumber(value: number | null | undefined): string {
-  if (value == null || isNaN(value)) return "0";
-  return value.toLocaleString("en-US");
+export type FormattedValue = {
+  text: string;
+  isPlaceholder: boolean;
+};
+
+/**
+ * Format a number with thousand separators (e.g., 1234 → "1,234").
+ * Returns a FormattedValue — isPlaceholder is true when the input was null/undefined/NaN.
+ */
+export function formatNumber(value: number | null | undefined): FormattedValue {
+  if (value == null || isNaN(value)) {
+    return { text: "0", isPlaceholder: true };
+  }
+  return { text: value.toLocaleString("en-US"), isPlaceholder: false };
 }
 
 /**
  * Format a number as USD currency (e.g., 1234.5 → "$1,234.50").
+ * Returns a FormattedValue — isPlaceholder is true when the input was null/undefined.
  */
-export function formatCurrency(amount: number | null | undefined): string {
-  return new Intl.NumberFormat("en-US", {
+export function formatCurrency(amount: number | null | undefined): FormattedValue {
+  const formatted = new Intl.NumberFormat("en-US", {
     style: "currency",
     currency: "USD",
   }).format(amount ?? 0);
+
+  return {
+    text: formatted,
+    isPlaceholder: amount == null,
+  };
+}
+
+/**
+ * Format a string value with a fallback for null/undefined/blank.
+ * Returns a FormattedValue — isPlaceholder is true when the fallback is used.
+ */
+export function formatString(
+  value: string | null | undefined,
+  fallback: string = "\u2014"
+): FormattedValue {
+  if (!value || !value.trim()) {
+    return { text: fallback, isPlaceholder: true };
+  }
+  return { text: value, isPlaceholder: false };
 }
 
 /**

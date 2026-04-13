@@ -19,6 +19,7 @@ import {
   TableRow,
   TableCell,
   Skeleton,
+  Val,
 } from "@/components/ui";
 import { useToastActions } from "@/components/ui";
 import {
@@ -293,7 +294,7 @@ export default function FriendsListPage() {
             <CardTitle className="text-sm font-medium">Total Listed</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{formatNumber(friends.length)}</div>
+            <div className="text-2xl font-bold"><Val>{formatNumber(friends.length)}</Val></div>
           </CardContent>
         </Card>
         <Card>
@@ -302,7 +303,7 @@ export default function FriendsListPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-kaart-orange">
-              {formatNumber(activeLast7Days)}
+              <Val>{formatNumber(activeLast7Days)}</Val>
             </div>
           </CardContent>
         </Card>
@@ -312,11 +313,11 @@ export default function FriendsListPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-red-600">
-              {mostActive?.osm_username ?? "\u2014"}
+              <Val>{mostActive?.osm_username}</Val>
             </div>
             {mostActive?.cached_total_changesets != null && (
               <p className="text-xs text-muted-foreground">
-                {formatNumber(mostActive.cached_total_changesets)} changesets
+                <Val>{formatNumber(mostActive.cached_total_changesets)}</Val> changesets
               </p>
             )}
           </CardContent>
@@ -360,11 +361,11 @@ export default function FriendsListPage() {
                     </Link>
                   </TableCell>
                   <TableCell className="text-muted-foreground max-w-[200px] truncate">
-                    {friend.notes
+                    <Val>{friend.notes
                       ? friend.notes.length > 60
                         ? `${friend.notes.slice(0, 60)}...`
                         : friend.notes
-                      : "\u2014"}
+                      : null}</Val>
                   </TableCell>
                   <TableCell>
                     <div className="flex flex-wrap gap-1">
@@ -376,16 +377,14 @@ export default function FriendsListPage() {
                     </div>
                   </TableCell>
                   <TableCell className="text-sm text-muted-foreground">
-                    {friend.added_by_name || "\u2014"}
+                    <Val>{friend.added_by_name}</Val>
                   </TableCell>
                   <TableCell>{formatDate(friend.created_at)}</TableCell>
                   <TableCell>
                     {friend.cached_last_active ? formatDate(friend.cached_last_active) : "Never"}
                   </TableCell>
                   <TableCell>
-                    {friend.cached_total_changesets != null
-                      ? formatNumber(friend.cached_total_changesets)
-                      : "\u2014"}
+                    <Val>{formatNumber(friend.cached_total_changesets)}</Val>
                   </TableCell>
                   <TableCell className="text-right">
                     <div className="flex justify-end gap-2">

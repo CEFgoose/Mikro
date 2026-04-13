@@ -14,6 +14,7 @@ import {
   TableCell,
   Skeleton,
   Modal,
+  Val,
 } from "@/components/ui";
 import { useToastActions } from "@/components/ui";
 import { FilterBar } from "@/components/filters";
@@ -642,7 +643,7 @@ export default function AdminTimePage() {
               Total Hours
             </p>
             <div style={{ fontSize: 20, fontWeight: 700, color: "#ff6b35" }}>
-              {formatNumber(stats.totalHours)}h
+              <Val>{formatNumber(stats.totalHours)}</Val>h
             </div>
             <p style={{ fontSize: 11, color: "#6b7280", marginTop: 4 }}>
               For filtered period
@@ -662,7 +663,7 @@ export default function AdminTimePage() {
                 color: stats.activeSessions > 0 ? "#16a34a" : "#6b7280",
               }}
             >
-              {formatNumber(stats.activeSessions)}
+              <Val>{formatNumber(stats.activeSessions)}</Val>
             </div>
             <p style={{ fontSize: 11, color: "#6b7280", marginTop: 4 }}>
               {stats.activeSessions > 0
@@ -684,7 +685,7 @@ export default function AdminTimePage() {
                 color: stats.pendingAdjustments > 0 ? "#ca8a04" : "#16a34a",
               }}
             >
-              {formatNumber(stats.pendingAdjustments)}
+              <Val>{formatNumber(stats.pendingAdjustments)}</Val>
             </div>
             <p style={{ fontSize: 11, color: "#6b7280", marginTop: 4 }}>
               {stats.pendingAdjustments > 0
@@ -706,7 +707,7 @@ export default function AdminTimePage() {
                 color: stats.voidedEntries > 0 ? "#dc2626" : "#6b7280",
               }}
             >
-              {formatNumber(stats.voidedEntries)}
+              <Val>{formatNumber(stats.voidedEntries)}</Val>
             </div>
             <p style={{ fontSize: 11, color: "#6b7280", marginTop: 4 }}>
               In filtered period
@@ -1192,8 +1193,8 @@ export default function AdminTimePage() {
           }}
         >
           <p className="text-sm text-muted-foreground">
-            Showing {formatNumber(showingFrom)}-{formatNumber(showingTo)} of{" "}
-            {formatNumber(totalEntries)}
+            Showing {formatNumber(showingFrom).text}-{formatNumber(showingTo).text} of{" "}
+            {formatNumber(totalEntries).text}
           </p>
           <div style={{ display: "flex", gap: 8 }}>
             <Button

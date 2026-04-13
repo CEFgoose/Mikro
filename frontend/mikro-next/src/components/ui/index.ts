@@ -43,3 +43,5 @@ export {
   type ToastVariant,
 } from "./Toast";
 export { Tooltip, type TooltipProps } from "./Tooltip";
+export { Val } from "./Val";
+export { StatCard } from "./StatCard";

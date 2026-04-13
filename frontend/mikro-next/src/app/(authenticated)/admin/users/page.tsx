@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle, Button, Modal, useToastAction
 import { FilterBar } from "@/components/filters";
 import { useFilters, useFetchFilterOptions, useFetchCountries } from "@/hooks";
 import { formatNumber, formatCurrency, displayRole } from "@/lib/utils";
+import { Val } from "@/components/ui";
 import { User } from "@/types";
 
 interface CsvUser {
@@ -604,15 +605,15 @@ export default function AdminUsersPage() {
                     <td className="px-2 py-1.5 text-foreground max-w-[120px] truncate" title={user.country_name || ""}>{user.country_name || "\u2014"}</td>
                     <td className="px-2 py-1.5 text-foreground">{user.region_name || "\u2014"}</td>
                     <td className="px-2 py-1.5 text-foreground">{user.timezone || "\u2014"}</td>
-                    <td className="px-2 py-1.5 text-foreground">{formatNumber(user.assigned_projects)}</td>
-                    <td className="px-2 py-1.5 text-foreground">{formatNumber(user.total_tasks_mapped)}</td>
-                    <td className="px-2 py-1.5 text-foreground">{formatNumber(user.total_tasks_validated)}</td>
-                    <td className="px-2 py-1.5 text-foreground">{formatNumber(user.total_tasks_invalidated)}</td>
+                    <td className="px-2 py-1.5 text-foreground"><Val>{formatNumber(user.assigned_projects)}</Val></td>
+                    <td className="px-2 py-1.5 text-foreground"><Val>{formatNumber(user.total_tasks_mapped)}</Val></td>
+                    <td className="px-2 py-1.5 text-foreground"><Val>{formatNumber(user.total_tasks_validated)}</Val></td>
+                    <td className="px-2 py-1.5 text-foreground"><Val>{formatNumber(user.total_tasks_invalidated)}</Val></td>
                     <td className="px-2 py-1.5 text-foreground">
-                      {formatCurrency(user.awaiting_payment)}
+                      <Val>{formatCurrency(user.awaiting_payment)}</Val>
                     </td>
                     <td className="px-2 py-1.5 text-foreground">
-                      {formatCurrency(user.total_payout)}
+                      <Val>{formatCurrency(user.total_payout)}</Val>
                     </td>
                   </tr>
                 ))}

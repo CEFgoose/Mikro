@@ -15,6 +15,8 @@ import {
   Input,
   Skeleton,
   useToastActions,
+  Val,
+  StatCard,
 } from "@/components/ui";
 import {
   useFetchUserProfile,
@@ -127,26 +129,6 @@ function getDateRange(preset: DatePreset): { start: string; end: string } {
       start = end;
   }
   return { start, end };
-}
-
-function StatCard({
-  label,
-  value,
-  sub,
-}: {
-  label: string;
-  value: string | number;
-  sub?: string;
-}) {
-  return (
-    <Card>
-      <CardContent className="p-4 text-center">
-        <p className="text-sm text-muted-foreground">{label}</p>
-        <p className="text-2xl font-bold mt-1">{value}</p>
-        {sub && <p className="text-xs text-muted-foreground mt-1">{sub}</p>}
-      </CardContent>
-    </Card>
-  );
 }
 
 export default function UserProfilePage() {
@@ -719,18 +701,18 @@ export default function UserProfilePage() {
       {/* Section 2: All-time Task Stats */}
       {user && (<>
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <StatCard label="Tasks Mapped" value={formatNumber(user.total_tasks_mapped ?? 0)} />
+        <StatCard label="Tasks Mapped" value={formatNumber(user.total_tasks_mapped)} />
         <StatCard
           label="Tasks Validated"
-          value={formatNumber(user.total_tasks_validated ?? 0)}
+          value={formatNumber(user.total_tasks_validated)}
         />
         <StatCard
           label="Tasks Invalidated"
-          value={formatNumber(user.total_tasks_invalidated ?? 0)}
+          value={formatNumber(user.total_tasks_invalidated)}
         />
         <StatCard
           label="Total Earnings"
-          value={formatCurrency(user.payable_total ?? 0)}
+          value={formatCurrency(user.payable_total)}
         />
       </div>
 
@@ -739,19 +721,19 @@ export default function UserProfilePage() {
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <StatCard
             label="Validated by User"
-            value={formatNumber(user.validator_tasks_validated ?? 0)}
+            value={formatNumber(user.validator_tasks_validated)}
           />
           <StatCard
             label="Invalidated by User"
-            value={formatNumber(user.validator_tasks_invalidated ?? 0)}
+            value={formatNumber(user.validator_tasks_invalidated)}
           />
           <StatCard
             label="Checklists Completed"
-            value={formatNumber(user.total_checklists_completed ?? 0)}
+            value={formatNumber(user.total_checklists_completed)}
           />
           <StatCard
             label="Checklists Confirmed"
-            value={formatNumber(user.validator_total_checklists_confirmed ?? 0)}
+            value={formatNumber(user.validator_total_checklists_confirmed)}
           />
         </div>
       )}
@@ -767,37 +749,37 @@ export default function UserProfilePage() {
               <div className="text-center">
                 <p className="text-sm text-muted-foreground">Mapping</p>
                 <p className="text-lg font-semibold">
-                  {formatCurrency(user.mapping_payable_total ?? 0)}
+                  <Val>{formatCurrency(user.mapping_payable_total)}</Val>
                 </p>
               </div>
               <div className="text-center">
                 <p className="text-sm text-muted-foreground">Validation</p>
                 <p className="text-lg font-semibold">
-                  {formatCurrency(user.validation_payable_total ?? 0)}
+                  <Val>{formatCurrency(user.validation_payable_total)}</Val>
                 </p>
               </div>
               <div className="text-center">
                 <p className="text-sm text-muted-foreground">Checklists</p>
                 <p className="text-lg font-semibold">
-                  {formatCurrency(user.checklist_payable_total ?? 0)}
+                  <Val>{formatCurrency(user.checklist_payable_total)}</Val>
                 </p>
               </div>
               <div className="text-center">
                 <p className="text-sm text-muted-foreground">Payable</p>
                 <p className="text-lg font-semibold text-green-600">
-                  {formatCurrency(user.payable_total ?? 0)}
+                  <Val>{formatCurrency(user.payable_total)}</Val>
                 </p>
               </div>
               <div className="text-center">
                 <p className="text-sm text-muted-foreground">Requested</p>
                 <p className="text-lg font-semibold text-yellow-600">
-                  {formatCurrency(user.requested_total ?? 0)}
+                  <Val>{formatCurrency(user.requested_total)}</Val>
                 </p>
               </div>
               <div className="text-center">
                 <p className="text-sm text-muted-foreground">Paid</p>
                 <p className="text-lg font-semibold text-blue-600">
-                  {formatCurrency(user.paid_total ?? 0)}
+                  <Val>{formatCurrency(user.paid_total)}</Val>
                 </p>
               </div>
             </div>
@@ -885,18 +867,18 @@ export default function UserProfilePage() {
                         )}
                       </td>
                       <td className="px-6 py-4 text-muted-foreground">
-                        {formatNumber(proj.tasks_mapped)}
+                        <Val>{formatNumber(proj.tasks_mapped)}</Val>
                       </td>
                       <td className="px-6 py-4 text-muted-foreground">
-                        {formatNumber(proj.tasks_validated)}
+                        <Val>{formatNumber(proj.tasks_validated)}</Val>
                       </td>
                       <td className="px-6 py-4 text-muted-foreground">
-                        {formatNumber(proj.tasks_invalidated)}
+                        <Val>{formatNumber(proj.tasks_invalidated)}</Val>
                       </td>
                       <td className="px-6 py-4 text-muted-foreground">
-                        {formatCurrency(
+                        <Val>{formatCurrency(
                           proj.mapping_earnings + proj.validation_earnings
-                        )}
+                        )}</Val>
                       </td>
                     </tr>
                   ))}
@@ -997,6 +979,7 @@ export default function UserProfilePage() {
             value={formatCurrency(periodTaskStats.mapping_earnings)}
           />
           <StatCard
+
             label="Val Earnings"
             value={formatCurrency(periodTaskStats.validation_earnings)}
           />
@@ -1312,7 +1295,7 @@ export default function UserProfilePage() {
                           </td>
                           <td className="px-4 py-2">{t.status}</td>
                           <td className="px-4 py-2 text-right font-mono">
-                            {formatCurrency(t.mappingRate || t.validationRate || 0)}
+                            <Val>{formatCurrency(t.mappingRate || t.validationRate)}</Val>
                           </td>
                         </tr>
                       ))}

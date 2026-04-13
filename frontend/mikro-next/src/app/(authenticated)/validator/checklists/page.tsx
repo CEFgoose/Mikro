@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Card, CardContent, CardHeader, CardTitle, Button, Modal } from "@/components/ui";
+import { Card, CardContent, CardHeader, CardTitle, Button, Modal, Val } from "@/components/ui";
 import { useToastActions } from "@/components/ui";
 import { useAddChecklistComment } from "@/hooks";
 import { Checklist } from "@/types";
@@ -116,7 +116,7 @@ export default function ValidatorChecklistsPage() {
               : "text-muted-foreground hover:text-foreground"
           }`}
         >
-          Ready for Confirmation ({formatNumber(completedChecklists.length)})
+          Ready for Confirmation ({formatNumber(completedChecklists.length).text})
         </button>
         <button
           onClick={() => {
@@ -129,7 +129,7 @@ export default function ValidatorChecklistsPage() {
               : "text-muted-foreground hover:text-foreground"
           }`}
         >
-          Completed & Confirmed ({formatNumber(confirmedChecklists.length)})
+          Completed & Confirmed ({formatNumber(confirmedChecklists.length).text})
         </button>
       </div>
 
@@ -150,7 +150,7 @@ export default function ValidatorChecklistsPage() {
                 <div>
                   <CardTitle className="text-lg">{checklist.name}</CardTitle>
                   <p className="text-sm text-muted-foreground mt-1">
-                    Assigned to: {checklist.assigned_user ?? "Unknown"}
+                    Assigned to: <Val fallback="Unknown">{checklist.assigned_user}</Val>
                   </p>
                 </div>
                 <div className="flex items-center gap-2">
@@ -167,7 +167,7 @@ export default function ValidatorChecklistsPage() {
                   </span>
                   {paymentsVisible && (
                     <span className="text-sm text-muted-foreground">
-                      {formatCurrency(checklist.validation_rate)}
+                      <Val>{formatCurrency(checklist.validation_rate)}</Val>
                     </span>
                   )}
                 </div>
