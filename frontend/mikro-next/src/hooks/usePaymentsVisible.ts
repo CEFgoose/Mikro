@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 
 /**
  * Hook that checks whether the current user should see payment-related UI.
- * Returns true for admins always, and `payments_visible` value for others.
+ * Returns true for admins always, and `micropayments_visible` value for others.
  */
 export function usePaymentsVisible(): { paymentsVisible: boolean; loading: boolean } {
   const [paymentsVisible, setPaymentsVisible] = useState(false);
@@ -20,7 +20,7 @@ export function usePaymentsVisible(): { paymentsVisible: boolean; loading: boole
           if (data.role === "admin") {
             setPaymentsVisible(true);
           } else {
-            setPaymentsVisible(data.payments_visible ?? false);
+            setPaymentsVisible(data.micropayments_visible ?? false);
           }
         }
       } catch (error) {

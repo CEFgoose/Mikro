@@ -282,7 +282,7 @@ class TransactionAPI(MethodView):
     def submit_payment_request(self):
         if not g.user:
             return {"message": "User not found", "status": 304}
-        if not g.user.payments_visible:
+        if not g.user.micropayments_visible:
             return {"message": "Payments not enabled for your account", "status": 403}
         notes = request.json.get("notes")
         user_task_ids = [

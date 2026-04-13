@@ -213,6 +213,7 @@ export default function UserProfilePage() {
   const [editTimezone2, setEditTimezone2] = useState("");
   const [editCountryId2, setEditCountryId2] = useState("");
   const [editPaymentsVisible, setEditPaymentsVisible] = useState(false);
+  const [editHourlyRate, setEditHourlyRate] = useState<string>("");
 
   // Time entry edit modal state
   const [editingEntry, setEditingEntry] = useState<TimeEntry | null>(null);
@@ -442,7 +443,8 @@ export default function UserProfilePage() {
     setEditRole(user.role || "user");
     setEditTimezone2(user.timezone || "");
     setEditCountryId2(user.country_id ? String(user.country_id) : "");
-    setEditPaymentsVisible(user.payments_visible ?? false);
+    setEditPaymentsVisible(user.micropayments_visible ?? false);
+    setEditHourlyRate(user.hourly_rate?.toString() ?? "");
     setEditModalOpen(true);
   };
 
@@ -458,7 +460,8 @@ export default function UserProfilePage() {
         role: editRole,
         timezone: editTimezone2 || null,
         country_id: editCountryId2 ? Number(editCountryId2) : null,
-        payments_visible: editPaymentsVisible,
+        micropayments_visible: editPaymentsVisible,
+        hourly_rate: editHourlyRate ? parseFloat(editHourlyRate) : null,
       });
       toast.success("User updated");
       setEditModalOpen(false);
@@ -648,6 +651,12 @@ export default function UserProfilePage() {
                   <div>
                     <span className="text-xs text-muted-foreground">Payment Email</span>
                     <p className="text-sm">{user.payment_email}</p>
+                  </div>
+                )}
+                {user.hourly_rate != null && (
+                  <div>
+                    <span className="text-xs text-muted-foreground">Hourly Rate</span>
+                    <p className="text-sm"><Val>{formatCurrency(user.hourly_rate)}</Val>/hr</p>
                   </div>
                 )}
               </div>
@@ -1708,8 +1717,8 @@ export default function UserProfilePage() {
           />
           <div className="flex items-center justify-between p-3 border border-border rounded-lg">
             <div>
-              <p className="text-sm font-medium">Payment Enabled</p>
-              <p className="text-xs text-muted-foreground">User can see payment information and request payments</p>
+              <p className="text-sm font-medium">Show Micropayments</p>
+              <p className="text-xs text-muted-foreground">User can see micropayment rates, earnings, and request payouts</p>
             </div>
             <div
               onClick={() => setEditPaymentsVisible(!editPaymentsVisible)}
@@ -1723,6 +1732,18 @@ export default function UserProfilePage() {
                 }`}
               />
             </div>
+          </div>
+          <div>
+            <label className="block text-sm font-medium mb-1">Hourly Rate</label>
+            <input
+              type="number"
+              step="0.01"
+              min="0"
+              className="w-full px-3 py-2 border border-input rounded-lg focus:outline-none focus:ring-2 focus:ring-ring"
+              value={editHourlyRate}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setEditHourlyRate(e.target.value)}
+              placeholder="Not set"
+            />
           </div>
         </div>
       </Modal>

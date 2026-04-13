@@ -141,8 +141,8 @@ class User(ModelWithSoftDeleteAndCRUD, SurrogatePK):
         db.Boolean, nullable=False, default=False, server_default="False"
     )
 
-    # Payment visibility — controls whether user sees payment UI
-    payments_visible = db.Column(
+    # Micropayment visibility — controls whether user sees task-based micropayments UI
+    micropayments_visible = db.Column(
         db.Boolean, nullable=False, default=False, server_default="false"
     )
 

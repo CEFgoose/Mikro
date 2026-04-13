@@ -419,7 +419,8 @@ class UserAPI(MethodView):
         response["mapillary_username"] = user.mapillary_username
 
         # Payment visibility
-        response["payments_visible"] = user.payments_visible or False
+        response["micropayments_visible"] = user.micropayments_visible or False
+        response["hourly_rate"] = user.hourly_rate
 
         # Stats for display
         _stats = get_user_task_stats(user)
@@ -499,7 +500,8 @@ class UserAPI(MethodView):
                     "timezone": user.timezone,
                     "is_tracked_only": user.is_tracked_only or False,
                     "mapillary_username": user.mapillary_username,
-                    "payments_visible": user.payments_visible or False,
+                    "micropayments_visible": user.micropayments_visible or False,
+                    "hourly_rate": user.hourly_rate,
                 }
             )
         # Add the list of users to the return_obj dictionary
@@ -753,8 +755,11 @@ class UserAPI(MethodView):
             updates["timezone"] = (request.json["timezone"] or "").strip() or None
         if "mapillary_username" in request.json:
             updates["mapillary_username"] = (request.json["mapillary_username"] or "").strip() or None
-        if "payments_visible" in request.json:
-            updates["payments_visible"] = bool(request.json["payments_visible"])
+        if "micropayments_visible" in request.json:
+            updates["micropayments_visible"] = bool(request.json["micropayments_visible"])
+        if "hourly_rate" in request.json:
+            val = request.json["hourly_rate"]
+            updates["hourly_rate"] = float(val) if val is not None else None
 
         # Handle country_id change (with auto-timezone from country)
         if "country_id" in request.json:
@@ -1101,7 +1106,8 @@ class UserAPI(MethodView):
                 "region_name": region_name,
                 "timezone": user.timezone,
                 "is_tracked_only": user.is_tracked_only or False,
-                "payments_visible": user.payments_visible or False,
+                "micropayments_visible": user.micropayments_visible or False,
+                "hourly_rate": user.hourly_rate,
                 "joined": user.create_time.isoformat() if user.create_time else None,
                 # Task stats
                 "total_tasks_mapped": _stats["total_tasks_mapped"],

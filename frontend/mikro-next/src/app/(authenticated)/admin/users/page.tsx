@@ -34,6 +34,7 @@ export default function AdminUsersPage() {
   const [editCountryId, setEditCountryId] = useState<number | null>(null);
   const [editMapillaryUsername, setEditMapillaryUsername] = useState("");
   const [editPaymentsVisible, setEditPaymentsVisible] = useState(false);
+  const [editHourlyRate, setEditHourlyRate] = useState<string>("");
   const [isSaving, setIsSaving] = useState(false);
   const [userSearch, setUserSearch] = useState("");
   const [sortKey, setSortKey] = useState<string>("name");
@@ -176,7 +177,8 @@ export default function AdminUsersPage() {
       setEditTimezone(user?.timezone || "");
       setEditCountryId(null); // Will show current country as placeholder
       setEditMapillaryUsername(user?.mapillary_username || "");
-      setEditPaymentsVisible(user?.payments_visible ?? false);
+      setEditPaymentsVisible(user?.micropayments_visible ?? false);
+      setEditHourlyRate(user?.hourly_rate?.toString() ?? "");
       setShowEditModal(true);
     }
   };
@@ -227,7 +229,8 @@ export default function AdminUsersPage() {
           timezone: editTimezone,
           ...(editCountryId !== null ? { country_id: editCountryId } : {}),
           mapillary_username: editMapillaryUsername,
-          payments_visible: editPaymentsVisible,
+          micropayments_visible: editPaymentsVisible,
+          hourly_rate: editHourlyRate ? parseFloat(editHourlyRate) : null,
         }),
       });
       const data = await response.json();
@@ -596,7 +599,7 @@ export default function AdminUsersPage() {
                       </div>
                     </td>
                     <td className="px-2 py-1.5">
-                      {user.payments_visible ? (
+                      {user.micropayments_visible ? (
                         <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">Yes</span>
                       ) : (
                         <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-500">No</span>
@@ -802,9 +805,9 @@ export default function AdminUsersPage() {
             }}
           >
             <div>
-              <p style={{ fontWeight: 500, fontSize: 14 }}>Payment Enabled</p>
+              <p style={{ fontWeight: 500, fontSize: 14 }}>Show Micropayments</p>
               <p style={{ fontSize: 12, color: "var(--muted-foreground)", marginTop: 2 }}>
-                Allow this user to see payment rates, earnings, and request payouts
+                Allow this user to see micropayment rates, earnings, and request payouts
               </p>
             </div>
             <button
@@ -835,6 +838,18 @@ export default function AdminUsersPage() {
                 }}
               />
             </button>
+          </div>
+          <div>
+            <label className="block text-sm font-medium mb-1">Hourly Rate</label>
+            <input
+              type="number"
+              step="0.01"
+              min="0"
+              className="w-full px-3 py-2 border border-input rounded-lg focus:outline-none focus:ring-2 focus:ring-ring"
+              value={editHourlyRate}
+              onChange={(e) => setEditHourlyRate(e.target.value)}
+              placeholder="Not set"
+            />
           </div>
           <div className="flex gap-2 justify-end">
             <Button variant="outline" onClick={() => setShowEditModal(false)}>

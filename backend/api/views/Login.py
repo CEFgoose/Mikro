@@ -130,7 +130,7 @@ class LoginAPI(MethodView):
         # Check if user needs onboarding (missing required fields)
         # Only require payment_email if payments are visible for this user
         needs_onboarding = not user.osm_username or (
-            user.payments_visible and not user.payment_email
+            user.micropayments_visible and not user.payment_email
         )
 
         # Build response
@@ -145,7 +145,7 @@ class LoginAPI(MethodView):
                 "city": user.city,
                 "country": user.country,
                 "needs_onboarding": needs_onboarding,
-                "payments_visible": user.payments_visible,
+                "micropayments_visible": user.micropayments_visible,
                 "status": 200,
             }
         )

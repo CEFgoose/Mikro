@@ -32,7 +32,7 @@ async function syncUserWithBackend(accessToken: string, userInfo?: UserInfo): Pr
       const data = await response.json();
       return {
         role: data.role || "user",
-        paymentsVisible: data.payments_visible ?? false,
+        paymentsVisible: data.micropayments_visible ?? false,
         displayName: data.name || "",
       };
     }
