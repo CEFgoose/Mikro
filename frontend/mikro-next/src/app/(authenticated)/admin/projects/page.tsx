@@ -1134,7 +1134,7 @@ export default function AdminProjectsPage() {
           setSelectedProject(null);
           setProjectUsers([]);
           setProjectTeams([]);
-          refetch();
+          refetch(filtersBody ? { filters: filtersBody } : {});
         }}
         title="Edit Project"
         description={`Editing ${selectedProject?.name || "project"}`}
@@ -1146,7 +1146,7 @@ export default function AdminProjectsPage() {
               setSelectedProject(null);
               setProjectUsers([]);
               setProjectTeams([]);
-              refetch();
+              refetch(filtersBody ? { filters: filtersBody } : {});
             }}>
               Cancel
             </Button>
