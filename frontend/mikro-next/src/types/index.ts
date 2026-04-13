@@ -1205,3 +1205,29 @@ export interface CountriesResponse {
   countries: Country[];
   status: number;
 }
+
+// Hourly contractor payment tracking
+export interface HourlyMonthData {
+  totalSeconds: number;
+  hours: number;
+  earnings: number;
+  paid: boolean;
+  paidAt: string | null;
+  notes: string | null;
+}
+
+export interface HourlyContractor {
+  userId: string;
+  name: string;
+  osmUsername: string;
+  country: string;
+  hourlyRate: number;
+  months: Record<string, HourlyMonthData>;
+  yearTotal: { totalSeconds: number; hours: number; earnings: number };
+}
+
+export interface HourlySummaryResponse {
+  status: number;
+  year: number;
+  contractors: HourlyContractor[];
+}

@@ -45,6 +45,7 @@ import type {
   CommunitySheetConfigResponse,
   ChannelsResponse,
   ChannelSummariesResponse,
+  HourlySummaryResponse,
 } from "@/types";
 
 /**
@@ -1082,4 +1083,17 @@ export function useSummarizeChannel() {
 }
 export function useFetchAllSummaries() {
   return useApiMutation<ChannelSummariesResponse>("/channel/fetch_all_summaries");
+}
+
+// ─── Hourly Contractor Payments ────────────────────────────
+export function useHourlySummary() {
+  return useApiCall<HourlySummaryResponse>("/timetracking/hourly_summary", { immediate: false });
+}
+
+export function useSetHourlyRate() {
+  return useApiMutation<{ message: string; status: number }>("/timetracking/set_hourly_rate");
+}
+
+export function useMarkHourlyPaid() {
+  return useApiMutation<{ message: string; status: number }>("/timetracking/mark_hourly_paid");
 }

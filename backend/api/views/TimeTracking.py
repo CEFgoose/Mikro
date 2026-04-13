@@ -16,7 +16,8 @@ from flask.views import MethodView
 from flask import g, request, jsonify, Response
 
 from ..utils import requires_admin
-from ..database import TimeEntry, User, Project, TeamUser, CustomTopic, db
+from sqlalchemy import func
+from ..database import TimeEntry, User, Project, TeamUser, CustomTopic, HourlyPayment, db
 from ..filters import resolve_filtered_user_ids
 
 logger = logging.getLogger(__name__)
@@ -84,6 +85,12 @@ class TimeTrackingAPI(MethodView):
             return self.admin_export()
         elif path == "fetch_custom_topics":
             return self.fetch_custom_topics()
+        elif path == "hourly_summary":
+            return self.admin_hourly_summary()
+        elif path == "set_hourly_rate":
+            return self.admin_set_hourly_rate()
+        elif path == "mark_hourly_paid":
+            return self.admin_mark_hourly_paid()
 
         return jsonify({"message": "Endpoint not found", "status": 404}), 404
 
@@ -1105,3 +1112,236 @@ class TimeTrackingAPI(MethodView):
             "entries_deleted": count,
             "status": 200,
         }), 200
+
+    # ─── Hourly Contractor Payments ──────────────────────────────
+
+    @requires_admin
+    def admin_hourly_summary(self):
+        """Get monthly hours and payment status for all hourly contractors."""
+        data = request.get_json(silent=True) or {}
+        year = data.get("year", datetime.now().year)
+        org_id = g.user.org_id
+
+        # Get all hourly contractors in org
+        contractors = User.query.filter(
+            User.org_id == org_id,
+            User.hourly_rate.isnot(None),
+        ).all()
+
+        if not contractors:
+            return jsonify({"status": 200, "year": year, "contractors": []})
+
+        contractor_ids = [c.id for c in contractors]
+        year_start = datetime(year, 1, 1)
+        year_end = datetime(year + 1, 1, 1)
+
+        # Aggregate time entries per user per month
+        time_agg = (
+            db.session.query(
+                TimeEntry.user_id,
+                func.extract("month", TimeEntry.clock_in).label("month"),
+                func.sum(TimeEntry.duration_seconds).label("total_seconds"),
+            )
+            .filter(
+                TimeEntry.org_id == org_id,
+                TimeEntry.status == "completed",
+                TimeEntry.clock_in >= year_start,
+                TimeEntry.clock_in < year_end,
+                TimeEntry.user_id.in_(contractor_ids),
+            )
+            .group_by(TimeEntry.user_id, func.extract("month", TimeEntry.clock_in))
+            .all()
+        )
+
+        # Build lookup: {user_id: {month: total_seconds}}
+        time_lookup = {}
+        for row in time_agg:
+            uid = row.user_id
+            m = int(row.month)
+            if uid not in time_lookup:
+                time_lookup[uid] = {}
+            time_lookup[uid][m] = row.total_seconds or 0
+
+        # Get existing HourlyPayment records for this year
+        payments = HourlyPayment.query.filter(
+            HourlyPayment.org_id == org_id,
+            HourlyPayment.year == year,
+        ).all()
+
+        # Build lookup: {(user_id, month): HourlyPayment}
+        payment_lookup = {}
+        for hp in payments:
+            payment_lookup[(hp.user_id, hp.month)] = hp
+
+        # Build response
+        result = []
+        for c in contractors:
+            months = {}
+            year_total_seconds = 0
+            year_total_earnings = 0.0
+
+            for m in range(1, 13):
+                hp = payment_lookup.get((c.id, m))
+                if hp and hp.paid:
+                    # Paid month: use snapshot values
+                    secs = hp.total_seconds
+                    hrs = round(secs / 3600, 2)
+                    earnings = hp.amount_due
+                    months[str(m)] = {
+                        "totalSeconds": secs,
+                        "hours": hrs,
+                        "earnings": round(earnings, 2),
+                        "paid": True,
+                        "paidAt": hp.paid_at.isoformat() if hp.paid_at else None,
+                        "notes": hp.notes,
+                    }
+                else:
+                    # Unpaid: compute live from time entries + current rate
+                    secs = time_lookup.get(c.id, {}).get(m, 0)
+                    hrs = round(secs / 3600, 2)
+                    rate = c.hourly_rate or 0
+                    earnings = round(hrs * rate, 2)
+                    months[str(m)] = {
+                        "totalSeconds": secs,
+                        "hours": hrs,
+                        "earnings": earnings,
+                        "paid": False,
+                        "paidAt": None,
+                        "notes": hp.notes if hp else None,
+                    }
+
+                year_total_seconds += secs
+                year_total_earnings += earnings
+
+            year_hours = round(year_total_seconds / 3600, 2)
+
+            result.append({
+                "userId": c.id,
+                "name": c.full_name,
+                "osmUsername": c.osm_username or "",
+                "country": c.country or "",
+                "hourlyRate": c.hourly_rate,
+                "months": months,
+                "yearTotal": {
+                    "totalSeconds": year_total_seconds,
+                    "hours": year_hours,
+                    "earnings": round(year_total_earnings, 2),
+                },
+            })
+
+        return jsonify({"status": 200, "year": year, "contractors": result})
+
+    @requires_admin
+    def admin_set_hourly_rate(self):
+        """Set or update an hourly rate for a user."""
+        data = request.get_json(silent=True) or {}
+        user_id = data.get("userId")
+        hourly_rate = data.get("hourlyRate")
+
+        if not user_id:
+            return jsonify({"message": "userId is required", "status": 400}), 400
+
+        user = User.query.get(user_id)
+        if not user or user.org_id != g.user.org_id:
+            return jsonify({"message": "User not found", "status": 404}), 404
+
+        # Allow setting to None to remove hourly contractor status
+        if hourly_rate is not None:
+            try:
+                hourly_rate = float(hourly_rate)
+            except (ValueError, TypeError):
+                return jsonify({"message": "Invalid hourly rate", "status": 400}), 400
+
+        user.hourly_rate = hourly_rate
+        db.session.commit()
+
+        return jsonify({
+            "status": 200,
+            "message": f"Hourly rate {'removed' if hourly_rate is None else f'set to ${hourly_rate:.2f}'} for {user.full_name}",
+        })
+
+    @requires_admin
+    def admin_mark_hourly_paid(self):
+        """Mark or unmark an hourly contractor's month as paid."""
+        data = request.get_json(silent=True) or {}
+        user_id = data.get("userId")
+        year = data.get("year")
+        month = data.get("month")
+        paid = data.get("paid", True)
+        notes = data.get("notes")
+
+        if not all([user_id, year, month]):
+            return jsonify({"message": "userId, year, and month are required", "status": 400}), 400
+
+        user = User.query.get(user_id)
+        if not user or user.org_id != g.user.org_id:
+            return jsonify({"message": "User not found", "status": 404}), 404
+
+        org_id = g.user.org_id
+
+        # Find or create the HourlyPayment record
+        hp = HourlyPayment.query.filter_by(
+            user_id=user_id, year=year, month=month
+        ).first()
+
+        if paid:
+            # Compute current totals from time entries
+            month_start = datetime(year, month, 1)
+            if month == 12:
+                month_end = datetime(year + 1, 1, 1)
+            else:
+                month_end = datetime(year, month + 1, 1)
+
+            total_seconds = db.session.query(
+                func.coalesce(func.sum(TimeEntry.duration_seconds), 0)
+            ).filter(
+                TimeEntry.user_id == user_id,
+                TimeEntry.org_id == org_id,
+                TimeEntry.status == "completed",
+                TimeEntry.clock_in >= month_start,
+                TimeEntry.clock_in < month_end,
+            ).scalar() or 0
+
+            rate = user.hourly_rate or 0
+            hours = total_seconds / 3600
+            amount = round(hours * rate, 2)
+
+            if hp:
+                hp.total_seconds = total_seconds
+                hp.hourly_rate = rate
+                hp.amount_due = amount
+                hp.paid = True
+                hp.paid_at = datetime.now()
+                hp.paid_by = g.user.id
+                if notes is not None:
+                    hp.notes = notes
+            else:
+                hp = HourlyPayment(
+                    user_id=user_id,
+                    org_id=org_id,
+                    year=year,
+                    month=month,
+                    total_seconds=total_seconds,
+                    hourly_rate=rate,
+                    amount_due=amount,
+                    paid=True,
+                    paid_at=datetime.now(),
+                    paid_by=g.user.id,
+                    notes=notes,
+                )
+                db.session.add(hp)
+        else:
+            # Unmark as paid
+            if hp:
+                hp.paid = False
+                hp.paid_at = None
+                hp.paid_by = None
+                if notes is not None:
+                    hp.notes = notes
+
+        db.session.commit()
+
+        return jsonify({
+            "status": 200,
+            "message": f"{'Marked' if paid else 'Unmarked'} {user.full_name} {year}-{month:02d} as paid",
+        })

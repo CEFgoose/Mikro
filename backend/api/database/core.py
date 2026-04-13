@@ -146,6 +146,9 @@ class User(ModelWithSoftDeleteAndCRUD, SurrogatePK):
         db.Boolean, nullable=False, default=False, server_default="false"
     )
 
+    # Hourly contractor rate (if set, user is treated as hourly contractor)
+    hourly_rate = db.Column(db.Float, nullable=True, default=None)
+
     def __repr__(self):
         return f"<User {self.email}>"
 
@@ -808,6 +811,34 @@ class CustomTopic(CRUDMixin, db.Model):
 
     def __repr__(self):
         return f"<CustomTopic {self.id}: {self.name}>"
+
+
+class HourlyPayment(CRUDMixin, db.Model):
+    """Tracks hourly contractor payment status per month."""
+    __tablename__ = "hourly_payments"
+
+    id = db.Column(db.BigInteger, primary_key=True, autoincrement=True)
+    user_id = db.Column(db.String(255), db.ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    org_id = db.Column(db.String(255), nullable=True, index=True)
+    year = db.Column(db.Integer, nullable=False)
+    month = db.Column(db.Integer, nullable=False)  # 1-12
+    total_seconds = db.Column(db.Integer, nullable=False, default=0)
+    hourly_rate = db.Column(db.Float, nullable=False)  # snapshot of rate at payment time
+    amount_due = db.Column(db.Float, nullable=False, default=0)
+    paid = db.Column(db.Boolean, nullable=False, default=False, server_default="False")
+    paid_at = db.Column(db.DateTime, nullable=True)
+    paid_by = db.Column(db.String(255), nullable=True)
+    notes = db.Column(db.Text, nullable=True)
+
+    user = db.relationship("User", backref="hourly_payments")
+
+    __table_args__ = (
+        db.UniqueConstraint("user_id", "year", "month", name="uq_hourly_payment_user_month"),
+        db.Index("ix_hourly_payments_year_month", "year", "month"),
+    )
+
+    def __repr__(self):
+        return f"<HourlyPayment user={self.user_id} {self.year}-{self.month} paid={self.paid}>"
 
 
 class SyncJob(CRUDMixin, db.Model):

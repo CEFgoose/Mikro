@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useMemo, useEffect } from "react";
+import Link from "next/link";
 import {
   Card,
   CardContent,
@@ -419,11 +420,16 @@ export default function AdminPaymentsPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight">Payments</h1>
-        <p className="text-muted-foreground">
-          Manage payment requests and view payout history
-        </p>
+      <div className="flex items-start justify-between">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">Payments</h1>
+          <p className="text-muted-foreground">
+            Manage payment requests and view payout history
+          </p>
+        </div>
+        <Link href="/admin/payments/hourly">
+          <Button variant="outline">Hourly Contractors</Button>
+        </Link>
       </div>
 
       {/* Stats Cards */}
