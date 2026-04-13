@@ -213,6 +213,13 @@ export function AdminTimeManagement() {
     }
   };
 
+  const handleFillTestEntry = () => {
+    const now = new Date();
+    const eightHoursAgo = new Date(now.getTime() - 8 * 60 * 60 * 1000);
+    setAddClockIn(toDatetimeLocal(eightHoursAgo.toISOString()));
+    setAddClockOut(toDatetimeLocal(now.toISOString()));
+    setAddNotes("[DEV TEST ENTRY]");
+  };
 
   return (
     <div className="h-full">
@@ -597,6 +604,14 @@ export function AdminTimeManagement() {
               onChange={(e) => setAddClockOut(e.target.value)}
             />
           </div>
+
+          <button
+            type="button"
+            onClick={handleFillTestEntry}
+            className="w-full text-xs text-yellow-700 dark:text-yellow-400 border border-dashed border-yellow-400 rounded-md py-1.5 hover:bg-yellow-50 dark:hover:bg-yellow-950/30 transition-colors"
+          >
+            Fill 8-Hour Test Entry (now - 8h → now)
+          </button>
 
           <div>
             <label className="block text-sm font-medium mb-1">Notes (optional)</label>

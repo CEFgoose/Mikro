@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle, Skeleton, Badge, Button, useToastActions, Tooltip, Val } from "@/components/ui";
-import { useAdminDashboardStats, useOrgTransactions, useUsersList, useOrgProjects, useAdminSyncAllTasks, useCheckSyncStatus, useAdminTimeHistory, useAdminActiveSessions } from "@/hooks";
+import { useAdminDashboardStats, useOrgTransactions, useUsersList, useOrgProjects, usePurgeTaskStats, useAdminSyncAllTasks, useCheckSyncStatus, useAdminTimeHistory, useAdminActiveSessions } from "@/hooks";
 import { TimeTrackingWidget } from "@/components/widgets/TimeTrackingWidget";
 import { AdminTimeManagement } from "@/components/widgets/AdminTimeManagement";
 import { formatNumber, formatCurrency } from "@/lib/utils";
@@ -25,6 +25,7 @@ function DashboardStats() {
   const { data: users, loading: usersLoading } = useUsersList();
   const { data: timeHistory, loading: timeHistoryLoading } = useAdminTimeHistory();
   const { data: activeSessions } = useAdminActiveSessions();
+  const { mutate: purgeTaskStats, loading: purging } = usePurgeTaskStats();
   const { mutate: syncAllTasks } = useAdminSyncAllTasks();
   const { mutate: checkSyncStatus } = useCheckSyncStatus();
   const toast = useToastActions();
@@ -66,6 +67,7 @@ function DashboardStats() {
 
     return { weekHours, pendingAdjustments, longRunning, activeCount };
   }, [timeHistory, activeSessions]);
+  const [purgeConfirm, setPurgeConfirm] = useState(false);
   const [syncProgress, setSyncProgress] = useState<string | null>(null);
   const [syncing, setSyncing] = useState(false);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -121,6 +123,20 @@ function DashboardStats() {
     }
   };
 
+  const handlePurgeTaskStats = async () => {
+    if (!purgeConfirm) {
+      setPurgeConfirm(true);
+      return;
+    }
+    try {
+      await purgeTaskStats({});
+      setPurgeConfirm(false);
+      refetchStats();
+      toast.success("All task stats purged successfully");
+    } catch (err) {
+      toast.error("Failed to purge task stats: " + (err instanceof Error ? err.message : "Unknown error"));
+    }
+  };
 
   return (
     <>
@@ -573,6 +589,44 @@ function DashboardStats() {
         </Card>
       </div>
 
+      {/* DEV ONLY: Danger Zone */}
+      <Card className="border-red-200 bg-red-50/50 mt-8">
+        <CardHeader className="pb-2">
+          <CardTitle className="text-sm font-medium text-red-800">
+            Dev Tools (Remove Before Production)
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center gap-4">
+            <button
+              onClick={handlePurgeTaskStats}
+              disabled={purging}
+              className={`inline-flex items-center rounded-lg px-4 py-2 text-sm font-medium transition-colors ${
+                purgeConfirm
+                  ? "bg-red-600 text-white hover:bg-red-700"
+                  : "bg-red-100 text-red-700 hover:bg-red-200"
+              } disabled:opacity-50`}
+            >
+              {purging
+                ? "Purging..."
+                : purgeConfirm
+                ? "Click Again to Confirm Purge"
+                : "Purge All Task Stats"}
+            </button>
+            {purgeConfirm && (
+              <button
+                onClick={() => setPurgeConfirm(false)}
+                className="text-sm text-gray-500 hover:text-gray-700"
+              >
+                Cancel
+              </button>
+            )}
+          </div>
+          <p className="text-xs text-red-600 mt-2">
+            Deletes all tasks, user_tasks, validator_task_actions and resets all user/project task counts to 0.
+          </p>
+        </CardContent>
+      </Card>
     </>
   );
 }
