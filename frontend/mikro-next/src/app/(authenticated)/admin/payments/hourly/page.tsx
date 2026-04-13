@@ -44,6 +44,10 @@ export default function HourlyContractorPaymentsPage() {
   const [addRate, setAddRate] = useState("");
   const { data: usersData } = useUsersList();
 
+  // Pagination
+  const ROWS_PER_PAGE = 20;
+  const [currentPage, setCurrentPage] = useState(1);
+
   // Inline rate editing
   const [editingRateUserId, setEditingRateUserId] = useState<string | null>(null);
   const [editingRateValue, setEditingRateValue] = useState("");
@@ -298,7 +302,7 @@ export default function HourlyContractorPaymentsPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {contractors.map((contractor) => (
+                  {contractors.slice((currentPage - 1) * ROWS_PER_PAGE, currentPage * ROWS_PER_PAGE).map((contractor) => (
                     <TableRow key={contractor.userId}>
                       {/* Name */}
                       <TableCell
@@ -407,6 +411,18 @@ export default function HourlyContractorPaymentsPage() {
                 </TableBody>
               </Table>
             </div>
+            {contractors.length > ROWS_PER_PAGE && (
+              <div className="flex items-center justify-between px-4 py-3 text-sm text-muted-foreground">
+                <span>Showing {(currentPage - 1) * ROWS_PER_PAGE + 1}-{Math.min(currentPage * ROWS_PER_PAGE, contractors.length)} of {contractors.length}</span>
+                <div className="flex gap-2">
+                  <Button variant="outline" size="sm" disabled={currentPage === 1}
+                    onClick={() => setCurrentPage(p => p - 1)}>Previous</Button>
+                  <span className="flex items-center px-2">Page {currentPage} of {Math.ceil(contractors.length / ROWS_PER_PAGE)}</span>
+                  <Button variant="outline" size="sm" disabled={currentPage === Math.ceil(contractors.length / ROWS_PER_PAGE)}
+                    onClick={() => setCurrentPage(p => p + 1)}>Next</Button>
+                </div>
+              </div>
+            )}
           </CardContent>
         </Card>
       )}

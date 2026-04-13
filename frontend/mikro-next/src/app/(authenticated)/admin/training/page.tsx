@@ -401,7 +401,7 @@ export default function AdminTrainingPage() {
     </TableHead>
   );
 
-  const ROWS_PER_PAGE = 50;
+  const ROWS_PER_PAGE = 20;
 
   const TrainingTable = ({ trainingList }: { trainingList: Training[] }) => {
     const [currentPage, setCurrentPage] = useState(1);

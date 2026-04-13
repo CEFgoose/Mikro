@@ -484,7 +484,7 @@ export default function AdminChecklistsPage() {
     );
   };
 
-  const ROWS_PER_PAGE = 50;
+  const ROWS_PER_PAGE = 20;
 
   const PaginatedChecklistGrid = ({ list, showConfirm = false, emptyMessage }: { list: Checklist[]; showConfirm?: boolean; emptyMessage: string }) => {
     const [currentPage, setCurrentPage] = useState(1);

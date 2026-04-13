@@ -24,6 +24,9 @@ export default function ValidatorDashboard() {
   const toast = useToastActions();
   const [isRequestingPayment, setIsRequestingPayment] = useState(false);
 
+  const ROWS_PER_PAGE = 20;
+  const [projectsTablePage, setProjectsTablePage] = useState(1);
+
   // Combine assigned projects with unassigned projects where user has validations
   const projects: Project[] = [
     ...(projectsData?.org_active_projects || []),
@@ -556,7 +559,7 @@ export default function ValidatorDashboard() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
-                {projects.map((project) => (
+                {projects.slice((projectsTablePage - 1) * ROWS_PER_PAGE, projectsTablePage * ROWS_PER_PAGE).map((project) => (
                   <tr
                     key={project.id}
                     className="cursor-pointer hover:bg-muted/50 transition-colors"
@@ -598,6 +601,18 @@ export default function ValidatorDashboard() {
               </tbody>
             </table>
           </div>
+          {projects.length > ROWS_PER_PAGE && (
+            <div className="flex items-center justify-between mt-4 px-4 pb-4 text-sm text-muted-foreground">
+              <span>Showing {(projectsTablePage - 1) * ROWS_PER_PAGE + 1}-{Math.min(projectsTablePage * ROWS_PER_PAGE, projects.length)} of {projects.length}</span>
+              <div className="flex gap-2">
+                <Button variant="outline" size="sm" disabled={projectsTablePage === 1}
+                  onClick={() => setProjectsTablePage(p => p - 1)}>Previous</Button>
+                <span className="flex items-center px-2">Page {projectsTablePage} of {Math.ceil(projects.length / ROWS_PER_PAGE)}</span>
+                <Button variant="outline" size="sm" disabled={projectsTablePage === Math.ceil(projects.length / ROWS_PER_PAGE)}
+                  onClick={() => setProjectsTablePage(p => p + 1)}>Next</Button>
+              </div>
+            </div>
+          )}
         </CardContent>
       </Card>
 

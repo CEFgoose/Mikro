@@ -60,7 +60,7 @@ export default function AdminTeamsPage() {
 
   const [search, setSearch] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
-  const ROWS_PER_PAGE = 50;
+  const ROWS_PER_PAGE = 20;
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [editingTeam, setEditingTeam] = useState<Team | null>(null);
   const [membersTeam, setMembersTeam] = useState<Team | null>(null);

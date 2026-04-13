@@ -186,7 +186,6 @@ export default function UserProfilePage() {
   >({});
   const [changesetsLoading, setChangesetsLoading] = useState(false);
   const [changesetsError, setChangesetsError] = useState<string | null>(null);
-  const [showAllChangesets, setShowAllChangesets] = useState(false);
 
   // Activity chart state
   const [activityData, setActivityData] = useState<ActivityDataPoint[]>([]);
@@ -195,7 +194,12 @@ export default function UserProfilePage() {
   // Task history state
   const [taskHistory, setTaskHistory] = useState<TaskHistoryEntry[]>([]);
   const [taskHistoryLoading, setTaskHistoryLoading] = useState(false);
-  const [showAllHistory, setShowAllHistory] = useState(false);
+
+  // Pagination
+  const ROWS_PER_PAGE = 20;
+  const [taskPage, setTaskPage] = useState(1);
+  const [timePage, setTimePage] = useState(1);
+  const [changesetPage, setChangesetPage] = useState(1);
 
   // Heatmap state
   const [heatmapPoints, setHeatmapPoints] = useState<
@@ -503,12 +507,8 @@ export default function UserProfilePage() {
   }
 
   const isValidator = user?.role === "validator" || user?.role === "admin";
-  const displayedChangesets = showAllChangesets
-    ? changesets
-    : changesets.slice(0, 10);
-  const displayedHistory = showAllHistory
-    ? taskHistory
-    : taskHistory.slice(0, 20);
+  const displayedChangesets = changesets.slice((changesetPage - 1) * ROWS_PER_PAGE, changesetPage * ROWS_PER_PAGE);
+  const displayedHistory = taskHistory.slice((taskPage - 1) * ROWS_PER_PAGE, taskPage * ROWS_PER_PAGE);
   const sortedHashtags = Object.entries(hashtagSummary).sort(
     (a, b) => b[1] - a[1]
   );
@@ -1102,6 +1102,7 @@ export default function UserProfilePage() {
             )}
 
             {filteredEntries.length > 0 ? (
+              <>
               <div className="overflow-x-auto">
                 <table className="w-full text-sm" style={{ minWidth: 500 }}>
                   <thead className="bg-muted border-b border-border">
@@ -1133,7 +1134,7 @@ export default function UserProfilePage() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-border bg-card">
-                    {filteredEntries.map((entry) => (
+                    {filteredEntries.slice((timePage - 1) * ROWS_PER_PAGE, timePage * ROWS_PER_PAGE).map((entry) => (
                       <tr
                         key={entry.id}
                         className={
@@ -1190,6 +1191,19 @@ export default function UserProfilePage() {
                   </tbody>
                 </table>
               </div>
+              {filteredEntries.length > ROWS_PER_PAGE && (
+                <div className="flex items-center justify-between mt-3 text-sm text-muted-foreground">
+                  <span>Showing {(timePage - 1) * ROWS_PER_PAGE + 1}-{Math.min(timePage * ROWS_PER_PAGE, filteredEntries.length)} of {filteredEntries.length}</span>
+                  <div className="flex gap-2">
+                    <Button variant="outline" size="sm" disabled={timePage === 1}
+                      onClick={() => setTimePage(p => p - 1)}>Previous</Button>
+                    <span className="flex items-center px-2">Page {timePage} of {Math.ceil(filteredEntries.length / ROWS_PER_PAGE)}</span>
+                    <Button variant="outline" size="sm" disabled={timePage === Math.ceil(filteredEntries.length / ROWS_PER_PAGE)}
+                      onClick={() => setTimePage(p => p + 1)}>Next</Button>
+                  </div>
+                </div>
+              )}
+              </>
             ) : (
               !statsLoading &&
               dateLabel && (
@@ -1311,15 +1325,17 @@ export default function UserProfilePage() {
                     </tbody>
                   </table>
                 </div>
-                {taskHistory.length > 20 && (
-                  <button
-                    onClick={() => setShowAllHistory(!showAllHistory)}
-                    className="text-sm text-kaart-orange hover:underline"
-                  >
-                    {showAllHistory
-                      ? `Show less (20 of ${taskHistory.length})`
-                      : `Show all ${taskHistory.length} tasks`}
-                  </button>
+                {taskHistory.length > ROWS_PER_PAGE && (
+                  <div className="flex items-center justify-between text-sm text-muted-foreground">
+                    <span>Showing {(taskPage - 1) * ROWS_PER_PAGE + 1}-{Math.min(taskPage * ROWS_PER_PAGE, taskHistory.length)} of {taskHistory.length}</span>
+                    <div className="flex gap-2">
+                      <Button variant="outline" size="sm" disabled={taskPage === 1}
+                        onClick={() => setTaskPage(p => p - 1)}>Previous</Button>
+                      <span className="flex items-center px-2">Page {taskPage} of {Math.ceil(taskHistory.length / ROWS_PER_PAGE)}</span>
+                      <Button variant="outline" size="sm" disabled={taskPage === Math.ceil(taskHistory.length / ROWS_PER_PAGE)}
+                        onClick={() => setTaskPage(p => p + 1)}>Next</Button>
+                    </div>
+                  </div>
                 )}
               </div>
             ) : (
@@ -1487,15 +1503,17 @@ export default function UserProfilePage() {
                   </table>
                 </div>
 
-                {changesets.length > 10 && (
-                  <button
-                    onClick={() => setShowAllChangesets(!showAllChangesets)}
-                    className="text-sm text-kaart-orange hover:underline"
-                  >
-                    {showAllChangesets
-                      ? `Show less (10 of ${changesets.length})`
-                      : `Show all ${changesets.length} changesets`}
-                  </button>
+                {changesets.length > ROWS_PER_PAGE && (
+                  <div className="flex items-center justify-between text-sm text-muted-foreground">
+                    <span>Showing {(changesetPage - 1) * ROWS_PER_PAGE + 1}-{Math.min(changesetPage * ROWS_PER_PAGE, changesets.length)} of {changesets.length}</span>
+                    <div className="flex gap-2">
+                      <Button variant="outline" size="sm" disabled={changesetPage === 1}
+                        onClick={() => setChangesetPage(p => p - 1)}>Previous</Button>
+                      <span className="flex items-center px-2">Page {changesetPage} of {Math.ceil(changesets.length / ROWS_PER_PAGE)}</span>
+                      <Button variant="outline" size="sm" disabled={changesetPage === Math.ceil(changesets.length / ROWS_PER_PAGE)}
+                        onClick={() => setChangesetPage(p => p + 1)}>Next</Button>
+                    </div>
+                  </div>
                 )}
               </>
             )}

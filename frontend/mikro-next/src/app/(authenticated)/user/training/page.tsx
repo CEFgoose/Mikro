@@ -41,6 +41,12 @@ export default function UserTrainingPage() {
   const [quizResult, setQuizResult] = useState<{ score: number; passed: boolean } | null>(null);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
 
+  const ROWS_PER_PAGE = 20;
+  const [mappingPage, setMappingPage] = useState(1);
+  const [validationPage, setValidationPage] = useState(1);
+  const [projectPage, setProjectPage] = useState(1);
+  const [completedPage, setCompletedPage] = useState(1);
+
   const mappingTrainings = (trainings?.mapping_trainings ?? []) as UserTraining[];
   const validationTrainings = (trainings?.validation_trainings ?? []) as UserTraining[];
   const projectTrainings = (trainings?.project_trainings ?? []) as UserTraining[];
@@ -259,11 +265,25 @@ export default function UserTrainingPage() {
         </TabsList>
         <TabsContent value="mapping">
           {mappingTrainings.length > 0 ? (
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-              {mappingTrainings.map((training) => (
-                <TrainingCard key={training.id} training={training} />
-              ))}
-            </div>
+            <>
+              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                {mappingTrainings.slice((mappingPage - 1) * ROWS_PER_PAGE, mappingPage * ROWS_PER_PAGE).map((training) => (
+                  <TrainingCard key={training.id} training={training} />
+                ))}
+              </div>
+              {mappingTrainings.length > ROWS_PER_PAGE && (
+                <div className="flex items-center justify-between mt-4 text-sm text-muted-foreground">
+                  <span>Showing {(mappingPage - 1) * ROWS_PER_PAGE + 1}-{Math.min(mappingPage * ROWS_PER_PAGE, mappingTrainings.length)} of {mappingTrainings.length}</span>
+                  <div className="flex gap-2">
+                    <Button variant="outline" size="sm" disabled={mappingPage === 1}
+                      onClick={() => setMappingPage(p => p - 1)}>Previous</Button>
+                    <span className="flex items-center px-2">Page {mappingPage} of {Math.ceil(mappingTrainings.length / ROWS_PER_PAGE)}</span>
+                    <Button variant="outline" size="sm" disabled={mappingPage === Math.ceil(mappingTrainings.length / ROWS_PER_PAGE)}
+                      onClick={() => setMappingPage(p => p + 1)}>Next</Button>
+                  </div>
+                </div>
+              )}
+            </>
           ) : (
             <Card>
               <CardContent style={{ padding: "48px 24px", textAlign: "center", color: "#6b7280" }}>
@@ -274,11 +294,25 @@ export default function UserTrainingPage() {
         </TabsContent>
         <TabsContent value="validation">
           {validationTrainings.length > 0 ? (
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-              {validationTrainings.map((training) => (
-                <TrainingCard key={training.id} training={training} />
-              ))}
-            </div>
+            <>
+              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                {validationTrainings.slice((validationPage - 1) * ROWS_PER_PAGE, validationPage * ROWS_PER_PAGE).map((training) => (
+                  <TrainingCard key={training.id} training={training} />
+                ))}
+              </div>
+              {validationTrainings.length > ROWS_PER_PAGE && (
+                <div className="flex items-center justify-between mt-4 text-sm text-muted-foreground">
+                  <span>Showing {(validationPage - 1) * ROWS_PER_PAGE + 1}-{Math.min(validationPage * ROWS_PER_PAGE, validationTrainings.length)} of {validationTrainings.length}</span>
+                  <div className="flex gap-2">
+                    <Button variant="outline" size="sm" disabled={validationPage === 1}
+                      onClick={() => setValidationPage(p => p - 1)}>Previous</Button>
+                    <span className="flex items-center px-2">Page {validationPage} of {Math.ceil(validationTrainings.length / ROWS_PER_PAGE)}</span>
+                    <Button variant="outline" size="sm" disabled={validationPage === Math.ceil(validationTrainings.length / ROWS_PER_PAGE)}
+                      onClick={() => setValidationPage(p => p + 1)}>Next</Button>
+                  </div>
+                </div>
+              )}
+            </>
           ) : (
             <Card>
               <CardContent style={{ padding: "48px 24px", textAlign: "center", color: "#6b7280" }}>
@@ -289,11 +323,25 @@ export default function UserTrainingPage() {
         </TabsContent>
         <TabsContent value="project">
           {projectTrainings.length > 0 ? (
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-              {projectTrainings.map((training) => (
-                <TrainingCard key={training.id} training={training} />
-              ))}
-            </div>
+            <>
+              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                {projectTrainings.slice((projectPage - 1) * ROWS_PER_PAGE, projectPage * ROWS_PER_PAGE).map((training) => (
+                  <TrainingCard key={training.id} training={training} />
+                ))}
+              </div>
+              {projectTrainings.length > ROWS_PER_PAGE && (
+                <div className="flex items-center justify-between mt-4 text-sm text-muted-foreground">
+                  <span>Showing {(projectPage - 1) * ROWS_PER_PAGE + 1}-{Math.min(projectPage * ROWS_PER_PAGE, projectTrainings.length)} of {projectTrainings.length}</span>
+                  <div className="flex gap-2">
+                    <Button variant="outline" size="sm" disabled={projectPage === 1}
+                      onClick={() => setProjectPage(p => p - 1)}>Previous</Button>
+                    <span className="flex items-center px-2">Page {projectPage} of {Math.ceil(projectTrainings.length / ROWS_PER_PAGE)}</span>
+                    <Button variant="outline" size="sm" disabled={projectPage === Math.ceil(projectTrainings.length / ROWS_PER_PAGE)}
+                      onClick={() => setProjectPage(p => p + 1)}>Next</Button>
+                  </div>
+                </div>
+              )}
+            </>
           ) : (
             <Card>
               <CardContent style={{ padding: "48px 24px", textAlign: "center", color: "#6b7280" }}>
@@ -304,11 +352,25 @@ export default function UserTrainingPage() {
         </TabsContent>
         <TabsContent value="completed">
           {completedTrainings.length > 0 ? (
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-              {completedTrainings.map((training) => (
-                <TrainingCard key={training.id} training={{ ...training, completed: true }} />
-              ))}
-            </div>
+            <>
+              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                {completedTrainings.slice((completedPage - 1) * ROWS_PER_PAGE, completedPage * ROWS_PER_PAGE).map((training) => (
+                  <TrainingCard key={training.id} training={{ ...training, completed: true }} />
+                ))}
+              </div>
+              {completedTrainings.length > ROWS_PER_PAGE && (
+                <div className="flex items-center justify-between mt-4 text-sm text-muted-foreground">
+                  <span>Showing {(completedPage - 1) * ROWS_PER_PAGE + 1}-{Math.min(completedPage * ROWS_PER_PAGE, completedTrainings.length)} of {completedTrainings.length}</span>
+                  <div className="flex gap-2">
+                    <Button variant="outline" size="sm" disabled={completedPage === 1}
+                      onClick={() => setCompletedPage(p => p - 1)}>Previous</Button>
+                    <span className="flex items-center px-2">Page {completedPage} of {Math.ceil(completedTrainings.length / ROWS_PER_PAGE)}</span>
+                    <Button variant="outline" size="sm" disabled={completedPage === Math.ceil(completedTrainings.length / ROWS_PER_PAGE)}
+                      onClick={() => setCompletedPage(p => p + 1)}>Next</Button>
+                  </div>
+                </div>
+              )}
+            </>
           ) : (
             <Card>
               <CardContent style={{ padding: "48px 24px", textAlign: "center", color: "#6b7280" }}>

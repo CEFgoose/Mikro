@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
-import { Card, CardContent, CardHeader, CardTitle, Input, Skeleton, Val } from "@/components/ui";
+import { Card, CardContent, CardHeader, CardTitle, Input, Button, Skeleton, Val } from "@/components/ui";
 import { useFetchUserTeams } from "@/hooks/useApi";
 import { formatNumber } from "@/lib/utils";
 
@@ -10,10 +10,20 @@ export default function UserTeamsPage() {
   const { data, loading } = useFetchUserTeams();
   const [search, setSearch] = useState("");
 
+  const ROWS_PER_PAGE = 20;
+  const [currentPage, setCurrentPage] = useState(1);
+
   const teams = data?.teams ?? [];
   const filteredTeams = teams.filter((t) =>
     t.name.toLowerCase().includes(search.toLowerCase())
   );
+
+  useEffect(() => { setCurrentPage(1); }, [search]);
+
+  const totalPages = Math.ceil(filteredTeams.length / ROWS_PER_PAGE);
+  const paginatedTeams = filteredTeams.slice((currentPage - 1) * ROWS_PER_PAGE, currentPage * ROWS_PER_PAGE);
+  const showingStart = filteredTeams.length > 0 ? (currentPage - 1) * ROWS_PER_PAGE + 1 : 0;
+  const showingEnd = Math.min(currentPage * ROWS_PER_PAGE, filteredTeams.length);
 
   if (loading) {
     return (
@@ -55,7 +65,7 @@ export default function UserTeamsPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-border bg-card">
-                {filteredTeams.map((team) => (
+                {paginatedTeams.map((team) => (
                   <tr key={team.id}>
                     <td className="px-6 py-4">
                       <Link
@@ -87,6 +97,18 @@ export default function UserTeamsPage() {
               </tbody>
             </table>
           </div>
+          {filteredTeams.length > ROWS_PER_PAGE && (
+            <div className="flex items-center justify-between mt-4 px-6 pb-4 text-sm text-muted-foreground">
+              <span>Showing {showingStart}-{showingEnd} of {filteredTeams.length}</span>
+              <div className="flex gap-2">
+                <Button variant="outline" size="sm" disabled={currentPage === 1}
+                  onClick={() => setCurrentPage(p => p - 1)}>Previous</Button>
+                <span className="flex items-center px-2">Page {currentPage} of {totalPages}</span>
+                <Button variant="outline" size="sm" disabled={currentPage === totalPages}
+                  onClick={() => setCurrentPage(p => p + 1)}>Next</Button>
+              </div>
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>

@@ -124,7 +124,7 @@ export default function AdminProjectsPage() {
   const [projectSearch, setProjectSearch] = useState("");
   const [activePageNum, setActivePageNum] = useState(1);
   const [inactivePageNum, setInactivePageNum] = useState(1);
-  const ROWS_PER_PAGE = 50;
+  const ROWS_PER_PAGE = 20;
   const [newProjectId, setNewProjectId] = useState<number | null>(null);
   const [addTab, setAddTab] = useState<"details" | "locations" | "teams">("details");
   const [addProjectTeams, setAddProjectTeams] = useState<ProjectTeamItem[]>([]);

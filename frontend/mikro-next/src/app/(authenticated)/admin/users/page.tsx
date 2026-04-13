@@ -50,7 +50,7 @@ export default function AdminUsersPage() {
   const [trackOsmUsername, setTrackOsmUsername] = useState("");
   const [trackDisplayName, setTrackDisplayName] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
-  const ROWS_PER_PAGE = 50;
+  const ROWS_PER_PAGE = 20;
   const toast = useToastActions();
   const { activeFilters, setActiveFilters, filtersBody, clearFilters } = useFilters();
   const { data: filterOptions, loading: filterOptionsLoading } = useFetchFilterOptions();

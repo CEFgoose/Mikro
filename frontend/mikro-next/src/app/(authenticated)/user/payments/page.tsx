@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Card,
   CardContent,
@@ -49,8 +49,22 @@ export default function UserPaymentsPage() {
   const [showRequestModal, setShowRequestModal] = useState(false);
   const [paymentNotes, setPaymentNotes] = useState("");
 
+  const ROWS_PER_PAGE = 20;
+  const [requestsPage, setRequestsPage] = useState(1);
+  const [paymentsPage, setPaymentsPage] = useState(1);
+
   const requests = transactions?.requests ?? [];
   const payments = transactions?.payments ?? [];
+
+  const requestsTotalPages = Math.ceil(requests.length / ROWS_PER_PAGE);
+  const paginatedRequests = requests.slice((requestsPage - 1) * ROWS_PER_PAGE, requestsPage * ROWS_PER_PAGE);
+  const requestsShowingStart = requests.length > 0 ? (requestsPage - 1) * ROWS_PER_PAGE + 1 : 0;
+  const requestsShowingEnd = Math.min(requestsPage * ROWS_PER_PAGE, requests.length);
+
+  const paymentsTotalPages = Math.ceil(payments.length / ROWS_PER_PAGE);
+  const paginatedPayments = payments.slice((paymentsPage - 1) * ROWS_PER_PAGE, paymentsPage * ROWS_PER_PAGE);
+  const paymentsShowingStart = payments.length > 0 ? (paymentsPage - 1) * ROWS_PER_PAGE + 1 : 0;
+  const paymentsShowingEnd = Math.min(paymentsPage * ROWS_PER_PAGE, payments.length);
 
   const pendingTotal = requests.reduce((sum, r) => sum + r.amount_requested, 0);
   const totalReceived = payments.reduce((sum, p) => sum + p.amount_paid, 0);
@@ -241,7 +255,7 @@ export default function UserPaymentsPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {requests.map((request) => (
+                  {paginatedRequests.map((request) => (
                     <TableRow key={request.id}>
                       <TableCell className="font-medium whitespace-nowrap">#{request.id}</TableCell>
                       <TableCell className="whitespace-nowrap">{formatDate(request.date_requested)}</TableCell>
@@ -265,6 +279,18 @@ export default function UserPaymentsPage() {
                   )}
                 </TableBody>
               </Table>
+              {requests.length > ROWS_PER_PAGE && (
+                <div className="flex items-center justify-between mt-4 px-4 pb-4 text-sm text-muted-foreground">
+                  <span>Showing {requestsShowingStart}-{requestsShowingEnd} of {requests.length}</span>
+                  <div className="flex gap-2">
+                    <Button variant="outline" size="sm" disabled={requestsPage === 1}
+                      onClick={() => setRequestsPage(p => p - 1)}>Previous</Button>
+                    <span className="flex items-center px-2">Page {requestsPage} of {requestsTotalPages}</span>
+                    <Button variant="outline" size="sm" disabled={requestsPage === requestsTotalPages}
+                      onClick={() => setRequestsPage(p => p + 1)}>Next</Button>
+                  </div>
+                </div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
@@ -283,7 +309,7 @@ export default function UserPaymentsPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {payments.map((payment) => (
+                  {paginatedPayments.map((payment) => (
                     <TableRow key={payment.id}>
                       <TableCell className="font-medium whitespace-nowrap">#{payment.id}</TableCell>
                       <TableCell className="whitespace-nowrap">{formatDate(payment.date_paid)}</TableCell>
@@ -307,6 +333,18 @@ export default function UserPaymentsPage() {
                   )}
                 </TableBody>
               </Table>
+              {payments.length > ROWS_PER_PAGE && (
+                <div className="flex items-center justify-between mt-4 px-4 pb-4 text-sm text-muted-foreground">
+                  <span>Showing {paymentsShowingStart}-{paymentsShowingEnd} of {payments.length}</span>
+                  <div className="flex gap-2">
+                    <Button variant="outline" size="sm" disabled={paymentsPage === 1}
+                      onClick={() => setPaymentsPage(p => p - 1)}>Previous</Button>
+                    <span className="flex items-center px-2">Page {paymentsPage} of {paymentsTotalPages}</span>
+                    <Button variant="outline" size="sm" disabled={paymentsPage === paymentsTotalPages}
+                      onClick={() => setPaymentsPage(p => p + 1)}>Next</Button>
+                  </div>
+                </div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>

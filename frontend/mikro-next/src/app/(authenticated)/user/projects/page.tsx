@@ -1,12 +1,13 @@
 "use client";
 
-import { useEffect } from "react";
+import { useState, useEffect } from "react";
 import {
   Card,
   CardContent,
   CardHeader,
   CardTitle,
   Badge,
+  Button,
   Skeleton,
   Val,
   useToastActions,
@@ -159,7 +160,15 @@ export default function UserProjectsPage() {
     }
   }, [error]);
 
+  const ROWS_PER_PAGE = 20;
+  const [currentPage, setCurrentPage] = useState(1);
+
   const activeProjects = projects?.user_projects ?? [];
+
+  const totalPages = Math.ceil(activeProjects.length / ROWS_PER_PAGE);
+  const paginatedProjects = activeProjects.slice((currentPage - 1) * ROWS_PER_PAGE, currentPage * ROWS_PER_PAGE);
+  const showingStart = activeProjects.length > 0 ? (currentPage - 1) * ROWS_PER_PAGE + 1 : 0;
+  const showingEnd = Math.min(currentPage * ROWS_PER_PAGE, activeProjects.length);
 
   if (loading) {
     return (
@@ -231,11 +240,25 @@ export default function UserProjectsPage() {
 
       {/* Projects Grid */}
       {activeProjects.length > 0 ? (
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-          {activeProjects.map((project) => (
-            <ProjectCard key={project.id} project={project} paymentsVisible={paymentsVisible} />
-          ))}
-        </div>
+        <>
+          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+            {paginatedProjects.map((project) => (
+              <ProjectCard key={project.id} project={project} paymentsVisible={paymentsVisible} />
+            ))}
+          </div>
+          {activeProjects.length > ROWS_PER_PAGE && (
+            <div className="flex items-center justify-between mt-4 text-sm text-muted-foreground">
+              <span>Showing {showingStart}-{showingEnd} of {activeProjects.length}</span>
+              <div className="flex gap-2">
+                <Button variant="outline" size="sm" disabled={currentPage === 1}
+                  onClick={() => setCurrentPage(p => p - 1)}>Previous</Button>
+                <span className="flex items-center px-2">Page {currentPage} of {totalPages}</span>
+                <Button variant="outline" size="sm" disabled={currentPage === totalPages}
+                  onClick={() => setCurrentPage(p => p + 1)}>Next</Button>
+              </div>
+            </div>
+          )}
+        </>
       ) : (
         <Card>
           <CardContent style={{ padding: "48px 24px", textAlign: "center" }}>

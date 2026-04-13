@@ -12,7 +12,7 @@ export default function AdminTasksPage() {
   const [showPurgeModal, setShowPurgeModal] = useState(false);
   const [isPurging, setIsPurging] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
-  const ROWS_PER_PAGE = 50;
+  const ROWS_PER_PAGE = 20;
   const toast = useToastActions();
 
   useEffect(() => {

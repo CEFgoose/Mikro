@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import Link from "next/link";
 import {
   Card,
@@ -69,6 +69,10 @@ export default function AdminPunksPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [sortKey, setSortKey] = useState<string>("created_at");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
+
+  // Pagination
+  const ROWS_PER_PAGE = 20;
+  const [currentPage, setCurrentPage] = useState(1);
 
   // Per-row refresh loading
   const [refreshingIds, setRefreshingIds] = useState<Set<number>>(new Set());
@@ -149,6 +153,15 @@ export default function AdminPunksPage() {
       return 0;
     });
   }, [punks, searchTerm, sortKey, sortDir]);
+
+  // Reset page when search/sort changes
+  useEffect(() => { setCurrentPage(1); }, [searchTerm, sortKey, sortDir]);
+
+  // Pagination calculations
+  const totalPages = Math.ceil(filteredAndSorted.length / ROWS_PER_PAGE);
+  const paginatedPunks = filteredAndSorted.slice((currentPage - 1) * ROWS_PER_PAGE, currentPage * ROWS_PER_PAGE);
+  const showingStart = filteredAndSorted.length > 0 ? (currentPage - 1) * ROWS_PER_PAGE + 1 : 0;
+  const showingEnd = Math.min(currentPage * ROWS_PER_PAGE, filteredAndSorted.length);
 
   // CRUD handlers
   const handleCreatePunk = async () => {
@@ -350,7 +363,7 @@ export default function AdminPunksPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredAndSorted.map((punk) => (
+              {paginatedPunks.map((punk) => (
                 <TableRow key={punk.id}>
                   <TableCell className="font-medium">
                     <Link
@@ -426,6 +439,20 @@ export default function AdminPunksPage() {
           </Table>
         </CardContent>
       </Card>
+
+      {/* Pagination Controls */}
+      {filteredAndSorted.length > ROWS_PER_PAGE && (
+        <div className="flex items-center justify-between mt-4 text-sm text-muted-foreground">
+          <span>Showing {showingStart}-{showingEnd} of {filteredAndSorted.length}</span>
+          <div className="flex gap-2">
+            <Button variant="outline" size="sm" disabled={currentPage === 1}
+              onClick={() => setCurrentPage(p => p - 1)}>Previous</Button>
+            <span className="flex items-center px-2">Page {currentPage} of {totalPages}</span>
+            <Button variant="outline" size="sm" disabled={currentPage === totalPages}
+              onClick={() => setCurrentPage(p => p + 1)}>Next</Button>
+          </div>
+        </div>
+      )}
 
       {/* Add Modal */}
       <Modal

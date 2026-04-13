@@ -93,6 +93,12 @@ export default function AdminProjectProfilePage() {
   const [data, setData] = useState<ProjectProfileResponse | null>(null);
   const [pageLoading, setPageLoading] = useState(true);
 
+  // Pagination
+  const ROWS_PER_PAGE = 20;
+  const [contributorsPage, setContributorsPage] = useState(1);
+  const [tasksPage, setTasksPage] = useState(1);
+  const [timeEntriesPage, setTimeEntriesPage] = useState(1);
+
   useEffect(() => {
     if (projectId) {
       fetchProfile({ project_id: projectId })
@@ -360,6 +366,7 @@ export default function AdminProjectProfilePage() {
                 <tbody className="divide-y divide-border">
                   {data.assigned_users
                     .sort((a, b) => b.tasks_mapped - a.tasks_mapped)
+                    .slice((contributorsPage - 1) * ROWS_PER_PAGE, contributorsPage * ROWS_PER_PAGE)
                     .map((user) => (
                       <tr key={user.id}>
                         <td className="px-4 py-3">
@@ -396,6 +403,18 @@ export default function AdminProjectProfilePage() {
                 </tbody>
               </table>
             </div>
+            {data.assigned_users.length > ROWS_PER_PAGE && (
+              <div className="flex items-center justify-between px-4 py-3 text-sm text-muted-foreground">
+                <span>Showing {(contributorsPage - 1) * ROWS_PER_PAGE + 1}-{Math.min(contributorsPage * ROWS_PER_PAGE, data.assigned_users.length)} of {data.assigned_users.length}</span>
+                <div className="flex gap-2">
+                  <Button variant="outline" size="sm" disabled={contributorsPage === 1}
+                    onClick={() => setContributorsPage(p => p - 1)}>Previous</Button>
+                  <span className="flex items-center px-2">Page {contributorsPage} of {Math.ceil(data.assigned_users.length / ROWS_PER_PAGE)}</span>
+                  <Button variant="outline" size="sm" disabled={contributorsPage === Math.ceil(data.assigned_users.length / ROWS_PER_PAGE)}
+                    onClick={() => setContributorsPage(p => p + 1)}>Next</Button>
+                </div>
+              </div>
+            )}
           </CardContent>
         </Card>
       )}
@@ -478,7 +497,7 @@ export default function AdminProjectProfilePage() {
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-border">
-                      {data.recent_time_entries.map((entry, i) => (
+                      {data.recent_time_entries.slice((timeEntriesPage - 1) * ROWS_PER_PAGE, timeEntriesPage * ROWS_PER_PAGE).map((entry, i) => (
                         <tr key={i}>
                           <td className="px-4 py-2">{entry.user_name}</td>
                           <td className="px-4 py-2 capitalize">
@@ -498,6 +517,18 @@ export default function AdminProjectProfilePage() {
                     </tbody>
                   </table>
                 </div>
+                {data.recent_time_entries.length > ROWS_PER_PAGE && (
+                  <div className="flex items-center justify-between mt-3 text-sm text-muted-foreground">
+                    <span>Showing {(timeEntriesPage - 1) * ROWS_PER_PAGE + 1}-{Math.min(timeEntriesPage * ROWS_PER_PAGE, data.recent_time_entries.length)} of {data.recent_time_entries.length}</span>
+                    <div className="flex gap-2">
+                      <Button variant="outline" size="sm" disabled={timeEntriesPage === 1}
+                        onClick={() => setTimeEntriesPage(p => p - 1)}>Previous</Button>
+                      <span className="flex items-center px-2">Page {timeEntriesPage} of {Math.ceil(data.recent_time_entries.length / ROWS_PER_PAGE)}</span>
+                      <Button variant="outline" size="sm" disabled={timeEntriesPage === Math.ceil(data.recent_time_entries.length / ROWS_PER_PAGE)}
+                        onClick={() => setTimeEntriesPage(p => p + 1)}>Next</Button>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
           </CardContent>
@@ -593,7 +624,7 @@ export default function AdminProjectProfilePage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border">
-                  {data.tasks.map((task, i) => (
+                  {data.tasks.slice((tasksPage - 1) * ROWS_PER_PAGE, tasksPage * ROWS_PER_PAGE).map((task, i) => (
                     <tr key={i}>
                       <td className="px-4 py-2 font-mono">{task.task_id}</td>
                       <td className="px-4 py-2">{task.mapped_by || "\u2014"}</td>
@@ -626,6 +657,18 @@ export default function AdminProjectProfilePage() {
                 </tbody>
               </table>
             </div>
+            {data.tasks.length > ROWS_PER_PAGE && (
+              <div className="flex items-center justify-between px-4 py-3 text-sm text-muted-foreground">
+                <span>Showing {(tasksPage - 1) * ROWS_PER_PAGE + 1}-{Math.min(tasksPage * ROWS_PER_PAGE, data.tasks.length)} of {data.tasks.length}</span>
+                <div className="flex gap-2">
+                  <Button variant="outline" size="sm" disabled={tasksPage === 1}
+                    onClick={() => setTasksPage(p => p - 1)}>Previous</Button>
+                  <span className="flex items-center px-2">Page {tasksPage} of {Math.ceil(data.tasks.length / ROWS_PER_PAGE)}</span>
+                  <Button variant="outline" size="sm" disabled={tasksPage === Math.ceil(data.tasks.length / ROWS_PER_PAGE)}
+                    onClick={() => setTasksPage(p => p + 1)}>Next</Button>
+                </div>
+              </div>
+            )}
           </CardContent>
         </Card>
       )}

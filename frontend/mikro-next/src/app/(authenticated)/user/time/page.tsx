@@ -125,7 +125,7 @@ function secondsToHours(seconds: number): number {
 
 // --- Constants ---
 
-const PAGE_SIZE = 50;
+const PAGE_SIZE = 20;
 
 // --- Page component ---
 

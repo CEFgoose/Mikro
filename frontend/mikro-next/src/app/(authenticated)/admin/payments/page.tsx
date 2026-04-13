@@ -161,7 +161,7 @@ export default function AdminPaymentsPage() {
 
   // Pagination
   const [currentPage, setCurrentPage] = useState(1);
-  const ROWS_PER_PAGE = 50;
+  const ROWS_PER_PAGE = 20;
 
   const requests = useMemo(() => transactions?.requests ?? [], [transactions?.requests]);
   const payments = useMemo(() => transactions?.payments ?? [], [transactions?.payments]);

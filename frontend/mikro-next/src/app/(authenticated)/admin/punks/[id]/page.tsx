@@ -88,6 +88,10 @@ export default function PunkDetailPage() {
   const [pageLoading, setPageLoading] = useState(true);
   const [expandedDiscussions, setExpandedDiscussions] = useState<Set<number>>(new Set());
 
+  // Pagination for changesets
+  const ROWS_PER_PAGE = 20;
+  const [changesetPage, setChangesetPage] = useState(1);
+
   useEffect(() => {
     if (id) {
       fetchDetail({ punk_id: Number(id) })
@@ -311,7 +315,8 @@ export default function PunkDetailPage() {
           <Card>
             <CardContent className="p-0">
               {sortedChangesets.length > 0 ? (
-                <div className="overflow-x-auto" style={{ maxHeight: 600, overflowY: "auto" }}>
+                <>
+                <div className="overflow-x-auto">
                   <Table>
                     <TableHeader>
                       <TableRow>
@@ -323,7 +328,7 @@ export default function PunkDetailPage() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {sortedChangesets.map((cs) => (
+                      {sortedChangesets.slice((changesetPage - 1) * ROWS_PER_PAGE, changesetPage * ROWS_PER_PAGE).map((cs) => (
                         <TableRow key={cs.changeset_id}>
                           <TableCell className="whitespace-nowrap">
                             {formatDate(cs.created_at)}
@@ -352,6 +357,19 @@ export default function PunkDetailPage() {
                     </TableBody>
                   </Table>
                 </div>
+                {sortedChangesets.length > ROWS_PER_PAGE && (
+                  <div className="flex items-center justify-between px-4 py-3 text-sm text-muted-foreground">
+                    <span>Showing {(changesetPage - 1) * ROWS_PER_PAGE + 1}-{Math.min(changesetPage * ROWS_PER_PAGE, sortedChangesets.length)} of {sortedChangesets.length}</span>
+                    <div className="flex gap-2">
+                      <Button variant="outline" size="sm" disabled={changesetPage === 1}
+                        onClick={() => setChangesetPage(p => p - 1)}>Previous</Button>
+                      <span className="flex items-center px-2">Page {changesetPage} of {Math.ceil(sortedChangesets.length / ROWS_PER_PAGE)}</span>
+                      <Button variant="outline" size="sm" disabled={changesetPage === Math.ceil(sortedChangesets.length / ROWS_PER_PAGE)}
+                        onClick={() => setChangesetPage(p => p + 1)}>Next</Button>
+                    </div>
+                  </div>
+                )}
+                </>
               ) : (
                 <p className="text-muted-foreground text-center py-8">
                   No changesets cached. Click Refresh Activity to fetch data.

@@ -59,6 +59,10 @@ export default function AdminRegionsPage() {
   const [countryTimezone, setCountryTimezone] = useState("");
   const [countrySaving, setCountrySaving] = useState(false);
 
+  // Pagination for countries table
+  const ROWS_PER_PAGE = 20;
+  const [countryPage, setCountryPage] = useState(1);
+
   // Seed / Purge state
   const [seeding, setSeeding] = useState(false);
   const [showPurgeModal, setShowPurgeModal] = useState(false);
@@ -94,6 +98,9 @@ export default function AdminRegionsPage() {
       return updated ?? null;
     });
   }, [regions]);
+
+  // Reset country page when selected region changes
+  useEffect(() => { setCountryPage(1); }, [selectedRegion?.id]);
 
   // Seed defaults
   const handleSeedDefaults = async () => {
@@ -473,7 +480,7 @@ export default function AdminRegionsPage() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {selectedRegion.countries.map((country) => (
+                    {selectedRegion.countries.slice((countryPage - 1) * ROWS_PER_PAGE, countryPage * ROWS_PER_PAGE).map((country) => (
                       <TableRow key={country.id}>
                         <TableCell className="font-medium">
                           {country.name}
@@ -507,6 +514,18 @@ export default function AdminRegionsPage() {
                     ))}
                   </TableBody>
                 </Table>
+                {selectedRegion.countries.length > ROWS_PER_PAGE && (
+                  <div className="flex items-center justify-between px-4 py-3 text-sm text-muted-foreground">
+                    <span>Showing {(countryPage - 1) * ROWS_PER_PAGE + 1}-{Math.min(countryPage * ROWS_PER_PAGE, selectedRegion.countries.length)} of {selectedRegion.countries.length}</span>
+                    <div className="flex gap-2">
+                      <Button variant="outline" size="sm" disabled={countryPage === 1}
+                        onClick={() => setCountryPage(p => p - 1)}>Previous</Button>
+                      <span className="flex items-center px-2">Page {countryPage} of {Math.ceil(selectedRegion.countries.length / ROWS_PER_PAGE)}</span>
+                      <Button variant="outline" size="sm" disabled={countryPage === Math.ceil(selectedRegion.countries.length / ROWS_PER_PAGE)}
+                        onClick={() => setCountryPage(p => p + 1)}>Next</Button>
+                    </div>
+                  </div>
+                )}
               </CardContent>
             </Card>
           )}

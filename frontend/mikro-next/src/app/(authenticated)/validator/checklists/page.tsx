@@ -13,6 +13,8 @@ export default function ValidatorChecklistsPage() {
   const [confirmedChecklists, setConfirmedChecklists] = useState<Checklist[]>([]);
   const [selectedChecklist, setSelectedChecklist] = useState<number | null>(null);
   const [activeTab, setActiveTab] = useState<"completed" | "confirmed">("completed");
+  const ROWS_PER_PAGE = 20;
+  const [currentPage, setCurrentPage] = useState(1);
   const [isLoading, setIsLoading] = useState(true);
   const [showCommentModal, setShowCommentModal] = useState(false);
   const [commentChecklistId, setCommentChecklistId] = useState<number | null>(null);
@@ -87,6 +89,10 @@ export default function ValidatorChecklistsPage() {
   };
 
   const currentChecklists = activeTab === "completed" ? completedChecklists : confirmedChecklists;
+  const totalPages = Math.ceil(currentChecklists.length / ROWS_PER_PAGE);
+  const paginatedChecklists = currentChecklists.slice((currentPage - 1) * ROWS_PER_PAGE, currentPage * ROWS_PER_PAGE);
+  const showingStart = currentChecklists.length > 0 ? (currentPage - 1) * ROWS_PER_PAGE + 1 : 0;
+  const showingEnd = Math.min(currentPage * ROWS_PER_PAGE, currentChecklists.length);
 
   if (isLoading) {
     return (
@@ -109,6 +115,7 @@ export default function ValidatorChecklistsPage() {
           onClick={() => {
             setActiveTab("completed");
             setSelectedChecklist(null);
+            setCurrentPage(1);
           }}
           className={`px-4 py-2 font-medium transition-colors ${
             activeTab === "completed"
@@ -122,6 +129,7 @@ export default function ValidatorChecklistsPage() {
           onClick={() => {
             setActiveTab("confirmed");
             setSelectedChecklist(null);
+            setCurrentPage(1);
           }}
           className={`px-4 py-2 font-medium transition-colors ${
             activeTab === "confirmed"
@@ -135,7 +143,7 @@ export default function ValidatorChecklistsPage() {
 
       {/* Checklists */}
       <div className="space-y-4">
-        {currentChecklists.map((checklist) => (
+        {paginatedChecklists.map((checklist) => (
           <Card
             key={checklist.id}
             className={`transition-all ${
@@ -248,6 +256,18 @@ export default function ValidatorChecklistsPage() {
         {currentChecklists.length === 0 && (
           <div className="text-center py-8 text-muted-foreground">
             No {activeTab === "completed" ? "checklists ready for confirmation" : "confirmed checklists"}
+          </div>
+        )}
+        {currentChecklists.length > ROWS_PER_PAGE && (
+          <div className="flex items-center justify-between mt-4 text-sm text-muted-foreground">
+            <span>Showing {showingStart}-{showingEnd} of {currentChecklists.length}</span>
+            <div className="flex gap-2">
+              <Button variant="outline" size="sm" disabled={currentPage === 1}
+                onClick={() => setCurrentPage(p => p - 1)}>Previous</Button>
+              <span className="flex items-center px-2">Page {currentPage} of {totalPages}</span>
+              <Button variant="outline" size="sm" disabled={currentPage === totalPages}
+                onClick={() => setCurrentPage(p => p + 1)}>Next</Button>
+            </div>
           </div>
         )}
       </div>

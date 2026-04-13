@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
-import { Card, CardContent, CardHeader, CardTitle, Val, StatCard } from "@/components/ui";
+import { Card, CardContent, CardHeader, CardTitle, Val, StatCard, Button } from "@/components/ui";
 import { useFetchTeamProfile } from "@/hooks/useApi";
 import type { TeamProfileData } from "@/types";
 import { formatNumber, formatCurrency, displayRole } from "@/lib/utils";
@@ -27,6 +27,13 @@ export default function AdminTeamProfilePage() {
 
   const [profile, setProfile] = useState<TeamProfileData | null>(null);
   const [pageLoading, setPageLoading] = useState(true);
+
+  // Pagination
+  const ROWS_PER_PAGE = 20;
+  const [membersPage, setMembersPage] = useState(1);
+  const [projectsPage, setProjectsPage] = useState(1);
+  const [trainingsPage, setTrainingsPage] = useState(1);
+  const [checklistsPage, setChecklistsPage] = useState(1);
 
   useEffect(() => {
     if (teamId) {
@@ -183,7 +190,7 @@ export default function AdminTeamProfilePage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border bg-card">
-                  {members.map((member) => (
+                  {members.slice((membersPage - 1) * ROWS_PER_PAGE, membersPage * ROWS_PER_PAGE).map((member) => (
                     <tr
                       key={member.id}
                       className="cursor-pointer hover:bg-muted/50 transition-colors"
@@ -221,6 +228,18 @@ export default function AdminTeamProfilePage() {
                 </tbody>
               </table>
             </div>
+            {members.length > ROWS_PER_PAGE && (
+              <div className="flex items-center justify-between px-6 py-3 text-sm text-muted-foreground">
+                <span>Showing {(membersPage - 1) * ROWS_PER_PAGE + 1}-{Math.min(membersPage * ROWS_PER_PAGE, members.length)} of {members.length}</span>
+                <div className="flex gap-2">
+                  <Button variant="outline" size="sm" disabled={membersPage === 1}
+                    onClick={() => setMembersPage(p => p - 1)}>Previous</Button>
+                  <span className="flex items-center px-2">Page {membersPage} of {Math.ceil(members.length / ROWS_PER_PAGE)}</span>
+                  <Button variant="outline" size="sm" disabled={membersPage === Math.ceil(members.length / ROWS_PER_PAGE)}
+                    onClick={() => setMembersPage(p => p + 1)}>Next</Button>
+                </div>
+              </div>
+            )}
           </CardContent>
         </Card>
       )}
@@ -243,7 +262,7 @@ export default function AdminTeamProfilePage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border bg-card">
-                  {projects.map((proj) => (
+                  {projects.slice((projectsPage - 1) * ROWS_PER_PAGE, projectsPage * ROWS_PER_PAGE).map((proj) => (
                     <tr
                       key={proj.id}
                       className="cursor-pointer hover:bg-muted/50 transition-colors"
@@ -262,6 +281,18 @@ export default function AdminTeamProfilePage() {
                 </tbody>
               </table>
             </div>
+            {projects.length > ROWS_PER_PAGE && (
+              <div className="flex items-center justify-between px-6 py-3 text-sm text-muted-foreground">
+                <span>Showing {(projectsPage - 1) * ROWS_PER_PAGE + 1}-{Math.min(projectsPage * ROWS_PER_PAGE, projects.length)} of {projects.length}</span>
+                <div className="flex gap-2">
+                  <Button variant="outline" size="sm" disabled={projectsPage === 1}
+                    onClick={() => setProjectsPage(p => p - 1)}>Previous</Button>
+                  <span className="flex items-center px-2">Page {projectsPage} of {Math.ceil(projects.length / ROWS_PER_PAGE)}</span>
+                  <Button variant="outline" size="sm" disabled={projectsPage === Math.ceil(projects.length / ROWS_PER_PAGE)}
+                    onClick={() => setProjectsPage(p => p + 1)}>Next</Button>
+                </div>
+              </div>
+            )}
           </CardContent>
         </Card>
       )}
@@ -284,7 +315,7 @@ export default function AdminTeamProfilePage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border bg-card">
-                  {assigned_trainings.map((training) => (
+                  {assigned_trainings.slice((trainingsPage - 1) * ROWS_PER_PAGE, trainingsPage * ROWS_PER_PAGE).map((training) => (
                     <tr
                       key={training.id}
                       className="cursor-pointer hover:bg-muted/50 transition-colors"
@@ -315,6 +346,18 @@ export default function AdminTeamProfilePage() {
                 </tbody>
               </table>
             </div>
+            {assigned_trainings.length > ROWS_PER_PAGE && (
+              <div className="flex items-center justify-between px-6 py-3 text-sm text-muted-foreground">
+                <span>Showing {(trainingsPage - 1) * ROWS_PER_PAGE + 1}-{Math.min(trainingsPage * ROWS_PER_PAGE, assigned_trainings.length)} of {assigned_trainings.length}</span>
+                <div className="flex gap-2">
+                  <Button variant="outline" size="sm" disabled={trainingsPage === 1}
+                    onClick={() => setTrainingsPage(p => p - 1)}>Previous</Button>
+                  <span className="flex items-center px-2">Page {trainingsPage} of {Math.ceil(assigned_trainings.length / ROWS_PER_PAGE)}</span>
+                  <Button variant="outline" size="sm" disabled={trainingsPage === Math.ceil(assigned_trainings.length / ROWS_PER_PAGE)}
+                    onClick={() => setTrainingsPage(p => p + 1)}>Next</Button>
+                </div>
+              </div>
+            )}
           </CardContent>
         </Card>
       )}
@@ -336,7 +379,7 @@ export default function AdminTeamProfilePage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border bg-card">
-                  {assigned_checklists.map((checklist) => (
+                  {assigned_checklists.slice((checklistsPage - 1) * ROWS_PER_PAGE, checklistsPage * ROWS_PER_PAGE).map((checklist) => (
                     <tr
                       key={checklist.id}
                       className="cursor-pointer hover:bg-muted/50 transition-colors"
@@ -372,6 +415,18 @@ export default function AdminTeamProfilePage() {
                 </tbody>
               </table>
             </div>
+            {assigned_checklists.length > ROWS_PER_PAGE && (
+              <div className="flex items-center justify-between px-6 py-3 text-sm text-muted-foreground">
+                <span>Showing {(checklistsPage - 1) * ROWS_PER_PAGE + 1}-{Math.min(checklistsPage * ROWS_PER_PAGE, assigned_checklists.length)} of {assigned_checklists.length}</span>
+                <div className="flex gap-2">
+                  <Button variant="outline" size="sm" disabled={checklistsPage === 1}
+                    onClick={() => setChecklistsPage(p => p - 1)}>Previous</Button>
+                  <span className="flex items-center px-2">Page {checklistsPage} of {Math.ceil(assigned_checklists.length / ROWS_PER_PAGE)}</span>
+                  <Button variant="outline" size="sm" disabled={checklistsPage === Math.ceil(assigned_checklists.length / ROWS_PER_PAGE)}
+                    onClick={() => setChecklistsPage(p => p + 1)}>Next</Button>
+                </div>
+              </div>
+            )}
           </CardContent>
         </Card>
       )}

@@ -8,6 +8,7 @@ import {
   CardContent,
   CardHeader,
   CardTitle,
+  Button,
   Tabs,
   TabsList,
   TabsTrigger,
@@ -426,6 +427,15 @@ export default function AdminReportsPage() {
   const [elementProgress, setElementProgress] = useState<string | null>(null);
   const [showRefreshModal, setShowRefreshModal] = useState(false);
   const elementPollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  // Pagination for tables
+  const ROWS_PER_PAGE = 20;
+  const [projectsTablePage, setProjectsTablePage] = useState(1);
+  const [contributorsTablePage, setContributorsTablePage] = useState(1);
+  const [timeTrackingPage, setTimeTrackingPage] = useState(1);
+  const [tripsPage, setTripsPage] = useState(1);
+  const [mrProjectsPage, setMrProjectsPage] = useState(1);
+  const [mrContributorsPage, setMrContributorsPage] = useState(1);
+
   const [mrData, setMrData] = useState<EditingStatsResponse | null>(null);
   const [mapillaryData, setMapillaryData] = useState<MapillaryStatsResponse | null>(null);
   const [mapillaryLoading, setMapillaryLoading] = useState(false);
@@ -1024,7 +1034,7 @@ export default function AdminReportsPage() {
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-border bg-card">
-                        {editingData.projects.map((proj) => {
+                        {editingData.projects.slice((projectsTablePage - 1) * ROWS_PER_PAGE, projectsTablePage * ROWS_PER_PAGE).map((proj) => {
                           const status = getProjectStatus(proj);
                           return (
                             <tr key={proj.id}>
@@ -1114,6 +1124,18 @@ export default function AdminReportsPage() {
                       </tbody>
                     </table>
                   </div>
+                  {editingData.projects.length > ROWS_PER_PAGE && (
+                    <div className="flex items-center justify-between px-6 py-3 text-sm text-muted-foreground">
+                      <span>Showing {(projectsTablePage - 1) * ROWS_PER_PAGE + 1}-{Math.min(projectsTablePage * ROWS_PER_PAGE, editingData.projects.length)} of {editingData.projects.length}</span>
+                      <div className="flex gap-2">
+                        <Button variant="outline" size="sm" disabled={projectsTablePage === 1}
+                          onClick={() => setProjectsTablePage(p => p - 1)}>Previous</Button>
+                        <span className="flex items-center px-2">Page {projectsTablePage} of {Math.ceil(editingData.projects.length / ROWS_PER_PAGE)}</span>
+                        <Button variant="outline" size="sm" disabled={projectsTablePage === Math.ceil(editingData.projects.length / ROWS_PER_PAGE)}
+                          onClick={() => setProjectsTablePage(p => p + 1)}>Next</Button>
+                      </div>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
 
@@ -1148,7 +1170,7 @@ export default function AdminReportsPage() {
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-border bg-card">
-                        {editingData.top_contributors.map((c) => (
+                        {editingData.top_contributors.slice((contributorsTablePage - 1) * ROWS_PER_PAGE, contributorsTablePage * ROWS_PER_PAGE).map((c) => (
                           <tr
                             key={c.osm_username}
                             className={
@@ -1194,6 +1216,18 @@ export default function AdminReportsPage() {
                       </tbody>
                     </table>
                   </div>
+                  {editingData.top_contributors.length > ROWS_PER_PAGE && (
+                    <div className="flex items-center justify-between px-6 py-3 text-sm text-muted-foreground">
+                      <span>Showing {(contributorsTablePage - 1) * ROWS_PER_PAGE + 1}-{Math.min(contributorsTablePage * ROWS_PER_PAGE, editingData.top_contributors.length)} of {editingData.top_contributors.length}</span>
+                      <div className="flex gap-2">
+                        <Button variant="outline" size="sm" disabled={contributorsTablePage === 1}
+                          onClick={() => setContributorsTablePage(p => p - 1)}>Previous</Button>
+                        <span className="flex items-center px-2">Page {contributorsTablePage} of {Math.ceil(editingData.top_contributors.length / ROWS_PER_PAGE)}</span>
+                        <Button variant="outline" size="sm" disabled={contributorsTablePage === Math.ceil(editingData.top_contributors.length / ROWS_PER_PAGE)}
+                          onClick={() => setContributorsTablePage(p => p + 1)}>Next</Button>
+                      </div>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
 
@@ -2075,7 +2109,7 @@ export default function AdminReportsPage() {
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-border bg-card">
-                        {timekeepingData.user_breakdown.map((u) => {
+                        {timekeepingData.user_breakdown.slice((timeTrackingPage - 1) * ROWS_PER_PAGE, timeTrackingPage * ROWS_PER_PAGE).map((u) => {
                           const isExpanded = expandedUsers.has(
                             u.user_id
                           );
@@ -2171,6 +2205,18 @@ export default function AdminReportsPage() {
                       </tbody>
                     </table>
                   </div>
+                  {timekeepingData.user_breakdown.length > ROWS_PER_PAGE && (
+                    <div className="flex items-center justify-between px-6 py-3 text-sm text-muted-foreground">
+                      <span>Showing {(timeTrackingPage - 1) * ROWS_PER_PAGE + 1}-{Math.min(timeTrackingPage * ROWS_PER_PAGE, timekeepingData.user_breakdown.length)} of {timekeepingData.user_breakdown.length}</span>
+                      <div className="flex gap-2">
+                        <Button variant="outline" size="sm" disabled={timeTrackingPage === 1}
+                          onClick={() => setTimeTrackingPage(p => p - 1)}>Previous</Button>
+                        <span className="flex items-center px-2">Page {timeTrackingPage} of {Math.ceil(timekeepingData.user_breakdown.length / ROWS_PER_PAGE)}</span>
+                        <Button variant="outline" size="sm" disabled={timeTrackingPage === Math.ceil(timekeepingData.user_breakdown.length / ROWS_PER_PAGE)}
+                          onClick={() => setTimeTrackingPage(p => p + 1)}>Next</Button>
+                      </div>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             </div>
@@ -2291,7 +2337,7 @@ export default function AdminReportsPage() {
                           </tr>
                         </thead>
                         <tbody>
-                          {mapillaryData.trips.map((trip, i) => (
+                          {mapillaryData.trips.slice((tripsPage - 1) * ROWS_PER_PAGE, tripsPage * ROWS_PER_PAGE).map((trip, i) => (
                             <tr key={`${trip.mapillary_username}-${trip.date}-${i}`} className="border-b last:border-0">
                               <td className="py-2">{trip.user_name}</td>
                               <td className="py-2 text-gray-500">{trip.mapillary_username}</td>
@@ -2303,6 +2349,18 @@ export default function AdminReportsPage() {
                         </tbody>
                       </table>
                     </div>
+                    {mapillaryData.trips.length > ROWS_PER_PAGE && (
+                      <div className="flex items-center justify-between mt-3 text-sm text-muted-foreground">
+                        <span>Showing {(tripsPage - 1) * ROWS_PER_PAGE + 1}-{Math.min(tripsPage * ROWS_PER_PAGE, mapillaryData.trips.length)} of {mapillaryData.trips.length}</span>
+                        <div className="flex gap-2">
+                          <Button variant="outline" size="sm" disabled={tripsPage === 1}
+                            onClick={() => setTripsPage(p => p - 1)}>Previous</Button>
+                          <span className="flex items-center px-2">Page {tripsPage} of {Math.ceil(mapillaryData.trips.length / ROWS_PER_PAGE)}</span>
+                          <Button variant="outline" size="sm" disabled={tripsPage === Math.ceil(mapillaryData.trips.length / ROWS_PER_PAGE)}
+                            onClick={() => setTripsPage(p => p + 1)}>Next</Button>
+                        </div>
+                      </div>
+                    )}
                   </CardContent>
                 </Card>
               )}
@@ -2440,7 +2498,7 @@ export default function AdminReportsPage() {
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-border bg-card">
-                        {mrData.projects.map((proj) => {
+                        {mrData.projects.slice((mrProjectsPage - 1) * ROWS_PER_PAGE, mrProjectsPage * ROWS_PER_PAGE).map((proj) => {
                           const status = getProjectStatus(proj);
                           const bd = proj.mr_status_breakdown || {};
                           return (
@@ -2501,6 +2559,18 @@ export default function AdminReportsPage() {
                       </tbody>
                     </table>
                   </div>
+                  {mrData.projects.length > ROWS_PER_PAGE && (
+                    <div className="flex items-center justify-between px-6 py-3 text-sm text-muted-foreground">
+                      <span>Showing {(mrProjectsPage - 1) * ROWS_PER_PAGE + 1}-{Math.min(mrProjectsPage * ROWS_PER_PAGE, mrData.projects.length)} of {mrData.projects.length}</span>
+                      <div className="flex gap-2">
+                        <Button variant="outline" size="sm" disabled={mrProjectsPage === 1}
+                          onClick={() => setMrProjectsPage(p => p - 1)}>Previous</Button>
+                        <span className="flex items-center px-2">Page {mrProjectsPage} of {Math.ceil(mrData.projects.length / ROWS_PER_PAGE)}</span>
+                        <Button variant="outline" size="sm" disabled={mrProjectsPage === Math.ceil(mrData.projects.length / ROWS_PER_PAGE)}
+                          onClick={() => setMrProjectsPage(p => p + 1)}>Next</Button>
+                      </div>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
 
@@ -2541,7 +2611,7 @@ export default function AdminReportsPage() {
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-border bg-card">
-                        {mrData.top_contributors.map((c) => {
+                        {mrData.top_contributors.slice((mrContributorsPage - 1) * ROWS_PER_PAGE, mrContributorsPage * ROWS_PER_PAGE).map((c) => {
                           const bd = c.mr_status_breakdown || {};
                           return (
                             <tr
@@ -2596,6 +2666,18 @@ export default function AdminReportsPage() {
                       </tbody>
                     </table>
                   </div>
+                  {mrData.top_contributors.length > ROWS_PER_PAGE && (
+                    <div className="flex items-center justify-between px-6 py-3 text-sm text-muted-foreground">
+                      <span>Showing {(mrContributorsPage - 1) * ROWS_PER_PAGE + 1}-{Math.min(mrContributorsPage * ROWS_PER_PAGE, mrData.top_contributors.length)} of {mrData.top_contributors.length}</span>
+                      <div className="flex gap-2">
+                        <Button variant="outline" size="sm" disabled={mrContributorsPage === 1}
+                          onClick={() => setMrContributorsPage(p => p - 1)}>Previous</Button>
+                        <span className="flex items-center px-2">Page {mrContributorsPage} of {Math.ceil(mrData.top_contributors.length / ROWS_PER_PAGE)}</span>
+                        <Button variant="outline" size="sm" disabled={mrContributorsPage === Math.ceil(mrData.top_contributors.length / ROWS_PER_PAGE)}
+                          onClick={() => setMrContributorsPage(p => p + 1)}>Next</Button>
+                      </div>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             </div>

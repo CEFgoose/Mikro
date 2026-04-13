@@ -191,7 +191,7 @@ function fromDatetimeLocal(value: string): string {
 
 // --- Constants ---
 
-const PAGE_SIZE = 50;
+const PAGE_SIZE = 20;
 
 // --- Page component ---
 

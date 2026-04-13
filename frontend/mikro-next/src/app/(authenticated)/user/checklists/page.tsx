@@ -41,6 +41,12 @@ export default function UserChecklistsPage() {
   const { mutate: startChecklist, loading: starting } = useStartChecklist();
   const toast = useToastActions();
 
+  const ROWS_PER_PAGE = 20;
+  const [availablePage, setAvailablePage] = useState(1);
+  const [activePage, setActivePage] = useState(1);
+  const [pendingPage, setPendingPage] = useState(1);
+  const [confirmedPage, setConfirmedPage] = useState(1);
+
   const [selectedChecklistId, setSelectedChecklistId] = useState<number | null>(null);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
   // Track locally completed items for optimistic UI updates
@@ -303,8 +309,9 @@ export default function UserChecklistsPage() {
 
         <TabsContent value="available">
           {availableChecklists.length > 0 ? (
+            <>
             <div className="grid gap-4 md:grid-cols-2">
-              {availableChecklists.map((checklist) => (
+              {availableChecklists.slice((availablePage - 1) * ROWS_PER_PAGE, availablePage * ROWS_PER_PAGE).map((checklist) => (
                 <Card key={checklist.id} className="hover:shadow-md transition-shadow">
                   <CardHeader className="pb-2">
                     <div className="flex justify-between items-start">
@@ -349,6 +356,19 @@ export default function UserChecklistsPage() {
                 </Card>
               ))}
             </div>
+            {availableChecklists.length > ROWS_PER_PAGE && (
+              <div className="flex items-center justify-between mt-4 text-sm text-muted-foreground">
+                <span>Showing {(availablePage - 1) * ROWS_PER_PAGE + 1}-{Math.min(availablePage * ROWS_PER_PAGE, availableChecklists.length)} of {availableChecklists.length}</span>
+                <div className="flex gap-2">
+                  <Button variant="outline" size="sm" disabled={availablePage === 1}
+                    onClick={() => setAvailablePage(p => p - 1)}>Previous</Button>
+                  <span className="flex items-center px-2">Page {availablePage} of {Math.ceil(availableChecklists.length / ROWS_PER_PAGE)}</span>
+                  <Button variant="outline" size="sm" disabled={availablePage === Math.ceil(availableChecklists.length / ROWS_PER_PAGE)}
+                    onClick={() => setAvailablePage(p => p + 1)}>Next</Button>
+                </div>
+              </div>
+            )}
+            </>
           ) : (
             <Card>
               <CardContent style={{ padding: "48px 24px", textAlign: "center", color: "#6b7280" }}>
@@ -360,11 +380,25 @@ export default function UserChecklistsPage() {
 
         <TabsContent value="active">
           {activeChecklists.length > 0 ? (
-            <div className="grid gap-4 md:grid-cols-2">
-              {activeChecklists.map((checklist) => (
-                <ChecklistCard key={checklist.id} checklist={checklist} isActive />
-              ))}
-            </div>
+            <>
+              <div className="grid gap-4 md:grid-cols-2">
+                {activeChecklists.slice((activePage - 1) * ROWS_PER_PAGE, activePage * ROWS_PER_PAGE).map((checklist) => (
+                  <ChecklistCard key={checklist.id} checklist={checklist} isActive />
+                ))}
+              </div>
+              {activeChecklists.length > ROWS_PER_PAGE && (
+                <div className="flex items-center justify-between mt-4 text-sm text-muted-foreground">
+                  <span>Showing {(activePage - 1) * ROWS_PER_PAGE + 1}-{Math.min(activePage * ROWS_PER_PAGE, activeChecklists.length)} of {activeChecklists.length}</span>
+                  <div className="flex gap-2">
+                    <Button variant="outline" size="sm" disabled={activePage === 1}
+                      onClick={() => setActivePage(p => p - 1)}>Previous</Button>
+                    <span className="flex items-center px-2">Page {activePage} of {Math.ceil(activeChecklists.length / ROWS_PER_PAGE)}</span>
+                    <Button variant="outline" size="sm" disabled={activePage === Math.ceil(activeChecklists.length / ROWS_PER_PAGE)}
+                      onClick={() => setActivePage(p => p + 1)}>Next</Button>
+                  </div>
+                </div>
+              )}
+            </>
           ) : (
             <Card>
               <CardContent style={{ padding: "48px 24px", textAlign: "center" }}>
@@ -405,11 +439,25 @@ export default function UserChecklistsPage() {
 
         <TabsContent value="pending">
           {completedChecklists.length > 0 ? (
-            <div className="grid gap-4 md:grid-cols-2">
-              {completedChecklists.map((checklist) => (
-                <ChecklistCard key={checklist.id} checklist={checklist} isActive={false} />
-              ))}
-            </div>
+            <>
+              <div className="grid gap-4 md:grid-cols-2">
+                {completedChecklists.slice((pendingPage - 1) * ROWS_PER_PAGE, pendingPage * ROWS_PER_PAGE).map((checklist) => (
+                  <ChecklistCard key={checklist.id} checklist={checklist} isActive={false} />
+                ))}
+              </div>
+              {completedChecklists.length > ROWS_PER_PAGE && (
+                <div className="flex items-center justify-between mt-4 text-sm text-muted-foreground">
+                  <span>Showing {(pendingPage - 1) * ROWS_PER_PAGE + 1}-{Math.min(pendingPage * ROWS_PER_PAGE, completedChecklists.length)} of {completedChecklists.length}</span>
+                  <div className="flex gap-2">
+                    <Button variant="outline" size="sm" disabled={pendingPage === 1}
+                      onClick={() => setPendingPage(p => p - 1)}>Previous</Button>
+                    <span className="flex items-center px-2">Page {pendingPage} of {Math.ceil(completedChecklists.length / ROWS_PER_PAGE)}</span>
+                    <Button variant="outline" size="sm" disabled={pendingPage === Math.ceil(completedChecklists.length / ROWS_PER_PAGE)}
+                      onClick={() => setPendingPage(p => p + 1)}>Next</Button>
+                  </div>
+                </div>
+              )}
+            </>
           ) : (
             <Card>
               <CardContent style={{ padding: "48px 24px", textAlign: "center", color: "#6b7280" }}>
@@ -421,11 +469,25 @@ export default function UserChecklistsPage() {
 
         <TabsContent value="confirmed">
           {confirmedChecklists.length > 0 ? (
-            <div className="grid gap-4 md:grid-cols-2">
-              {confirmedChecklists.map((checklist) => (
-                <ChecklistCard key={checklist.id} checklist={checklist} isActive={false} />
-              ))}
-            </div>
+            <>
+              <div className="grid gap-4 md:grid-cols-2">
+                {confirmedChecklists.slice((confirmedPage - 1) * ROWS_PER_PAGE, confirmedPage * ROWS_PER_PAGE).map((checklist) => (
+                  <ChecklistCard key={checklist.id} checklist={checklist} isActive={false} />
+                ))}
+              </div>
+              {confirmedChecklists.length > ROWS_PER_PAGE && (
+                <div className="flex items-center justify-between mt-4 text-sm text-muted-foreground">
+                  <span>Showing {(confirmedPage - 1) * ROWS_PER_PAGE + 1}-{Math.min(confirmedPage * ROWS_PER_PAGE, confirmedChecklists.length)} of {confirmedChecklists.length}</span>
+                  <div className="flex gap-2">
+                    <Button variant="outline" size="sm" disabled={confirmedPage === 1}
+                      onClick={() => setConfirmedPage(p => p - 1)}>Previous</Button>
+                    <span className="flex items-center px-2">Page {confirmedPage} of {Math.ceil(confirmedChecklists.length / ROWS_PER_PAGE)}</span>
+                    <Button variant="outline" size="sm" disabled={confirmedPage === Math.ceil(confirmedChecklists.length / ROWS_PER_PAGE)}
+                      onClick={() => setConfirmedPage(p => p + 1)}>Next</Button>
+                  </div>
+                </div>
+              )}
+            </>
           ) : (
             <Card>
               <CardContent style={{ padding: "48px 24px", textAlign: "center", color: "#6b7280" }}>
