@@ -1977,7 +1977,10 @@ export default function AdminReportsPage() {
                 </Card>
 
                 {/* Community Outreach Trends — Stacked Bar + Lines (mock) */}
-                <Card>
+                <Card className="border-2 border-dashed border-yellow-400 relative">
+                  <div className="absolute top-2 right-2 z-10">
+                    <span className="bg-yellow-400 text-yellow-900 text-xs font-bold px-2 py-1 rounded uppercase tracking-wider">Sample Data</span>
+                  </div>
                   <CardHeader className="pb-0">
                     <CardTitle className="text-base">
                       Community Outreach Trends
@@ -2030,8 +2033,8 @@ export default function AdminReportsPage() {
                         </ComposedChart>
                       </ResponsiveContainer>
                     </div>
-                    <p className="text-[10px] text-muted-foreground text-center mt-1">
-                      Sample data — pending community data integration
+                    <p className="text-xs text-yellow-700 font-medium text-center mt-2 bg-yellow-50 rounded py-1">
+                      This chart uses sample data — not connected to a real data source yet
                     </p>
                   </CardContent>
                 </Card>

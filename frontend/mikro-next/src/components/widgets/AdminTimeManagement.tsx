@@ -608,9 +608,9 @@ export function AdminTimeManagement() {
           <button
             type="button"
             onClick={handleFillTestEntry}
-            className="w-full text-xs text-yellow-700 dark:text-yellow-400 border border-dashed border-yellow-400 rounded-md py-1.5 hover:bg-yellow-50 dark:hover:bg-yellow-950/30 transition-colors"
+            className="w-full text-xs text-yellow-700 dark:text-yellow-400 border-2 border-dashed border-yellow-400 rounded-md py-1.5 hover:bg-yellow-50 dark:hover:bg-yellow-950/30 transition-colors bg-yellow-50 dark:bg-yellow-950/20"
           >
-            Fill 8-Hour Test Entry (now - 8h → now)
+            <span className="font-bold uppercase tracking-wider">Test Data</span> — Fill 8-Hour Test Entry (now - 8h → now)
           </button>
 
           <div>

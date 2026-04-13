@@ -590,10 +590,13 @@ function DashboardStats() {
       </div>
 
       {/* DEV ONLY: Danger Zone */}
-      <Card className="border-red-200 bg-red-50/50 mt-8">
+      <Card className="border-2 border-dashed border-yellow-400 bg-yellow-50/50 mt-8 relative">
+        <div className="absolute top-2 right-2 z-10">
+          <span className="bg-yellow-400 text-yellow-900 text-xs font-bold px-2 py-1 rounded uppercase tracking-wider">Dev Only</span>
+        </div>
         <CardHeader className="pb-2">
           <CardTitle className="text-sm font-medium text-red-800">
-            Dev Tools (Remove Before Production)
+            Dev Tools
           </CardTitle>
         </CardHeader>
         <CardContent>
