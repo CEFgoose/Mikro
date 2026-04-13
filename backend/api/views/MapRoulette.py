@@ -143,8 +143,30 @@ class MapRouletteSync:
             User or None: The matching Mikro user, or None if not found.
         """
         if not osm_username:
+            current_app.logger.debug("[RESOLVE] Called with empty username, returning None")
             return None
-        return User.query.filter_by(osm_username=osm_username).first()
+
+        # Exact match first
+        user = User.query.filter_by(osm_username=osm_username).first()
+        if user:
+            current_app.logger.info(
+                f"[RESOLVE] '{osm_username}' -> FOUND user id={user.id} "
+                f"email={user.email} osm='{user.osm_username}'"
+            )
+        else:
+            # Log all users with similar names to help debug mismatches
+            from sqlalchemy import func as sa_func
+            similar = User.query.filter(
+                sa_func.lower(User.osm_username).like(f"%{osm_username.lower()[:4]}%")
+            ).all()
+            similar_list = [
+                f"'{u.osm_username}' (id={u.id})" for u in similar
+            ] if similar else ["none"]
+            current_app.logger.warning(
+                f"[RESOLVE] '{osm_username}' -> NOT FOUND. "
+                f"Similar usernames in DB: {', '.join(similar_list)}"
+            )
+        return user
 
     def _fetch_task_history(self, task_id, base_url=None, headers=None, app=None):
         """
@@ -523,6 +545,19 @@ class MapRouletteSync:
                             UserTasks.create(
                                 user_id=mapper.id, task_id=task_record.id
                             )
+                            current_app.logger.info(
+                                f"[LINK] Created UserTasks link: user={mapper.id} "
+                                f"({mapper.osm_username}) -> task={task_record.id}"
+                            )
+                        else:
+                            current_app.logger.debug(
+                                f"[LINK] UserTasks link already exists: user={mapper.id} -> task={task_record.id}"
+                            )
+                    else:
+                        current_app.logger.warning(
+                            f"[LINK] NO UserTasks link created for task {mr_task_id} — "
+                            f"mapper '{mapper_username}' could not be resolved to a Mikro user"
+                        )
 
                     current_app.logger.info(
                         f"Created MR task {mr_task_id} (status={task_status}) "
@@ -549,10 +584,36 @@ class MapRouletteSync:
                                 UserTasks.create(
                                     user_id=mapper.id, task_id=task_record.id
                                 )
+                                current_app.logger.info(
+                                    f"[LINK] Created UserTasks link (update path): "
+                                    f"user={mapper.id} ({mapper.osm_username}) -> task={task_record.id}"
+                                )
+                        else:
+                            current_app.logger.warning(
+                                f"[LINK] Update path: mapper '{mapper_username}' NOT FOUND — "
+                                f"no UserTasks link for task {mr_task_id}"
+                            )
                         current_app.logger.info(
                             f"Updated MR task {mr_task_id} mapper: "
                             f"unknown -> {mapper_username}"
                         )
+                    elif mapper_username and task_record.mapped_by == mapper_username:
+                        # Task already attributed correctly — but check if UserTasks link exists
+                        mapper = self._resolve_user(mapper_username)
+                        if mapper:
+                            existing_link = UserTasks.query.filter_by(
+                                user_id=mapper.id, task_id=task_record.id
+                            ).first()
+                            if not existing_link:
+                                UserTasks.create(
+                                    user_id=mapper.id, task_id=task_record.id
+                                )
+                                current_app.logger.info(
+                                    f"[LINK] REPAIR: task {mr_task_id} had mapped_by='{mapper_username}' "
+                                    f"but NO UserTasks link — created one for user={mapper.id}"
+                                )
+                                stats.setdefault("links_repaired", 0)
+                                stats["links_repaired"] += 1
 
                 # -------------------------------------------------
                 # Step 5: Process review status (validation/invalidation)
@@ -691,9 +752,15 @@ class MapRouletteSync:
             except (TypeError, AttributeError, KeyError):
                 continue
 
-        current_app.logger.debug(
-            f"Could not determine mapper from history for MR task "
-            f"{mr_task_id}"
+        # Log all action types found in history for debugging
+        action_summary = [
+            f"type={a.get('actionType')},status={a.get('status')},user={a.get('user',{}).get('osmProfile',{}).get('displayName','?') if isinstance(a.get('user'),dict) else a.get('username','?')}"
+            for a in (history or [])[:5]
+        ]
+        current_app.logger.warning(
+            f"[EXTRACT] Could not determine mapper from history for MR task "
+            f"{mr_task_id} (target_status={target_status}). "
+            f"History actions: [{'; '.join(action_summary)}]"
         )
         return None
 
