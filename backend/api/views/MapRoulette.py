@@ -738,11 +738,17 @@ class MapRouletteSync:
                 if action_type == MR_ACTION_STATUS_CHANGE and status == target_status:
                     user_obj = action.get("user", {})
                     if isinstance(user_obj, dict):
+                        # Try osmProfile.displayName first (some MR API versions)
                         osm_profile = user_obj.get("osmProfile", {})
                         if isinstance(osm_profile, dict):
                             display_name = osm_profile.get("displayName")
                             if display_name:
                                 return display_name
+
+                        # Try user.username directly (current MR API format)
+                        user_username = user_obj.get("username")
+                        if user_username:
+                            return user_username
 
                     # Fallback: check for username directly on action
                     username = action.get("username")
@@ -816,13 +822,24 @@ class MapRouletteSync:
         try:
             user_obj = latest_review.get("user", {})
             if isinstance(user_obj, dict):
+                # Try osmProfile.displayName first (some MR API versions)
                 osm_profile = user_obj.get("osmProfile", {})
                 if isinstance(osm_profile, dict):
                     reviewer_username = osm_profile.get("displayName")
 
+                # Try user.username directly (current MR API format)
+                if not reviewer_username:
+                    reviewer_username = user_obj.get("username")
+
             # Fallback: check for username directly on action
             if not reviewer_username:
                 reviewer_username = latest_review.get("username")
+
+            # Also check reviewRequestedBy for the mapper username
+            if not reviewer_username:
+                rrb = latest_review.get("reviewRequestedBy", {})
+                if isinstance(rrb, dict):
+                    reviewer_username = rrb.get("username")
         except (TypeError, AttributeError, KeyError):
             pass
 
