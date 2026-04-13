@@ -114,26 +114,6 @@ export default function LandingPage() {
             </div>
           </div>
 
-          {/* Stats Row - commented out for now
-          <div className="grid-responsive-4" style={{ marginTop: 80, maxWidth: 896, marginLeft: "auto", marginRight: "auto" }}>
-            <div style={{ textAlign: "center" }}>
-              <div style={{ fontSize: "clamp(1.875rem, 3vw, 2.25rem)", fontWeight: "bold", color: "#ff6b35" }}>100+</div>
-              <div style={{ fontSize: 14, color: "#6b7280", marginTop: 8 }}>Active Mappers</div>
-            </div>
-            <div style={{ textAlign: "center" }}>
-              <div style={{ fontSize: "clamp(1.875rem, 3vw, 2.25rem)", fontWeight: "bold", color: "#ff6b35" }}>50+</div>
-              <div style={{ fontSize: 14, color: "#6b7280", marginTop: 8 }}>Projects</div>
-            </div>
-            <div style={{ textAlign: "center" }}>
-              <div style={{ fontSize: "clamp(1.875rem, 3vw, 2.25rem)", fontWeight: "bold", color: "#ff6b35" }}>10K+</div>
-              <div style={{ fontSize: 14, color: "#6b7280", marginTop: 8 }}>Tasks Completed</div>
-            </div>
-            <div style={{ textAlign: "center" }}>
-              <div style={{ fontSize: "clamp(1.875rem, 3vw, 2.25rem)", fontWeight: "bold", color: "#ff6b35" }}>$50K+</div>
-              <div style={{ fontSize: 14, color: "#6b7280", marginTop: 8 }}>Paid Out</div>
-            </div>
-          </div>
-          */}
         </div>
       </section>
 
