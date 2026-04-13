@@ -11,6 +11,7 @@ export const TOPIC_OPTIONS = [
   { value: "meeting", label: "Meeting" },
   { value: "documentation", label: "Documentation" },
   { value: "imagery_capture", label: "Imagery Capture" },
+  { value: "project_creation", label: "Project Creation" },
   { value: "other", label: "Other" },
 ] as const;
 

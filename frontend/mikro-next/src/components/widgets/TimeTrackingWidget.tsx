@@ -411,6 +411,28 @@ export function TimeTrackingWidget({
       );
     }
 
+    // Project creation — optional description
+    if (selectedTopic === "project_creation") {
+      return (
+        <div>
+          <label className="block text-sm font-medium text-foreground mb-1">
+            Project Description
+          </label>
+          <input
+            type="text"
+            value={taskName}
+            onChange={(e) => {
+              setTaskName(e.target.value);
+              setTaskRefType(null);
+              setTaskRefId(null);
+            }}
+            placeholder="Describe the project being created (optional)"
+            className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+          />
+        </div>
+      );
+    }
+
     // Free-text topics
     if (["meeting", "documentation", "imagery_capture"].includes(selectedTopic)) {
       return (

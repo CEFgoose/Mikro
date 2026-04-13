@@ -46,6 +46,7 @@ export function SidebarClock() {
   const [showConfirmation, setShowConfirmation] = useState(false);
   const [selectedTopic, setSelectedTopic] = useState("");
   const [selectedProject, setSelectedProject] = useState("");
+  const [projectDescription, setProjectDescription] = useState("");
   const [todaySeconds, setTodaySeconds] = useState(0);
   const { mutate: fetchHistory } = useFetchMyTimeHistory();
 
@@ -116,17 +117,19 @@ export function SidebarClock() {
       await clockIn({
         project_id: selectedProject ? parseInt(selectedProject) : null,
         category: selectedTopic,
+        task_name: selectedTopic === "project_creation" && projectDescription ? projectDescription : null,
       });
       setClockInTime(new Date());
       setIsClockedIn(true);
       setElapsedSeconds(0);
       setSelectedTopic("");
       setSelectedProject("");
+      setProjectDescription("");
       window.dispatchEvent(new Event("clock-state-changed"));
     } catch {
       // Silently handle — dashboard/time page will show full errors
     }
-  }, [selectedTopic, selectedProject, needsProject, clockIn]);
+  }, [selectedTopic, selectedProject, needsProject, projectDescription, clockIn]);
 
   const handleClockOut = useCallback(async () => {
     try {
@@ -144,10 +147,13 @@ export function SidebarClock() {
     }
   }, [clockOut]);
 
-  // Clear project when switching to a non-project topic
+  // Clear project/description when switching topics
   useEffect(() => {
     if (selectedTopic && !topicRequiresProject(selectedTopic)) {
       setSelectedProject("");
+    }
+    if (selectedTopic !== "project_creation") {
+      setProjectDescription("");
     }
   }, [selectedTopic]);
 
@@ -285,6 +291,18 @@ export function SidebarClock() {
               </option>
             ))}
           </select>
+        )}
+        {selectedTopic === "project_creation" && (
+          <input
+            type="text"
+            style={{
+              ...selectStyle,
+              fontStyle: projectDescription ? "normal" : "italic",
+            }}
+            value={projectDescription}
+            onChange={(e) => setProjectDescription(e.target.value)}
+            placeholder="Project description (optional)"
+          />
         )}
         <button
           onClick={handleClockIn}

@@ -23,7 +23,8 @@ logger = logging.getLogger(__name__)
 
 VALID_CATEGORIES = {
     "editing", "validating", "training", "checklist",
-    "qc_review", "meeting", "documentation", "imagery_capture", "other",
+    "qc_review", "meeting", "documentation", "imagery_capture",
+    "project_creation", "other",
     # Legacy values — still accepted for backward compat
     "mapping", "validation", "review",
 }
@@ -38,6 +39,7 @@ CATEGORY_DISPLAY_MAP = {
     "meeting": "Meeting",
     "documentation": "Documentation",
     "imagery_capture": "Imagery Capture",
+    "project_creation": "Project Creation",
     "other": "Other",
     # Legacy mappings
     "mapping": "Editing",
