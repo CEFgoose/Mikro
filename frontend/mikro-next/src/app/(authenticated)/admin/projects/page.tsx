@@ -603,9 +603,17 @@ export default function AdminProjectsPage() {
                 </a>
               </div>
             </TableCell>
-            <TableCell>{formatNumber(project.total_tasks)}</TableCell>
             <TableCell>
-              {project.source === "mr" ? (
+              {project.total_tasks === 0 && !project.last_synced ? (
+                <span className="text-muted-foreground italic text-sm" title="Tasks haven't been synced from the source yet">Pending sync</span>
+              ) : (
+                formatNumber(project.total_tasks)
+              )}
+            </TableCell>
+            <TableCell>
+              {project.total_tasks === 0 && !project.last_synced ? (
+                <span className="text-muted-foreground italic text-sm">—</span>
+              ) : project.source === "mr" ? (
                 <div className="text-sm space-y-0.5">
                   <p className="text-green-600">{formatNumber(project.mr_status_breakdown?.["1"] ?? 0)} Fixed</p>
                   <p className="text-emerald-500">{formatNumber(project.mr_status_breakdown?.["5"] ?? 0)} Already Fixed</p>

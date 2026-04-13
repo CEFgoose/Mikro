@@ -787,6 +787,7 @@ class ProjectAPI(MethodView):
                     "payments_enabled": project.payments_enabled,
                     "assigned_locations": _loc_counts.get(project.id, 0),
                     "assigned_trainings": _trn_counts.get(project.id, 0),
+                    "last_synced": project.last_sync_cursor.isoformat() if project.last_sync_cursor else None,
                 }
             )
         for project in inactive_projects:
@@ -829,6 +830,7 @@ class ProjectAPI(MethodView):
                     "payments_enabled": project.payments_enabled,
                     "assigned_locations": _loc_counts.get(project.id, 0),
                     "assigned_trainings": _trn_counts.get(project.id, 0),
+                    "last_synced": project.last_sync_cursor.isoformat() if project.last_sync_cursor else None,
                 }
             )
         return {
@@ -1103,6 +1105,7 @@ class ProjectAPI(MethodView):
                 "payments_enabled": project.payments_enabled,
                 "max_editors": project.max_editors,
                 "total_editors": project.total_editors,
+                "last_synced": project.last_sync_cursor.isoformat() if project.last_sync_cursor else None,
                 **task_counts,
             },
             "assigned_users": users_data,
