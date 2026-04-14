@@ -50,6 +50,7 @@ export default function AdminUsersPage() {
   const [trackOsmUsername, setTrackOsmUsername] = useState("");
   const [trackDisplayName, setTrackDisplayName] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
+  const [showTrackedOnly, setShowTrackedOnly] = useState(false);
   const ROWS_PER_PAGE = 20;
   const toast = useToastActions();
   const { activeFilters, setActiveFilters, filtersBody, clearFilters } = useFilters();
@@ -134,7 +135,7 @@ export default function AdminUsersPage() {
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [userSearch, filtersBody]);
+  }, [userSearch, filtersBody, showTrackedOnly]);
 
   useEffect(() => {
     fetchUsers();
@@ -452,7 +453,9 @@ export default function AdminUsersPage() {
     );
   }
 
-  const filteredUsers = sortUsers(filterUsersBySearch(users));
+  const filteredUsers = sortUsers(
+    filterUsersBySearch(users).filter(u => !showTrackedOnly || u.is_tracked_only)
+  );
   const totalPages = Math.ceil(filteredUsers.length / ROWS_PER_PAGE);
   const paginatedUsers = filteredUsers.slice(
     (currentPage - 1) * ROWS_PER_PAGE,
@@ -496,6 +499,13 @@ export default function AdminUsersPage() {
           value={userSearch}
           onChange={(e) => setUserSearch(e.target.value)}
         />
+        <Button
+          variant={showTrackedOnly ? "primary" : "outline"}
+          size="sm"
+          onClick={() => setShowTrackedOnly(v => !v)}
+        >
+          Tracked Only
+        </Button>
         <div className="flex-1">
       <FilterBar
         dimensions={filterOptions?.dimensions ? Object.entries(filterOptions.dimensions).map(([key, values]) => ({
