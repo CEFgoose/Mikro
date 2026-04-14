@@ -259,10 +259,10 @@ export function TimeTrackingWidget({
     try {
       await clockOut({});
       // Don't show confirmation — go straight to clock-in form
-      // Keep the topic pre-selected so user only changes what's different
+      // Clear all selections so user must pick a new topic
       setIsClockedIn(false);
       setSwitchMode(true);
-      // Clear project/task selection but keep topic
+      setSelectedTopic("");
       setSelectedProject("");
       setTaskName("");
       setTaskRefType(null);
