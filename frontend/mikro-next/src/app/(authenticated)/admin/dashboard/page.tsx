@@ -628,6 +628,34 @@ function DashboardStats() {
           <p className="text-xs text-red-600 mt-2">
             Deletes all tasks, user_tasks, validator_task_actions and resets all user/project task counts to 0.
           </p>
+          <hr className="my-3 border-border" />
+          <div className="flex items-center gap-4">
+            <button
+              onClick={async () => {
+                try {
+                  const res = await fetch("/backend/user/sync_org_ids", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    credentials: "include",
+                  });
+                  const data = await res.json();
+                  if (data.status === 200) {
+                    toast.success(data.message);
+                  } else {
+                    toast.error(data.message || "Failed to sync org IDs");
+                  }
+                } catch {
+                  toast.error("Failed to sync org IDs");
+                }
+              }}
+              className="inline-flex items-center rounded-lg px-4 py-2 text-sm font-medium transition-colors bg-blue-100 text-blue-700 hover:bg-blue-200"
+            >
+              Sync Org IDs from Auth0
+            </button>
+          </div>
+          <p className="text-xs text-blue-600 mt-2">
+            Sets org_id on all users, projects, tasks, and time entries. Also patches Auth0 app_metadata with roles and org_id for users missing it.
+          </p>
         </CardContent>
       </Card>
     </>

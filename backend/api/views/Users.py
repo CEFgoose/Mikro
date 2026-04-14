@@ -143,6 +143,8 @@ class UserAPI(MethodView):
             return self.link_mapillary()
         elif path == "unlink_mapillary":
             return self.unlink_mapillary()
+        elif path == "sync_org_ids":
+            return self.sync_org_ids()
         return {
             "message": "Only /project/{fetch_users,fetch_user_projects} is permitted with GET",  # noqa: E501
         }, 405
@@ -661,14 +663,21 @@ class UserAPI(MethodView):
             alphabet = string.ascii_letters + string.digits + "!@#$%"
             temp_password = "".join(secrets.choice(alphabet) for _ in range(24))
 
-            # Create user in Auth0
+            # Create user in Auth0 with app_metadata so the
+            # post-login Action can populate mikro/roles and mikro/org_id
+            # custom claims in the JWT
             create_url = f"https://{domain}/api/v2/users"
             headers = {"Authorization": f"Bearer {access_token}"}
+            org_id = g.user.org_id if g.user else None
             user_payload = {
                 "email": email,
                 "connection": "Username-Password-Authentication",
                 "email_verified": False,
                 "password": temp_password,
+                "app_metadata": {
+                    "roles": ["user"],
+                    "org_id": org_id,
+                },
             }
             create_response = requests.post(create_url, json=user_payload, headers=headers)
 
@@ -697,6 +706,113 @@ class UserAPI(MethodView):
         except Exception as e:
             current_app.logger.error(f"Error inviting user: {e}")
             return {"message": "Failed to invite user", "status": 500}
+
+    @requires_admin
+    def sync_org_ids(self):
+        """
+        Sync org_id for all users. Fetches org membership from Auth0,
+        falls back to a default org_id derived from the Auth0 tenant.
+        Also updates app_metadata in Auth0 for users missing it.
+        """
+        domain = current_app.config.get("AUTH0_DOMAIN")
+        client_id = current_app.config.get("AUTH0_M2M_CLIENT_ID")
+        client_secret = current_app.config.get("AUTH0_M2M_CLIENT_SECRET")
+
+        if not all([domain, client_id, client_secret]):
+            return {"message": "Auth0 Management API not configured", "status": 500}
+
+        try:
+            # Get Management API token
+            token_resp = requests.post(
+                f"https://{domain}/oauth/token",
+                json={
+                    "grant_type": "client_credentials",
+                    "client_id": client_id,
+                    "client_secret": client_secret,
+                    "audience": f"https://{domain}/api/v2/",
+                },
+            )
+            if not token_resp.ok:
+                return {"message": "Failed to get Auth0 token", "status": 500}
+
+            access_token = token_resp.json().get("access_token")
+            headers = {"Authorization": f"Bearer {access_token}"}
+
+            # Use a consistent default org_id for the tenant
+            default_org_id = f"org_{domain.split('.')[0]}"
+
+            # Get all Mikro users
+            all_users = User.query.all()
+            updated = 0
+            auth0_updated = 0
+            errors = 0
+
+            for user in all_users:
+                try:
+                    # Set org_id in Mikro DB if missing
+                    if not user.org_id:
+                        user.org_id = default_org_id
+                        updated += 1
+
+                    # Also patch Auth0 app_metadata if user has an auth0_sub
+                    if user.auth0_sub and user.auth0_sub.startswith("auth0|"):
+                        auth0_user_url = f"https://{domain}/api/v2/users/{user.auth0_sub}"
+                        # Fetch current Auth0 user to check app_metadata
+                        get_resp = requests.get(auth0_user_url, headers=headers)
+                        if get_resp.ok:
+                            auth0_data = get_resp.json()
+                            app_meta = auth0_data.get("app_metadata", {})
+                            needs_update = False
+
+                            if not app_meta.get("roles"):
+                                app_meta["roles"] = [user.role or "user"]
+                                needs_update = True
+                            if not app_meta.get("org_id"):
+                                app_meta["org_id"] = default_org_id
+                                needs_update = True
+
+                            if needs_update:
+                                patch_resp = requests.patch(
+                                    auth0_user_url,
+                                    json={"app_metadata": app_meta},
+                                    headers=headers,
+                                )
+                                if patch_resp.ok:
+                                    auth0_updated += 1
+                                else:
+                                    current_app.logger.warning(
+                                        f"Failed to patch Auth0 for {user.email}: {patch_resp.text}"
+                                    )
+
+                except Exception as e:
+                    current_app.logger.error(f"Error syncing org_id for {user.email}: {e}")
+                    errors += 1
+
+            db.session.commit()
+
+            # Also update org_id on all projects, tasks, etc. that are null
+            Project.query.filter(Project.org_id.is_(None)).update(
+                {"org_id": default_org_id}, synchronize_session=False
+            )
+            Task.query.filter(Task.org_id.is_(None)).update(
+                {"org_id": default_org_id}, synchronize_session=False
+            )
+            TimeEntry.query.filter(TimeEntry.org_id.is_(None)).update(
+                {"org_id": default_org_id}, synchronize_session=False
+            )
+            db.session.commit()
+
+            return {
+                "message": f"Synced org_id '{default_org_id}' — {updated} users updated in DB, "
+                           f"{auth0_updated} users patched in Auth0, {errors} errors",
+                "org_id": default_org_id,
+                "status": 200,
+            }
+
+        except Exception as e:
+            current_app.logger.error(f"Error in sync_org_ids: {e}")
+            db.session.rollback()
+            return {"message": f"Failed: {str(e)}", "status": 500}
 
     @requires_admin
     def do_remove_users(self):
