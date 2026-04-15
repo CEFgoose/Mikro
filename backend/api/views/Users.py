@@ -27,6 +27,20 @@ from ..database import (
     Country,
     Region,
     UserCountry,
+    Team,
+    Checklist,
+    Training,
+    PayRequests,
+    Payments,
+    CustomTopic,
+    HourlyPayment,
+    SyncJob,
+    ElementAnalysisCache,
+    Punk,
+    Friend,
+    WeeklyReport,
+    CommunityEntry,
+    MonitoredChannel,
     db,
 )
 from ..filters import resolve_filtered_user_ids
@@ -790,16 +804,16 @@ class UserAPI(MethodView):
 
             db.session.commit()
 
-            # Also update org_id on all projects, tasks, etc. that are null
-            Project.query.filter(Project.org_id.is_(None)).update(
-                {"org_id": default_org_id}, synchronize_session=False
-            )
-            Task.query.filter(Task.org_id.is_(None)).update(
-                {"org_id": default_org_id}, synchronize_session=False
-            )
-            TimeEntry.query.filter(TimeEntry.org_id.is_(None)).update(
-                {"org_id": default_org_id}, synchronize_session=False
-            )
+            # Also update org_id on ALL tables that have the column
+            for model in [
+                Project, Task, TimeEntry, Team, Checklist, Training,
+                PayRequests, Payments, Region, Country, CustomTopic,
+                HourlyPayment, SyncJob, ElementAnalysisCache, Punk,
+                Friend, WeeklyReport, CommunityEntry, MonitoredChannel,
+            ]:
+                model.query.filter(model.org_id.is_(None)).update(
+                    {"org_id": default_org_id}, synchronize_session=False
+                )
             db.session.commit()
 
             return {
