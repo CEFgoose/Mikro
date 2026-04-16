@@ -697,16 +697,20 @@ class UserAPI(MethodView):
             create_response = requests.post(create_url, json=user_payload, headers=headers)
 
             if create_response.status_code == 409:
-                # User exists (likely from Viewer). Send password reset
-                # email so they get a "Welcome to Mikro" with a login link.
+                # User exists (likely from Viewer). Send verification
+                # email with Mikro's client_id so they get Mikro branding.
                 app_client_id = current_app.config.get("AUTH0_APP_CLIENT_ID")
-                reset_url = f"https://{domain}/dbconnections/change_password"
-                reset_payload = {
-                    "client_id": app_client_id or client_id,
-                    "email": email,
-                    "connection": "Username-Password-Authentication",
-                }
-                requests.post(reset_url, json=reset_payload)
+                if app_client_id:
+                    search_url = f"https://{domain}/api/v2/users-by-email?email={email}"
+                    search_resp = requests.get(search_url, headers=headers)
+                    if search_resp.ok and search_resp.json():
+                        existing_user = search_resp.json()[0]
+                        verify_url = f"https://{domain}/api/v2/jobs/verification-email"
+                        verify_payload = {
+                            "user_id": existing_user["user_id"],
+                            "client_id": app_client_id,
+                        }
+                        requests.post(verify_url, json=verify_payload, headers=headers)
 
                 return {
                     "message": f"User already exists — welcome email sent to {email}.",
