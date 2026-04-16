@@ -11,6 +11,11 @@ export default async function proxy(request: NextRequest) {
     return authRes;
   }
 
+  // Let the authorize route handle org invitation acceptance
+  if (request.nextUrl.pathname === "/api/authorize") {
+    return authRes;
+  }
+
   // Public routes - pass through with auth cookies maintained
   const publicRoutes = ["/", "/welcome", "/unauthorized", "/transcribe-worker"];
   const isPublicRoute = publicRoutes.some(

@@ -628,6 +628,7 @@ function DashboardStats() {
           <p className="text-xs text-red-600 mt-2">
             Deletes all tasks, user_tasks, validator_task_actions and resets all user/project task counts to 0.
           </p>
+          {/* Sync Org IDs button — disabled, migration complete
           <hr className="my-3 border-border" />
           <div className="flex items-center gap-4">
             <button
@@ -656,6 +657,7 @@ function DashboardStats() {
           <p className="text-xs text-blue-600 mt-2">
             Sets org_id on all users, projects, tasks, and time entries. Also patches Auth0 app_metadata with roles and org_id for users missing it.
           </p>
+          */}
         </CardContent>
       </Card>
     </>

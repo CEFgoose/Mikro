@@ -638,104 +638,109 @@ class UserAPI(MethodView):
     @requires_admin
     def invite_user(self):
         """
-        Invite a user via Auth0 Management API.
-        Creates the user in Auth0 and triggers a password reset email.
+        Invite a user via Auth0 Organization Invitations API.
+        Handles both new users and existing users (e.g. from Viewer).
+        Auth0 sends ONE branded email — the Organization Invitation template
+        with branding controlled by AUTH0_APP_CLIENT_ID.
         """
         email = request.json.get("email")
         if not email:
             return {"message": "Email is required", "status": 400}
 
-        # Get Auth0 config
         domain = current_app.config.get("AUTH0_DOMAIN")
         client_id = current_app.config.get("AUTH0_M2M_CLIENT_ID")
         client_secret = current_app.config.get("AUTH0_M2M_CLIENT_SECRET")
+        app_client_id = current_app.config.get("AUTH0_APP_CLIENT_ID")
+        org_id = current_app.config.get("AUTH0_ORG_ID")
+        user_role_id = current_app.config.get("AUTH0_USER_ROLE_ID")
 
-        if not all([domain, client_id, client_secret]):
-            current_app.logger.error("Auth0 Management API not configured")
-            return {
-                "message": "Auth0 Management API not configured. Please set AUTH0_M2M_CLIENT_ID and AUTH0_M2M_CLIENT_SECRET.",
-                "status": 500,
-            }
+        if not all([domain, client_id, client_secret, org_id]):
+            return {"message": "Auth0 not fully configured (need DOMAIN, M2M creds, ORG_ID)", "status": 500}
 
         try:
-            # Get Management API access token
-            token_url = f"https://{domain}/oauth/token"
-            token_payload = {
-                "grant_type": "client_credentials",
-                "client_id": client_id,
-                "client_secret": client_secret,
-                "audience": f"https://{domain}/api/v2/",
-            }
-            token_response = requests.post(token_url, json=token_payload)
-            if not token_response.ok:
-                current_app.logger.error(f"Failed to get Auth0 token: {token_response.text}")
-                return {"message": "Failed to authenticate with Auth0", "status": 500}
-
-            access_token = token_response.json().get("access_token")
-
-            # Generate cryptographically random temp password
-            alphabet = string.ascii_letters + string.digits + "!@#$%"
-            temp_password = "".join(secrets.choice(alphabet) for _ in range(24))
-
-            # Create user in Auth0 with app_metadata so the
-            # post-login Action can populate mikro/roles and mikro/org_id
-            # custom claims in the JWT
-            create_url = f"https://{domain}/api/v2/users"
-            headers = {"Authorization": f"Bearer {access_token}"}
-            org_id = g.user.org_id if g.user else None
-            user_payload = {
-                "email": email,
-                "connection": "Username-Password-Authentication",
-                "email_verified": True,  # Admin invited them — trust the email
-                "verify_email": False,
-                "password": temp_password,
-                "app_metadata": {
-                    "roles": ["user"],
-                    "org_id": org_id,
+            # Get Management API token
+            token_resp = requests.post(
+                f"https://{domain}/oauth/token",
+                json={
+                    "grant_type": "client_credentials",
+                    "client_id": client_id,
+                    "client_secret": client_secret,
+                    "audience": f"https://{domain}/api/v2/",
                 },
+            )
+            if not token_resp.ok:
+                return {"message": "Failed to get Auth0 token", "status": 500}
+
+            access_token = token_resp.json().get("access_token")
+            headers = {"Authorization": f"Bearer {access_token}"}
+
+            # Fetch connection ID for Username-Password-Authentication
+            conn_resp = requests.get(f"https://{domain}/api/v2/connections", headers=headers)
+            if not conn_resp.ok:
+                return {"message": "Failed to fetch Auth0 connections", "status": 500}
+
+            connections = conn_resp.json()
+            connection = next(
+                (c for c in connections if c.get("name") == "Username-Password-Authentication"),
+                None,
+            )
+            if not connection:
+                return {"message": "Username-Password-Authentication connection not found", "status": 500}
+
+            connection_id = connection["id"]
+
+            # Build invitation payload
+            inviter_name = "Mikro"
+            if g.user:
+                name_parts = [g.user.first_name, g.user.last_name]
+                full_name = " ".join(p for p in name_parts if p)
+                if full_name:
+                    inviter_name = full_name
+
+            invitation_payload = {
+                "inviter": {"name": inviter_name},
+                "invitee": {"email": email},
+                "client_id": app_client_id or client_id,
+                "connection_id": connection_id,
+                "ttl_sec": 604800,  # 7 days
+                "send_invitation_email": True,
             }
-            create_response = requests.post(create_url, json=user_payload, headers=headers)
+            if user_role_id:
+                invitation_payload["roles"] = [user_role_id]
 
-            if create_response.status_code == 409:
-                # User exists (likely from Viewer). Send verification
-                # email with Mikro's client_id so they get Mikro branding.
-                app_client_id = current_app.config.get("AUTH0_APP_CLIENT_ID")
-                if app_client_id:
-                    search_url = f"https://{domain}/api/v2/users-by-email?email={email}"
-                    search_resp = requests.get(search_url, headers=headers)
-                    if search_resp.ok and search_resp.json():
-                        existing_user = search_resp.json()[0]
-                        verify_url = f"https://{domain}/api/v2/jobs/verification-email"
-                        verify_payload = {
-                            "user_id": existing_user["user_id"],
-                            "client_id": app_client_id,
-                        }
-                        requests.post(verify_url, json=verify_payload, headers=headers)
+            # Send Organization Invitation
+            invite_resp = requests.post(
+                f"https://{domain}/api/v2/organizations/{org_id}/invitations",
+                json=invitation_payload,
+                headers=headers,
+            )
 
+            if invite_resp.ok:
                 return {
-                    "message": f"User already exists — welcome email sent to {email}.",
+                    "message": f"Invitation sent to {email}.",
                     "status": 200,
                 }
-            elif not create_response.ok:
-                current_app.logger.error(f"Failed to create Auth0 user: {create_response.text}")
-                return {"message": "Failed to create user in Auth0", "status": 500}
 
-            auth0_user = create_response.json()
+            # Handle errors
+            error_data = invite_resp.json()
+            error_msg = error_data.get("message", "")
 
-            # Send "Set Password" email — only email new users receive
-            app_client_id = current_app.config.get("AUTH0_APP_CLIENT_ID")
-            reset_url = f"https://{domain}/dbconnections/change_password"
-            reset_payload = {
-                "client_id": app_client_id or client_id,
-                "email": email,
-                "connection": "Username-Password-Authentication",
-            }
-            requests.post(reset_url, json=reset_payload)
+            # If user is already an org member, send a welcome email instead
+            if invite_resp.status_code == 409 or "already a member" in error_msg.lower():
+                # Send a password reset email as a "welcome to Mikro" nudge
+                reset_url = f"https://{domain}/dbconnections/change_password"
+                requests.post(reset_url, json={
+                    "client_id": app_client_id or client_id,
+                    "email": email,
+                    "connection": "Username-Password-Authentication",
+                })
+                return {
+                    "message": f"User is already in the org — welcome email sent to {email}.",
+                    "status": 200,
+                }
 
-            return {
-                "message": f"Invitation sent to {email}. They will receive an email to set their password.",
-                "status": 200,
-            }
+            current_app.logger.error(f"Auth0 org invitation failed: {invite_resp.text}")
+            return {"message": f"Failed to send invitation: {error_msg}", "status": invite_resp.status_code}
 
         except Exception as e:
             current_app.logger.error(f"Error inviting user: {e}")

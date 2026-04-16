@@ -30,6 +30,9 @@ class BaseConfig:
     # Auth0 Organization ID (Kaart org — the real org_id for multi-tenancy)
     AUTH0_ORG_ID = os.environ.get("AUTH0_ORG_ID")
 
+    # Auth0 default user role ID (for org invitations)
+    AUTH0_USER_ROLE_ID = os.environ.get("AUTH0_USER_ROLE_ID")
+
     # Database Configuration
     # Supports both DATABASE_URL (DigitalOcean) and individual vars
     DB_USERNAME = os.environ.get("POSTGRES_USER")
