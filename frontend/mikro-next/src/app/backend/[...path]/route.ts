@@ -46,14 +46,21 @@ async function handleRequest(
       headers["Content-Type"] = "application/json";
     }
 
-    // Use arrayBuffer to preserve binary data (text() corrupts file uploads)
-    const body = request.method !== "GET" ? await request.arrayBuffer() : undefined;
+    // Stream body through directly — preserves multipart boundaries and binary data
+    const body = request.method !== "GET" ? request.body : null;
 
-    const response = await fetch(backendUrl, {
+    const fetchInit: RequestInit & { duplex?: string } = {
       method: request.method,
       headers,
       body,
-    });
+    };
+
+    // Node.js fetch requires duplex: "half" for streaming request bodies
+    if (body) {
+      fetchInit.duplex = "half";
+    }
+
+    const response = await fetch(backendUrl, fetchInit);
 
     // Check content type to handle non-JSON responses (CSV, PDF exports)
     const contentType = response.headers.get("content-type") || "";
