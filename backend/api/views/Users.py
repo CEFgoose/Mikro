@@ -687,6 +687,7 @@ class UserAPI(MethodView):
                 "email": email,
                 "connection": "Username-Password-Authentication",
                 "email_verified": False,
+                "verify_email": False,  # Suppress auto verification email — we send our own with Mikro's client_id
                 "password": temp_password,
                 "app_metadata": {
                     "roles": ["user"],
