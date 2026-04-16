@@ -12,6 +12,7 @@ import uuid
 import tempfile
 import threading
 import time
+import base64
 from flask.views import MethodView
 from flask import request, current_app, g
 
@@ -130,18 +131,23 @@ class TranscriptionAPI(MethodView):
 
     @requires_admin
     def upload(self):
-        """Accept an audio file upload and start transcription."""
-        if "file" not in request.files:
+        """Accept audio as base64 JSON and start transcription."""
+        data = request.json or {}
+        file_b64 = data.get("file")
+        file_name = data.get("fileName", "audio.m4a")
+
+        if not file_b64:
             return {"message": "No file provided", "status": 400}
 
-        file = request.files["file"]
-        if not file.filename:
-            return {"message": "No filename", "status": 400}
+        # Decode base64 to bytes and save to temp file
+        try:
+            file_bytes = base64.b64decode(file_b64)
+        except Exception:
+            return {"message": "Invalid base64 data", "status": 400}
 
-        # Save to temp file
-        ext = os.path.splitext(file.filename)[1] or ".m4a"
+        ext = os.path.splitext(file_name)[1] or ".m4a"
         tmp = tempfile.NamedTemporaryFile(delete=False, suffix=ext)
-        file.save(tmp.name)
+        tmp.write(file_bytes)
         tmp.close()
 
         # Create job
