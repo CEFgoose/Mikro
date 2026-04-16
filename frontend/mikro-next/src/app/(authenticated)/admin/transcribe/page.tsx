@@ -221,7 +221,11 @@ export default function TranscribePage() {
   // ── Render ─────────────────────────────────────────────────────────
 
   return (
-    <div style={{ padding: "24px", maxWidth: 900, margin: "0 auto" }}>
+    <div
+      style={{ padding: "24px", maxWidth: 900, margin: "0 auto" }}
+      onDragOver={(e) => e.preventDefault()}
+      onDrop={(e) => e.preventDefault()}
+    >
       {/* Hidden iframe worker */}
       <iframe
         src="/transcribe-worker"

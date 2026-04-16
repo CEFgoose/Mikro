@@ -2,9 +2,8 @@
 
 import { useEffect, useRef, useState } from "react";
 
-// Turbopack traces all import() expressions statically and fails on
-// @timur00kh/whisper.wasm because it uses `new Worker(new URL(...))`.
-// We hide the import behind Function() so the bundler cannot trace it.
+// Load whisper.wasm from public/ via script tag to avoid Turbopack
+// bundling issues with the library's Emscripten Worker syntax.
 
 interface Segment {
   timeStart: number;
@@ -13,28 +12,46 @@ interface Segment {
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-let whisperModule: any = null;
-
-async function getWhisperModule() {
-  if (!whisperModule) {
-    // Runtime-only dynamic import hidden from Turbopack's static analysis
-    const dynamicImport = new Function("specifier", "return import(specifier)");
-    whisperModule = await dynamicImport("@timur00kh/whisper.wasm");
-  }
-  return whisperModule;
+function getWhisperWasm(): any {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  return (window as any).WhisperWasm;
 }
 
 export default function TranscribeWorkerClient() {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const whisperRef = useRef<any>(null);
-  const [status, setStatus] = useState("idle");
+  const [status, setStatus] = useState<string>("loading-script");
+  const [scriptReady, setScriptReady] = useState(false);
 
+  // Load the UMD script on mount
   useEffect(() => {
+    if (getWhisperWasm()) {
+      setScriptReady(true);
+      setStatus("idle");
+      return;
+    }
+
+    const script = document.createElement("script");
+    script.src = "/whisper-wasm/index.umd.js";
+    script.onload = () => {
+      setScriptReady(true);
+      setStatus("idle");
+    };
+    script.onerror = () => {
+      setStatus("error");
+      postToParent({ type: "error", message: "Failed to load Whisper WASM script" });
+    };
+    document.head.appendChild(script);
+  }, []);
+
+  // Listen for messages from parent
+  useEffect(() => {
+    if (!scriptReady) return;
+
     function handleMessage(event: MessageEvent) {
       if (event.origin !== window.location.origin) return;
 
       const { type } = event.data;
-
       switch (type) {
         case "load-model":
           handleLoadModel(event.data.modelId);
@@ -50,7 +67,7 @@ export default function TranscribeWorkerClient() {
 
     window.addEventListener("message", handleMessage);
     return () => window.removeEventListener("message", handleMessage);
-  }, []);
+  }, [scriptReady]);
 
   function postToParent(message: Record<string, unknown>) {
     window.parent.postMessage(message, window.location.origin);
@@ -59,9 +76,9 @@ export default function TranscribeWorkerClient() {
   async function handleLoadModel(modelId: string) {
     try {
       setStatus("loading-model");
+      const ww = getWhisperWasm();
 
-      const mod = await getWhisperModule();
-      const modelManager = new mod.ModelManager();
+      const modelManager = new ww.ModelManager();
       const modelData = await modelManager.loadModel(
         modelId,
         true,
@@ -70,7 +87,7 @@ export default function TranscribeWorkerClient() {
         }
       );
 
-      const whisper = new mod.WhisperWasmService();
+      const whisper = new ww.WhisperWasmService();
       await whisper.loadWasmScript();
       await whisper.initModel(modelData);
       whisperRef.current = whisper;
@@ -96,8 +113,8 @@ export default function TranscribeWorkerClient() {
       setStatus("transcribing");
       postToParent({ type: "transcription-started" });
 
-      const mod = await getWhisperModule();
-      const { audioData } = await mod.convertFromArrayBuffer(fileData);
+      const ww = getWhisperWasm();
+      const { audioData } = await ww.convertFromArrayBuffer(fileData);
       const startTime = performance.now();
       const segments: Segment[] = [];
 
