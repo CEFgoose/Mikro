@@ -89,20 +89,13 @@ export default function TranscribePage() {
     setSegmentCount(0);
 
     try {
-      // Convert file to base64 — avoids multipart proxy issues on DO
-      const arrayBuffer = await file.arrayBuffer();
-      const bytes = new Uint8Array(arrayBuffer);
-      let binary = "";
-      for (let i = 0; i < bytes.length; i++) {
-        binary += String.fromCharCode(bytes[i]);
-      }
-      const base64 = btoa(binary);
+      const formData = new FormData();
+      formData.append("file", file, name);
 
       const res = await fetch("/backend/transcribe/upload", {
         method: "POST",
         credentials: "include",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ file: base64, fileName: name }),
+        body: formData,
       });
 
       if (!res.ok) {

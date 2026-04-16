@@ -57,6 +57,9 @@ class BaseConfig:
             )
         return None
 
+    # Allow large file uploads (500MB) for transcription
+    MAX_CONTENT_LENGTH = 500 * 1024 * 1024
+
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     SQLALCHEMY_ENGINE_OPTIONS = {
         "pool_pre_ping": True,

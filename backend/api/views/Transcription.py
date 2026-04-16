@@ -131,24 +131,28 @@ class TranscriptionAPI(MethodView):
 
     @requires_admin
     def upload(self):
-        """Accept audio as base64 JSON and start transcription."""
-        data = request.json or {}
-        file_b64 = data.get("file")
-        file_name = data.get("fileName", "audio.m4a")
-
-        if not file_b64:
-            return {"message": "No file provided", "status": 400}
-
-        # Decode base64 to bytes and save to temp file
-        try:
-            file_bytes = base64.b64decode(file_b64)
-        except Exception:
-            return {"message": "Invalid base64 data", "status": 400}
-
-        ext = os.path.splitext(file_name)[1] or ".m4a"
-        tmp = tempfile.NamedTemporaryFile(delete=False, suffix=ext)
-        tmp.write(file_bytes)
-        tmp.close()
+        """Accept audio file upload and start transcription."""
+        # Support both multipart file upload and base64 JSON
+        if request.files and "file" in request.files:
+            file = request.files["file"]
+            file_name = file.filename or "audio.m4a"
+            ext = os.path.splitext(file_name)[1] or ".m4a"
+            tmp = tempfile.NamedTemporaryFile(delete=False, suffix=ext)
+            file.save(tmp.name)
+            tmp.close()
+        elif request.json and request.json.get("file"):
+            file_b64 = request.json["file"]
+            file_name = request.json.get("fileName", "audio.m4a")
+            try:
+                file_bytes = base64.b64decode(file_b64)
+            except Exception:
+                return {"message": "Invalid base64 data", "status": 400}
+            ext = os.path.splitext(file_name)[1] or ".m4a"
+            tmp = tempfile.NamedTemporaryFile(delete=False, suffix=ext)
+            tmp.write(file_bytes)
+            tmp.close()
+        else:
+            return {"message": "No file provided. Send as multipart 'file' or JSON {file: base64, fileName: name}", "status": 400}
 
         # Create job
         job_id = str(uuid.uuid4())[:8]
