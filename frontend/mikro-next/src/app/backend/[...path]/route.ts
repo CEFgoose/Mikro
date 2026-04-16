@@ -35,11 +35,19 @@ async function handleRequest(
     }
 
     const headers: HeadersInit = {
-      "Content-Type": "application/json",
       "Authorization": `Bearer ${accessToken}`,
     };
 
-    const body = request.method !== "GET" ? await request.text() : undefined;
+    // Preserve the original Content-Type (critical for multipart file uploads)
+    const incomingContentType = request.headers.get("content-type");
+    if (incomingContentType) {
+      headers["Content-Type"] = incomingContentType;
+    } else if (request.method !== "GET") {
+      headers["Content-Type"] = "application/json";
+    }
+
+    // Use arrayBuffer to preserve binary data (text() corrupts file uploads)
+    const body = request.method !== "GET" ? await request.arrayBuffer() : undefined;
 
     const response = await fetch(backendUrl, {
       method: request.method,
