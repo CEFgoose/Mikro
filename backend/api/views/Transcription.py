@@ -140,9 +140,10 @@ class TranscriptionAPI(MethodView):
             tmp = tempfile.NamedTemporaryFile(delete=False, suffix=ext)
             file.save(tmp.name)
             tmp.close()
-        elif request.json and request.json.get("file"):
-            file_b64 = request.json["file"]
-            file_name = request.json.get("fileName", "audio.m4a")
+        elif request.get_json(silent=True) and request.get_json(silent=True).get("file"):
+            data = request.get_json(silent=True)
+            file_b64 = data["file"]
+            file_name = data.get("fileName", "audio.m4a")
             try:
                 file_bytes = base64.b64decode(file_b64)
             except Exception:
