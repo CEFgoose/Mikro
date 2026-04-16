@@ -145,8 +145,17 @@ export default function TranscribeWorkerClient() {
       setStatus("transcribing");
       postToParent({ type: "transcription-started" });
 
+      console.log("[whisper-worker] Converting audio, input size:", fileData.byteLength);
       const ww = getWhisperWasm();
-      const { audioData } = await ww.convertFromArrayBuffer(fileData);
+      const conversionResult = await ww.convertFromArrayBuffer(fileData);
+      const audioData = conversionResult.audioData;
+      console.log("[whisper-worker] Audio converted:", {
+        samples: audioData.length,
+        durationSec: (audioData.length / 16000).toFixed(1),
+        sampleRate: conversionResult.audioInfo?.sampleRate,
+        channels: conversionResult.audioInfo?.channels,
+      });
+
       const startTime = performance.now();
       const segments: Segment[] = [];
 
