@@ -57,13 +57,15 @@ export default function TranscribePage() {
   const [transcribeDurationMs, setTranscribeDurationMs] = useState(0);
   const [copied, setCopied] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [chunkProgress, setChunkProgress] = useState<{ chunk: number; totalChunks: number } | null>(null);
 
   // ── Iframe message handling ────────────────────────────────────────
 
   useEffect(() => {
     const KNOWN_TYPES = new Set([
       "model-progress", "model-ready", "transcription-started",
-      "transcription-segment", "transcription-complete", "error",
+      "transcription-segment", "transcription-complete",
+      "transcription-progress", "error",
     ]);
 
     const handler = (event: MessageEvent) => {
@@ -84,6 +86,10 @@ export default function TranscribePage() {
           setSegments([]);
           setFullText("");
           setError(null);
+          setChunkProgress(null);
+          break;
+        case "transcription-progress":
+          setChunkProgress({ chunk: msg.chunk, totalChunks: msg.totalChunks });
           break;
         case "transcription-segment":
           setSegments((prev) => [...prev, msg.segment]);
@@ -93,6 +99,7 @@ export default function TranscribePage() {
           setSegments(msg.segments);
           setFullText(msg.text);
           setTranscribeDurationMs(msg.transcribeDurationMs);
+          setChunkProgress(null);
           break;
         case "error":
           setError(typeof msg.message === "string" ? msg.message : JSON.stringify(msg.message));
@@ -670,7 +677,7 @@ export default function TranscribePage() {
                 <path d="M21 12a9 9 0 1 1-6.219-8.56" />
               </svg>
               <span style={{ fontSize: 15, fontWeight: 500, color: "#555" }}>
-                Transcribing...
+                Transcribing{chunkProgress ? ` (chunk ${chunkProgress.chunk}/${chunkProgress.totalChunks})` : ""}...
               </span>
               <style>{`
                 @keyframes spin {

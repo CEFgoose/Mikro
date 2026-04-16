@@ -135,6 +135,49 @@ export default function TranscribeWorkerClient() {
     }
   }
 
+  // Split audio into chunks and transcribe sequentially to avoid WASM memory limits
+  async function transcribeChunked(audioData: Float32Array): Promise<{ segments: Segment[]; transcribeDurationMs: number }> {
+    const totalSamples = audioData.length;
+    const chunkSamples = 300 * 16000; // 5 minutes at 16kHz
+    const totalChunks = Math.ceil(totalSamples / chunkSamples);
+    const allSegments: Segment[] = [];
+    const startTime = performance.now();
+
+    console.log(`[whisper-worker] Transcribing ${totalChunks} chunk(s), total duration: ${(totalSamples / 16000 / 60).toFixed(1)} min`);
+
+    for (let i = 0; i < totalChunks; i++) {
+      const chunkStart = i * chunkSamples;
+      const chunkEnd = Math.min(chunkStart + chunkSamples, totalSamples);
+      const chunk = audioData.slice(chunkStart, chunkEnd);
+      const timeOffsetSec = chunkStart / 16000;
+
+      console.log(`[whisper-worker] Chunk ${i + 1}/${totalChunks}: ${(chunk.length / 16000).toFixed(1)}s, offset: ${timeOffsetSec.toFixed(0)}s`);
+      postToParent({ type: "transcription-progress", chunk: i + 1, totalChunks });
+
+      await whisperRef.current.transcribe(
+        chunk,
+        (segment: Segment) => {
+          // Adjust timestamps to account for chunk offset
+          const adjusted: Segment = {
+            timeStart: segment.timeStart + timeOffsetSec,
+            timeEnd: segment.timeEnd + timeOffsetSec,
+            text: segment.text,
+          };
+          allSegments.push(adjusted);
+          postToParent({ type: "transcription-segment", segment: adjusted });
+        }
+      );
+
+      // Brief pause between chunks to let GC clean up
+      await new Promise(r => setTimeout(r, 100));
+    }
+
+    return {
+      segments: allSegments,
+      transcribeDurationMs: Math.round(performance.now() - startTime),
+    };
+  }
+
   async function handleTranscribeFile(fileData: ArrayBuffer, _fileName: string) {
     try {
       if (!whisperRef.current) {
@@ -156,18 +199,7 @@ export default function TranscribeWorkerClient() {
         channels: conversionResult.audioInfo?.channels,
       });
 
-      const startTime = performance.now();
-      const segments: Segment[] = [];
-
-      await whisperRef.current.transcribe(
-        audioData,
-        (segment: Segment) => {
-          segments.push(segment);
-          postToParent({ type: "transcription-segment", segment });
-        }
-      );
-
-      const transcribeDurationMs = Math.round(performance.now() - startTime);
+      const { segments, transcribeDurationMs } = await transcribeChunked(audioData);
       const text = segments.map((s: Segment) => s.text).join(" ").trim();
 
       setStatus("ready");
@@ -178,10 +210,11 @@ export default function TranscribeWorkerClient() {
         text,
       });
     } catch (err) {
+      console.error("[whisper-worker] Transcription failed:", err);
       setStatus("error");
       postToParent({
         type: "error",
-        message: err instanceof Error ? err.message : String(err),
+        message: err instanceof Error ? err.message : (typeof err === "string" ? err : JSON.stringify(err)),
       });
     }
   }
