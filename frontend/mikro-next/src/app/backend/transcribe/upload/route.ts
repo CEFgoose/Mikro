@@ -5,8 +5,8 @@ const BACKEND_URL = process.env.FLASK_BACKEND_URL || "http://localhost:5004";
 
 /**
  * Dedicated file upload proxy for transcription.
- * The generic [...path] proxy can't forward multipart correctly.
- * This route parses the incoming FormData and re-sends it to Flask.
+ * Reads the raw body as a Buffer and forwards it with the original
+ * Content-Type header intact.
  */
 export async function POST(request: NextRequest) {
   try {
@@ -15,17 +15,22 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
     }
 
-    // Parse the incoming multipart form data
-    const formData = await request.formData();
+    const contentType = request.headers.get("content-type") || "";
+    const rawBody = Buffer.from(await request.arrayBuffer());
 
-    // Re-send to Flask — do NOT set Content-Type, let fetch set it
-    // with the correct boundary for the new FormData
+    console.log("[transcribe-upload] Proxying file upload:", {
+      contentType: contentType.slice(0, 80),
+      bodySize: rawBody.length,
+    });
+
     const response = await fetch(`${BACKEND_URL}/api/transcribe/upload`, {
       method: "POST",
       headers: {
         Authorization: `Bearer ${session.tokenSet.accessToken}`,
+        "Content-Type": contentType,
+        "Content-Length": String(rawBody.length),
       },
-      body: formData,
+      body: rawBody,
     });
 
     const data = await response.json();
@@ -33,7 +38,7 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error("Transcribe upload proxy error:", error);
     return NextResponse.json(
-      { error: "Failed to upload file" },
+      { error: `Upload proxy failed: ${error instanceof Error ? error.message : String(error)}` },
       { status: 500 },
     );
   }
