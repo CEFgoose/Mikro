@@ -192,9 +192,13 @@ export default function TranscribePage() {
     e.preventDefault();
     e.stopPropagation();
     setDragOver(false);
+    console.log("[transcribe] Drop event, modelStatus:", modelStatus, "files:", e.dataTransfer.files.length);
     if (modelStatus !== "ready") return;
     const file = e.dataTransfer.files[0];
-    if (file) handleFile(file);
+    if (file) {
+      console.log("[transcribe] Processing dropped file:", file.name, file.type, file.size);
+      handleFile(file);
+    }
   };
 
   const handleFileInput = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -232,6 +236,7 @@ export default function TranscribePage() {
     <div
       style={{ padding: "24px", maxWidth: 900, margin: "0 auto" }}
       onDragOver={(e) => e.preventDefault()}
+      onDrop={(e) => { e.preventDefault(); }}
     >
       {/* Hidden iframe worker */}
       <iframe
@@ -573,7 +578,10 @@ export default function TranscribePage() {
                 }}
                 onDragLeave={() => setDragOver(false)}
                 onDrop={handleDrop}
-                onClick={() => { if (modelStatus === "ready") fileInputRef.current?.click(); }}
+                onClick={() => {
+                  console.log("[transcribe] Drop zone clicked, modelStatus:", modelStatus, "fileInputRef:", !!fileInputRef.current);
+                  if (modelStatus === "ready") fileInputRef.current?.click();
+                }}
                 style={{
                   border: `2px dashed ${dragOver ? "#004e89" : "#d1d5db"}`,
                   borderRadius: 12,

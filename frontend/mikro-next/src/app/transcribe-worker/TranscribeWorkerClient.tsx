@@ -34,10 +34,12 @@ export default function TranscribeWorkerClient() {
     const script = document.createElement("script");
     script.src = "/whisper-wasm/index.umd.js";
     script.onload = () => {
+      console.log("[whisper-worker] UMD script loaded, WhisperWasm:", Object.keys(getWhisperWasm() || {}));
       setScriptReady(true);
       setStatus("idle");
     };
-    script.onerror = () => {
+    script.onerror = (e) => {
+      console.error("[whisper-worker] Failed to load UMD script:", e);
       setStatus("error");
       postToParent({ type: "error", message: "Failed to load Whisper WASM script" });
     };
@@ -77,8 +79,16 @@ export default function TranscribeWorkerClient() {
     try {
       setStatus("loading-model");
       const ww = getWhisperWasm();
+      console.log("[whisper-worker] Loading model:", modelId, "WhisperWasm available:", !!ww);
 
+      if (!ww) {
+        throw new Error("WhisperWasm library not loaded");
+      }
+
+      console.log("[whisper-worker] Creating ModelManager...");
       const modelManager = new ww.ModelManager();
+
+      console.log("[whisper-worker] Downloading model data...");
       const modelData = await modelManager.loadModel(
         modelId,
         true,
@@ -86,20 +96,26 @@ export default function TranscribeWorkerClient() {
           postToParent({ type: "model-progress", percent: progress });
         }
       );
+      console.log("[whisper-worker] Model data loaded, size:", modelData?.length);
 
+      console.log("[whisper-worker] Creating WhisperWasmService...");
       const whisper = new ww.WhisperWasmService();
-      await whisper.loadWasmScript();
-      await whisper.initModel(modelData);
-      whisperRef.current = whisper;
 
+      console.log("[whisper-worker] Loading WASM script...");
+      await whisper.loadWasmScript();
+
+      console.log("[whisper-worker] Initializing model...");
+      await whisper.initModel(modelData);
+
+      whisperRef.current = whisper;
       setStatus("ready");
+      console.log("[whisper-worker] Model ready!");
       postToParent({ type: "model-ready" });
     } catch (err) {
+      console.error("[whisper-worker] Model load failed:", err);
       setStatus("error");
-      postToParent({
-        type: "error",
-        message: err instanceof Error ? err.message : String(err),
-      });
+      const message = err instanceof Error ? err.message : (typeof err === "string" ? err : JSON.stringify(err));
+      postToParent({ type: "error", message });
     }
   }
 
