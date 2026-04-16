@@ -27,6 +27,9 @@ class BaseConfig:
     # Auth0 Regular Web App client ID (for email template application context)
     AUTH0_APP_CLIENT_ID = os.environ.get("AUTH0_APP_CLIENT_ID")
 
+    # Auth0 Organization ID (Kaart org — the real org_id for multi-tenancy)
+    AUTH0_ORG_ID = os.environ.get("AUTH0_ORG_ID")
+
     # Database Configuration
     # Supports both DATABASE_URL (DigitalOcean) and individual vars
     DB_USERNAME = os.environ.get("POSTGRES_USER")

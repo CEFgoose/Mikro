@@ -772,8 +772,10 @@ class UserAPI(MethodView):
             access_token = token_resp.json().get("access_token")
             headers = {"Authorization": f"Bearer {access_token}"}
 
-            # Use a consistent default org_id for the tenant
-            default_org_id = f"org_{domain.split('.')[0]}"
+            # Use the real Auth0 Organization ID
+            default_org_id = current_app.config.get("AUTH0_ORG_ID")
+            if not default_org_id:
+                return {"message": "AUTH0_ORG_ID env var not configured", "status": 500}
 
             # Get all Mikro users
             all_users = User.query.all()
@@ -783,15 +785,14 @@ class UserAPI(MethodView):
 
             for user in all_users:
                 try:
-                    # Set org_id in Mikro DB if missing
-                    if not user.org_id:
+                    # Set org_id in Mikro DB (replace old/wrong values too)
+                    if user.org_id != default_org_id:
                         user.org_id = default_org_id
                         updated += 1
 
                     # Also patch Auth0 app_metadata if user has an auth0_sub
                     if user.auth0_sub and user.auth0_sub.startswith("auth0|"):
                         auth0_user_url = f"https://{domain}/api/v2/users/{user.auth0_sub}"
-                        # Fetch current Auth0 user to check app_metadata
                         get_resp = requests.get(auth0_user_url, headers=headers)
                         if get_resp.ok:
                             auth0_data = get_resp.json()
@@ -801,7 +802,7 @@ class UserAPI(MethodView):
                             if not app_meta.get("roles"):
                                 app_meta["roles"] = [user.role or "user"]
                                 needs_update = True
-                            if not app_meta.get("org_id"):
+                            if app_meta.get("org_id") != default_org_id:
                                 app_meta["org_id"] = default_org_id
                                 needs_update = True
 
@@ -824,14 +825,15 @@ class UserAPI(MethodView):
 
             db.session.commit()
 
-            # Also update org_id on ALL tables that have the column
-            for model in [
+            # Update org_id on ALL tables — replace old values AND nulls
+            all_models = [
                 Project, Task, TimeEntry, Team, Checklist, Training,
                 PayRequests, Payments, Region, Country, CustomTopic,
                 HourlyPayment, SyncJob, ElementAnalysisCache, Punk,
                 Friend, WeeklyReport, CommunityEntry, MonitoredChannel,
-            ]:
-                model.query.filter(model.org_id.is_(None)).update(
+            ]
+            for model in all_models:
+                model.query.filter(model.org_id != default_org_id).update(
                     {"org_id": default_org_id}, synchronize_session=False
                 )
             db.session.commit()
