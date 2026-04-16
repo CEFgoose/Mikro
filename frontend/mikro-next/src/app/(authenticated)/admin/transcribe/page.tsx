@@ -61,9 +61,15 @@ export default function TranscribePage() {
   // ── Iframe message handling ────────────────────────────────────────
 
   useEffect(() => {
+    const KNOWN_TYPES = new Set([
+      "model-progress", "model-ready", "transcription-started",
+      "transcription-segment", "transcription-complete", "error",
+    ]);
+
     const handler = (event: MessageEvent) => {
       if (event.origin !== window.location.origin) return;
-      const msg = event.data as WorkerResponse;
+      const msg = event.data;
+      if (!msg || typeof msg !== "object" || !KNOWN_TYPES.has(msg.type)) return;
 
       switch (msg.type) {
         case "model-progress":
@@ -89,7 +95,7 @@ export default function TranscribePage() {
           setTranscribeDurationMs(msg.transcribeDurationMs);
           break;
         case "error":
-          setError(msg.message);
+          setError(typeof msg.message === "string" ? msg.message : JSON.stringify(msg.message));
           setTranscriptionStatus("idle");
           setModelStatus((prev) =>
             prev === "downloading" ? "not-loaded" : prev
@@ -184,7 +190,9 @@ export default function TranscribePage() {
 
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
+    e.stopPropagation();
     setDragOver(false);
+    if (modelStatus !== "ready") return;
     const file = e.dataTransfer.files[0];
     if (file) handleFile(file);
   };
@@ -224,7 +232,6 @@ export default function TranscribePage() {
     <div
       style={{ padding: "24px", maxWidth: 900, margin: "0 auto" }}
       onDragOver={(e) => e.preventDefault()}
-      onDrop={(e) => e.preventDefault()}
     >
       {/* Hidden iframe worker */}
       <iframe
@@ -566,19 +573,16 @@ export default function TranscribePage() {
                 }}
                 onDragLeave={() => setDragOver(false)}
                 onDrop={handleDrop}
-                onClick={() => fileInputRef.current?.click()}
+                onClick={() => { if (modelStatus === "ready") fileInputRef.current?.click(); }}
                 style={{
                   border: `2px dashed ${dragOver ? "#004e89" : "#d1d5db"}`,
                   borderRadius: 12,
                   padding: "48px 24px",
                   textAlign: "center",
-                  cursor:
-                    modelStatus !== "ready" ? "not-allowed" : "pointer",
+                  cursor: modelStatus !== "ready" ? "not-allowed" : "pointer",
                   backgroundColor: dragOver ? "#f0f7ff" : "#fafafa",
                   transition: "all 0.2s",
                   opacity: modelStatus !== "ready" ? 0.4 : 1,
-                  pointerEvents:
-                    modelStatus !== "ready" ? "none" : "auto",
                 }}
               >
                 <svg
