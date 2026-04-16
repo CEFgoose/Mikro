@@ -3,6 +3,7 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   serverExternalPackages: ["@timur00kh/whisper.wasm"],
   experimental: {
+    middlewareClientMaxBodySize: "500mb",
     serverActions: {
       bodySizeLimit: "500mb",
     },
