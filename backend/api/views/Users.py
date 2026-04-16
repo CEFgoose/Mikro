@@ -697,24 +697,21 @@ class UserAPI(MethodView):
             create_response = requests.post(create_url, json=user_payload, headers=headers)
 
             if create_response.status_code == 409:
-                # User exists (likely from Viewer). Send verification email
-                # with Mikro's client_id so the redirect goes to Mikro.
+                # User exists (likely from Viewer). Send password reset
+                # email so they get a "Welcome to Mikro" with a login link.
                 app_client_id = current_app.config.get("AUTH0_APP_CLIENT_ID")
-                if app_client_id:
-                    # Look up existing user by email
-                    search_url = f"https://{domain}/api/v2/users-by-email?email={email}"
-                    search_resp = requests.get(search_url, headers=headers)
-                    if search_resp.ok and search_resp.json():
-                        existing_user = search_resp.json()[0]
-                        if not existing_user.get("email_verified"):
-                            verify_url = f"https://{domain}/api/v2/jobs/verification-email"
-                            verify_payload = {
-                                "user_id": existing_user["user_id"],
-                                "client_id": app_client_id,
-                            }
-                            requests.post(verify_url, json=verify_payload, headers=headers)
+                reset_url = f"https://{domain}/dbconnections/change_password"
+                reset_payload = {
+                    "client_id": app_client_id or client_id,
+                    "email": email,
+                    "connection": "Username-Password-Authentication",
+                }
+                requests.post(reset_url, json=reset_payload)
 
-                return {"message": "User with this email already exists", "status": 400}
+                return {
+                    "message": f"User already exists — welcome email sent to {email}.",
+                    "status": 200,
+                }
             elif not create_response.ok:
                 current_app.logger.error(f"Failed to create Auth0 user: {create_response.text}")
                 return {"message": "Failed to create user in Auth0", "status": 500}
