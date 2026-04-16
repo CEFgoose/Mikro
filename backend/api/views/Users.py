@@ -702,11 +702,27 @@ class UserAPI(MethodView):
                 return {"message": "Failed to create user in Auth0", "status": 500}
 
             auth0_user = create_response.json()
+            auth0_user_id = auth0_user.get("user_id")
+
+            # Trigger verification email with Mikro's app client_id
+            # so {{ application.callback_domain }} resolves to Mikro, not Viewer
+            app_client_id = current_app.config.get("AUTH0_APP_CLIENT_ID")
+            if auth0_user_id and app_client_id:
+                verify_url = f"https://{domain}/api/v2/jobs/verification-email"
+                verify_payload = {
+                    "user_id": auth0_user_id,
+                    "client_id": app_client_id,
+                }
+                verify_resp = requests.post(verify_url, json=verify_payload, headers=headers)
+                if not verify_resp.ok:
+                    current_app.logger.warning(
+                        f"Failed to send verification email for {email}: {verify_resp.text}"
+                    )
 
             # Trigger password reset email
             reset_url = f"https://{domain}/dbconnections/change_password"
             reset_payload = {
-                "client_id": client_id,
+                "client_id": app_client_id or client_id,
                 "email": email,
                 "connection": "Username-Password-Authentication",
             }

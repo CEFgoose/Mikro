@@ -24,6 +24,9 @@ class BaseConfig:
     AUTH0_M2M_CLIENT_ID = os.environ.get("AUTH0_M2M_CLIENT_ID")
     AUTH0_M2M_CLIENT_SECRET = os.environ.get("AUTH0_M2M_CLIENT_SECRET")
 
+    # Auth0 Regular Web App client ID (for email template application context)
+    AUTH0_APP_CLIENT_ID = os.environ.get("AUTH0_APP_CLIENT_ID")
+
     # Database Configuration
     # Supports both DATABASE_URL (DigitalOcean) and individual vars
     DB_USERNAME = os.environ.get("POSTGRES_USER")
