@@ -16,6 +16,14 @@ export default async function proxy(request: NextRequest) {
     return authRes;
   }
 
+  // Transcribe worker iframe needs COOP/COEP for SharedArrayBuffer (WASM pthreads)
+  if (request.nextUrl.pathname === "/transcribe-worker") {
+    const response = NextResponse.next();
+    response.headers.set("Cross-Origin-Opener-Policy", "same-origin");
+    response.headers.set("Cross-Origin-Embedder-Policy", "require-corp");
+    return response;
+  }
+
   // Public routes - pass through with auth cookies maintained
   const publicRoutes = ["/", "/welcome", "/unauthorized", "/transcribe-worker"];
   const isPublicRoute = publicRoutes.some(
