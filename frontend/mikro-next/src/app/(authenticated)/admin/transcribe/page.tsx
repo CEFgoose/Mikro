@@ -98,6 +98,13 @@ export default function TranscribePage() {
         body: formData,
       });
 
+      if (!res.ok) {
+        const text = await res.text();
+        setError(`Upload failed (${res.status}): ${text.slice(0, 200)}`);
+        setTranscriptionStatus("idle");
+        return;
+      }
+
       const data = await res.json();
       if (data.status !== 200) {
         setError(data.message || "Upload failed");
@@ -108,7 +115,7 @@ export default function TranscribePage() {
       setJobId(data.jobId);
       setTranscriptionStatus("transcribing");
     } catch (err) {
-      setError("Failed to upload file");
+      setError(`Failed to upload file: ${err instanceof Error ? err.message : String(err)}`);
       setTranscriptionStatus("idle");
     }
   }, []);
