@@ -104,8 +104,24 @@ export default function TranscribeWorkerClient() {
       console.log("[whisper-worker] Loading WASM script...");
       await whisper.loadWasmScript();
 
-      console.log("[whisper-worker] Initializing model...");
-      await whisper.initModel(modelData);
+      // Work around library bug: initModel() calls FS_unlink("whisper.bin")
+      // which throws ENOENT on first load. We call storeFS + init directly.
+      console.log("[whisper-worker] Storing model in virtual FS...");
+      const modelFileName = "whisper.bin";
+      try { whisper.storeFS(modelFileName, modelData); } catch (e) {
+        console.warn("[whisper-worker] storeFS failed, retrying after short delay...", e);
+        await new Promise(r => setTimeout(r, 200));
+        whisper.storeFS(modelFileName, modelData);
+      }
+
+      console.log("[whisper-worker] Initializing WASM model...");
+      // Access the internal wasmModule to call init directly
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const instance = (whisper as any).wasmModule.init(modelFileName);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (whisper as any).instance = instance;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (whisper as any).modelData = modelData;
 
       whisperRef.current = whisper;
       setStatus("ready");
