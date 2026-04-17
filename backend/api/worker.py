@@ -673,9 +673,11 @@ def run_transcription_job(app, job):
         db.session.commit()
 
         # Download audio from DO Spaces to temp file
-        spaces_key = job.file_url.split("/kaart/", 1)[-1] if "/kaart/" in job.file_url else None
+        bucket = app.config.get("DO_SPACES_BUCKET")
+        bucket_marker = f"/{bucket}/"
+        spaces_key = job.file_url.split(bucket_marker, 1)[-1] if bucket_marker in job.file_url else None
         if not spaces_key:
-            raise ValueError(f"Cannot parse Spaces key from URL: {job.file_url}")
+            raise ValueError(f"Cannot parse Spaces key from URL: {job.file_url} (bucket={bucket})")
 
         ext = os.path.splitext(job.file_name or "audio.m4a")[1] or ".m4a"
         tmp = tempfile.NamedTemporaryFile(delete=False, suffix=ext)
@@ -934,10 +936,22 @@ def main():
     heartbeat_counter = 0
     last_nightly_date = None  # Track last auto-schedule date
 
+    # Run transcription polling in its own thread so sync jobs don't block it
+    import threading
+
+    def transcription_loop():
+        logger.info("Transcription polling thread started")
+        while running:
+            time.sleep(5)
+            poll_for_transcription_jobs(app)
+        logger.info("Transcription polling thread stopped")
+
+    transcription_thread = threading.Thread(target=transcription_loop, daemon=True)
+    transcription_thread.start()
+
     while running:
         time.sleep(5)
         poll_for_jobs(app)
-        poll_for_transcription_jobs(app)
 
         # Nightly element analysis auto-scheduling (midnight MST = 07:00 UTC)
         now_utc = datetime.now(timezone.utc)
