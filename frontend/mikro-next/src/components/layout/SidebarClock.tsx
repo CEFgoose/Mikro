@@ -101,7 +101,7 @@ export function SidebarClock() {
     let interval: NodeJS.Timeout | null = null;
     if (isClockedIn && clockInTime) {
       interval = setInterval(() => {
-        const diff = Math.floor((Date.now() - clockInTime.getTime()) / 1000);
+        const diff = Math.max(0, Math.floor((Date.now() - clockInTime.getTime()) / 1000));
         setElapsedSeconds(diff);
       }, 1000);
     }

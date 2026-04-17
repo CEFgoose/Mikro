@@ -137,7 +137,7 @@ export function TimeTrackingWidget({
     if (isClockedIn && clockInTime) {
       interval = setInterval(() => {
         const now = new Date();
-        const diff = Math.floor((now.getTime() - clockInTime.getTime()) / 1000);
+        const diff = Math.max(0, Math.floor((now.getTime() - clockInTime.getTime()) / 1000));
         setElapsedSeconds(diff);
       }, 1000);
     }
