@@ -39,8 +39,18 @@ export async function POST(request: NextRequest) {
         signal: controller.signal,
       });
 
-      const data = await response.json();
-      return NextResponse.json(data, { status: response.status });
+      const text = await response.text();
+      try {
+        const data = JSON.parse(text);
+        return NextResponse.json(data, { status: response.status });
+      } catch {
+        // Flask returned HTML error page — pass through the raw text
+        console.error("[transcribe-upload] Non-JSON response from backend:", text.slice(0, 500));
+        return NextResponse.json(
+          { error: `Backend error (${response.status}): ${text.slice(0, 300)}` },
+          { status: response.status },
+        );
+      }
     } finally {
       clearTimeout(timeout);
     }
