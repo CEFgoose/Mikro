@@ -351,6 +351,7 @@ export interface TimeEntry {
   clockOut: string | null;
   duration: string | null;
   durationSeconds: number | null;
+  elapsedSeconds?: number;
   status: "active" | "completed" | "voided";
   changesetCount: number;
   changesCount: number;

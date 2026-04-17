@@ -41,7 +41,8 @@ export function SidebarClock() {
   const { data: projects } = useUserProjects();
 
   const [isClockedIn, setIsClockedIn] = useState(false);
-  const [clockInTime, setClockInTime] = useState<Date | null>(null);
+  const [timerStartedAt, setTimerStartedAt] = useState<number | null>(null);
+  const [initialElapsed, setInitialElapsed] = useState(0);
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
   const [showConfirmation, setShowConfirmation] = useState(false);
   const [selectedTopic, setSelectedTopic] = useState("");
@@ -61,12 +62,16 @@ export function SidebarClock() {
   // Restore active session on mount / refetch
   useEffect(() => {
     if (activeSession?.session) {
+      const serverElapsed = activeSession.session.elapsedSeconds ?? 0;
       setIsClockedIn(true);
-      setClockInTime(new Date(activeSession.session.clockIn!));
+      setInitialElapsed(serverElapsed);
+      setTimerStartedAt(Date.now());
+      setElapsedSeconds(serverElapsed);
       setShowConfirmation(false);
     } else if (activeSession && !activeSession.session) {
       setIsClockedIn(false);
-      setClockInTime(null);
+      setTimerStartedAt(null);
+      setInitialElapsed(0);
       setElapsedSeconds(0);
     }
   }, [activeSession]);
@@ -96,19 +101,19 @@ export function SidebarClock() {
     fetchTodayTotal();
   }, [isClockedIn, fetchHistory]);
 
-  // Timer
+  // Timer — uses only client-side clock deltas, never compares against server time
   useEffect(() => {
     let interval: NodeJS.Timeout | null = null;
-    if (isClockedIn && clockInTime) {
+    if (isClockedIn && timerStartedAt !== null) {
       interval = setInterval(() => {
-        const diff = Math.max(0, Math.floor((Date.now() - clockInTime.getTime()) / 1000));
-        setElapsedSeconds(diff);
+        const clientDelta = Math.floor((Date.now() - timerStartedAt) / 1000);
+        setElapsedSeconds(initialElapsed + clientDelta);
       }, 1000);
     }
     return () => {
       if (interval) clearInterval(interval);
     };
-  }, [isClockedIn, clockInTime]);
+  }, [isClockedIn, timerStartedAt, initialElapsed]);
 
   const handleClockIn = useCallback(async () => {
     if (!selectedTopic) return;
@@ -119,8 +124,9 @@ export function SidebarClock() {
         category: selectedTopic,
         task_name: selectedTopic === "project_creation" && projectDescription ? projectDescription : null,
       });
-      setClockInTime(new Date());
       setIsClockedIn(true);
+      setInitialElapsed(0);
+      setTimerStartedAt(Date.now());
       setElapsedSeconds(0);
       setSelectedTopic("");
       setSelectedProject("");
@@ -139,7 +145,8 @@ export function SidebarClock() {
       window.dispatchEvent(new Event("clock-state-changed"));
       setTimeout(() => {
         setShowConfirmation(false);
-        setClockInTime(null);
+        setTimerStartedAt(null);
+        setInitialElapsed(0);
         setElapsedSeconds(0);
       }, 3000);
     } catch {

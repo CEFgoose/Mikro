@@ -53,7 +53,8 @@ export function TimeTrackingWidget({
   projects = [],
 }: TimeTrackingWidgetProps) {
   const [isClockedIn, setIsClockedIn] = useState(false);
-  const [clockInTime, setClockInTime] = useState<Date | null>(null);
+  const [timerStartedAt, setTimerStartedAt] = useState<number | null>(null); // Date.now() when timer was initialized
+  const [initialElapsed, setInitialElapsed] = useState(0); // Server-provided elapsed seconds at start
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
   const [selectedProject, setSelectedProject] = useState<string>("");
   const [selectedTopic, setSelectedTopic] = useState<string>("");
@@ -111,8 +112,11 @@ export function TimeTrackingWidget({
   useEffect(() => {
     if (activeSession?.session) {
       const session = activeSession.session;
+      const serverElapsed = session.elapsedSeconds ?? 0;
       setIsClockedIn(true);
-      setClockInTime(new Date(session.clockIn!));
+      setInitialElapsed(serverElapsed);
+      setTimerStartedAt(Date.now());
+      setElapsedSeconds(serverElapsed);
       setActiveSessionProjectName(session.projectName || "");
       setActiveSessionTopic(session.category || "");
       setActiveSessionTaskName(session.taskName || "");
@@ -122,7 +126,8 @@ export function TimeTrackingWidget({
     } else if (activeSession && !activeSession.session) {
       // Session ended externally (e.g. sidebar clock-out)
       setIsClockedIn(false);
-      setClockInTime(null);
+      setTimerStartedAt(null);
+      setInitialElapsed(0);
       setElapsedSeconds(0);
       setActiveSessionProjectName("");
       setActiveSessionTopic("");
@@ -130,22 +135,21 @@ export function TimeTrackingWidget({
     }
   }, [activeSession]);
 
-  // Timer effect
+  // Timer effect — uses only client-side clock deltas, never compares against server time
   useEffect(() => {
     let interval: NodeJS.Timeout | null = null;
 
-    if (isClockedIn && clockInTime) {
+    if (isClockedIn && timerStartedAt !== null) {
       interval = setInterval(() => {
-        const now = new Date();
-        const diff = Math.max(0, Math.floor((now.getTime() - clockInTime.getTime()) / 1000));
-        setElapsedSeconds(diff);
+        const clientDelta = Math.floor((Date.now() - timerStartedAt) / 1000);
+        setElapsedSeconds(initialElapsed + clientDelta);
       }, 1000);
     }
 
     return () => {
       if (interval) clearInterval(interval);
     };
-  }, [isClockedIn, clockInTime]);
+  }, [isClockedIn, timerStartedAt, initialElapsed]);
 
   // Lazy-load training/checklist data when topic changes
   useEffect(() => {
@@ -214,9 +218,9 @@ export function TimeTrackingWidget({
         task_ref_id: taskRefId || null,
       });
 
-      const now = new Date();
-      setClockInTime(now);
       setIsClockedIn(true);
+      setInitialElapsed(0);
+      setTimerStartedAt(Date.now());
       setElapsedSeconds(0);
       setActiveSessionProjectName(
         projects.find((p) => p.id.toString() === selectedProject)?.name || ""
@@ -246,7 +250,8 @@ export function TimeTrackingWidget({
       // Hide confirmation after 3 seconds
       setTimeout(() => {
         setShowConfirmation(false);
-        setClockInTime(null);
+        setTimerStartedAt(null);
+        setInitialElapsed(0);
         setElapsedSeconds(0);
       }, 3000);
     } catch (err) {

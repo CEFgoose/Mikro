@@ -334,11 +334,14 @@ class TimeTrackingAPI(MethodView):
             f"clock_in={entry.clock_in} project={project_id} category={category}"
         )
 
+        session_data = self._format_entry(entry)
+        session_data["elapsedSeconds"] = 0  # Just clocked in
+
         return jsonify({
             "message": "Clocked in successfully",
             "status": 200,
             "session_id": entry.id,
-            "session": self._format_entry(entry),
+            "session": session_data,
         }), 200
 
     def clock_out(self):
@@ -428,9 +431,17 @@ class TimeTrackingAPI(MethodView):
                 f"[CLOCK] active_session CHECK — user={g.user.id} NO active session"
             )
 
+        session_data = self._format_entry(entry) if entry else None
+
+        # Include server-computed elapsed seconds so the frontend never
+        # compares server timestamps against the client clock.
+        if entry and entry.clock_in:
+            elapsed = int((datetime.utcnow() - entry.clock_in).total_seconds())
+            session_data["elapsedSeconds"] = max(0, elapsed)
+
         return jsonify({
             "status": 200,
-            "session": self._format_entry(entry) if entry else None,
+            "session": session_data,
         }), 200
 
     def my_history(self):
