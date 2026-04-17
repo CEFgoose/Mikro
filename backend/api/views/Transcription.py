@@ -3,42 +3,17 @@
 Transcription API — server-side Whisper transcription.
 
 Accepts audio file uploads, transcribes with faster-whisper, returns
-timestamped segments. Runs in a background thread to avoid blocking
-the Flask request handler.
+timestamped segments synchronously in the upload response.
 """
 
 import os
-import uuid
 import tempfile
 import threading
-import time
 import base64
 from flask.views import MethodView
 from flask import request, current_app, g
 
 from ..utils import requires_admin
-
-# In-memory job store (fine for single-server internal tool)
-_jobs = {}
-
-
-def _get_whisper_model():
-    """Lazy-load the Whisper model on first use."""
-    from faster_whisper import WhisperModel
-
-    model_size = os.environ.get("WHISPER_MODEL", "medium.en")
-    cpu_threads = int(os.environ.get("WHISPER_THREADS", "4"))
-
-    current_app.logger.info(f"Loading Whisper model: {model_size}")
-    model = WhisperModel(
-        model_size,
-        device="cpu",
-        compute_type="int8",
-        cpu_threads=cpu_threads,
-    )
-    current_app.logger.info("Whisper model loaded")
-    return model
-
 
 # Module-level model cache
 _model = None
@@ -54,60 +29,15 @@ def get_model():
 
                 model_size = os.environ.get("WHISPER_MODEL", "medium.en")
                 cpu_threads = int(os.environ.get("WHISPER_THREADS", "4"))
+                current_app.logger.info(f"Loading Whisper model: {model_size}")
                 _model = WhisperModel(
                     model_size,
                     device="cpu",
                     compute_type="int8",
                     cpu_threads=cpu_threads,
                 )
+                current_app.logger.info("Whisper model loaded")
     return _model
-
-
-def _transcribe_worker(job_id, file_path, app):
-    """Background worker that runs transcription."""
-    with app.app_context():
-        try:
-            _jobs[job_id]["status"] = "transcribing"
-
-            model = get_model()
-            segments_iter, info = model.transcribe(
-                file_path,
-                language="en",
-                beam_size=5,
-                vad_filter=True,  # Skip silence for speed
-            )
-
-            segments = []
-            for segment in segments_iter:
-                seg = {
-                    "timeStart": round(segment.start, 2),
-                    "timeEnd": round(segment.end, 2),
-                    "text": segment.text.strip(),
-                }
-                segments.append(seg)
-                _jobs[job_id]["segments"] = segments
-                _jobs[job_id]["progress"] = len(segments)
-
-            full_text = " ".join(s["text"] for s in segments)
-
-            _jobs[job_id].update({
-                "status": "done",
-                "segments": segments,
-                "text": full_text,
-                "duration": round(info.duration, 1),
-            })
-
-        except Exception as e:
-            _jobs[job_id].update({
-                "status": "error",
-                "error": str(e),
-            })
-        finally:
-            # Clean up temp file
-            try:
-                os.unlink(file_path)
-            except OSError:
-                pass
 
 
 class TranscriptionAPI(MethodView):
@@ -116,22 +46,11 @@ class TranscriptionAPI(MethodView):
     def post(self, path: str):
         if path == "upload":
             return self.upload()
-        elif path == "status":
-            return self.status()
-        elif path == "result":
-            return self.result()
-        return {"message": "Unknown path", "status": 404}
-
-    def get(self, path: str):
-        if path == "status":
-            return self.status()
-        elif path == "result":
-            return self.result()
         return {"message": "Unknown path", "status": 404}
 
     @requires_admin
     def upload(self):
-        """Accept audio file upload and start transcription."""
+        """Accept audio file upload, transcribe synchronously, return result."""
         # Support both multipart file upload and base64 JSON
         if request.files and "file" in request.files:
             file = request.files["file"]
@@ -155,70 +74,42 @@ class TranscriptionAPI(MethodView):
         else:
             return {"message": "No file provided. Send as multipart 'file' or JSON {file: base64, fileName: name}", "status": 400}
 
-        # Create job
-        job_id = str(uuid.uuid4())[:8]
-        _jobs[job_id] = {
-            "status": "queued",
-            "segments": [],
-            "progress": 0,
-            "text": "",
-            "created": time.time(),
-        }
+        try:
+            model = get_model()
+            segments_iter, info = model.transcribe(
+                tmp.name,
+                language="en",
+                beam_size=5,
+                vad_filter=True,
+            )
 
-        # Start background transcription
-        app = current_app._get_current_object()
-        thread = threading.Thread(
-            target=_transcribe_worker,
-            args=(job_id, tmp.name, app),
-            daemon=True,
-        )
-        thread.start()
+            segments = []
+            for segment in segments_iter:
+                segments.append({
+                    "timeStart": round(segment.start, 2),
+                    "timeEnd": round(segment.end, 2),
+                    "text": segment.text.strip(),
+                })
 
-        return {
-            "message": "Transcription started",
-            "jobId": job_id,
-            "status": 200,
-        }
+            full_text = " ".join(s["text"] for s in segments)
 
-    @requires_admin
-    def status(self):
-        """Check transcription job status."""
-        json_data = request.get_json(silent=True)
-        job_id = json_data.get("jobId") if json_data else request.args.get("jobId")
-        if not job_id or job_id not in _jobs:
-            return {"message": "Job not found", "status": 404}
-
-        job = _jobs[job_id]
-        return {
-            "jobId": job_id,
-            "jobStatus": job["status"],
-            "progress": job.get("progress", 0),
-            "status": 200,
-        }
-
-    @requires_admin
-    def result(self):
-        """Get transcription result."""
-        json_data = request.get_json(silent=True)
-        job_id = json_data.get("jobId") if json_data else request.args.get("jobId")
-        if not job_id or job_id not in _jobs:
-            return {"message": "Job not found", "status": 404}
-
-        job = _jobs[job_id]
-        if job["status"] == "error":
             return {
-                "jobId": job_id,
-                "jobStatus": "error",
-                "error": job.get("error", "Unknown error"),
-                "status": 500,
+                "jobStatus": "done",
+                "segments": segments,
+                "text": full_text,
+                "duration": round(info.duration, 1),
+                "status": 200,
             }
 
-        return {
-            "jobId": job_id,
-            "jobStatus": job["status"],
-            "segments": job.get("segments", []),
-            "text": job.get("text", ""),
-            "duration": job.get("duration", 0),
-            "progress": job.get("progress", 0),
-            "status": 200,
-        }
+        except Exception as e:
+            current_app.logger.error(f"Transcription error: {e}")
+            return {
+                "jobStatus": "error",
+                "error": str(e),
+                "status": 500,
+            }
+        finally:
+            try:
+                os.unlink(tmp.name)
+            except OSError:
+                pass

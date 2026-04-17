@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useRef, useCallback } from "react";
 import {
   Card,
   CardContent,
@@ -15,7 +15,7 @@ import {
   ACCEPTED_MIME_TYPES,
 } from "@/lib/transcribe";
 
-type TranscriptionStatus = "idle" | "uploading" | "transcribing" | "done";
+type TranscriptionStatus = "idle" | "uploading" | "done";
 type Mode = "record" | "upload";
 
 export default function TranscribePage() {
@@ -34,59 +34,20 @@ export default function TranscribePage() {
   // Transcription state
   const [transcriptionStatus, setTranscriptionStatus] =
     useState<TranscriptionStatus>("idle");
-  const [jobId, setJobId] = useState<string | null>(null);
   const [segments, setSegments] = useState<TranscriptionSegment[]>([]);
   const [fullText, setFullText] = useState("");
   const [transcribeDurationMs, setTranscribeDurationMs] = useState(0);
-  const [segmentCount, setSegmentCount] = useState(0);
   const [copied, setCopied] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [fileName, setFileName] = useState<string | null>(null);
 
-  // Poll for transcription status
-  useEffect(() => {
-    if (!jobId || transcriptionStatus !== "transcribing") return;
-
-    const interval = setInterval(async () => {
-      try {
-        const res = await fetch(`/backend/transcribe/result?jobId=${jobId}`, {
-          credentials: "include",
-        });
-        const data = await res.json();
-
-        if (data.jobStatus === "done") {
-          setTranscriptionStatus("done");
-          setSegments(data.segments || []);
-          setFullText(data.text || "");
-          setTranscribeDurationMs(Math.round((data.duration || 0) * 1000));
-          setJobId(null);
-        } else if (data.jobStatus === "error") {
-          setError(data.error || "Transcription failed");
-          setTranscriptionStatus("idle");
-          setJobId(null);
-        } else {
-          setSegmentCount(data.progress || 0);
-          // Show live segments as they come in
-          if (data.segments?.length > segments.length) {
-            setSegments(data.segments);
-          }
-        }
-      } catch {
-        // Ignore polling errors, will retry
-      }
-    }, 3000);
-
-    return () => clearInterval(interval);
-  }, [jobId, transcriptionStatus, segments.length]);
-
-  // Upload file to backend
+  // Upload file and wait for transcription result (synchronous)
   const uploadFile = useCallback(async (file: File | Blob, name: string) => {
     setError(null);
     setFileName(name);
     setTranscriptionStatus("uploading");
     setSegments([]);
     setFullText("");
-    setSegmentCount(0);
 
     try {
       const formData = new FormData();
@@ -106,14 +67,19 @@ export default function TranscribePage() {
       }
 
       const data = await res.json();
-      if (data.status !== 200) {
-        setError(data.message || "Upload failed");
-        setTranscriptionStatus("idle");
-        return;
-      }
 
-      setJobId(data.jobId);
-      setTranscriptionStatus("transcribing");
+      if (data.jobStatus === "done") {
+        setTranscriptionStatus("done");
+        setSegments(data.segments || []);
+        setFullText(data.text || "");
+        setTranscribeDurationMs(Math.round((data.duration || 0) * 1000));
+      } else if (data.jobStatus === "error") {
+        setError(data.error || "Transcription failed");
+        setTranscriptionStatus("idle");
+      } else {
+        setError(data.message || "Unexpected response");
+        setTranscriptionStatus("idle");
+      }
     } catch (err) {
       setError(`Failed to upload file: ${err instanceof Error ? err.message : String(err)}`);
       setTranscriptionStatus("idle");
@@ -184,7 +150,7 @@ export default function TranscribePage() {
     setTimeout(() => setCopied(false), 2000);
   };
 
-  const isBusy = transcriptionStatus === "uploading" || transcriptionStatus === "transcribing";
+  const isBusy = transcriptionStatus === "uploading";
 
   return (
     <div
@@ -286,7 +252,7 @@ export default function TranscribePage() {
                   <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="17 8 12 3 7 8" /><line x1="12" x2="12" y1="3" y2="15" />
                 </svg>
                 <p style={{ fontSize: 15, fontWeight: 500, color: "#333", margin: "0 0 6px" }}>
-                  {fileName && isBusy ? `Uploading: ${fileName}` : "Drop an audio file here, or click to browse"}
+                  {fileName && isBusy ? `Transcribing: ${fileName}...` : "Drop an audio file here, or click to browse"}
                 </p>
                 <p style={{ fontSize: 12, color: "#999", margin: 0 }}>
                   Supports MP3, M4A, WAV, MP4, WebM, OGG — any length
@@ -308,7 +274,7 @@ export default function TranscribePage() {
       )}
 
       {/* Progress */}
-      {(transcriptionStatus === "uploading" || transcriptionStatus === "transcribing") && (
+      {transcriptionStatus === "uploading" && (
         <Card style={{ marginBottom: 20 }}>
           <CardContent>
             <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "20px 0", justifyContent: "center" }}>
@@ -316,26 +282,10 @@ export default function TranscribePage() {
                 <path d="M21 12a9 9 0 1 1-6.219-8.56" />
               </svg>
               <span style={{ fontSize: 15, fontWeight: 500, color: "#555" }}>
-                {transcriptionStatus === "uploading"
-                  ? "Uploading..."
-                  : `Transcribing${segmentCount > 0 ? ` (${segmentCount} segments so far)` : ""}...`}
+                Uploading &amp; transcribing — this may take a minute for longer files...
               </span>
               <style>{`@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }`}</style>
             </div>
-
-            {/* Live segments as they arrive */}
-            {segments.length > 0 && (
-              <div style={{ marginTop: 8, maxHeight: 200, overflowY: "auto", fontSize: 13, color: "#666", fontFamily: "monospace", lineHeight: 1.8 }}>
-                {segments.map((seg, i) => (
-                  <div key={i}>
-                    <span style={{ color: "#004e89", fontWeight: 600 }}>
-                      [{formatTimestamp(seg.timeStart)} &rarr; {formatTimestamp(seg.timeEnd)}]
-                    </span>{" "}
-                    {seg.text}
-                  </div>
-                ))}
-              </div>
-            )}
           </CardContent>
         </Card>
       )}

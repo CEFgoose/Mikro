@@ -4,9 +4,9 @@ import { NextRequest, NextResponse } from "next/server";
 const BACKEND_URL = process.env.FLASK_BACKEND_URL || "http://localhost:5004";
 
 /**
- * Dedicated file upload proxy for transcription.
- * Reads the raw body as a Buffer and forwards it with the original
- * Content-Type header intact.
+ * Dedicated upload + transcribe proxy.
+ * Forwards the file to Flask which transcribes synchronously and returns
+ * the result. Long timeout since transcription can take minutes.
  */
 export async function POST(request: NextRequest) {
   try {
@@ -23,23 +23,32 @@ export async function POST(request: NextRequest) {
       bodySize: rawBody.length,
     });
 
-    const response = await fetch(`${BACKEND_URL}/api/transcribe/upload`, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${session.tokenSet.accessToken}`,
-        "Content-Type": contentType,
-        "Content-Length": String(rawBody.length),
-      },
-      body: rawBody,
-    });
+    // 10 minute timeout — transcription of long files can take a while
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 10 * 60 * 1000);
 
-    const data = await response.json();
-    return NextResponse.json(data, { status: response.status });
+    try {
+      const response = await fetch(`${BACKEND_URL}/api/transcribe/upload`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${session.tokenSet.accessToken}`,
+          "Content-Type": contentType,
+          "Content-Length": String(rawBody.length),
+        },
+        body: rawBody,
+        signal: controller.signal,
+      });
+
+      const data = await response.json();
+      return NextResponse.json(data, { status: response.status });
+    } finally {
+      clearTimeout(timeout);
+    }
   } catch (error) {
     console.error("Transcribe upload proxy error:", error);
-    return NextResponse.json(
-      { error: `Upload proxy failed: ${error instanceof Error ? error.message : String(error)}` },
-      { status: 500 },
-    );
+    const message = error instanceof Error && error.name === "AbortError"
+      ? "Transcription timed out after 10 minutes"
+      : `Upload proxy failed: ${error instanceof Error ? error.message : String(error)}`;
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }
