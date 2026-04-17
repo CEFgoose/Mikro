@@ -20,6 +20,7 @@ import logging
 import signal
 import sys
 import time
+import traceback
 import xml.etree.ElementTree as ET
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime, timezone, timedelta, date
@@ -663,68 +664,127 @@ def run_transcription_job(app, job):
     import json
     import os
     import tempfile
-    import boto3
 
     from .database import db, TranscriptionJob
+
+    logger.info(
+        f"[TRANSCRIBE] === START job={job.id} file={job.file_name} "
+        f"url={job.file_url} status={job.status} ==="
+    )
 
     try:
         job.status = "transcribing"
         job.started_at = datetime.now(timezone.utc)
         db.session.commit()
+        logger.info(f"[TRANSCRIBE] job={job.id} status set to 'transcribing'")
 
-        # Download audio from DO Spaces to temp file
+        # Parse Spaces key from URL
         bucket = app.config.get("DO_SPACES_BUCKET")
+        endpoint = app.config.get("DO_SPACES_ENDPOINT")
+        key = app.config.get("DO_SPACES_KEY")
+        secret = app.config.get("DO_SPACES_SECRET")
+        region = app.config.get("DO_SPACES_REGION")
+
+        logger.info(
+            f"[TRANSCRIBE] job={job.id} Spaces config: "
+            f"bucket={bucket} endpoint={endpoint} region={region} "
+            f"key={'SET' if key else 'MISSING'} secret={'SET' if secret else 'MISSING'}"
+        )
+
+        if not all([bucket, endpoint, key, secret]):
+            raise ValueError(
+                f"Missing DO Spaces config: bucket={bucket} endpoint={endpoint} "
+                f"key={'SET' if key else 'MISSING'} secret={'SET' if secret else 'MISSING'}"
+            )
+
         bucket_marker = f"/{bucket}/"
         spaces_key = job.file_url.split(bucket_marker, 1)[-1] if bucket_marker in job.file_url else None
+        logger.info(
+            f"[TRANSCRIBE] job={job.id} URL parsing: "
+            f"file_url={job.file_url} bucket_marker={bucket_marker} "
+            f"parsed_key={spaces_key}"
+        )
         if not spaces_key:
-            raise ValueError(f"Cannot parse Spaces key from URL: {job.file_url} (bucket={bucket})")
+            raise ValueError(
+                f"Cannot parse Spaces key from URL: {job.file_url} "
+                f"(bucket={bucket}, marker={bucket_marker})"
+            )
 
         ext = os.path.splitext(job.file_name or "audio.m4a")[1] or ".m4a"
         tmp = tempfile.NamedTemporaryFile(delete=False, suffix=ext)
         tmp_path = tmp.name
+        logger.info(f"[TRANSCRIBE] job={job.id} temp file: {tmp_path}")
 
         try:
+            import boto3
+
+            logger.info(f"[TRANSCRIBE] job={job.id} creating S3 client...")
             s3 = boto3.client(
                 "s3",
-                endpoint_url=app.config.get("DO_SPACES_ENDPOINT"),
-                aws_access_key_id=app.config.get("DO_SPACES_KEY"),
-                aws_secret_access_key=app.config.get("DO_SPACES_SECRET"),
-                region_name=app.config.get("DO_SPACES_REGION"),
+                endpoint_url=endpoint,
+                aws_access_key_id=key,
+                aws_secret_access_key=secret,
+                region_name=region,
             )
-            s3.download_fileobj(
-                app.config.get("DO_SPACES_BUCKET"),
-                spaces_key,
-                tmp,
+
+            logger.info(
+                f"[TRANSCRIBE] job={job.id} downloading from Spaces: "
+                f"bucket={bucket} key={spaces_key}"
             )
+            s3.download_fileobj(bucket, spaces_key, tmp)
             tmp.close()
 
-            logger.info(f"Transcription job {job.id}: downloaded {spaces_key} to {tmp_path}")
+            file_size = os.path.getsize(tmp_path)
+            logger.info(
+                f"[TRANSCRIBE] job={job.id} download complete: "
+                f"{tmp_path} ({file_size} bytes)"
+            )
 
-            # Load Whisper model (lazy, thread-safe)
-            from faster_whisper import WhisperModel
+            # Load Whisper model
+            logger.info(f"[TRANSCRIBE] job={job.id} importing faster_whisper...")
+            try:
+                from faster_whisper import WhisperModel
+                logger.info(f"[TRANSCRIBE] job={job.id} faster_whisper imported OK")
+            except ImportError as e:
+                logger.error(
+                    f"[TRANSCRIBE] job={job.id} FAILED to import faster_whisper: {e}"
+                )
+                raise
 
             model_size = os.environ.get("WHISPER_MODEL", "medium.en")
             cpu_threads = int(os.environ.get("WHISPER_THREADS", "4"))
+            logger.info(
+                f"[TRANSCRIBE] job={job.id} model config: "
+                f"size={model_size} threads={cpu_threads}"
+            )
 
-            # Module-level cache for model in worker process
             if not hasattr(run_transcription_job, "_model"):
-                logger.info(f"Loading Whisper model: {model_size}")
+                logger.info(
+                    f"[TRANSCRIBE] job={job.id} loading Whisper model "
+                    f"(first time, this may take a while)..."
+                )
                 run_transcription_job._model = WhisperModel(
                     model_size,
                     device="cpu",
                     compute_type="int8",
                     cpu_threads=cpu_threads,
                 )
-                logger.info("Whisper model loaded")
+                logger.info(f"[TRANSCRIBE] job={job.id} Whisper model loaded OK")
+            else:
+                logger.info(f"[TRANSCRIBE] job={job.id} using cached Whisper model")
 
             model = run_transcription_job._model
 
-            # Transcribe
+            logger.info(f"[TRANSCRIBE] job={job.id} starting transcription...")
             segments_iter, info = model.transcribe(
                 tmp_path,
                 language="en",
                 beam_size=5,
                 vad_filter=True,
+            )
+            logger.info(
+                f"[TRANSCRIBE] job={job.id} transcribe() returned, "
+                f"audio duration={round(info.duration, 1)}s, iterating segments..."
             )
 
             segments = []
@@ -734,8 +794,11 @@ def run_transcription_job(app, job):
                     "timeEnd": round(segment.end, 2),
                     "text": segment.text.strip(),
                 })
-                # Update progress in DB periodically
                 if len(segments) % 5 == 0:
+                    logger.info(
+                        f"[TRANSCRIBE] job={job.id} progress: "
+                        f"{len(segments)} segments so far"
+                    )
                     job.progress = len(segments)
                     job.segments = json.dumps(segments)
                     db.session.commit()
@@ -751,37 +814,44 @@ def run_transcription_job(app, job):
             db.session.commit()
 
             logger.info(
-                f"Transcription job {job.id} completed: "
-                f"{len(segments)} segments, {round(info.duration, 1)}s audio"
+                f"[TRANSCRIBE] job={job.id} COMPLETED: "
+                f"{len(segments)} segments, {round(info.duration, 1)}s audio, "
+                f"text length={len(full_text)} chars"
             )
 
             # Clean up audio file from Spaces
             try:
-                s3.delete_object(
-                    Bucket=app.config.get("DO_SPACES_BUCKET"),
-                    Key=spaces_key,
-                )
-                logger.info(f"Deleted {spaces_key} from Spaces")
+                s3.delete_object(Bucket=bucket, Key=spaces_key)
+                logger.info(f"[TRANSCRIBE] job={job.id} deleted {spaces_key} from Spaces")
             except Exception as e:
-                logger.warning(f"Failed to delete {spaces_key} from Spaces: {e}")
+                logger.warning(
+                    f"[TRANSCRIBE] job={job.id} failed to delete "
+                    f"{spaces_key} from Spaces: {e}"
+                )
 
         finally:
-            # Clean up temp file
             try:
                 os.unlink(tmp_path)
+                logger.info(f"[TRANSCRIBE] job={job.id} cleaned up temp file {tmp_path}")
             except OSError:
                 pass
 
     except Exception as e:
-        logger.error(f"Transcription job {job.id} failed: {e}")
+        logger.error(
+            f"[TRANSCRIBE] job={job.id} FAILED: {e}\n"
+            f"{traceback.format_exc()}"
+        )
         db.session.rollback()
         try:
             job.status = "error"
             job.error = str(e)[:2000]
             job.completed_at = datetime.now(timezone.utc)
             db.session.commit()
-        except Exception:
-            logger.error(f"Failed to update transcription job {job.id} error status")
+            logger.info(f"[TRANSCRIBE] job={job.id} status set to 'error'")
+        except Exception as e2:
+            logger.error(
+                f"[TRANSCRIBE] job={job.id} failed to update error status: {e2}"
+            )
             db.session.rollback()
 
 
@@ -797,14 +867,13 @@ def poll_for_transcription_jobs(app):
             # Check if already running a transcription (one at a time)
             running = TranscriptionJob.query.filter_by(status="transcribing").first()
             if running:
-                # Mark stale jobs (>30 min) as failed
                 if running.started_at:
                     age = datetime.now(timezone.utc) - running.started_at.replace(
                         tzinfo=timezone.utc
                     )
                     if age > timedelta(minutes=30):
                         logger.warning(
-                            f"Marking stale transcription job {running.id} as failed "
+                            f"[TRANSCRIBE-POLL] Marking stale job {running.id} as failed "
                             f"(running for {age})"
                         )
                         running.status = "error"
@@ -812,8 +881,14 @@ def poll_for_transcription_jobs(app):
                         running.completed_at = datetime.now(timezone.utc)
                         db.session.commit()
                     else:
+                        # Job is still running, don't pick up another
                         return
                 else:
+                    # Running but no started_at — shouldn't happen, but skip
+                    logger.warning(
+                        f"[TRANSCRIBE-POLL] Job {running.id} has status=transcribing "
+                        f"but no started_at timestamp"
+                    )
                     return
 
             job = (
@@ -824,13 +899,17 @@ def poll_for_transcription_jobs(app):
 
             if job:
                 logger.info(
-                    f"Processing transcription job {job.id} "
-                    f"({job.file_name})"
+                    f"[TRANSCRIBE-POLL] Found queued job {job.id} "
+                    f"({job.file_name}), starting processing..."
                 )
                 run_transcription_job(app, job)
+            # No else log — would spam every 5 seconds
 
         except Exception as e:
-            logger.error(f"Error polling for transcription jobs: {e}")
+            logger.error(
+                f"[TRANSCRIBE-POLL] Error polling: {e}\n"
+                f"{traceback.format_exc()}"
+            )
             db.session.rollback()
 
 
@@ -940,11 +1019,19 @@ def main():
     import threading
 
     def transcription_loop():
-        logger.info("Transcription polling thread started")
+        logger.info("[TRANSCRIBE-THREAD] Transcription polling thread started")
+        poll_count = 0
         while running:
             time.sleep(5)
-            poll_for_transcription_jobs(app)
-        logger.info("Transcription polling thread stopped")
+            try:
+                poll_for_transcription_jobs(app)
+                poll_count += 1
+                # Log every 60 polls (5 minutes) as a heartbeat
+                if poll_count % 60 == 0:
+                    logger.info(f"[TRANSCRIBE-THREAD] heartbeat — {poll_count} polls completed")
+            except Exception as e:
+                logger.error(f"[TRANSCRIBE-THREAD] uncaught error: {e}\n{traceback.format_exc()}")
+        logger.info("[TRANSCRIBE-THREAD] Transcription polling thread stopped")
 
     transcription_thread = threading.Thread(target=transcription_loop, daemon=True)
     transcription_thread.start()
