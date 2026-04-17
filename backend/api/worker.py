@@ -687,10 +687,10 @@ def run_transcription_job(app, job):
                 endpoint_url=app.config.get("DO_SPACES_ENDPOINT"),
                 aws_access_key_id=app.config.get("DO_SPACES_KEY"),
                 aws_secret_access_key=app.config.get("DO_SPACES_SECRET"),
-                region_name="sfo3",
+                region_name=app.config.get("DO_SPACES_REGION"),
             )
             s3.download_fileobj(
-                app.config.get("DO_SPACES_BUCKET", "kaart"),
+                app.config.get("DO_SPACES_BUCKET"),
                 spaces_key,
                 tmp,
             )
@@ -756,7 +756,7 @@ def run_transcription_job(app, job):
             # Clean up audio file from Spaces
             try:
                 s3.delete_object(
-                    Bucket=app.config.get("DO_SPACES_BUCKET", "kaart"),
+                    Bucket=app.config.get("DO_SPACES_BUCKET"),
                     Key=spaces_key,
                 )
                 logger.info(f"Deleted {spaces_key} from Spaces")

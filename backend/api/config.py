@@ -108,8 +108,9 @@ class BaseConfig:
     # DigitalOcean Spaces (S3-compatible file storage)
     DO_SPACES_KEY = os.environ.get("DO_SPACES_KEY")
     DO_SPACES_SECRET = os.environ.get("DO_SPACES_SECRET")
-    DO_SPACES_ENDPOINT = os.environ.get("DO_SPACES_ENDPOINT", "https://sfo3.digitaloceanspaces.com")
-    DO_SPACES_BUCKET = os.environ.get("DO_SPACES_BUCKET", "kaart")
+    DO_SPACES_ENDPOINT = os.environ.get("DO_SPACES_ENDPOINT")
+    DO_SPACES_BUCKET = os.environ.get("DO_SPACES_BUCKET")
+    DO_SPACES_REGION = os.environ.get("DO_SPACES_REGION")
 
 
 class DevelopmentConfig(BaseConfig):

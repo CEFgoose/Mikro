@@ -59,9 +59,11 @@ services:
         type: SECRET
         value: ${DO_SPACES_SECRET}
       - key: DO_SPACES_ENDPOINT
-        value: https://sfo3.digitaloceanspaces.com
+        value: ${DO_SPACES_ENDPOINT}
       - key: DO_SPACES_BUCKET
-        value: kaart
+        value: ${DO_SPACES_BUCKET}
+      - key: DO_SPACES_REGION
+        value: ${DO_SPACES_REGION}
 
   # Frontend - Next.js
   - name: mikro-frontend
@@ -160,15 +162,17 @@ workers:
         type: SECRET
         value: ${DO_SPACES_SECRET}
       - key: DO_SPACES_ENDPOINT
-        value: https://sfo3.digitaloceanspaces.com
+        value: ${DO_SPACES_ENDPOINT}
       - key: DO_SPACES_BUCKET
-        value: kaart
+        value: ${DO_SPACES_BUCKET}
+      - key: DO_SPACES_REGION
+        value: ${DO_SPACES_REGION}
 
       # Whisper transcription
       - key: WHISPER_MODEL
-        value: medium.en
+        value: ${WHISPER_MODEL}
       - key: WHISPER_THREADS
-        value: "4"
+        value: ${WHISPER_THREADS}
 
 databases:
   - name: db

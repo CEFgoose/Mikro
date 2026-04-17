@@ -32,14 +32,14 @@ def _get_s3_client():
         endpoint_url=current_app.config.get("DO_SPACES_ENDPOINT"),
         aws_access_key_id=current_app.config.get("DO_SPACES_KEY"),
         aws_secret_access_key=current_app.config.get("DO_SPACES_SECRET"),
-        region_name="sfo3",
+        region_name=current_app.config.get("DO_SPACES_REGION"),
     )
 
 
 def _upload_to_spaces(file_obj, key):
     """Upload a file object to DO Spaces and return the URL."""
-    bucket = current_app.config.get("DO_SPACES_BUCKET", "kaart")
-    endpoint = current_app.config.get("DO_SPACES_ENDPOINT", "https://sfo3.digitaloceanspaces.com")
+    bucket = current_app.config.get("DO_SPACES_BUCKET")
+    endpoint = current_app.config.get("DO_SPACES_ENDPOINT")
 
     s3 = _get_s3_client()
     s3.upload_fileobj(file_obj, bucket, key)
