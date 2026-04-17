@@ -183,7 +183,8 @@ class TranscriptionAPI(MethodView):
     @requires_admin
     def status(self):
         """Check transcription job status."""
-        job_id = request.json.get("jobId") if request.json else request.args.get("jobId")
+        json_data = request.get_json(silent=True)
+        job_id = json_data.get("jobId") if json_data else request.args.get("jobId")
         if not job_id or job_id not in _jobs:
             return {"message": "Job not found", "status": 404}
 
@@ -198,7 +199,8 @@ class TranscriptionAPI(MethodView):
     @requires_admin
     def result(self):
         """Get transcription result."""
-        job_id = request.json.get("jobId") if request.json else request.args.get("jobId")
+        json_data = request.get_json(silent=True)
+        job_id = json_data.get("jobId") if json_data else request.args.get("jobId")
         if not job_id or job_id not in _jobs:
             return {"message": "Job not found", "status": 404}
 
