@@ -51,6 +51,18 @@ services:
       - key: TM4_API_URL
         value: https://tasks.kaart.com/api/v2
 
+      # DigitalOcean Spaces
+      - key: DO_SPACES_KEY
+        type: SECRET
+        value: ${DO_SPACES_KEY}
+      - key: DO_SPACES_SECRET
+        type: SECRET
+        value: ${DO_SPACES_SECRET}
+      - key: DO_SPACES_ENDPOINT
+        value: https://sfo3.digitaloceanspaces.com
+      - key: DO_SPACES_BUCKET
+        value: kaart
+
   # Frontend - Next.js
   - name: mikro-frontend
     github:
@@ -139,6 +151,24 @@ workers:
         value: ${TM4_API_TOKEN}
       - key: TM4_API_URL
         value: https://tasks.kaart.com/api/v2
+
+      # DigitalOcean Spaces
+      - key: DO_SPACES_KEY
+        type: SECRET
+        value: ${DO_SPACES_KEY}
+      - key: DO_SPACES_SECRET
+        type: SECRET
+        value: ${DO_SPACES_SECRET}
+      - key: DO_SPACES_ENDPOINT
+        value: https://sfo3.digitaloceanspaces.com
+      - key: DO_SPACES_BUCKET
+        value: kaart
+
+      # Whisper transcription
+      - key: WHISPER_MODEL
+        value: medium.en
+      - key: WHISPER_THREADS
+        value: "4"
 
 databases:
   - name: db

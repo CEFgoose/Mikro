@@ -105,6 +105,12 @@ class BaseConfig:
     # CORS
     CORS_ORIGINS = os.environ.get("CORS_ORIGINS", "*")
 
+    # DigitalOcean Spaces (S3-compatible file storage)
+    DO_SPACES_KEY = os.environ.get("DO_SPACES_KEY")
+    DO_SPACES_SECRET = os.environ.get("DO_SPACES_SECRET")
+    DO_SPACES_ENDPOINT = os.environ.get("DO_SPACES_ENDPOINT", "https://sfo3.digitaloceanspaces.com")
+    DO_SPACES_BUCKET = os.environ.get("DO_SPACES_BUCKET", "kaart")
+
 
 class DevelopmentConfig(BaseConfig):
     """Development configuration."""

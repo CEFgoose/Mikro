@@ -1,43 +1,50 @@
 #!/usr/bin/env python3
 """
-Transcription API — server-side Whisper transcription.
+Transcription API — async server-side Whisper transcription.
 
-Accepts audio file uploads, transcribes with faster-whisper, returns
-timestamped segments synchronously in the upload response.
+Upload flow:
+1. Accept audio file upload
+2. Store file in DO Spaces
+3. Create TranscriptionJob row in DB (status=queued)
+4. Return jobId immediately
+
+The background worker picks up queued jobs, transcribes with
+faster-whisper, and stores results back in the DB.
+
+Frontend polls GET /result?jobId=X to check progress.
 """
 
+import json
 import os
+import uuid
 import tempfile
-import threading
-import base64
+import boto3
 from flask.views import MethodView
 from flask import request, current_app, g
 
 from ..utils import requires_admin
 
-# Module-level model cache
-_model = None
-_model_lock = threading.Lock()
+
+def _get_s3_client():
+    """Create a boto3 S3 client for DO Spaces."""
+    return boto3.client(
+        "s3",
+        endpoint_url=current_app.config.get("DO_SPACES_ENDPOINT"),
+        aws_access_key_id=current_app.config.get("DO_SPACES_KEY"),
+        aws_secret_access_key=current_app.config.get("DO_SPACES_SECRET"),
+        region_name="sfo3",
+    )
 
 
-def get_model():
-    global _model
-    if _model is None:
-        with _model_lock:
-            if _model is None:
-                from faster_whisper import WhisperModel
+def _upload_to_spaces(file_obj, key):
+    """Upload a file object to DO Spaces and return the URL."""
+    bucket = current_app.config.get("DO_SPACES_BUCKET", "kaart")
+    endpoint = current_app.config.get("DO_SPACES_ENDPOINT", "https://sfo3.digitaloceanspaces.com")
 
-                model_size = os.environ.get("WHISPER_MODEL", "medium.en")
-                cpu_threads = int(os.environ.get("WHISPER_THREADS", "4"))
-                current_app.logger.info(f"Loading Whisper model: {model_size}")
-                _model = WhisperModel(
-                    model_size,
-                    device="cpu",
-                    compute_type="int8",
-                    cpu_threads=cpu_threads,
-                )
-                current_app.logger.info("Whisper model loaded")
-    return _model
+    s3 = _get_s3_client()
+    s3.upload_fileobj(file_obj, bucket, key)
+
+    return f"{endpoint}/{bucket}/{key}"
 
 
 class TranscriptionAPI(MethodView):
@@ -49,70 +56,151 @@ class TranscriptionAPI(MethodView):
         return {"message": "Unknown path", "status": 404}
 
     def get(self, path: str):
-        return {"message": "Transcription uses POST only. GET polling is no longer supported.", "status": 404}
+        if path == "status":
+            return self.status()
+        elif path == "result":
+            return self.result()
+        elif path == "recent":
+            return self.recent()
+        return {"message": "Unknown path", "status": 404}
 
     @requires_admin
     def upload(self):
-        """Accept audio file upload, transcribe synchronously, return result."""
-        # Support both multipart file upload and base64 JSON
-        if request.files and "file" in request.files:
-            file = request.files["file"]
-            file_name = file.filename or "audio.m4a"
-            ext = os.path.splitext(file_name)[1] or ".m4a"
-            tmp = tempfile.NamedTemporaryFile(delete=False, suffix=ext)
-            file.save(tmp.name)
-            tmp.close()
-        elif request.get_json(silent=True) and request.get_json(silent=True).get("file"):
-            data = request.get_json(silent=True)
-            file_b64 = data["file"]
-            file_name = data.get("fileName", "audio.m4a")
-            try:
-                file_bytes = base64.b64decode(file_b64)
-            except Exception:
-                return {"message": "Invalid base64 data", "status": 400}
-            ext = os.path.splitext(file_name)[1] or ".m4a"
-            tmp = tempfile.NamedTemporaryFile(delete=False, suffix=ext)
-            tmp.write(file_bytes)
-            tmp.close()
-        else:
-            return {"message": "No file provided. Send as multipart 'file' or JSON {file: base64, fileName: name}", "status": 400}
+        """Accept audio file upload, store in Spaces, queue transcription job."""
+        from ..database import db, TranscriptionJob
+
+        if not (request.files and "file" in request.files):
+            return {"message": "No file provided. Send as multipart 'file'.", "status": 400}
+
+        file = request.files["file"]
+        file_name = file.filename or "audio.m4a"
+        ext = os.path.splitext(file_name)[1] or ".m4a"
+
+        # Generate job ID
+        job_id = str(uuid.uuid4())[:8]
+        spaces_key = f"transcriptions/{job_id}{ext}"
 
         try:
-            model = get_model()
-            segments_iter, info = model.transcribe(
-                tmp.name,
-                language="en",
-                beam_size=5,
-                vad_filter=True,
-            )
-
-            segments = []
-            for segment in segments_iter:
-                segments.append({
-                    "timeStart": round(segment.start, 2),
-                    "timeEnd": round(segment.end, 2),
-                    "text": segment.text.strip(),
-                })
-
-            full_text = " ".join(s["text"] for s in segments)
-
-            return {
-                "jobStatus": "done",
-                "segments": segments,
-                "text": full_text,
-                "duration": round(info.duration, 1),
-                "status": 200,
-            }
-
+            # Upload to DO Spaces
+            file_url = _upload_to_spaces(file, spaces_key)
         except Exception as e:
-            current_app.logger.error(f"Transcription error: {e}")
+            current_app.logger.error(f"Failed to upload to Spaces: {e}")
+            return {"message": f"File storage error: {str(e)}", "status": 500}
+
+        # Create job in DB
+        job = TranscriptionJob(
+            id=job_id,
+            user_id=g.user.id,
+            org_id=getattr(g.user, "org_id", None),
+            status="queued",
+            file_name=file_name,
+            file_url=file_url,
+        )
+        db.session.add(job)
+        db.session.commit()
+
+        current_app.logger.info(
+            f"Transcription job {job_id} queued for {file_name} ({file_url})"
+        )
+
+        return {
+            "message": "Transcription queued",
+            "jobId": job_id,
+            "status": 200,
+        }
+
+    @requires_admin
+    def status(self):
+        """Check transcription job status."""
+        from ..database import TranscriptionJob
+
+        job_id = request.args.get("jobId")
+        if not job_id:
+            return {"message": "jobId required", "status": 400}
+
+        job = TranscriptionJob.query.get(job_id)
+        if not job:
+            return {"message": "Job not found", "status": 404}
+
+        return {
+            "jobId": job_id,
+            "jobStatus": job.status,
+            "progress": job.progress or 0,
+            "status": 200,
+        }
+
+    @requires_admin
+    def result(self):
+        """Get transcription result."""
+        from ..database import TranscriptionJob
+
+        job_id = request.args.get("jobId")
+        if not job_id:
+            return {"message": "jobId required", "status": 400}
+
+        job = TranscriptionJob.query.get(job_id)
+        if not job:
+            return {"message": "Job not found", "status": 404}
+
+        if job.status == "error":
             return {
+                "jobId": job_id,
                 "jobStatus": "error",
-                "error": str(e),
+                "error": job.error or "Unknown error",
                 "status": 500,
             }
-        finally:
+
+        # Parse segments from JSON string
+        segments = []
+        if job.segments:
             try:
-                os.unlink(tmp.name)
-            except OSError:
+                segments = json.loads(job.segments)
+            except (json.JSONDecodeError, TypeError):
                 pass
+
+        return {
+            "jobId": job_id,
+            "jobStatus": job.status,
+            "segments": segments,
+            "text": job.text or "",
+            "duration": job.duration or 0,
+            "progress": job.progress or 0,
+            "status": 200,
+        }
+
+    @requires_admin
+    def recent(self):
+        """Get recent transcription jobs for the current user."""
+        from ..database import TranscriptionJob
+
+        jobs = (
+            TranscriptionJob.query
+            .filter_by(user_id=g.user.id)
+            .order_by(TranscriptionJob.created_at.desc())
+            .limit(10)
+            .all()
+        )
+
+        result = []
+        for job in jobs:
+            segments = []
+            if job.segments:
+                try:
+                    segments = json.loads(job.segments)
+                except (json.JSONDecodeError, TypeError):
+                    pass
+
+            result.append({
+                "jobId": job.id,
+                "jobStatus": job.status,
+                "fileName": job.file_name,
+                "segments": segments,
+                "text": job.text or "",
+                "duration": job.duration or 0,
+                "progress": job.progress or 0,
+                "error": job.error,
+                "createdAt": job.created_at.isoformat() if job.created_at else None,
+                "completedAt": job.completed_at.isoformat() if job.completed_at else None,
+            })
+
+        return {"jobs": result, "status": 200}

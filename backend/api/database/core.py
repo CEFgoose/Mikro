@@ -1058,3 +1058,27 @@ class ChannelPost(CRUDMixin, db.Model):
 
     def __repr__(self):
         return f"<ChannelPost {self.id} channel={self.channel_id}>"
+
+
+class TranscriptionJob(CRUDMixin, db.Model):
+    """Audio transcription job tracking."""
+
+    __tablename__ = "transcription_jobs"
+
+    id = Column(String(8), primary_key=True)
+    user_id = Column(String(255), nullable=False, index=True)
+    org_id = Column(String(255), nullable=True, index=True)
+    status = Column(String(50), nullable=False, default="queued")
+    file_name = Column(String(500), nullable=True)
+    file_url = Column(String(1000), nullable=True)
+    segments = Column(Text, nullable=True)
+    text = Column(Text, nullable=True)
+    duration = Column(Float, nullable=True)
+    error = Column(Text, nullable=True)
+    progress = Column(Integer, default=0)
+    created_at = Column(DateTime, default=func.now())
+    started_at = Column(DateTime, nullable=True)
+    completed_at = Column(DateTime, nullable=True)
+
+    def __repr__(self):
+        return f"<TranscriptionJob {self.id} user={self.user_id} status={self.status}>"

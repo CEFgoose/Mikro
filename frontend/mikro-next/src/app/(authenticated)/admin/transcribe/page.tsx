@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import {
   Card,
   CardContent,
@@ -15,8 +15,21 @@ import {
   ACCEPTED_MIME_TYPES,
 } from "@/lib/transcribe";
 
-type TranscriptionStatus = "idle" | "uploading" | "done";
+type TranscriptionStatus = "idle" | "uploading" | "transcribing" | "done";
 type Mode = "record" | "upload";
+
+interface RecentJob {
+  jobId: string;
+  jobStatus: string;
+  fileName: string;
+  segments: TranscriptionSegment[];
+  text: string;
+  duration: number;
+  progress: number;
+  error: string | null;
+  createdAt: string | null;
+  completedAt: string | null;
+}
 
 export default function TranscribePage() {
   // Recording state
@@ -34,20 +47,92 @@ export default function TranscribePage() {
   // Transcription state
   const [transcriptionStatus, setTranscriptionStatus] =
     useState<TranscriptionStatus>("idle");
+  const [jobId, setJobId] = useState<string | null>(null);
   const [segments, setSegments] = useState<TranscriptionSegment[]>([]);
   const [fullText, setFullText] = useState("");
   const [transcribeDurationMs, setTranscribeDurationMs] = useState(0);
+  const [segmentCount, setSegmentCount] = useState(0);
   const [copied, setCopied] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [fileName, setFileName] = useState<string | null>(null);
 
-  // Upload file and wait for transcription result (synchronous)
+  // Recent jobs
+  const [recentJobs, setRecentJobs] = useState<RecentJob[]>([]);
+
+  // Load recent jobs on mount
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await fetch("/backend/transcribe/recent", {
+          credentials: "include",
+        });
+        const data = await res.json();
+        if (data.jobs) {
+          setRecentJobs(data.jobs);
+
+          // If there's an active job (queued or transcribing), resume polling it
+          const active = data.jobs.find(
+            (j: RecentJob) => j.jobStatus === "queued" || j.jobStatus === "transcribing"
+          );
+          if (active) {
+            setJobId(active.jobId);
+            setFileName(active.fileName);
+            setTranscriptionStatus("transcribing");
+            setSegmentCount(active.progress || 0);
+            if (active.segments?.length) {
+              setSegments(active.segments);
+            }
+          }
+        }
+      } catch {
+        // Ignore — recent jobs are optional
+      }
+    })();
+  }, []);
+
+  // Poll for transcription status
+  useEffect(() => {
+    if (!jobId || transcriptionStatus !== "transcribing") return;
+
+    const interval = setInterval(async () => {
+      try {
+        const res = await fetch(`/backend/transcribe/result?jobId=${jobId}`, {
+          credentials: "include",
+        });
+        const data = await res.json();
+
+        if (data.jobStatus === "done") {
+          setTranscriptionStatus("done");
+          setSegments(data.segments || []);
+          setFullText(data.text || "");
+          setTranscribeDurationMs(Math.round((data.duration || 0) * 1000));
+          setJobId(null);
+        } else if (data.jobStatus === "error") {
+          setError(data.error || "Transcription failed");
+          setTranscriptionStatus("idle");
+          setJobId(null);
+        } else {
+          setSegmentCount(data.progress || 0);
+          if (data.segments?.length > segments.length) {
+            setSegments(data.segments);
+          }
+        }
+      } catch {
+        // Ignore polling errors, will retry
+      }
+    }, 3000);
+
+    return () => clearInterval(interval);
+  }, [jobId, transcriptionStatus, segments.length]);
+
+  // Upload file to backend
   const uploadFile = useCallback(async (file: File | Blob, name: string) => {
     setError(null);
     setFileName(name);
     setTranscriptionStatus("uploading");
     setSegments([]);
     setFullText("");
+    setSegmentCount(0);
 
     try {
       const formData = new FormData();
@@ -67,19 +152,14 @@ export default function TranscribePage() {
       }
 
       const data = await res.json();
-
-      if (data.jobStatus === "done") {
-        setTranscriptionStatus("done");
-        setSegments(data.segments || []);
-        setFullText(data.text || "");
-        setTranscribeDurationMs(Math.round((data.duration || 0) * 1000));
-      } else if (data.jobStatus === "error") {
-        setError(data.error || "Transcription failed");
+      if (data.status !== 200) {
+        setError(data.message || "Upload failed");
         setTranscriptionStatus("idle");
-      } else {
-        setError(data.message || "Unexpected response");
-        setTranscriptionStatus("idle");
+        return;
       }
+
+      setJobId(data.jobId);
+      setTranscriptionStatus("transcribing");
     } catch (err) {
       setError(`Failed to upload file: ${err instanceof Error ? err.message : String(err)}`);
       setTranscriptionStatus("idle");
@@ -150,7 +230,16 @@ export default function TranscribePage() {
     setTimeout(() => setCopied(false), 2000);
   };
 
-  const isBusy = transcriptionStatus === "uploading";
+  const loadPreviousJob = (job: RecentJob) => {
+    setSegments(job.segments || []);
+    setFullText(job.text || "");
+    setTranscribeDurationMs(Math.round((job.duration || 0) * 1000));
+    setFileName(job.fileName);
+    setTranscriptionStatus("done");
+    setError(null);
+  };
+
+  const isBusy = transcriptionStatus === "uploading" || transcriptionStatus === "transcribing";
 
   return (
     <div
@@ -170,7 +259,7 @@ export default function TranscribePage() {
       </div>
 
       <p style={{ fontSize: 13, color: "#888", marginBottom: 20 }}>
-        Upload an audio file or record directly. Transcription runs on the server using Whisper — no file size or length limits.
+        Upload an audio file or record directly. Transcription runs on the server using Whisper — you can navigate away and come back for results.
       </p>
 
       {/* Mode tabs + input */}
@@ -252,7 +341,7 @@ export default function TranscribePage() {
                   <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="17 8 12 3 7 8" /><line x1="12" x2="12" y1="3" y2="15" />
                 </svg>
                 <p style={{ fontSize: 15, fontWeight: 500, color: "#333", margin: "0 0 6px" }}>
-                  {fileName && isBusy ? `Transcribing: ${fileName}...` : "Drop an audio file here, or click to browse"}
+                  {fileName && isBusy ? `Processing: ${fileName}` : "Drop an audio file here, or click to browse"}
                 </p>
                 <p style={{ fontSize: 12, color: "#999", margin: 0 }}>
                   Supports MP3, M4A, WAV, MP4, WebM, OGG — any length
@@ -274,7 +363,7 @@ export default function TranscribePage() {
       )}
 
       {/* Progress */}
-      {transcriptionStatus === "uploading" && (
+      {(transcriptionStatus === "uploading" || transcriptionStatus === "transcribing") && (
         <Card style={{ marginBottom: 20 }}>
           <CardContent>
             <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "20px 0", justifyContent: "center" }}>
@@ -282,10 +371,26 @@ export default function TranscribePage() {
                 <path d="M21 12a9 9 0 1 1-6.219-8.56" />
               </svg>
               <span style={{ fontSize: 15, fontWeight: 500, color: "#555" }}>
-                Uploading &amp; transcribing — this may take a minute for longer files...
+                {transcriptionStatus === "uploading"
+                  ? "Uploading..."
+                  : `Transcribing${segmentCount > 0 ? ` (${segmentCount} segments so far)` : ""}... You can navigate away — results will be here when you come back.`}
               </span>
               <style>{`@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }`}</style>
             </div>
+
+            {/* Live segments as they arrive */}
+            {segments.length > 0 && (
+              <div style={{ marginTop: 8, maxHeight: 200, overflowY: "auto", fontSize: 13, color: "#666", fontFamily: "monospace", lineHeight: 1.8 }}>
+                {segments.map((seg, i) => (
+                  <div key={i}>
+                    <span style={{ color: "#004e89", fontWeight: 600 }}>
+                      [{formatTimestamp(seg.timeStart)} &rarr; {formatTimestamp(seg.timeEnd)}]
+                    </span>{" "}
+                    {seg.text}
+                  </div>
+                ))}
+              </div>
+            )}
           </CardContent>
         </Card>
       )}
@@ -296,7 +401,7 @@ export default function TranscribePage() {
           <CardHeader>
             <CardTitle style={{ fontSize: 18 }}>
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                <span>Results</span>
+                <span>Results{fileName ? ` — ${fileName}` : ""}</span>
                 <div style={{ display: "flex", gap: 8 }}>
                   <Badge variant="outline" style={{ fontSize: 11 }}>
                     {segments.length} segment{segments.length !== 1 ? "s" : ""}
@@ -343,6 +448,54 @@ export default function TranscribePage() {
               >
                 {copied ? "Copied!" : "Copy to Clipboard"}
               </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Recent Transcriptions */}
+      {recentJobs.length > 0 && transcriptionStatus !== "done" && (
+        <Card>
+          <CardHeader>
+            <CardTitle style={{ fontSize: 16 }}>Recent Transcriptions</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+              {recentJobs
+                .filter((j) => j.jobStatus === "done")
+                .slice(0, 5)
+                .map((job) => (
+                  <div
+                    key={job.jobId}
+                    onClick={() => loadPreviousJob(job)}
+                    style={{
+                      display: "flex", alignItems: "center", justifyContent: "space-between",
+                      padding: "10px 14px", borderRadius: 8, border: "1px solid #e5e7eb",
+                      cursor: "pointer", transition: "background-color 0.15s",
+                    }}
+                    onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#f9fafb")}
+                    onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "")}
+                  >
+                    <div>
+                      <span style={{ fontSize: 14, fontWeight: 500, color: "#333" }}>
+                        {job.fileName || "Untitled"}
+                      </span>
+                      <span style={{ fontSize: 12, color: "#999", marginLeft: 12 }}>
+                        {job.createdAt ? new Date(job.createdAt).toLocaleDateString() : ""}
+                      </span>
+                    </div>
+                    <div style={{ display: "flex", gap: 8 }}>
+                      <Badge variant="outline" style={{ fontSize: 10 }}>
+                        {job.segments?.length || 0} segments
+                      </Badge>
+                      {job.duration > 0 && (
+                        <Badge variant="outline" style={{ fontSize: 10 }}>
+                          {(job.duration / 60).toFixed(1)} min
+                        </Badge>
+                      )}
+                    </div>
+                  </div>
+                ))}
             </div>
           </CardContent>
         </Card>

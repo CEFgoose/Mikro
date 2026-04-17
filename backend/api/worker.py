@@ -603,7 +603,7 @@ def run_mr_metadata_backfill(app, job):
             count_page = 0
             while True:
                 count_url = f"{mr_base}/challenge/{challenge_id}/tasks?limit=200&page={count_page}"
-                count_resp = requests.get(count_url, headers=mr_headers, timeout=30)
+                count_resp = http_requests.get(count_url, headers=mr_headers, timeout=30)
                 if not count_resp.ok:
                     break
                 page_tasks = count_resp.json()
@@ -649,6 +649,186 @@ def run_mr_metadata_backfill(app, job):
             db.session.commit()
         except Exception:
             logger.error(f"Failed to update job {job.id} error status")
+            db.session.rollback()
+
+
+def run_transcription_job(app, job):
+    """
+    Execute a transcription job.
+
+    Downloads audio from DO Spaces, transcribes with faster-whisper,
+    stores results in the TranscriptionJob row, then cleans up the
+    audio file from Spaces.
+    """
+    import json
+    import os
+    import tempfile
+    import boto3
+
+    from .database import db, TranscriptionJob
+
+    try:
+        job.status = "transcribing"
+        job.started_at = datetime.now(timezone.utc)
+        db.session.commit()
+
+        # Download audio from DO Spaces to temp file
+        spaces_key = job.file_url.split("/kaart/", 1)[-1] if "/kaart/" in job.file_url else None
+        if not spaces_key:
+            raise ValueError(f"Cannot parse Spaces key from URL: {job.file_url}")
+
+        ext = os.path.splitext(job.file_name or "audio.m4a")[1] or ".m4a"
+        tmp = tempfile.NamedTemporaryFile(delete=False, suffix=ext)
+        tmp_path = tmp.name
+
+        try:
+            s3 = boto3.client(
+                "s3",
+                endpoint_url=app.config.get("DO_SPACES_ENDPOINT"),
+                aws_access_key_id=app.config.get("DO_SPACES_KEY"),
+                aws_secret_access_key=app.config.get("DO_SPACES_SECRET"),
+                region_name="sfo3",
+            )
+            s3.download_fileobj(
+                app.config.get("DO_SPACES_BUCKET", "kaart"),
+                spaces_key,
+                tmp,
+            )
+            tmp.close()
+
+            logger.info(f"Transcription job {job.id}: downloaded {spaces_key} to {tmp_path}")
+
+            # Load Whisper model (lazy, thread-safe)
+            from faster_whisper import WhisperModel
+
+            model_size = os.environ.get("WHISPER_MODEL", "medium.en")
+            cpu_threads = int(os.environ.get("WHISPER_THREADS", "4"))
+
+            # Module-level cache for model in worker process
+            if not hasattr(run_transcription_job, "_model"):
+                logger.info(f"Loading Whisper model: {model_size}")
+                run_transcription_job._model = WhisperModel(
+                    model_size,
+                    device="cpu",
+                    compute_type="int8",
+                    cpu_threads=cpu_threads,
+                )
+                logger.info("Whisper model loaded")
+
+            model = run_transcription_job._model
+
+            # Transcribe
+            segments_iter, info = model.transcribe(
+                tmp_path,
+                language="en",
+                beam_size=5,
+                vad_filter=True,
+            )
+
+            segments = []
+            for segment in segments_iter:
+                segments.append({
+                    "timeStart": round(segment.start, 2),
+                    "timeEnd": round(segment.end, 2),
+                    "text": segment.text.strip(),
+                })
+                # Update progress in DB periodically
+                if len(segments) % 5 == 0:
+                    job.progress = len(segments)
+                    job.segments = json.dumps(segments)
+                    db.session.commit()
+
+            full_text = " ".join(s["text"] for s in segments)
+
+            job.status = "done"
+            job.segments = json.dumps(segments)
+            job.text = full_text
+            job.duration = round(info.duration, 1)
+            job.progress = len(segments)
+            job.completed_at = datetime.now(timezone.utc)
+            db.session.commit()
+
+            logger.info(
+                f"Transcription job {job.id} completed: "
+                f"{len(segments)} segments, {round(info.duration, 1)}s audio"
+            )
+
+            # Clean up audio file from Spaces
+            try:
+                s3.delete_object(
+                    Bucket=app.config.get("DO_SPACES_BUCKET", "kaart"),
+                    Key=spaces_key,
+                )
+                logger.info(f"Deleted {spaces_key} from Spaces")
+            except Exception as e:
+                logger.warning(f"Failed to delete {spaces_key} from Spaces: {e}")
+
+        finally:
+            # Clean up temp file
+            try:
+                os.unlink(tmp_path)
+            except OSError:
+                pass
+
+    except Exception as e:
+        logger.error(f"Transcription job {job.id} failed: {e}")
+        db.session.rollback()
+        try:
+            job.status = "error"
+            job.error = str(e)[:2000]
+            job.completed_at = datetime.now(timezone.utc)
+            db.session.commit()
+        except Exception:
+            logger.error(f"Failed to update transcription job {job.id} error status")
+            db.session.rollback()
+
+
+def poll_for_transcription_jobs(app):
+    """
+    Check for queued transcription jobs and process them.
+    Runs independently from sync job polling.
+    """
+    with app.app_context():
+        from .database import db, TranscriptionJob
+
+        try:
+            # Check if already running a transcription (one at a time)
+            running = TranscriptionJob.query.filter_by(status="transcribing").first()
+            if running:
+                # Mark stale jobs (>30 min) as failed
+                if running.started_at:
+                    age = datetime.now(timezone.utc) - running.started_at.replace(
+                        tzinfo=timezone.utc
+                    )
+                    if age > timedelta(minutes=30):
+                        logger.warning(
+                            f"Marking stale transcription job {running.id} as failed "
+                            f"(running for {age})"
+                        )
+                        running.status = "error"
+                        running.error = "Timed out (stale after 30 minutes)"
+                        running.completed_at = datetime.now(timezone.utc)
+                        db.session.commit()
+                    else:
+                        return
+                else:
+                    return
+
+            job = (
+                TranscriptionJob.query.filter_by(status="queued")
+                .order_by(TranscriptionJob.created_at.asc())
+                .first()
+            )
+
+            if job:
+                logger.info(
+                    f"Processing transcription job {job.id} "
+                    f"({job.file_name})"
+                )
+                run_transcription_job(app, job)
+
+        except Exception as e:
+            logger.error(f"Error polling for transcription jobs: {e}")
             db.session.rollback()
 
 
@@ -728,8 +908,8 @@ def main():
     Creates a Flask app and polls for sync jobs every 5 seconds.
     """
     logger.info("=" * 60)
-    logger.info("MIKRO SYNC WORKER STARTING")
-    logger.info("Handles background task synchronization with TM4")
+    logger.info("MIKRO BACKGROUND WORKER STARTING")
+    logger.info("Handles task sync, element analysis, and transcription")
     logger.info("NOT bound by Gunicorn timeout")
     logger.info("=" * 60)
 
@@ -757,6 +937,7 @@ def main():
     while running:
         time.sleep(5)
         poll_for_jobs(app)
+        poll_for_transcription_jobs(app)
 
         # Nightly element analysis auto-scheduling (midnight MST = 07:00 UTC)
         now_utc = datetime.now(timezone.utc)
