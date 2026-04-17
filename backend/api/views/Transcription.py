@@ -48,6 +48,9 @@ class TranscriptionAPI(MethodView):
             return self.upload()
         return {"message": "Unknown path", "status": 404}
 
+    def get(self, path: str):
+        return {"message": "Transcription uses POST only. GET polling is no longer supported.", "status": 404}
+
     @requires_admin
     def upload(self):
         """Accept audio file upload, transcribe synchronously, return result."""
