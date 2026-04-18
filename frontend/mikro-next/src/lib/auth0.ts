@@ -36,7 +36,17 @@ export const auth0 = new Auth0Client({
   // invitations that weren't tied to an Auth0 organization. Without this check
   // the user lands on a blank app or a raw error page with no way back.
   async onCallback(error, ctx, session) {
-    const baseUrl = process.env.AUTH0_BASE_URL ?? "";
+    // SDK v4 passes the app base URL via ctx.appBaseUrl; fall back to env vars
+    // (APP_BASE_URL is the v4 name, AUTH0_BASE_URL is kept for v3 compat)
+    const baseUrl =
+      ctx.appBaseUrl ??
+      process.env.APP_BASE_URL ??
+      process.env.AUTH0_BASE_URL;
+    if (!baseUrl) {
+      throw new Error(
+        "APP_BASE_URL is not set — cannot build redirect URL in onCallback",
+      );
+    }
     if (error) {
       return NextResponse.redirect(
         new URL(
