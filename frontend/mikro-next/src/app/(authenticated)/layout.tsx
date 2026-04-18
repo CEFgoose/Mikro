@@ -57,7 +57,11 @@ export default async function AuthenticatedLayout({
 
   // Users without an org_id (test accounts, unassociated invites) cannot
   // use the app — backend sync and all role-scoped data depend on org_id.
-  if (!session.user.org_id) {
+  // Prefer the namespaced claim set from app_metadata; fall back to native.
+  const orgId =
+    (session.user["mikro/org_id"] as string | undefined) ??
+    (session.user.org_id as string | undefined);
+  if (!orgId) {
     redirect("/no-org");
   }
 

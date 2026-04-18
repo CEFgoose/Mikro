@@ -22,7 +22,10 @@ export default function LandingPage() {
 
   useEffect(() => {
     if (!user) return;
-    if (!user.org_id) {
+    const orgId =
+      (user["mikro/org_id"] as string | undefined) ??
+      (user.org_id as string | undefined);
+    if (!orgId) {
       router.replace("/no-org");
       return;
     }

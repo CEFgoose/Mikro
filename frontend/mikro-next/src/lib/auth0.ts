@@ -53,7 +53,13 @@ export const auth0 = new Auth0Client({
         ),
       );
     }
-    if (session && !session.user.org_id) {
+    // Prefer the namespaced claim (mikro/org_id) set by the post-login Action
+    // from app_metadata; fall back to Auth0's native org_id for users who DO
+    // log in via an Organization URL.
+    const orgId =
+      (session?.user["mikro/org_id"] as string | undefined) ??
+      (session?.user.org_id as string | undefined);
+    if (session && !orgId) {
       return NextResponse.redirect(new URL("/no-org", baseUrl));
     }
     return NextResponse.redirect(new URL(ctx.returnTo ?? "/", baseUrl));
