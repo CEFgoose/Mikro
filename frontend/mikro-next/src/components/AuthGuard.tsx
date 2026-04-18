@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import { useUser } from "@auth0/nextjs-auth0/client";
+import { useSessionHeartbeat } from "@/hooks/useSessionHeartbeat";
 
 /**
  * AuthGuard — aggressive session integrity checker.
@@ -50,6 +51,10 @@ async function verifySession(): Promise<boolean> {
 export function AuthGuard() {
   const { user, isLoading } = useUser();
   const hadUser = useRef(false);
+
+  // Keep session alive by proactively refreshing the access token.
+  // Pings /api/auth/heartbeat every 15 min while tab is visible.
+  useSessionHeartbeat();
 
   // Track whether we ever had a user
   useEffect(() => {

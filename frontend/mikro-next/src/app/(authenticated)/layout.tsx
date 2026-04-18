@@ -55,6 +55,12 @@ export default async function AuthenticatedLayout({
     redirect("/auth/logout");
   }
 
+  // Users without an org_id (test accounts, unassociated invites) cannot
+  // use the app — backend sync and all role-scoped data depend on org_id.
+  if (!session.user.org_id) {
+    redirect("/no-org");
+  }
+
   // Sync user with backend and get role from database
   let role = "user";
   let paymentsVisible = false;
