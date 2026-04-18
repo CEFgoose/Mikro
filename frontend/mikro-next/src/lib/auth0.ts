@@ -36,12 +36,10 @@ export const auth0 = new Auth0Client({
   // invitations that weren't tied to an Auth0 organization. Without this check
   // the user lands on a blank app or a raw error page with no way back.
   async onCallback(error, ctx, session) {
-    // SDK v4 passes the app base URL via ctx.appBaseUrl; fall back to env vars
-    // (APP_BASE_URL is the v4 name, AUTH0_BASE_URL is kept for v3 compat)
-    const baseUrl =
-      ctx.appBaseUrl ??
-      process.env.APP_BASE_URL ??
-      process.env.AUTH0_BASE_URL;
+    // Auth0 SDK v4 reads APP_BASE_URL at client init; use the same here instead
+    // of AUTH0_BASE_URL (which is the v3 name and may not be populated on prod).
+    // Keep AUTH0_BASE_URL as a compat fallback so local .env.local still works.
+    const baseUrl = process.env.APP_BASE_URL ?? process.env.AUTH0_BASE_URL;
     if (!baseUrl) {
       throw new Error(
         "APP_BASE_URL is not set — cannot build redirect URL in onCallback",
