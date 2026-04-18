@@ -130,11 +130,11 @@
 /* Tailwind's Preflight handles box-sizing and resets automatically */
 
 html {
-  overflow-y: scroll;
+  overflow-y: auto;
 }
 
 body {
-  max-width: 100vw;
+  max-width: 100%;
   overflow-x: hidden;
   min-height: 100vh;
 }

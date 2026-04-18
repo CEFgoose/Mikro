@@ -36,7 +36,6 @@ export default function LandingPage() {
     }
   }, [user, router]);
 
-  // Auto-advance carousel
   useEffect(() => {
     if (SLIDES.length <= 1) return;
     const timer = setInterval(() => {
@@ -54,9 +53,9 @@ export default function LandingPage() {
   }
 
   return (
-    <div style={{ width: "100%", height: "100vh", display: "flex", flexDirection: "column", overflow: "hidden", background: "linear-gradient(to bottom right, #0a0a0a, #444)" }}>
+    <div style={{ position: "fixed", inset: 0, display: "flex", flexDirection: "column", overflow: "hidden", background: "linear-gradient(to bottom right, #0a0a0a, #444)" }}>
       {/* Top nav */}
-      <div style={{ display: "flex", justifyContent: "flex-end", alignItems: "center", padding: "16px 32px", gap: 12, flexShrink: 0 }}>
+      <div style={{ display: "flex", justifyContent: "flex-end", alignItems: "center", padding: "12px 32px", gap: 12, flexShrink: 0 }}>
         <a
           href="/auth/login"
           style={{
@@ -69,52 +68,56 @@ export default function LandingPage() {
         </a>
       </div>
 
-      {/* Main content — text left, laptop right */}
-      <div style={{ display: "flex", flexDirection: "row", flex: 1, minHeight: 0, alignItems: "center", justifyContent: "center", padding: "0 5vw 2vh", gap: "4vw", overflow: "hidden" }}>
-        {/* Left side — title and description */}
-        <div style={{ display: "flex", flexDirection: "column", justifyContent: "center", flexShrink: 0 }}>
-          <h2 style={{ color: "white", fontSize: "clamp(1.4rem, 2.8vw, 3.25rem)", fontWeight: 300, lineHeight: 1.2, margin: 0, whiteSpace: "nowrap" }}>
-            Manage Your Team
-            <br />
-            Track Every Task
-            <br />
-            Streamline Your
-            <br />
-            <span style={{ color: "white" }}>GIS Workflow with</span>
-          </h2>
+      {/* Content wrapper — fills remaining space after nav and centers the upper-area + bottom-row GROUP vertically so the laptop sits at viewport middle */}
+      <div style={{ flex: 1, minHeight: 0, display: "flex", flexDirection: "column", justifyContent: "center" }}>
 
-          <div style={{ display: "flex", alignItems: "center", gap: "1vw", marginTop: "1.5vh" }}>
-            <span style={{ fontSize: "clamp(2.5rem, 4.5vw, 5rem)", fontWeight: 700, color: "#ff6b35", whiteSpace: "nowrap" }}>
-              Mikro
-            </span>
-            <Image
-              src="/mikro-logo.png"
-              width={60}
-              height={60}
-              alt="Mikro logo"
-              style={{ width: "clamp(36px, 4vw, 64px)", height: "auto" }}
-            />
-          </div>
+      {/* Upper content — Kaart/text on the left, laptop on the right. Both columns pin their content to the BOTTOM so they rest just above the shared bottom row. */}
+      <div style={{ display: "flex", flexDirection: "row", flexShrink: 0, minHeight: 0 }}>
+        {/* Left — Kaart logo, h2, Mikro line (caption lives in the shared bottom row) */}
+        <div style={{ display: "flex", flexDirection: "column", justifyContent: "flex-end", width: "35%", paddingLeft: "5vw", boxSizing: "border-box" }}>
+          {/* Kaart logo */}
+          <Image
+            src="/kaart-logo-light.svg"
+            width={200}
+            height={200}
+            alt="Kaart"
+            style={{ width: "20vw", height: "auto", marginBottom: "-2vh", marginRight: "3vw", alignSelf: "center" }}
+          />
 
-          <div style={{ marginTop: "2vh" }}>
-            <p style={{ color: "white", fontSize: "clamp(0.8rem, 1.2vw, 1.05rem)", margin: 0 }}>
-              GIS Work Management Platform
-            </p>
-            <p style={{ color: "white", fontSize: "clamp(0.8rem, 1.2vw, 1.05rem)", margin: "4px 0 0" }}>
-              by Kaart
-            </p>
+          {/* Text block — shifted right so its left edge sits under the Kaart logo's left edge */}
+          <div style={{ marginLeft: "5vw", marginBottom: "2vh" }}>
+            <h2 style={{ color: "white", fontSize: "2.2vw", fontWeight: 300, lineHeight: 1.2, margin: 0, whiteSpace: "nowrap" }}>
+              Manage Your Team
+              <br />
+              Track Every Task
+              <br />
+              Streamline Your
+              <br />
+              GIS Workflow with
+            </h2>
+
+            <div style={{ display: "flex", alignItems: "center", gap: "1vw", marginTop: "1.05vh" }}>
+              <span style={{ fontSize: "5.75vw", fontWeight: 700, color: "#ff6b35", whiteSpace: "nowrap", lineHeight: 1 }}>
+                Mikro
+              </span>
+              <Image
+                src="/mikro-logo.png"
+                width={60}
+                height={60}
+                alt="Mikro logo"
+                style={{ width: "4.9vw", height: "auto" }}
+              />
+            </div>
           </div>
         </div>
 
-        {/* Right side — laptop with screenshot carousel */}
-        <div style={{ flex: "1 1 0", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", minWidth: 0 }}>
+        {/* Right — laptop with screenshot carousel (pinned to bottom of upper content) */}
+        <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "flex-end", marginRight: "2vw" }}>
           <div
             style={{
               position: "relative",
               aspectRatio: "626 / 382",
-              width: "85%",
-              maxHeight: "calc(100vh - 240px)",
-              maxWidth: "calc((100vh - 240px) * 626 / 382)",
+              height: "65vh",
             }}
           >
             {/* Screenshots behind the laptop frame */}
@@ -155,30 +158,44 @@ export default function LandingPage() {
               priority
             />
           </div>
+        </div>
+      </div>
 
-          {/* Tagline + dot indicators below laptop */}
-          <div style={{ marginTop: "1vh", display: "flex", flexDirection: "column", alignItems: "center", gap: 8, flexShrink: 0 }}>
-            <p style={{ color: "#ccc", fontSize: "clamp(0.7rem, 0.9vw, 0.85rem)", textAlign: "center", margin: 0, minHeight: "1.2em", transition: "opacity 0.4s", opacity: 1 }}>
-              {SLIDES[currentSlide].tagline}
+      {/* Shared bottom row — caption on left, tagline + dots on right. Because both sit in this single flex row, they are guaranteed to share the same Y regardless of viewport aspect ratio. */}
+      <div style={{ display: "flex", flexDirection: "row", flexShrink: 0, marginTop: "1vh", paddingBottom: "2vh" }}>
+        {/* Left column — caption (matches upper-left column width/padding so caption lines up with text block above) */}
+        <div style={{ width: "35%", paddingLeft: "5vw", boxSizing: "border-box" }}>
+          <div style={{ marginLeft: "5vw" }}>
+            <p style={{ color: "#ddd", fontSize: "1.4vw", margin: 0, fontWeight: 400, whiteSpace: "nowrap" }}>
+              GIS Work Management Platform by Kaart
             </p>
-
-            {SLIDES.length > 1 && (
-              <div style={{ display: "flex", gap: 6 }}>
-                {SLIDES.map((_, i) => (
-                  <button
-                    key={i}
-                    onClick={() => setCurrentSlide(i)}
-                    style={{
-                      width: 8, height: 8, borderRadius: "50%", border: "none", cursor: "pointer",
-                      backgroundColor: i === currentSlide ? "#ff6b35" : "#666",
-                      transition: "background-color 0.3s",
-                    }}
-                  />
-                ))}
-              </div>
-            )}
           </div>
         </div>
+
+        {/* Right column — cycling tagline + dots (matches upper-right column width so they sit centered under the laptop) */}
+        <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", marginRight: "2vw", gap: 8 }}>
+          <p style={{ color: "#ddd", fontSize: "1.4vw", textAlign: "center", margin: 0, minHeight: "1.5em", transition: "opacity 0.4s", opacity: 1, fontWeight: 400 }}>
+            {SLIDES[currentSlide].tagline}
+          </p>
+
+          {SLIDES.length > 1 && (
+            <div style={{ display: "flex", gap: 6 }}>
+              {SLIDES.map((_, i) => (
+                <button
+                  key={i}
+                  onClick={() => setCurrentSlide(i)}
+                  style={{
+                    width: 8, height: 8, borderRadius: "50%", border: "none", cursor: "pointer",
+                    backgroundColor: i === currentSlide ? "#ff6b35" : "#666",
+                    transition: "background-color 0.3s",
+                  }}
+                />
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+
       </div>
     </div>
   );
