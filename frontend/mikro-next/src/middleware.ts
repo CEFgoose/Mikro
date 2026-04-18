@@ -25,7 +25,7 @@ export default async function proxy(request: NextRequest) {
   }
 
   // Public routes - pass through with auth cookies maintained
-  const publicRoutes = ["/", "/welcome", "/unauthorized", "/transcribe-worker"];
+  const publicRoutes = ["/", "/welcome", "/unauthorized", "/no-org", "/transcribe-worker"];
   const isPublicRoute = publicRoutes.some(
     (route) => request.nextUrl.pathname === route
   );
@@ -40,6 +40,15 @@ export default async function proxy(request: NextRequest) {
     // No session at all — send to logout to ensure any stale cookies are cleared
     const { origin } = new URL(request.url);
     return NextResponse.redirect(`${origin}/auth/logout`);
+  }
+
+  // The heartbeat endpoint is responsible for refreshing the access token
+  // via the refresh token. It must be allowed through even when the current
+  // access token is expired — otherwise it can never do its job, and the
+  // frontend heartbeat would see a redirect to /auth/logout instead of the
+  // 401 JSON response the hook expects.
+  if (request.nextUrl.pathname === "/api/auth/heartbeat") {
+    return authRes;
   }
 
   // Check if access token is missing or expired — getSession() can return

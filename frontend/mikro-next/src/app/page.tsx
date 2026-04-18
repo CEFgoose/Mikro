@@ -3,316 +3,183 @@
 import Image from "next/image";
 import { useUser } from "@auth0/nextjs-auth0/client";
 import { useRouter } from "next/navigation";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
+
+const SLIDES = [
+  { image: "/landing-slide-1.png", tagline: "Manage your global workforce — assign roles, teams, and track every contributor." },
+  { image: "/landing-slide-2.png", tagline: "Detailed contributor profiles with changeset analytics, activity trends, and performance stats." },
+  { image: "/landing-slide-3.png", tagline: "Built-in time tracking with live clocking, task switching, and exportable timesheets." },
+  { image: "/landing-slide-4.png", tagline: "Organize mapping projects with automatic TM4 and MapRoulette sync." },
+  { image: "/landing-slide-5.png", tagline: "Flexible payment management — per-task micropayments and hourly rate tracking in one place." },
+  { image: "/landing-slide-6.png", tagline: "Generate weekly reports with automated stats, changeset summaries, and team-wide insights." },
+  { image: "/landing-slide-7.png", tagline: "Track top contributors, flag quality issues, and build community with Punks and Friends lists." },
+];
 
 export default function LandingPage() {
   const { user, isLoading } = useUser();
   const router = useRouter();
+  const [currentSlide, setCurrentSlide] = useState(0);
 
   useEffect(() => {
-    if (user) {
-      const role = (user?.["mikro/roles"] as string[] | undefined)?.[0] || "user";
-      if (role === "admin") {
-        router.push("/admin/dashboard");
-      } else if (role === "validator") {
-        router.push("/validator/dashboard");
-      } else {
-        router.push("/user/dashboard");
-      }
+    if (!user) return;
+    if (!user.org_id) {
+      router.replace("/no-org");
+      return;
+    }
+    const role = (user?.["mikro/roles"] as string[] | undefined)?.[0] || "user";
+    if (role === "admin") {
+      router.push("/admin/dashboard");
+    } else if (role === "validator") {
+      router.push("/validator/dashboard");
+    } else {
+      router.push("/user/dashboard");
     }
   }, [user, router]);
 
+  // Auto-advance carousel
+  useEffect(() => {
+    if (SLIDES.length <= 1) return;
+    const timer = setInterval(() => {
+      setCurrentSlide((prev) => (prev + 1) % SLIDES.length);
+    }, 6000);
+    return () => clearInterval(timer);
+  }, []);
+
   if (isLoading) {
     return (
-      <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", backgroundColor: "white" }}>
+      <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: "linear-gradient(to bottom right, #0a0a0a, #333)" }}>
         <div style={{ width: 48, height: 48, border: "2px solid #ff6b35", borderTopColor: "transparent", borderRadius: "50%", animation: "spin 1s linear infinite" }} />
       </div>
     );
   }
 
   return (
-    <div style={{ minHeight: "100vh", backgroundColor: "white", display: "flex", flexDirection: "column" }}>
-      {/* Header */}
-      <header style={{ position: "sticky", top: 0, zIndex: 50, backgroundColor: "white", borderBottom: "1px solid #e5e7eb" }}>
-        <div className="container-main">
-          <div style={{ display: "flex", height: 64, alignItems: "center", justifyContent: "space-between" }}>
-            {/* Logo */}
-            <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-              <Image src="/mikro-logo.png" alt="Mikro" width={40} height={40} />
-              <span style={{ fontSize: 20, fontWeight: 600, color: "#111827" }}>Mikro</span>
-            </div>
+    <div style={{ width: "100%", height: "100vh", display: "flex", flexDirection: "column", overflow: "hidden", background: "linear-gradient(to bottom right, #0a0a0a, #444)" }}>
+      {/* Top nav */}
+      <div style={{ display: "flex", justifyContent: "flex-end", alignItems: "center", padding: "16px 32px", gap: 12, flexShrink: 0 }}>
+        <a
+          href="/auth/login"
+          style={{
+            color: "black", fontWeight: 600, padding: "8px 24px", borderRadius: 6,
+            backgroundColor: "#ff6b35", textDecoration: "none", fontSize: 14,
+            transition: "filter 0.15s",
+          }}
+        >
+          Log in
+        </a>
+      </div>
 
-            {/* Nav Links - Hidden on mobile */}
-            <nav className="hide-mobile" style={{ alignItems: "center", gap: 32 }}>
-              <a href="#features" style={{ fontSize: 14, fontWeight: 500, color: "#4b5563", textDecoration: "none" }}>
-                Features
-              </a>
-              <a href="#how-it-works" style={{ fontSize: 14, fontWeight: 500, color: "#4b5563", textDecoration: "none" }}>
-                How It Works
-              </a>
-              <a href="https://tasks.kaart.com" target="_blank" rel="noopener noreferrer" style={{ fontSize: 14, fontWeight: 500, color: "#4b5563", textDecoration: "none" }}>
-                Tasking Manager
-              </a>
-            </nav>
+      {/* Main content — text left, laptop right */}
+      <div style={{ display: "flex", flexDirection: "row", flex: 1, minHeight: 0, alignItems: "center", justifyContent: "center", padding: "0 5vw 2vh", gap: "4vw", overflow: "hidden" }}>
+        {/* Left side — title and description */}
+        <div style={{ display: "flex", flexDirection: "column", justifyContent: "center", flexShrink: 0 }}>
+          <h2 style={{ color: "white", fontSize: "clamp(1.4rem, 2.8vw, 3.25rem)", fontWeight: 300, lineHeight: 1.2, margin: 0, whiteSpace: "nowrap" }}>
+            Manage Your Team
+            <br />
+            Track Every Task
+            <br />
+            Streamline Your
+            <br />
+            <span style={{ color: "white" }}>GIS Workflow with</span>
+          </h2>
 
-            {/* Auth Buttons */}
-            <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-              <a
-                href="/auth/login"
-                style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", borderRadius: 6, backgroundColor: "#004e89", padding: "8px 16px", fontSize: 14, fontWeight: 500, color: "white", textDecoration: "none" }}
-              >
-                Log in
-              </a>
-            </div>
-          </div>
-        </div>
-      </header>
-
-      {/* Hero Section */}
-      <section style={{ padding: "80px 0 100px", background: "linear-gradient(to bottom, white, #f9fafb)" }}>
-        <div className="container-main">
-          <div style={{ textAlign: "center", maxWidth: 768, margin: "0 auto" }}>
-            {/* Logo Icon */}
-            <div style={{ marginBottom: 24, display: "flex", justifyContent: "center" }}>
-              <Image src="/mikro-logo.png" alt="Mikro" width={168} height={168} style={{ filter: "drop-shadow(0 10px 25px rgba(255, 107, 53, 0.4))" }} />
-            </div>
-
-            {/* Mikro Title */}
-            <h1 style={{ fontSize: "clamp(3.5rem, 7vw, 5rem)", fontWeight: "bold", letterSpacing: "-0.02em", color: "#111827", marginBottom: 16, lineHeight: 1 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "1vw", marginTop: "1.5vh" }}>
+            <span style={{ fontSize: "clamp(2.5rem, 4.5vw, 5rem)", fontWeight: 700, color: "#ff6b35", whiteSpace: "nowrap" }}>
               Mikro
-            </h1>
+            </span>
+            <Image
+              src="/mikro-logo.png"
+              width={60}
+              height={60}
+              alt="Mikro logo"
+              style={{ width: "clamp(36px, 4vw, 64px)", height: "auto" }}
+            />
+          </div>
 
-            {/* Subtitle */}
-            <h2 style={{ fontSize: "clamp(1.75rem, 4vw, 2.5rem)", fontWeight: "600", letterSpacing: "-0.01em", color: "#111827", marginBottom: 24, lineHeight: 1.2 }}>
-              OSM Micropayments
-              <br />
-              <span style={{ color: "#ff6b35" }}>Made Simple</span>
-            </h2>
-
-            {/* Description */}
-            <p style={{ fontSize: "clamp(1.125rem, 2vw, 1.25rem)", color: "#4b5563", maxWidth: 640, margin: "0 auto 48px", lineHeight: 1.6 }}>
-              Track your OpenStreetMap mapping and validation tasks, earn rewards,
-              and manage payments all in one place.
+          <div style={{ marginTop: "2vh" }}>
+            <p style={{ color: "white", fontSize: "clamp(0.8rem, 1.2vw, 1.05rem)", margin: 0 }}>
+              GIS Work Management Platform
             </p>
-
-            {/* CTA Buttons */}
-            <div style={{ display: "flex", flexWrap: "wrap", gap: 16, justifyContent: "center" }}>
-              <a
-                href="/auth/login"
-                style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", borderRadius: 6, backgroundColor: "#ff6b35", padding: "14px 32px", fontSize: 16, fontWeight: 500, color: "white", textDecoration: "none", boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1)" }}
-              >
-                Get Started
-              </a>
-              <a
-                href="https://tasks.kaart.com"
-                target="_blank"
-                rel="noopener noreferrer"
-                style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", borderRadius: 6, border: "1px solid #d1d5db", backgroundColor: "white", padding: "14px 32px", fontSize: 16, fontWeight: 500, color: "#374151", textDecoration: "none" }}
-              >
-                View Tasking Manager
-              </a>
-            </div>
-          </div>
-
-          {/* Stats Row - commented out for now
-          <div className="grid-responsive-4" style={{ marginTop: 80, maxWidth: 896, marginLeft: "auto", marginRight: "auto" }}>
-            <div style={{ textAlign: "center" }}>
-              <div style={{ fontSize: "clamp(1.875rem, 3vw, 2.25rem)", fontWeight: "bold", color: "#ff6b35" }}>100+</div>
-              <div style={{ fontSize: 14, color: "#6b7280", marginTop: 8 }}>Active Mappers</div>
-            </div>
-            <div style={{ textAlign: "center" }}>
-              <div style={{ fontSize: "clamp(1.875rem, 3vw, 2.25rem)", fontWeight: "bold", color: "#ff6b35" }}>50+</div>
-              <div style={{ fontSize: 14, color: "#6b7280", marginTop: 8 }}>Projects</div>
-            </div>
-            <div style={{ textAlign: "center" }}>
-              <div style={{ fontSize: "clamp(1.875rem, 3vw, 2.25rem)", fontWeight: "bold", color: "#ff6b35" }}>10K+</div>
-              <div style={{ fontSize: 14, color: "#6b7280", marginTop: 8 }}>Tasks Completed</div>
-            </div>
-            <div style={{ textAlign: "center" }}>
-              <div style={{ fontSize: "clamp(1.875rem, 3vw, 2.25rem)", fontWeight: "bold", color: "#ff6b35" }}>$50K+</div>
-              <div style={{ fontSize: 14, color: "#6b7280", marginTop: 8 }}>Paid Out</div>
-            </div>
-          </div>
-          */}
-        </div>
-      </section>
-
-      {/* Features Section */}
-      <section id="features" style={{ padding: "100px 0", backgroundColor: "white" }}>
-        <div className="container-main">
-          <div style={{ textAlign: "center", marginBottom: 64 }}>
-            <h2 style={{ fontSize: "clamp(1.875rem, 3vw, 2.25rem)", fontWeight: "bold", color: "#111827", marginBottom: 16 }}>
-              Everything you need to manage your mapping work
-            </h2>
-            <p style={{ fontSize: 18, color: "#6b7280", maxWidth: 640, margin: "0 auto" }}>
-              Mikro streamlines the payment process for OpenStreetMap contributors,
-              making it easy to track your work and get paid.
+            <p style={{ color: "white", fontSize: "clamp(0.8rem, 1.2vw, 1.05rem)", margin: "4px 0 0" }}>
+              by Kaart
             </p>
-          </div>
-
-          <div className="grid-responsive-3">
-            {/* Feature Card 1 */}
-            <div style={{ backgroundColor: "#f9fafb", borderRadius: 12, padding: 32 }}>
-              <div style={{ width: 64, height: 64, borderRadius: 12, backgroundColor: "rgba(255, 107, 53, 0.1)", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 24 }}>
-                <svg style={{ width: 32, height: 32, color: "#ff6b35" }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-              </div>
-              <h3 style={{ fontSize: 20, fontWeight: 600, color: "#111827", marginBottom: 12 }}>Track Tasks</h3>
-              <p style={{ color: "#6b7280", lineHeight: 1.6 }}>
-                Automatically sync your mapping and validation contributions from
-                the Tasking Manager. See your progress in real-time.
-              </p>
-            </div>
-
-            {/* Feature Card 2 */}
-            <div style={{ backgroundColor: "#f9fafb", borderRadius: 12, padding: 32 }}>
-              <div style={{ width: 64, height: 64, borderRadius: 12, backgroundColor: "rgba(255, 107, 53, 0.1)", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 24 }}>
-                <svg style={{ width: 32, height: 32, color: "#ff6b35" }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-              </div>
-              <h3 style={{ fontSize: 20, fontWeight: 600, color: "#111827", marginBottom: 12 }}>Earn Rewards</h3>
-              <p style={{ color: "#6b7280", lineHeight: 1.6 }}>
-                Get paid for your contributions to OpenStreetMap mapping projects.
-                Transparent rates and timely payments.
-              </p>
-            </div>
-
-            {/* Feature Card 3 */}
-            <div style={{ backgroundColor: "#f9fafb", borderRadius: 12, padding: 32 }}>
-              <div style={{ width: 64, height: 64, borderRadius: 12, backgroundColor: "rgba(255, 107, 53, 0.1)", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 24 }}>
-                <svg style={{ width: 32, height: 32, color: "#ff6b35" }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-                </svg>
-              </div>
-              <h3 style={{ fontSize: 20, fontWeight: 600, color: "#111827", marginBottom: 12 }}>Learn & Grow</h3>
-              <p style={{ color: "#6b7280", lineHeight: 1.6 }}>
-                Complete training modules and checklists to improve your mapping
-                skills and unlock new opportunities.
-              </p>
-            </div>
           </div>
         </div>
-      </section>
 
-      {/* How It Works Section */}
-      <section id="how-it-works" style={{ padding: "100px 0", backgroundColor: "#f9fafb" }}>
-        <div className="container-main">
-          <div style={{ textAlign: "center", marginBottom: 64 }}>
-            <h2 style={{ fontSize: "clamp(1.875rem, 3vw, 2.25rem)", fontWeight: "bold", color: "#111827", marginBottom: 16 }}>
-              How It Works
-            </h2>
-            <p style={{ fontSize: 18, color: "#6b7280", maxWidth: 640, margin: "0 auto" }}>
-              Getting started with Mikro is easy. Follow these simple steps to begin
-              earning from your mapping contributions.
-            </p>
-          </div>
-
-          <div className="grid-responsive-3" style={{ maxWidth: 896, margin: "0 auto" }}>
-            {/* Step 1 */}
-            <div style={{ textAlign: "center" }}>
-              <div style={{ width: 64, height: 64, borderRadius: "50%", backgroundColor: "#004e89", color: "white", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 24, fontWeight: "bold", margin: "0 auto 24px" }}>
-                1
-              </div>
-              <h3 style={{ fontSize: 20, fontWeight: 600, color: "#111827", marginBottom: 12 }}>Sign Up</h3>
-              <p style={{ color: "#6b7280" }}>
-                Create your account and connect your OpenStreetMap username.
-              </p>
-            </div>
-
-            {/* Step 2 */}
-            <div style={{ textAlign: "center" }}>
-              <div style={{ width: 64, height: 64, borderRadius: "50%", backgroundColor: "#004e89", color: "white", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 24, fontWeight: "bold", margin: "0 auto 24px" }}>
-                2
-              </div>
-              <h3 style={{ fontSize: 20, fontWeight: 600, color: "#111827", marginBottom: 12 }}>Map</h3>
-              <p style={{ color: "#6b7280" }}>
-                Complete mapping and validation tasks on the Tasking Manager.
-              </p>
-            </div>
-
-            {/* Step 3 */}
-            <div style={{ textAlign: "center" }}>
-              <div style={{ width: 64, height: 64, borderRadius: "50%", backgroundColor: "#004e89", color: "white", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 24, fontWeight: "bold", margin: "0 auto 24px" }}>
-                3
-              </div>
-              <h3 style={{ fontSize: 20, fontWeight: 600, color: "#111827", marginBottom: 12 }}>Get Paid</h3>
-              <p style={{ color: "#6b7280" }}>
-                Track your earnings and receive payments directly.
-              </p>
-            </div>
-          </div>
-
-          <div style={{ marginTop: 64, textAlign: "center" }}>
-            <a
-              href="/auth/login"
-              style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", borderRadius: 6, backgroundColor: "#ff6b35", padding: "14px 32px", fontSize: 16, fontWeight: 500, color: "white", textDecoration: "none", boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1)" }}
+        {/* Right side — laptop with screenshot carousel */}
+        <div style={{ flex: "1 1 0", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", minWidth: 0 }}>
+          <div
+            style={{
+              position: "relative",
+              aspectRatio: "626 / 382",
+              width: "85%",
+              maxHeight: "calc(100vh - 240px)",
+              maxWidth: "calc((100vh - 240px) * 626 / 382)",
+            }}
+          >
+            {/* Screenshots behind the laptop frame */}
+            <div
+              style={{
+                position: "absolute",
+                top: "4.375%",
+                left: "13.375%",
+                width: "73.75%",
+                height: "79%",
+                zIndex: 1,
+                overflow: "hidden",
+                backgroundColor: "#1a1a2e",
+              }}
             >
-              Start Mapping Today
-            </a>
-          </div>
-        </div>
-      </section>
-
-      {/* Footer */}
-      <footer style={{ backgroundColor: "#111827", color: "white", padding: "64px 0" }}>
-        <div className="container-main">
-          <div className="footer-grid">
-            {/* Brand */}
-            <div>
-              <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 16 }}>
-                <Image src="/mikro-logo.png" alt="Mikro" width={32} height={32} />
-                <span style={{ fontSize: 18, fontWeight: 600 }}>Mikro</span>
-              </div>
-              <p style={{ color: "#9ca3af", fontSize: 14, lineHeight: 1.6 }}>
-                OSM micropayments platform by Kaart. Track tasks, earn rewards,
-                and manage payments.
-              </p>
+              {SLIDES.map((slide, i) => (
+                <Image
+                  key={slide.image}
+                  src={slide.image}
+                  alt={slide.tagline}
+                  fill
+                  style={{
+                    objectFit: "fill",
+                    opacity: i === currentSlide ? 1 : 0,
+                    transition: "opacity 0.7s ease-in-out",
+                  }}
+                  priority={i === 0}
+                />
+              ))}
             </div>
 
-            {/* Links */}
-            <div>
-              <h4 style={{ fontWeight: 600, marginBottom: 16 }}>Links</h4>
-              <ul style={{ listStyle: "none", padding: 0, margin: 0 }}>
-                <li style={{ marginBottom: 8 }}>
-                  <a href="https://tasks.kaart.com" target="_blank" rel="noopener noreferrer" style={{ color: "#9ca3af", fontSize: 14, textDecoration: "none" }}>
-                    Tasking Manager
-                  </a>
-                </li>
-                <li style={{ marginBottom: 8 }}>
-                  <a href="https://kaart.com" target="_blank" rel="noopener noreferrer" style={{ color: "#9ca3af", fontSize: 14, textDecoration: "none" }}>
-                    Kaart
-                  </a>
-                </li>
-                <li>
-                  <a href="https://openstreetmap.org" target="_blank" rel="noopener noreferrer" style={{ color: "#9ca3af", fontSize: 14, textDecoration: "none" }}>
-                    OpenStreetMap
-                  </a>
-                </li>
-              </ul>
-            </div>
-
-            {/* Contact */}
-            <div>
-              <h4 style={{ fontWeight: 600, marginBottom: 16 }}>Contact</h4>
-              <ul style={{ listStyle: "none", padding: 0, margin: 0 }}>
-                <li>
-                  <a href="mailto:support@kaart.com" style={{ color: "#9ca3af", fontSize: 14, textDecoration: "none" }}>
-                    support@kaart.com
-                  </a>
-                </li>
-              </ul>
-            </div>
+            {/* Hollow laptop frame on top */}
+            <Image
+              src="/hollow-laptop.png"
+              alt="Laptop"
+              fill
+              style={{ objectFit: "contain", zIndex: 2, pointerEvents: "none" }}
+              priority
+            />
           </div>
 
-          <div style={{ borderTop: "1px solid #374151", marginTop: 48, paddingTop: 32, textAlign: "center" }}>
-            <p style={{ color: "#9ca3af", fontSize: 14 }}>
-              &copy; {new Date().getFullYear()} Kaart. All rights reserved.
+          {/* Tagline + dot indicators below laptop */}
+          <div style={{ marginTop: "1vh", display: "flex", flexDirection: "column", alignItems: "center", gap: 8, flexShrink: 0 }}>
+            <p style={{ color: "#ccc", fontSize: "clamp(0.7rem, 0.9vw, 0.85rem)", textAlign: "center", margin: 0, minHeight: "1.2em", transition: "opacity 0.4s", opacity: 1 }}>
+              {SLIDES[currentSlide].tagline}
             </p>
+
+            {SLIDES.length > 1 && (
+              <div style={{ display: "flex", gap: 6 }}>
+                {SLIDES.map((_, i) => (
+                  <button
+                    key={i}
+                    onClick={() => setCurrentSlide(i)}
+                    style={{
+                      width: 8, height: 8, borderRadius: "50%", border: "none", cursor: "pointer",
+                      backgroundColor: i === currentSlide ? "#ff6b35" : "#666",
+                      transition: "background-color 0.3s",
+                    }}
+                  />
+                ))}
+              </div>
+            )}
           </div>
         </div>
-      </footer>
+      </div>
     </div>
   );
 }

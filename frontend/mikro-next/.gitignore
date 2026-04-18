@@ -25,6 +25,9 @@
 *.pem
 *.csv
 *.png
+!public/mikro-logo.png
+!public/hollow-laptop.png
+!public/landing-slide-*.png
 
 # debug
 npm-debug.log*
