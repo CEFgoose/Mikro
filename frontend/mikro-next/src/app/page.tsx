@@ -19,6 +19,7 @@ export default function LandingPage() {
   const { user, isLoading } = useUser();
   const router = useRouter();
   const [currentSlide, setCurrentSlide] = useState(0);
+  const [signupModalOpen, setSignupModalOpen] = useState(false);
 
   useEffect(() => {
     if (!user) return;
@@ -47,6 +48,15 @@ export default function LandingPage() {
     return () => clearInterval(timer);
   }, []);
 
+  useEffect(() => {
+    if (!signupModalOpen) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setSignupModalOpen(false);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [signupModalOpen]);
+
   if (isLoading) {
     return (
       <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: "linear-gradient(to bottom right, #0a0a0a, #333)" }}>
@@ -69,7 +79,81 @@ export default function LandingPage() {
         >
           Log in
         </a>
+        <button
+          type="button"
+          onClick={() => setSignupModalOpen(true)}
+          style={{
+            color: "black", fontWeight: 600, padding: "8px 24px", borderRadius: 6,
+            backgroundColor: "#ff6b35", border: "none", fontSize: 14, cursor: "pointer",
+            transition: "filter 0.15s",
+          }}
+        >
+          Sign Up
+        </button>
       </div>
+
+      {signupModalOpen && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="signup-modal-title"
+          onClick={() => setSignupModalOpen(false)}
+          style={{
+            position: "fixed", inset: 0, backgroundColor: "rgba(0,0,0,0.65)",
+            display: "flex", alignItems: "center", justifyContent: "center",
+            zIndex: 100, padding: 24,
+          }}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              backgroundColor: "#1a1a1a", color: "white", borderRadius: 12,
+              maxWidth: 520, width: "100%", padding: "32px 36px",
+              border: "1px solid #333", boxShadow: "0 20px 60px rgba(0,0,0,0.5)",
+              position: "relative",
+            }}
+          >
+            <button
+              type="button"
+              aria-label="Close"
+              onClick={() => setSignupModalOpen(false)}
+              style={{
+                position: "absolute", top: 12, right: 12,
+                background: "transparent", border: "none", color: "#888",
+                fontSize: 24, lineHeight: 1, cursor: "pointer", padding: 4,
+              }}
+            >
+              ×
+            </button>
+
+            <h2 id="signup-modal-title" style={{ fontSize: 22, fontWeight: 600, margin: "0 0 16px", color: "#ff6b35" }}>
+              Mikro is invite-only — for now
+            </h2>
+
+            <p style={{ fontSize: 15, lineHeight: 1.6, margin: "0 0 14px", color: "#ddd" }}>
+              Mikro is currently an in-house tool at Kaart and access is limited to invited
+              teams. We&apos;re actively working on opening the platform up to companies
+              and individuals outside Kaart.
+            </p>
+
+            <p style={{ fontSize: 15, lineHeight: 1.6, margin: "0 0 20px", color: "#ddd" }}>
+              Interested in early access or want to learn more? We&apos;d love to talk. Reach
+              out and we&apos;ll be in touch:
+            </p>
+
+            <a
+              href="mailto:dev@kaart.com?subject=Mikro%20early%20access"
+              style={{
+                display: "inline-block", backgroundColor: "#ff6b35", color: "black",
+                fontWeight: 600, padding: "10px 24px", borderRadius: 6,
+                textDecoration: "none", fontSize: 14,
+              }}
+            >
+              dev@kaart.com
+            </a>
+          </div>
+        </div>
+      )}
 
       {/* Content wrapper — fills remaining space after nav and centers the upper-area + bottom-row GROUP vertically so the laptop sits at viewport middle */}
       <div style={{ flex: 1, minHeight: 0, display: "flex", flexDirection: "column", justifyContent: "center" }}>
