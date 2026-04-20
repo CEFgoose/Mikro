@@ -775,9 +775,11 @@ def run_transcription_job(app, job):
                 )
                 raise
 
-            model_size = os.environ.get("WHISPER_MODEL", "base.en")
-            cpu_threads = int(os.environ.get("WHISPER_THREADS", "4"))
-            beam_size = int(os.environ.get("WHISPER_BEAM_SIZE", "1"))
+            # Use the MIKRO_-prefixed names so a stale WHISPER_MODEL env var
+            # on the pod (pinned to medium.en) can't override our fast default.
+            model_size = os.environ.get("MIKRO_WHISPER_MODEL", "base.en")
+            cpu_threads = int(os.environ.get("MIKRO_WHISPER_THREADS", "4"))
+            beam_size = int(os.environ.get("MIKRO_WHISPER_BEAM_SIZE", "1"))
             logger.info(
                 f"[TRANSCRIBE] job={job.id} model config: "
                 f"size={model_size} threads={cpu_threads}"
