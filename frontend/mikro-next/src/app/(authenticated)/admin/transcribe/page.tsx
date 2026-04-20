@@ -193,6 +193,32 @@ export default function TranscribePage() {
     uploadAbortRef.current?.abort();
   }, []);
 
+  const cancelTranscription = useCallback(async () => {
+    if (!jobId) {
+      // No active server job — just reset local state
+      setTranscriptionStatus("idle");
+      setSegments([]);
+      setFullText("");
+      setSegmentCount(0);
+      return;
+    }
+    try {
+      await fetch("/backend/transcribe/cancel", {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ jobId }),
+      });
+    } catch {
+      // best-effort — the polling loop will pick up the new status either way
+    }
+    setTranscriptionStatus("idle");
+    setJobId(null);
+    setSegments([]);
+    setFullText("");
+    setSegmentCount(0);
+  }, [jobId]);
+
   // Recording
   const startRecording = async () => {
     try {
@@ -411,6 +437,15 @@ export default function TranscribePage() {
                   style={{ fontSize: 12, padding: "4px 12px" }}
                 >
                   Cancel
+                </Button>
+              )}
+              {transcriptionStatus === "transcribing" && (
+                <Button
+                  variant="outline"
+                  onClick={cancelTranscription}
+                  style={{ fontSize: 12, padding: "4px 12px", color: "#dc2626", borderColor: "#fca5a5" }}
+                >
+                  Kill job
                 </Button>
               )}
               <style>{`@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }`}</style>

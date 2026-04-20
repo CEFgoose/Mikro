@@ -127,6 +127,8 @@ class TranscriptionAPI(MethodView):
             return self.upload_complete()
         if path == "upload-abort":
             return self.upload_abort()
+        if path == "cancel":
+            return self.cancel()
         return {"message": "Unknown path", "status": 404}
 
     def get(self, path: str):
@@ -299,6 +301,41 @@ class TranscriptionAPI(MethodView):
         )
 
         return {"status": 200}
+
+    @requires_admin
+    def cancel(self):
+        """
+        Mark a queued/transcribing job as cancelled so the frontend can move
+        on and the worker's one-at-a-time lock is released.
+
+        Does not kill an in-flight faster-whisper call — the worker checks
+        the job status between segments and bails out. Worst case: the
+        worker finishes the current segment, sees status=error, exits.
+        """
+        from ..database import db, TranscriptionJob
+
+        from datetime import datetime, timezone
+
+        body = request.get_json(silent=True) or {}
+        job_id = body.get("jobId")
+        if not job_id:
+            return {"message": "jobId required", "status": 400}
+
+        job = TranscriptionJob.query.get(job_id)
+        if not job:
+            return {"message": "Job not found", "status": 404}
+
+        if job.status in ("done", "error"):
+            return {"message": f"Job already {job.status}", "jobStatus": job.status, "status": 200}
+
+        job.status = "error"
+        job.error = "Cancelled by user"
+        job.completed_at = datetime.now(timezone.utc)
+        db.session.commit()
+
+        current_app.logger.info(f"[transcribe] job {job_id} cancelled by user {g.user.id}")
+
+        return {"jobId": job_id, "jobStatus": "error", "status": 200}
 
     @requires_admin
     def status(self):

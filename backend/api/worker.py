@@ -788,7 +788,18 @@ def run_transcription_job(app, job):
             )
 
             segments = []
+            cancelled = False
             for segment in segments_iter:
+                # Check for user cancellation between segments
+                db.session.refresh(job)
+                if job.status != "transcribing":
+                    logger.info(
+                        f"[TRANSCRIBE] job={job.id} status changed to "
+                        f"'{job.status}' mid-run — bailing out"
+                    )
+                    cancelled = True
+                    break
+
                 segments.append({
                     "timeStart": round(segment.start, 2),
                     "timeEnd": round(segment.end, 2),
@@ -804,6 +815,9 @@ def run_transcription_job(app, job):
                         f"[TRANSCRIBE] job={job.id} progress: "
                         f"{len(segments)} segments so far"
                     )
+
+            if cancelled:
+                return  # Caller's finally block handles temp file cleanup
 
             full_text = " ".join(s["text"] for s in segments)
 
