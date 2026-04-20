@@ -38,16 +38,10 @@ def _get_s3_client():
 
 
 # ──────────────────────────────────────────────────────────────────────
-# TEMP: one-shot CORS bootstrap for the shared Kaart Spaces bucket.
-#
-# DO Spaces web UI does not expose "ExposeHeaders", which browsers
-# require in order to read ETag from multipart chunk PUTs. This helper
-# merges Mikro's CORS rules into the bucket policy on the first upload
-# attempt per process. Idempotent and safe to re-run (existing rules
-# from other Kaart apps are preserved).
-#
-# REMOVE AFTER VERIFYING CORS IS LIVE IN PROD (commit that adds the
-# presigned-multipart flow should also drop this helper).
+# CORS bootstrap: runs once per process on upload_init. Browsers need
+# ExposeHeaders: ETag to read the ETag from each chunk PUT — the DO
+# Spaces web UI does not expose this field, so we set it via the S3
+# API. Idempotent; preserves any existing rules from other Kaart apps.
 # ──────────────────────────────────────────────────────────────────────
 
 _CORS_CONFIGURED = False
@@ -119,23 +113,20 @@ def _ensure_bucket_cors():
         current_app.logger.error(f"CORS bootstrap: put_bucket_cors failed: {e}")
 
 
-def _upload_to_spaces(file_obj, key):
-    """Upload a file object to DO Spaces and return the URL."""
-    bucket = current_app.config.get("DO_SPACES_BUCKET")
-    endpoint = current_app.config.get("DO_SPACES_ENDPOINT")
-
-    s3 = _get_s3_client()
-    s3.upload_fileobj(file_obj, bucket, key)
-
-    return f"{endpoint}/{bucket}/{key}"
+MAX_FILE_BYTES = 1024 * 1024 * 1024  # 1 GB hard cap
+PART_SIZE = 10 * 1024 * 1024          # 10 MB per part
 
 
 class TranscriptionAPI(MethodView):
     """Transcription API endpoints."""
 
     def post(self, path: str):
-        if path == "upload":
-            return self.upload()
+        if path == "upload-init":
+            return self.upload_init()
+        if path == "upload-complete":
+            return self.upload_complete()
+        if path == "upload-abort":
+            return self.upload_abort()
         return {"message": "Unknown path", "status": 404}
 
     def get(self, path: str):
@@ -148,33 +139,121 @@ class TranscriptionAPI(MethodView):
         return {"message": "Unknown path", "status": 404}
 
     @requires_admin
-    def upload(self):
-        """Accept audio file upload, store in Spaces, queue transcription job."""
-        from ..database import db, TranscriptionJob
-
-        # TEMP: bootstrap CORS on the shared bucket before first upload of
-        # each process lifetime. Remove once presigned-multipart flow lands.
+    def upload_init(self):
+        """
+        Start a multipart upload direct to DO Spaces.
+        Returns uploadId + presigned PUT URLs, one per part.
+        """
         _ensure_bucket_cors()
 
-        if not (request.files and "file" in request.files):
-            return {"message": "No file provided. Send as multipart 'file'.", "status": 400}
+        body = request.get_json(silent=True) or {}
+        file_name = body.get("fileName") or "audio.m4a"
+        file_size = body.get("fileSize")
+        content_type = body.get("contentType") or "application/octet-stream"
 
-        file = request.files["file"]
-        file_name = file.filename or "audio.m4a"
+        if not isinstance(file_size, int) or file_size <= 0:
+            return {"message": "fileSize (positive integer) required", "status": 400}
+        if file_size > MAX_FILE_BYTES:
+            return {
+                "message": f"File exceeds {MAX_FILE_BYTES // (1024 * 1024)} MB limit",
+                "status": 413,
+            }
+
         ext = os.path.splitext(file_name)[1] or ".m4a"
-
-        # Generate job ID
         job_id = str(uuid.uuid4())[:8]
-        spaces_key = f"transcriptions/{job_id}{ext}"
+        spaces_key = f"mikro/transcriptions/{job_id}{ext}"
+        bucket = current_app.config.get("DO_SPACES_BUCKET")
+
+        s3 = _get_s3_client()
 
         try:
-            # Upload to DO Spaces
-            file_url = _upload_to_spaces(file, spaces_key)
+            resp = s3.create_multipart_upload(
+                Bucket=bucket,
+                Key=spaces_key,
+                ContentType=content_type,
+            )
+            upload_id = resp["UploadId"]
         except Exception as e:
-            current_app.logger.error(f"Failed to upload to Spaces: {e}")
-            return {"message": f"File storage error: {str(e)}", "status": 500}
+            current_app.logger.error(f"create_multipart_upload failed: {e}")
+            return {"message": f"Failed to start upload: {str(e)}", "status": 500}
 
-        # Create job in DB
+        part_count = (file_size + PART_SIZE - 1) // PART_SIZE
+        try:
+            part_urls = [
+                s3.generate_presigned_url(
+                    "upload_part",
+                    Params={
+                        "Bucket": bucket,
+                        "Key": spaces_key,
+                        "UploadId": upload_id,
+                        "PartNumber": n,
+                    },
+                    ExpiresIn=3600,
+                )
+                for n in range(1, part_count + 1)
+            ]
+        except Exception as e:
+            current_app.logger.error(f"generate_presigned_url failed: {e}")
+            # Best-effort abort so we don't leak an orphan upload
+            try:
+                s3.abort_multipart_upload(Bucket=bucket, Key=spaces_key, UploadId=upload_id)
+            except Exception:
+                pass
+            return {"message": f"Failed to sign upload URLs: {str(e)}", "status": 500}
+
+        current_app.logger.info(
+            f"[transcribe-upload] init job_id={job_id} parts={part_count} "
+            f"size={file_size} key={spaces_key}"
+        )
+
+        return {
+            "jobId": job_id,
+            "uploadId": upload_id,
+            "spacesKey": spaces_key,
+            "partSize": PART_SIZE,
+            "partCount": part_count,
+            "partUrls": part_urls,
+            "status": 200,
+        }
+
+    @requires_admin
+    def upload_complete(self):
+        """Finalise the multipart upload and queue a transcription job."""
+        from ..database import db, TranscriptionJob
+
+        body = request.get_json(silent=True) or {}
+        upload_id = body.get("uploadId")
+        spaces_key = body.get("spacesKey")
+        job_id = body.get("jobId")
+        file_name = body.get("fileName") or "audio.m4a"
+        parts = body.get("parts") or []
+
+        if not all([upload_id, spaces_key, job_id]) or not parts:
+            return {"message": "uploadId, spacesKey, jobId, parts required", "status": 400}
+
+        bucket = current_app.config.get("DO_SPACES_BUCKET")
+        endpoint = current_app.config.get("DO_SPACES_ENDPOINT")
+
+        s3 = _get_s3_client()
+
+        normalised_parts = sorted(
+            ({"PartNumber": int(p["PartNumber"]), "ETag": p["ETag"]} for p in parts),
+            key=lambda p: p["PartNumber"],
+        )
+
+        try:
+            s3.complete_multipart_upload(
+                Bucket=bucket,
+                Key=spaces_key,
+                UploadId=upload_id,
+                MultipartUpload={"Parts": normalised_parts},
+            )
+        except Exception as e:
+            current_app.logger.error(f"complete_multipart_upload failed: {e}")
+            return {"message": f"Failed to finalise upload: {str(e)}", "status": 500}
+
+        file_url = f"{endpoint}/{bucket}/{spaces_key}"
+
         job = TranscriptionJob(
             id=job_id,
             user_id=g.user.id,
@@ -187,7 +266,8 @@ class TranscriptionAPI(MethodView):
         db.session.commit()
 
         current_app.logger.info(
-            f"Transcription job {job_id} queued for {file_name} ({file_url})"
+            f"[transcribe-upload] complete job_id={job_id} parts={len(normalised_parts)} "
+            f"url={file_url}"
         )
 
         return {
@@ -195,6 +275,30 @@ class TranscriptionAPI(MethodView):
             "jobId": job_id,
             "status": 200,
         }
+
+    @requires_admin
+    def upload_abort(self):
+        """Abort an in-flight multipart upload so Spaces doesn't retain partial data."""
+        body = request.get_json(silent=True) or {}
+        upload_id = body.get("uploadId")
+        spaces_key = body.get("spacesKey")
+
+        if not upload_id or not spaces_key:
+            return {"message": "uploadId and spacesKey required", "status": 400}
+
+        bucket = current_app.config.get("DO_SPACES_BUCKET")
+        s3 = _get_s3_client()
+
+        try:
+            s3.abort_multipart_upload(Bucket=bucket, Key=spaces_key, UploadId=upload_id)
+        except Exception as e:
+            current_app.logger.warning(f"abort_multipart_upload failed (non-fatal): {e}")
+
+        current_app.logger.info(
+            f"[transcribe-upload] abort upload_id={upload_id} key={spaces_key}"
+        )
+
+        return {"status": 200}
 
     @requires_admin
     def status(self):

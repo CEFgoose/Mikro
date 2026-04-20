@@ -14,6 +14,15 @@ import {
   formatTimestamp,
   ACCEPTED_MIME_TYPES,
 } from "@/lib/transcribe";
+import { chunkedUpload } from "@/lib/chunkedUpload";
+
+const MAX_FILE_BYTES = 1024 * 1024 * 1024; // 1 GB
+const formatBytes = (n: number) => {
+  if (n < 1024) return `${n} B`;
+  if (n < 1024 * 1024) return `${(n / 1024).toFixed(1)} KB`;
+  if (n < 1024 * 1024 * 1024) return `${(n / (1024 * 1024)).toFixed(1)} MB`;
+  return `${(n / (1024 * 1024 * 1024)).toFixed(2)} GB`;
+};
 
 type TranscriptionStatus = "idle" | "uploading" | "transcribing" | "done";
 type Mode = "record" | "upload";
@@ -55,6 +64,13 @@ export default function TranscribePage() {
   const [copied, setCopied] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [fileName, setFileName] = useState<string | null>(null);
+
+  // Upload progress (chunked upload)
+  const [uploadBytes, setUploadBytes] = useState(0);
+  const [uploadTotal, setUploadTotal] = useState(0);
+  const [uploadParts, setUploadParts] = useState(0);
+  const [uploadTotalParts, setUploadTotalParts] = useState(0);
+  const uploadAbortRef = useRef<AbortController | null>(null);
 
   // Recent jobs
   const [recentJobs, setRecentJobs] = useState<RecentJob[]>([]);
@@ -125,45 +141,56 @@ export default function TranscribePage() {
     return () => clearInterval(interval);
   }, [jobId, transcriptionStatus, segments.length]);
 
-  // Upload file to backend
+  // Upload file via chunked multipart direct to Spaces
   const uploadFile = useCallback(async (file: File | Blob, name: string) => {
+    if (file.size > MAX_FILE_BYTES) {
+      setError(`File is ${formatBytes(file.size)} — max is ${formatBytes(MAX_FILE_BYTES)}`);
+      return;
+    }
+
     setError(null);
     setFileName(name);
     setTranscriptionStatus("uploading");
     setSegments([]);
     setFullText("");
     setSegmentCount(0);
+    setUploadBytes(0);
+    setUploadTotal(file.size);
+    setUploadParts(0);
+    setUploadTotalParts(0);
+
+    const controller = new AbortController();
+    uploadAbortRef.current = controller;
 
     try {
-      const formData = new FormData();
-      formData.append("file", file, name);
-
-      const res = await fetch("/backend/transcribe/upload", {
-        method: "POST",
-        credentials: "include",
-        body: formData,
+      const { jobId: newJobId } = await chunkedUpload({
+        file,
+        fileName: name,
+        contentType: file.type || undefined,
+        signal: controller.signal,
+        onProgress: ({ bytesUploaded, totalBytes, partsUploaded, totalParts }) => {
+          setUploadBytes(bytesUploaded);
+          setUploadTotal(totalBytes);
+          setUploadParts(partsUploaded);
+          setUploadTotalParts(totalParts);
+        },
       });
-
-      if (!res.ok) {
-        const text = await res.text();
-        setError(`Upload failed (${res.status}): ${text.slice(0, 200)}`);
-        setTranscriptionStatus("idle");
-        return;
-      }
-
-      const data = await res.json();
-      if (data.status !== 200) {
-        setError(data.message || "Upload failed");
-        setTranscriptionStatus("idle");
-        return;
-      }
-
-      setJobId(data.jobId);
+      setJobId(newJobId);
       setTranscriptionStatus("transcribing");
     } catch (err) {
-      setError(`Failed to upload file: ${err instanceof Error ? err.message : String(err)}`);
+      if (err instanceof Error && err.name === "AbortedError") {
+        setError("Upload cancelled.");
+      } else {
+        setError(`Upload failed: ${err instanceof Error ? err.message : String(err)}`);
+      }
       setTranscriptionStatus("idle");
+    } finally {
+      uploadAbortRef.current = null;
     }
+  }, []);
+
+  const cancelUpload = useCallback(() => {
+    uploadAbortRef.current?.abort();
   }, []);
 
   // Recording
@@ -366,17 +393,38 @@ export default function TranscribePage() {
       {(transcriptionStatus === "uploading" || transcriptionStatus === "transcribing") && (
         <Card style={{ marginBottom: 20 }}>
           <CardContent>
-            <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "20px 0", justifyContent: "center" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "20px 0", justifyContent: "center", flexWrap: "wrap" }}>
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#004e89" strokeWidth="2" style={{ animation: "spin 1s linear infinite" }}>
                 <path d="M21 12a9 9 0 1 1-6.219-8.56" />
               </svg>
               <span style={{ fontSize: 15, fontWeight: 500, color: "#555" }}>
                 {transcriptionStatus === "uploading"
-                  ? "Uploading..."
+                  ? uploadTotalParts > 0
+                    ? `Uploading ${uploadParts}/${uploadTotalParts} chunks — ${formatBytes(uploadBytes)} / ${formatBytes(uploadTotal)} (${Math.round((uploadBytes / Math.max(uploadTotal, 1)) * 100)}%)`
+                    : "Preparing upload..."
                   : `Transcribing${segmentCount > 0 ? ` (${segmentCount} segments so far)` : ""}... You can navigate away — results will be here when you come back.`}
               </span>
+              {transcriptionStatus === "uploading" && (
+                <Button
+                  variant="outline"
+                  onClick={cancelUpload}
+                  style={{ fontSize: 12, padding: "4px 12px" }}
+                >
+                  Cancel
+                </Button>
+              )}
               <style>{`@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }`}</style>
             </div>
+            {transcriptionStatus === "uploading" && uploadTotal > 0 && (
+              <div style={{ height: 6, borderRadius: 3, backgroundColor: "#e5e7eb", overflow: "hidden", marginTop: 4 }}>
+                <div style={{
+                  width: `${(uploadBytes / uploadTotal) * 100}%`,
+                  height: "100%",
+                  backgroundColor: "#004e89",
+                  transition: "width 0.2s ease-out",
+                }} />
+              </div>
+            )}
 
             {/* Live segments as they arrive */}
             {segments.length > 0 && (

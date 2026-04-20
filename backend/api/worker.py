@@ -794,14 +794,16 @@ def run_transcription_job(app, job):
                     "timeEnd": round(segment.end, 2),
                     "text": segment.text.strip(),
                 })
+                # Commit every segment so the UI progress updates in near-real-time.
+                # Log less often to avoid spamming.
+                job.progress = len(segments)
+                job.segments = json.dumps(segments)
+                db.session.commit()
                 if len(segments) % 5 == 0:
                     logger.info(
                         f"[TRANSCRIBE] job={job.id} progress: "
                         f"{len(segments)} segments so far"
                     )
-                    job.progress = len(segments)
-                    job.segments = json.dumps(segments)
-                    db.session.commit()
 
             full_text = " ".join(s["text"] for s in segments)
 
