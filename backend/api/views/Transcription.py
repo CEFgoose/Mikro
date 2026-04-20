@@ -107,7 +107,11 @@ def _ensure_bucket_cors():
         rule for rule in existing
         if not (set(rule.get("AllowedOrigins", [])) & _MIKRO_CORS_ORIGINS)
     ]
-    merged = preserved + _MIKRO_CORS_RULES
+    # Our rules MUST come first: S3 CORS evaluates rules top-down and the
+    # first rule whose AllowedOrigins+AllowedMethods match wins. If another
+    # app has a permissive wildcard rule, putting ours last means ours
+    # never matches and ExposeHeaders: ETag is effectively ignored.
+    merged = _MIKRO_CORS_RULES + preserved
 
     try:
         s3.put_bucket_cors(
@@ -117,10 +121,13 @@ def _ensure_bucket_cors():
         _CORS_CONFIGURED = True
         current_app.logger.info(
             f"Spaces CORS config: applied {len(merged)} rule(s) to '{bucket}' "
-            f"(preserved {len(preserved)}, added {len(_MIKRO_CORS_RULES)})"
+            f"(mikro={len(_MIKRO_CORS_RULES)} first, preserved={len(preserved)})"
         )
     except ClientError as e:
-        current_app.logger.error(f"Spaces CORS config: put_bucket_cors failed: {e}")
+        code = e.response.get("Error", {}).get("Code", "<unknown>")
+        current_app.logger.error(
+            f"Spaces CORS config: put_bucket_cors FAILED code={code} err={e}"
+        )
 
 
 MAX_FILE_BYTES = 1024 * 1024 * 1024  # 1 GB hard cap
@@ -139,6 +146,8 @@ class TranscriptionAPI(MethodView):
             return self.upload_abort()
         if path == "cancel":
             return self.cancel()
+        if path == "cors-apply":
+            return self.cors_apply()
         return {"message": "Unknown path", "status": 404}
 
     def get(self, path: str):
@@ -148,6 +157,8 @@ class TranscriptionAPI(MethodView):
             return self.result()
         elif path == "recent":
             return self.recent()
+        elif path == "cors-status":
+            return self.cors_status()
         return {"message": "Unknown path", "status": 404}
 
     @requires_admin
@@ -442,3 +453,110 @@ class TranscriptionAPI(MethodView):
             })
 
         return {"jobs": result, "status": 200}
+
+    @requires_admin
+    def cors_status(self):
+        """
+        Diagnostic: fetch the CURRENT CORS rules on the Spaces bucket and
+        report whether our expected rules are in place.
+        Useful when uploads fail with 'Missing ETag' and we need to find
+        out whether the in-process config actually stuck.
+        """
+        bucket = current_app.config.get("DO_SPACES_BUCKET")
+        if not bucket:
+            return {"status": 500, "error": "DO_SPACES_BUCKET not configured"}
+
+        s3 = _get_s3_client()
+        try:
+            resp = s3.get_bucket_cors(Bucket=bucket)
+            rules = resp.get("CORSRules", [])
+        except ClientError as e:
+            code = e.response.get("Error", {}).get("Code", "<unknown>")
+            if code in ("NoSuchCORSConfiguration", "NoSuchCORSConfigurationError"):
+                return {
+                    "status": 200,
+                    "bucket": bucket,
+                    "rules": [],
+                    "mikroRulesPresent": [],
+                    "mikroRulesExpected": sorted(r["ID"] for r in _MIKRO_CORS_RULES),
+                    "bootstrapRanFlag": _CORS_CONFIGURED,
+                    "note": "Bucket has NO CORS configuration at all.",
+                }
+            return {
+                "status": 500,
+                "error": f"get_bucket_cors failed: code={code} err={str(e)}",
+                "bootstrapRanFlag": _CORS_CONFIGURED,
+            }
+
+        mikro_ids = {r["ID"] for r in _MIKRO_CORS_RULES}
+        present = [r.get("ID") for r in rules if r.get("ID") in mikro_ids]
+
+        return {
+            "status": 200,
+            "bucket": bucket,
+            "ruleCount": len(rules),
+            "rules": rules,
+            "mikroRulesPresent": sorted(present),
+            "mikroRulesExpected": sorted(mikro_ids),
+            "bootstrapRanFlag": _CORS_CONFIGURED,
+        }
+
+    @requires_admin
+    def cors_apply(self):
+        """
+        Diagnostic: force-run the CORS config (resets the once-per-process
+        flag) and return detailed before/after/error info. This is the
+        endpoint to hit if a deploy doesn't come up clean.
+        """
+        global _CORS_CONFIGURED
+
+        bucket = current_app.config.get("DO_SPACES_BUCKET")
+        if not bucket:
+            return {"status": 500, "error": "DO_SPACES_BUCKET not configured"}
+
+        s3 = _get_s3_client()
+
+        try:
+            resp = s3.get_bucket_cors(Bucket=bucket)
+            before = resp.get("CORSRules", [])
+        except ClientError as e:
+            code = e.response.get("Error", {}).get("Code", "<unknown>")
+            if code in ("NoSuchCORSConfiguration", "NoSuchCORSConfigurationError"):
+                before = []
+            else:
+                return {
+                    "status": 500,
+                    "error": f"get_bucket_cors failed: code={code} err={str(e)}",
+                }
+
+        preserved = [
+            rule for rule in before
+            if not (set(rule.get("AllowedOrigins", [])) & _MIKRO_CORS_ORIGINS)
+        ]
+        merged = _MIKRO_CORS_RULES + preserved
+
+        try:
+            s3.put_bucket_cors(
+                Bucket=bucket,
+                CORSConfiguration={"CORSRules": merged},
+            )
+        except ClientError as e:
+            code = e.response.get("Error", {}).get("Code", "<unknown>")
+            return {
+                "status": 500,
+                "error": f"put_bucket_cors failed: code={code} err={str(e)}",
+                "beforeRuleCount": len(before),
+                "attemptedMikroCount": len(_MIKRO_CORS_RULES),
+                "attemptedPreservedCount": len(preserved),
+            }
+
+        _CORS_CONFIGURED = True
+        return {
+            "status": 200,
+            "bucket": bucket,
+            "beforeRuleCount": len(before),
+            "afterRuleCount": len(merged),
+            "mikroAdded": len(_MIKRO_CORS_RULES),
+            "preservedFromOtherApps": len(preserved),
+            "rules": merged,
+        }
