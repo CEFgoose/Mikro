@@ -755,10 +755,6 @@ def run_transcription_job(app, job):
                 f"[TRANSCRIBE] job={job.id} downloading from Spaces: "
                 f"bucket={bucket} key={spaces_key}"
             )
-            # Mirror stage to job.progress so the DB-status script sees it
-            # even without log access.
-            job.progress = "downloading from Spaces"
-            db.session.commit()
             s3.download_fileobj(bucket, spaces_key, tmp)
             tmp.close()
 
@@ -792,8 +788,6 @@ def run_transcription_job(app, job):
                     f"[TRANSCRIBE] job={job.id} loading Whisper model "
                     f"(first time, this may take a while)..."
                 )
-                job.progress = f"loading whisper model ({model_size})"
-                db.session.commit()
                 run_transcription_job._model = WhisperModel(
                     model_size,
                     device="cpu",
@@ -807,8 +801,6 @@ def run_transcription_job(app, job):
             model = run_transcription_job._model
 
             logger.info(f"[TRANSCRIBE] job={job.id} starting transcription...")
-            job.progress = "starting whisper transcribe"
-            db.session.commit()
             segments_iter, info = model.transcribe(
                 tmp_path,
                 language="en",
