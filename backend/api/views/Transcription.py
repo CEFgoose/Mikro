@@ -19,6 +19,7 @@ import os
 import uuid
 import tempfile
 import boto3
+from botocore.exceptions import ClientError
 from flask.views import MethodView
 from flask import request, current_app, g
 
@@ -34,6 +35,88 @@ def _get_s3_client():
         aws_secret_access_key=current_app.config.get("DO_SPACES_SECRET"),
         region_name=current_app.config.get("DO_SPACES_REGION"),
     )
+
+
+# ──────────────────────────────────────────────────────────────────────
+# TEMP: one-shot CORS bootstrap for the shared Kaart Spaces bucket.
+#
+# DO Spaces web UI does not expose "ExposeHeaders", which browsers
+# require in order to read ETag from multipart chunk PUTs. This helper
+# merges Mikro's CORS rules into the bucket policy on the first upload
+# attempt per process. Idempotent and safe to re-run (existing rules
+# from other Kaart apps are preserved).
+#
+# REMOVE AFTER VERIFYING CORS IS LIVE IN PROD (commit that adds the
+# presigned-multipart flow should also drop this helper).
+# ──────────────────────────────────────────────────────────────────────
+
+_CORS_CONFIGURED = False
+
+_MIKRO_CORS_RULES = [
+    {
+        "ID": "mikro-transcribe-prod",
+        "AllowedOrigins": ["https://mikro.kaart.com"],
+        "AllowedMethods": ["GET", "PUT", "HEAD"],
+        "AllowedHeaders": ["*"],
+        "ExposeHeaders": ["ETag"],
+        "MaxAgeSeconds": 3000,
+    },
+    {
+        "ID": "mikro-transcribe-dev",
+        "AllowedOrigins": ["http://localhost:3000"],
+        "AllowedMethods": ["GET", "PUT", "HEAD"],
+        "AllowedHeaders": ["*"],
+        "ExposeHeaders": ["ETag"],
+        "MaxAgeSeconds": 3000,
+    },
+]
+
+_MIKRO_CORS_ORIGINS = {o for rule in _MIKRO_CORS_RULES for o in rule["AllowedOrigins"]}
+
+
+def _ensure_bucket_cors():
+    """Merge Mikro CORS rules into the shared bucket. Runs once per process."""
+    global _CORS_CONFIGURED
+    if _CORS_CONFIGURED:
+        return
+
+    bucket = current_app.config.get("DO_SPACES_BUCKET")
+    if not bucket:
+        current_app.logger.warning("CORS bootstrap skipped: DO_SPACES_BUCKET unset")
+        return
+
+    s3 = _get_s3_client()
+
+    try:
+        resp = s3.get_bucket_cors(Bucket=bucket)
+        existing = resp.get("CORSRules", [])
+    except ClientError as e:
+        code = e.response.get("Error", {}).get("Code", "")
+        if code in ("NoSuchCORSConfiguration", "NoSuchCORSConfigurationError"):
+            existing = []
+        else:
+            current_app.logger.error(f"CORS bootstrap: get_bucket_cors failed: {e}")
+            return
+
+    # Drop any rule whose origins overlap ours; keep everything else.
+    preserved = [
+        rule for rule in existing
+        if not (set(rule.get("AllowedOrigins", [])) & _MIKRO_CORS_ORIGINS)
+    ]
+    merged = preserved + _MIKRO_CORS_RULES
+
+    try:
+        s3.put_bucket_cors(
+            Bucket=bucket,
+            CORSConfiguration={"CORSRules": merged},
+        )
+        _CORS_CONFIGURED = True
+        current_app.logger.info(
+            f"CORS bootstrap: applied {len(merged)} rule(s) to '{bucket}' "
+            f"(preserved {len(preserved)}, added {len(_MIKRO_CORS_RULES)})"
+        )
+    except ClientError as e:
+        current_app.logger.error(f"CORS bootstrap: put_bucket_cors failed: {e}")
 
 
 def _upload_to_spaces(file_obj, key):
@@ -68,6 +151,10 @@ class TranscriptionAPI(MethodView):
     def upload(self):
         """Accept audio file upload, store in Spaces, queue transcription job."""
         from ..database import db, TranscriptionJob
+
+        # TEMP: bootstrap CORS on the shared bucket before first upload of
+        # each process lifetime. Remove once presigned-multipart flow lands.
+        _ensure_bucket_cors()
 
         if not (request.files and "file" in request.files):
             return {"message": "No file provided. Send as multipart 'file'.", "status": 400}
