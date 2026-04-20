@@ -417,13 +417,25 @@ class TranscriptionAPI(MethodView):
             except (json.JSONDecodeError, TypeError):
                 pass
 
+        tags_list = []
+        if job.tags:
+            try:
+                tags_list = json.loads(job.tags)
+            except (json.JSONDecodeError, TypeError):
+                pass
+
         return {
             "jobId": job_id,
             "jobStatus": job.status,
+            "title": job.title,
+            "fileName": job.file_name,
+            "tags": tags_list,
             "segments": segments,
             "text": job.text or "",
             "duration": job.duration or 0,
             "progress": job.progress or 0,
+            "createdAt": job.created_at.isoformat() if job.created_at else None,
+            "completedAt": job.completed_at.isoformat() if job.completed_at else None,
             "status": 200,
         }
 
