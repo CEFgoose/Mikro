@@ -34,6 +34,20 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+# Also mirror worker logs to a file that operators can tail from inside the
+# pod (`tail -f /tmp/worker.log`). File is recreated on each process start.
+try:
+    _worker_fh = logging.FileHandler("/tmp/worker.log", mode="w")
+    _worker_fh.setFormatter(
+        logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
+    )
+    logger.addHandler(_worker_fh)
+    # Also attach to root so logs from `api.*` dependencies go to the file.
+    logging.getLogger().addHandler(_worker_fh)
+except Exception as _e:
+    # Don't fail worker startup if /tmp isn't writable for some reason.
+    print(f"[worker] could not attach /tmp/worker.log handler: {_e}", file=sys.stderr)
+
 
 def run_sync_job(app, job):
     """
@@ -717,20 +731,34 @@ def run_transcription_job(app, job):
 
         try:
             import boto3
+            from botocore.config import Config as BotoConfig
 
             logger.info(f"[TRANSCRIBE] job={job.id} creating S3 client...")
+            # Hard timeouts on the HTTP layer — default is None, which means a
+            # silent connection stall to Spaces would hang the worker forever
+            # (every one of our jobs died this way before we added these).
+            _boto_cfg = BotoConfig(
+                connect_timeout=15,
+                read_timeout=120,
+                retries={"max_attempts": 3, "mode": "standard"},
+            )
             s3 = boto3.client(
                 "s3",
                 endpoint_url=endpoint,
                 aws_access_key_id=key,
                 aws_secret_access_key=secret,
                 region_name=region,
+                config=_boto_cfg,
             )
 
             logger.info(
                 f"[TRANSCRIBE] job={job.id} downloading from Spaces: "
                 f"bucket={bucket} key={spaces_key}"
             )
+            # Mirror stage to job.progress so the DB-status script sees it
+            # even without log access.
+            job.progress = "downloading from Spaces"
+            db.session.commit()
             s3.download_fileobj(bucket, spaces_key, tmp)
             tmp.close()
 
@@ -764,6 +792,8 @@ def run_transcription_job(app, job):
                     f"[TRANSCRIBE] job={job.id} loading Whisper model "
                     f"(first time, this may take a while)..."
                 )
+                job.progress = f"loading whisper model ({model_size})"
+                db.session.commit()
                 run_transcription_job._model = WhisperModel(
                     model_size,
                     device="cpu",
@@ -777,6 +807,8 @@ def run_transcription_job(app, job):
             model = run_transcription_job._model
 
             logger.info(f"[TRANSCRIBE] job={job.id} starting transcription...")
+            job.progress = "starting whisper transcribe"
+            db.session.commit()
             segments_iter, info = model.transcribe(
                 tmp_path,
                 language="en",
