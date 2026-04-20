@@ -1076,6 +1076,8 @@ class TranscriptionJob(CRUDMixin, db.Model):
     duration = Column(Float, nullable=True)
     error = Column(Text, nullable=True)
     progress = Column(Integer, default=0)
+    title = Column(String(500), nullable=True)
+    tags = Column(Text, nullable=True)
     created_at = Column(DateTime, default=func.now())
     started_at = Column(DateTime, nullable=True)
     completed_at = Column(DateTime, nullable=True)

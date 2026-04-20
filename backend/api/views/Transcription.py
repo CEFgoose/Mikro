@@ -148,6 +148,12 @@ class TranscriptionAPI(MethodView):
             return self.cancel()
         if path == "cors-apply":
             return self.cors_apply()
+        if path == "ai":
+            return self.ai_action()
+        if path == "update":
+            return self.update_job()
+        if path == "delete":
+            return self.delete_jobs()
         return {"message": "Unknown path", "status": 404}
 
     def get(self, path: str):
@@ -159,6 +165,10 @@ class TranscriptionAPI(MethodView):
             return self.recent()
         elif path == "cors-status":
             return self.cors_status()
+        elif path == "list":
+            return self.list_jobs()
+        elif path == "tags":
+            return self.list_tags()
         return {"message": "Unknown path", "status": 404}
 
     @requires_admin
@@ -439,10 +449,19 @@ class TranscriptionAPI(MethodView):
                 except (json.JSONDecodeError, TypeError):
                     pass
 
+            tags_list = []
+            if job.tags:
+                try:
+                    tags_list = json.loads(job.tags)
+                except (json.JSONDecodeError, TypeError):
+                    pass
+
             result.append({
                 "jobId": job.id,
                 "jobStatus": job.status,
+                "title": job.title,
                 "fileName": job.file_name,
+                "tags": tags_list,
                 "segments": segments,
                 "text": job.text or "",
                 "duration": job.duration or 0,
@@ -559,4 +578,336 @@ class TranscriptionAPI(MethodView):
             "mikroAdded": len(_MIKRO_CORS_RULES),
             "preservedFromOtherApps": len(preserved),
             "rules": merged,
+        }
+
+    # ─────────────────────────────────────────────────────────────────
+    # AI actions — send the completed transcript to Claude for a
+    # quick analysis (summary, action items, participants, decisions,
+    # or a custom prompt). Nothing persists — stateless one-shot.
+    # ─────────────────────────────────────────────────────────────────
+    @requires_admin
+    def ai_action(self):
+        from ..database import TranscriptionJob
+
+        body = request.get_json(silent=True) or {}
+        job_id = body.get("jobId")
+        preset = body.get("preset", "summary")
+        custom_prompt = body.get("prompt")
+
+        if not job_id:
+            return {"message": "jobId required", "status": 400}
+
+        job = TranscriptionJob.query.get(job_id)
+        if not job:
+            return {"message": "Job not found", "status": 404}
+        if job.user_id != g.user.id:
+            return {"message": "Forbidden", "status": 403}
+        if not job.text:
+            return {"message": "Transcript not available for this job", "status": 400}
+
+        presets = {
+            "summary": (
+                "Summarize this meeting transcript concisely. Focus on the main "
+                "topics discussed, key points, and overall outcome. Use 2–4 short "
+                "paragraphs."
+            ),
+            "actions": (
+                "Extract action items from this transcript as a bulleted list. "
+                "For each, include the owner if mentioned, the task itself, and "
+                "any deadline that was stated. If no action items are present, "
+                "say so explicitly."
+            ),
+            "participants": (
+                "List the distinct participants or speakers mentioned or implied "
+                "in this transcript. For each, briefly describe their apparent "
+                "role or primary contribution. If only one voice is present, "
+                "say so."
+            ),
+            "decisions": (
+                "List the concrete decisions made in this meeting as a bulleted "
+                "list. For each, note what was decided and the context or "
+                "rationale that was given. If no decisions were made, say so "
+                "explicitly."
+            ),
+        }
+
+        if preset == "custom":
+            if not custom_prompt or len(custom_prompt.strip()) < 3:
+                return {
+                    "message": "A prompt of at least 3 characters is required for custom preset",
+                    "status": 400,
+                }
+            instruction = custom_prompt.strip()
+        else:
+            instruction = presets.get(preset)
+            if not instruction:
+                return {"message": f"Unknown preset: {preset}", "status": 400}
+
+        api_key = current_app.config.get("ANTHROPIC_API_KEY")
+        if not api_key:
+            return {"message": "Anthropic API key not configured", "status": 500}
+
+        try:
+            import anthropic
+
+            client = anthropic.Anthropic(api_key=api_key)
+            message = client.messages.create(
+                model="claude-haiku-4-5-20251001",
+                max_tokens=2048,
+                system=(
+                    "You analyse meeting transcripts for a professional business "
+                    "audience. Output in clean markdown. Be concise and direct."
+                ),
+                messages=[{
+                    "role": "user",
+                    "content": f"{instruction}\n\n---\nTranscript:\n{job.text}",
+                }],
+            )
+            result_text = message.content[0].text if message.content else ""
+            return {
+                "result": result_text,
+                "preset": preset,
+                "model": "claude-haiku-4-5-20251001",
+                "tokens": {
+                    "input": message.usage.input_tokens,
+                    "output": message.usage.output_tokens,
+                },
+                "status": 200,
+            }
+        except Exception as e:
+            current_app.logger.error(
+                f"[transcribe-ai] job={job_id} preset={preset} error={e}"
+            )
+            return {
+                "message": f"AI request failed: {str(e)}",
+                "status": 500,
+            }
+
+    # ─────────────────────────────────────────────────────────────────
+    # Library endpoints — list with search/filter, rename/retag,
+    # delete one or many, list distinct tags.
+    # All scoped by user_id so users see only their own.
+    # ─────────────────────────────────────────────────────────────────
+    @requires_admin
+    def list_jobs(self):
+        """
+        Paginated list of the current user's transcription jobs.
+        Query params: ?q=<search>&tag=<tag>&limit=20&offset=0&sort=created_at:desc
+        Search matches against title (if set) and file_name (case-insensitive).
+        """
+        from ..database import TranscriptionJob
+
+        q = (request.args.get("q") or "").strip()
+        tag = (request.args.get("tag") or "").strip()
+        try:
+            limit = max(1, min(int(request.args.get("limit", "20")), 100))
+            offset = max(0, int(request.args.get("offset", "0")))
+        except ValueError:
+            limit, offset = 20, 0
+        sort = request.args.get("sort", "created_at:desc")
+
+        query = TranscriptionJob.query.filter_by(user_id=g.user.id)
+
+        if q:
+            from sqlalchemy import or_, func as sa_func
+            like = f"%{q.lower()}%"
+            query = query.filter(
+                or_(
+                    sa_func.lower(TranscriptionJob.title).like(like),
+                    sa_func.lower(TranscriptionJob.file_name).like(like),
+                )
+            )
+
+        if tag:
+            # tags stored as JSON array string — a simple substring match is fine
+            # for the tag-dropdown filter since tag names are opaque to the user.
+            query = query.filter(TranscriptionJob.tags.like(f'%"{tag}"%'))
+
+        sort_map = {
+            "created_at:desc": TranscriptionJob.created_at.desc(),
+            "created_at:asc": TranscriptionJob.created_at.asc(),
+            "duration:desc": TranscriptionJob.duration.desc().nullslast(),
+            "duration:asc": TranscriptionJob.duration.asc().nullsfirst(),
+            "title:asc": TranscriptionJob.title.asc().nullslast(),
+            "title:desc": TranscriptionJob.title.desc().nullslast(),
+        }
+        query = query.order_by(sort_map.get(sort, TranscriptionJob.created_at.desc()))
+
+        total = query.count()
+        jobs = query.offset(offset).limit(limit).all()
+
+        result = []
+        for job in jobs:
+            tags_list = []
+            if job.tags:
+                try:
+                    tags_list = json.loads(job.tags)
+                except (json.JSONDecodeError, TypeError):
+                    pass
+
+            result.append({
+                "jobId": job.id,
+                "jobStatus": job.status,
+                "title": job.title,
+                "fileName": job.file_name,
+                "tags": tags_list,
+                "duration": job.duration or 0,
+                "progress": job.progress or 0,
+                "error": job.error,
+                "createdAt": job.created_at.isoformat() if job.created_at else None,
+                "completedAt": job.completed_at.isoformat() if job.completed_at else None,
+            })
+
+        return {
+            "jobs": result,
+            "total": total,
+            "limit": limit,
+            "offset": offset,
+            "status": 200,
+        }
+
+    @requires_admin
+    def list_tags(self):
+        """Distinct list of tags this user has used across their jobs."""
+        from ..database import TranscriptionJob
+
+        jobs = (
+            TranscriptionJob.query
+            .filter_by(user_id=g.user.id)
+            .filter(TranscriptionJob.tags.isnot(None))
+            .all()
+        )
+        all_tags = set()
+        for j in jobs:
+            try:
+                for t in json.loads(j.tags or "[]"):
+                    if isinstance(t, str) and t.strip():
+                        all_tags.add(t.strip())
+            except (json.JSONDecodeError, TypeError):
+                pass
+
+        return {"tags": sorted(all_tags, key=str.lower), "status": 200}
+
+    @requires_admin
+    def update_job(self):
+        """
+        Rename (title) and/or retag (tags) a job.
+        Body: { jobId, title?, tags? }  (tags is an array of strings)
+        """
+        from ..database import db, TranscriptionJob
+
+        body = request.get_json(silent=True) or {}
+        job_id = body.get("jobId")
+        if not job_id:
+            return {"message": "jobId required", "status": 400}
+
+        job = TranscriptionJob.query.get(job_id)
+        if not job:
+            return {"message": "Job not found", "status": 404}
+        if job.user_id != g.user.id:
+            return {"message": "Forbidden", "status": 403}
+
+        if "title" in body:
+            new_title = body.get("title")
+            if new_title is None:
+                job.title = None
+            else:
+                trimmed = str(new_title).strip()[:500]
+                job.title = trimmed or None
+
+        if "tags" in body:
+            new_tags = body.get("tags")
+            if new_tags is None:
+                job.tags = None
+            elif isinstance(new_tags, list):
+                cleaned = []
+                seen = set()
+                for t in new_tags:
+                    if not isinstance(t, str):
+                        continue
+                    s = t.strip()[:50]
+                    if not s:
+                        continue
+                    key = s.lower()
+                    if key in seen:
+                        continue
+                    seen.add(key)
+                    cleaned.append(s)
+                job.tags = json.dumps(cleaned) if cleaned else None
+            else:
+                return {"message": "tags must be a list of strings", "status": 400}
+
+        db.session.commit()
+
+        tags_list = []
+        if job.tags:
+            try:
+                tags_list = json.loads(job.tags)
+            except (json.JSONDecodeError, TypeError):
+                pass
+
+        return {
+            "jobId": job.id,
+            "title": job.title,
+            "tags": tags_list,
+            "status": 200,
+        }
+
+    @requires_admin
+    def delete_jobs(self):
+        """
+        Hard-delete one or more jobs + their Spaces audio (best-effort).
+        Body: { jobIds: ["a", "b", ...] }
+        """
+        from ..database import db, TranscriptionJob
+
+        body = request.get_json(silent=True) or {}
+        job_ids = body.get("jobIds") or []
+        if not isinstance(job_ids, list) or not job_ids:
+            return {"message": "jobIds (non-empty list) required", "status": 400}
+
+        jobs = (
+            TranscriptionJob.query
+            .filter(TranscriptionJob.id.in_(job_ids))
+            .filter_by(user_id=g.user.id)
+            .all()
+        )
+        if not jobs:
+            return {"message": "No matching jobs found for this user", "status": 404}
+
+        # Attempt to delete audio files from Spaces first (best-effort).
+        bucket = current_app.config.get("DO_SPACES_BUCKET")
+        s3 = _get_s3_client() if bucket else None
+
+        spaces_deleted = 0
+        spaces_failed = 0
+        for job in jobs:
+            if s3 and bucket and job.file_url:
+                bucket_marker = f"/{bucket}/"
+                spaces_key = (
+                    job.file_url.split(bucket_marker, 1)[-1]
+                    if bucket_marker in job.file_url
+                    else None
+                )
+                if spaces_key:
+                    try:
+                        s3.delete_object(Bucket=bucket, Key=spaces_key)
+                        spaces_deleted += 1
+                    except Exception as e:
+                        spaces_failed += 1
+                        current_app.logger.warning(
+                            f"[transcribe-delete] spaces delete failed for "
+                            f"job={job.id} key={spaces_key}: {e}"
+                        )
+
+        deleted_ids = [j.id for j in jobs]
+        for job in jobs:
+            db.session.delete(job)
+        db.session.commit()
+
+        return {
+            "deleted": deleted_ids,
+            "spacesDeleted": spaces_deleted,
+            "spacesFailed": spaces_failed,
+            "status": 200,
         }
