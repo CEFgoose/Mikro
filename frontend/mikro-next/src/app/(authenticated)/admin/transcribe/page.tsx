@@ -9,12 +9,15 @@ import {
   Button,
   Badge,
 } from "@/components/ui";
+import Link from "next/link";
 import {
   type TranscriptionSegment,
   formatTimestamp,
   ACCEPTED_MIME_TYPES,
 } from "@/lib/transcribe";
 import { chunkedUpload } from "@/lib/chunkedUpload";
+import AiActions from "@/components/transcribe/AiActions";
+import ExportButtons from "@/components/transcribe/ExportButtons";
 
 const MAX_FILE_BYTES = 1024 * 1024 * 1024; // 1 GB
 const formatBytes = (n: number) => {
@@ -61,9 +64,11 @@ export default function TranscribePage() {
   const [fullText, setFullText] = useState("");
   const [transcribeDurationMs, setTranscribeDurationMs] = useState(0);
   const [segmentCount, setSegmentCount] = useState(0);
-  const [copied, setCopied] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [fileName, setFileName] = useState<string | null>(null);
+  // jobId of the currently displayed transcript — kept even after completion
+  // so AI actions can reference it. null only when the page is truly idle.
+  const [currentJobId, setCurrentJobId] = useState<string | null>(null);
 
   // Upload progress (chunked upload)
   const [uploadBytes, setUploadBytes] = useState(0);
@@ -92,6 +97,7 @@ export default function TranscribePage() {
           );
           if (active) {
             setJobId(active.jobId);
+            setCurrentJobId(active.jobId);
             setFileName(active.fileName);
             setTranscriptionStatus("transcribing");
             setSegmentCount(active.progress || 0);
@@ -122,6 +128,7 @@ export default function TranscribePage() {
           setSegments(data.segments || []);
           setFullText(data.text || "");
           setTranscribeDurationMs(Math.round((data.duration || 0) * 1000));
+          // Keep currentJobId populated so AI actions can reference it.
           setJobId(null);
         } else if (data.jobStatus === "error") {
           setError(data.error || "Transcription failed");
@@ -176,6 +183,7 @@ export default function TranscribePage() {
         },
       });
       setJobId(newJobId);
+      setCurrentJobId(newJobId);
       setTranscriptionStatus("transcribing");
     } catch (err) {
       if (err instanceof Error && err.name === "AbortedError") {
@@ -277,17 +285,12 @@ export default function TranscribePage() {
     e.target.value = "";
   };
 
-  const handleCopy = async () => {
-    await navigator.clipboard.writeText(fullText);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  };
-
   const loadPreviousJob = (job: RecentJob) => {
     setSegments(job.segments || []);
     setFullText(job.text || "");
     setTranscribeDurationMs(Math.round((job.duration || 0) * 1000));
     setFileName(job.fileName);
+    setCurrentJobId(job.jobId);
     setTranscriptionStatus("done");
     setError(null);
   };
@@ -309,6 +312,30 @@ export default function TranscribePage() {
         </svg>
         <h1 style={{ fontSize: 28, fontWeight: 700, margin: 0, color: "#1a1a1a" }}>Transcribe</h1>
         <Badge variant="outline" style={{ fontSize: 11 }}>Experimental</Badge>
+        <div style={{ marginLeft: "auto" }}>
+          <Link
+            href="/admin/transcribe/library"
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 6,
+              padding: "8px 14px",
+              fontSize: 13,
+              fontWeight: 500,
+              color: "#004e89",
+              border: "1px solid #004e89",
+              borderRadius: 8,
+              textDecoration: "none",
+              backgroundColor: "#fff",
+            }}
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
+              <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
+            </svg>
+            Browse Library
+          </Link>
+        </div>
       </div>
 
       <p style={{ fontSize: 13, color: "#888", marginBottom: 20 }}>
@@ -524,14 +551,21 @@ export default function TranscribePage() {
                 resize: "vertical", fontFamily: "inherit", backgroundColor: "#fff",
               }}
             />
-            <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 12 }}>
-              <Button
-                onClick={handleCopy}
-                style={{ backgroundColor: copied ? "#16a34a" : "#ff6b35", color: "#fff" }}
-              >
-                {copied ? "Copied!" : "Copy to Clipboard"}
-              </Button>
+            <div style={{ marginTop: 12 }}>
+              <ExportButtons
+                segments={segments}
+                fullText={fullText}
+                displayName={fileName || "transcript"}
+              />
             </div>
+
+            {currentJobId && (
+              <AiActions
+                key={currentJobId}
+                jobId={currentJobId}
+                displayName={fileName || "transcript"}
+              />
+            )}
           </CardContent>
         </Card>
       )}
