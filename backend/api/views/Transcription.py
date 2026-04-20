@@ -38,10 +38,21 @@ def _get_s3_client():
 
 
 # ──────────────────────────────────────────────────────────────────────
-# CORS bootstrap: runs once per process on upload_init. Browsers need
-# ExposeHeaders: ETag to read the ETag from each chunk PUT — the DO
-# Spaces web UI does not expose this field, so we set it via the S3
-# API. Idempotent; preserves any existing rules from other Kaart apps.
+# Spaces CORS configuration — permanent home.
+#
+# Runs once per Flask process on the first upload_init call. This IS
+# the canonical place we manage Mikro's CORS rules on the shared
+# `kaart` Spaces bucket — NOT a temporary shim.
+#
+# Why in-code instead of the DO dashboard: browsers need
+# `ExposeHeaders: ETag` to read each multipart chunk's ETag out of the
+# PUT response (required to finalise multipart uploads). The DO Spaces
+# web UI has no field for ExposeHeaders — it can only be set via the
+# S3 API. So we set it from here on cold start.
+#
+# Idempotent: preserves any existing rules owned by other Kaart apps
+# (identified by non-overlapping AllowedOrigins), and only upserts
+# rules whose origins match our own set.
 # ──────────────────────────────────────────────────────────────────────
 
 _CORS_CONFIGURED = False
@@ -76,7 +87,7 @@ def _ensure_bucket_cors():
 
     bucket = current_app.config.get("DO_SPACES_BUCKET")
     if not bucket:
-        current_app.logger.warning("CORS bootstrap skipped: DO_SPACES_BUCKET unset")
+        current_app.logger.warning("Spaces CORS config skipped: DO_SPACES_BUCKET unset")
         return
 
     s3 = _get_s3_client()
@@ -89,10 +100,9 @@ def _ensure_bucket_cors():
         if code in ("NoSuchCORSConfiguration", "NoSuchCORSConfigurationError"):
             existing = []
         else:
-            current_app.logger.error(f"CORS bootstrap: get_bucket_cors failed: {e}")
+            current_app.logger.error(f"Spaces CORS config: get_bucket_cors failed: {e}")
             return
 
-    # Drop any rule whose origins overlap ours; keep everything else.
     preserved = [
         rule for rule in existing
         if not (set(rule.get("AllowedOrigins", [])) & _MIKRO_CORS_ORIGINS)
@@ -106,11 +116,11 @@ def _ensure_bucket_cors():
         )
         _CORS_CONFIGURED = True
         current_app.logger.info(
-            f"CORS bootstrap: applied {len(merged)} rule(s) to '{bucket}' "
+            f"Spaces CORS config: applied {len(merged)} rule(s) to '{bucket}' "
             f"(preserved {len(preserved)}, added {len(_MIKRO_CORS_RULES)})"
         )
     except ClientError as e:
-        current_app.logger.error(f"CORS bootstrap: put_bucket_cors failed: {e}")
+        current_app.logger.error(f"Spaces CORS config: put_bucket_cors failed: {e}")
 
 
 MAX_FILE_BYTES = 1024 * 1024 * 1024  # 1 GB hard cap
