@@ -751,8 +751,9 @@ def run_transcription_job(app, job):
                 )
                 raise
 
-            model_size = os.environ.get("WHISPER_MODEL", "medium.en")
+            model_size = os.environ.get("WHISPER_MODEL", "base.en")
             cpu_threads = int(os.environ.get("WHISPER_THREADS", "4"))
+            beam_size = int(os.environ.get("WHISPER_BEAM_SIZE", "1"))
             logger.info(
                 f"[TRANSCRIBE] job={job.id} model config: "
                 f"size={model_size} threads={cpu_threads}"
@@ -779,7 +780,7 @@ def run_transcription_job(app, job):
             segments_iter, info = model.transcribe(
                 tmp_path,
                 language="en",
-                beam_size=5,
+                beam_size=beam_size,
                 vad_filter=True,
             )
             logger.info(
