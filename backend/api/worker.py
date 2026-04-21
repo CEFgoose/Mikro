@@ -802,46 +802,116 @@ def run_transcription_job(app, job):
 
             model = run_transcription_job._model
 
-            logger.info(f"[TRANSCRIBE] job={job.id} starting transcription...")
-            segments_iter, info = model.transcribe(
-                tmp_path,
-                language="en",
-                beam_size=beam_size,
-                vad_filter=True,
-            )
+            # ────────────────────────────────────────────────────────
+            # Chunked transcription path.
+            #
+            # For long audio (1 hour+) calling model.transcribe(path) once
+            # forces faster-whisper to decode the whole file AND run VAD
+            # over all of it before emitting the first segment. That's
+            # where jobs silently hung for hours with progress=0.
+            #
+            # Instead we:
+            #   1. Decode once to a 16kHz mono float32 numpy array.
+            #   2. Slice into N-minute windows.
+            #   3. Call transcribe() per chunk with vad_filter=False so
+            #      each chunk returns an iterator immediately.
+            #   4. Emit + commit segments per chunk, logging chunk boundaries.
+            #
+            # Progress is now segment count across all chunks. If a single
+            # chunk hangs, the UI still shows the last completed chunk's
+            # segments and timings, making the stall much easier to see.
+            # ────────────────────────────────────────────────────────
+            logger.info(f"[TRANSCRIBE] job={job.id} decoding audio to 16kHz mono...")
+            from faster_whisper.audio import decode_audio
+            decode_start = datetime.now(timezone.utc)
+            audio = decode_audio(tmp_path, sampling_rate=16000)
+            decode_elapsed = (datetime.now(timezone.utc) - decode_start).total_seconds()
+            total_samples = len(audio)
+            total_seconds = total_samples / 16000.0
             logger.info(
-                f"[TRANSCRIBE] job={job.id} transcribe() returned, "
-                f"audio duration={round(info.duration, 1)}s, iterating segments..."
+                f"[TRANSCRIBE] job={job.id} decoded: {total_samples} samples "
+                f"({round(total_seconds, 1)}s audio) in {round(decode_elapsed, 1)}s"
+            )
+
+            chunk_minutes = int(os.environ.get("MIKRO_TRANSCRIBE_CHUNK_MINUTES", "5"))
+            chunk_seconds = chunk_minutes * 60
+            chunk_samples = chunk_seconds * 16000
+            num_chunks = max(1, (total_samples + chunk_samples - 1) // chunk_samples)
+            logger.info(
+                f"[TRANSCRIBE] job={job.id} splitting into {num_chunks} "
+                f"chunks of up to {chunk_minutes} min each "
+                f"(vad_filter=False, beam_size={beam_size})"
             )
 
             segments = []
             cancelled = False
-            for segment in segments_iter:
-                # Check for user cancellation between segments
+
+            for chunk_idx in range(num_chunks):
+                # Cancellation check at chunk boundary
                 db.session.refresh(job)
                 if job.status != "transcribing":
                     logger.info(
                         f"[TRANSCRIBE] job={job.id} status changed to "
-                        f"'{job.status}' mid-run — bailing out"
+                        f"'{job.status}' before chunk {chunk_idx + 1}/{num_chunks} — bailing"
                     )
                     cancelled = True
                     break
 
-                segments.append({
-                    "timeStart": round(segment.start, 2),
-                    "timeEnd": round(segment.end, 2),
-                    "text": segment.text.strip(),
-                })
-                # Commit every segment so the UI progress updates in near-real-time.
-                # Log less often to avoid spamming.
-                job.progress = len(segments)
-                job.segments = json.dumps(segments)
-                db.session.commit()
-                if len(segments) % 5 == 0:
-                    logger.info(
-                        f"[TRANSCRIBE] job={job.id} progress: "
-                        f"{len(segments)} segments so far"
-                    )
+                start_sample = chunk_idx * chunk_samples
+                end_sample = min(start_sample + chunk_samples, total_samples)
+                offset_seconds = start_sample / 16000.0
+                chunk = audio[start_sample:end_sample]
+
+                chunk_start_time = datetime.now(timezone.utc)
+                logger.info(
+                    f"[TRANSCRIBE] job={job.id} chunk {chunk_idx + 1}/{num_chunks} "
+                    f"starting (offset {round(offset_seconds, 1)}s, "
+                    f"length {round(len(chunk) / 16000.0, 1)}s)"
+                )
+
+                seg_iter, _info = model.transcribe(
+                    chunk,
+                    language="en",
+                    beam_size=beam_size,
+                    vad_filter=False,
+                )
+
+                chunk_segment_count = 0
+                for seg in seg_iter:
+                    # Cancellation check between per-chunk segments too —
+                    # lets a long chunk still be interrupted promptly.
+                    if chunk_segment_count % 10 == 0:
+                        db.session.refresh(job)
+                        if job.status != "transcribing":
+                            logger.info(
+                                f"[TRANSCRIBE] job={job.id} status changed to "
+                                f"'{job.status}' mid-chunk — bailing out"
+                            )
+                            cancelled = True
+                            break
+                    segments.append({
+                        "timeStart": round(seg.start + offset_seconds, 2),
+                        "timeEnd": round(seg.end + offset_seconds, 2),
+                        "text": seg.text.strip(),
+                    })
+                    chunk_segment_count += 1
+                    # Commit every segment so UI updates in near-real-time
+                    job.progress = len(segments)
+                    job.segments = json.dumps(segments)
+                    db.session.commit()
+
+                if cancelled:
+                    break
+
+                chunk_elapsed = (
+                    datetime.now(timezone.utc) - chunk_start_time
+                ).total_seconds()
+                logger.info(
+                    f"[TRANSCRIBE] job={job.id} chunk {chunk_idx + 1}/{num_chunks} "
+                    f"done: {chunk_segment_count} segments in "
+                    f"{round(chunk_elapsed, 1)}s "
+                    f"(running total: {len(segments)} segments)"
+                )
 
             if cancelled:
                 return  # Caller's finally block handles temp file cleanup
@@ -851,14 +921,15 @@ def run_transcription_job(app, job):
             job.status = "done"
             job.segments = json.dumps(segments)
             job.text = full_text
-            job.duration = round(info.duration, 1)
+            job.duration = round(total_seconds, 1)
             job.progress = len(segments)
             job.completed_at = datetime.now(timezone.utc)
             db.session.commit()
 
             logger.info(
                 f"[TRANSCRIBE] job={job.id} COMPLETED: "
-                f"{len(segments)} segments, {round(info.duration, 1)}s audio, "
+                f"{len(segments)} segments from {num_chunks} chunks, "
+                f"{round(total_seconds, 1)}s audio, "
                 f"text length={len(full_text)} chars"
             )
 
