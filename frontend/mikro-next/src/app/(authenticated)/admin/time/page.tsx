@@ -33,6 +33,7 @@ import {
 } from "@/hooks/useApi";
 import { formatNumber } from "@/lib/utils";
 import type { TimeEntry } from "@/types";
+import { TimeManagementFilterSummary } from "@/components/admin/TimeManagementFilterSummary";
 
 // --- Date range presets ---
 
@@ -41,7 +42,8 @@ type DatePreset =
   | "this_month"
   | "last_month"
   | "last_3_months"
-  | "all_time";
+  | "all_time"
+  | "custom";
 
 const DATE_PRESET_LABELS: Record<DatePreset, string> = {
   this_week: "This Week",
@@ -49,9 +51,22 @@ const DATE_PRESET_LABELS: Record<DatePreset, string> = {
   last_month: "Last Month",
   last_3_months: "Last 3 Months",
   all_time: "All Time",
+  custom: "Custom",
 };
 
-function getDateRange(preset: DatePreset): {
+const DATE_PRESET_ORDER: DatePreset[] = [
+  "this_week",
+  "this_month",
+  "last_month",
+  "last_3_months",
+  "all_time",
+  "custom",
+];
+
+function getDateRange(
+  preset: DatePreset,
+  custom?: { start: string; end: string }
+): {
   startDate: string | null;
   endDate: string | null;
 } {
@@ -83,7 +98,39 @@ function getDateRange(preset: DatePreset): {
     }
     case "all_time":
       return { startDate: null, endDate: null };
+    case "custom":
+      return {
+        startDate: custom?.start || null,
+        endDate: custom?.end || null,
+      };
   }
+}
+
+/**
+ * Human-readable summary of the active date filter, used both in the
+ * active-filter pill strip and the stat-card subtitles. Returns null
+ * when there is no meaningful date filter (preset="all_time" with no
+ * custom range set).
+ */
+function formatDateRangeLabel(
+  preset: DatePreset,
+  customStart: string,
+  customEnd: string
+): string | null {
+  if (preset === "all_time") return null;
+  if (preset === "custom") {
+    if (!customStart && !customEnd) return null;
+    const fmt = (iso: string) =>
+      new Date(iso).toLocaleDateString("en-US", {
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+      });
+    if (customStart && customEnd) return `${fmt(customStart)} – ${fmt(customEnd)}`;
+    if (customStart) return `From ${fmt(customStart)}`;
+    return `Through ${fmt(customEnd)}`;
+  }
+  return DATE_PRESET_LABELS[preset];
 }
 
 // --- Category options ---
@@ -200,9 +247,11 @@ export default function AdminTimePage() {
 
   // Filters
   const [datePreset, setDatePreset] = useState<DatePreset>("this_month");
+  const [customStart, setCustomStart] = useState("");
+  const [customEnd, setCustomEnd] = useState("");
   const [category, setCategory] = useState<string>("All");
   const [userSearch, setUserSearch] = useState("");
-  const { activeFilters, setActiveFilters, filtersBody } = useFilters();
+  const { activeFilters, setActiveFilters, filtersBody, clearFilters } = useFilters();
 
   // Sorting
   const [sortKey, setSortKey] = useState<string>("clockIn");
@@ -287,7 +336,10 @@ export default function AdminTimePage() {
 
   // Build filter body and refetch when filters change
   const fetchWithFilters = useCallback(() => {
-    const { startDate, endDate } = getDateRange(datePreset);
+    const { startDate, endDate } = getDateRange(datePreset, {
+      start: customStart,
+      end: customEnd,
+    });
     const body: Record<string, unknown> = {};
     if (startDate) body.startDate = startDate;
     if (endDate) body.endDate = endDate;
@@ -299,7 +351,7 @@ export default function AdminTimePage() {
     body.limit = 500;
     body.offset = 0;
     refetchHistory(body).catch(() => {});
-  }, [datePreset, category, filtersBody, refetchHistory]);
+  }, [datePreset, customStart, customEnd, category, filtersBody, refetchHistory]);
 
   useEffect(() => {
     fetchWithFilters();
@@ -308,7 +360,7 @@ export default function AdminTimePage() {
   // Reset page when filters change
   useEffect(() => {
     setPage(0);
-  }, [datePreset, category, filtersBody, userSearch]);
+  }, [datePreset, customStart, customEnd, category, filtersBody, userSearch]);
 
   // Live duration ticker for active sessions
   useEffect(() => {
@@ -331,7 +383,10 @@ export default function AdminTimePage() {
   const filteredEntries = useMemo(() => {
     let entries = allEntries;
 
-    const { startDate, endDate } = getDateRange(datePreset);
+    const { startDate, endDate } = getDateRange(datePreset, {
+      start: customStart,
+      end: customEnd,
+    });
     if (startDate) {
       const start = new Date(startDate);
       entries = entries.filter(
@@ -357,7 +412,7 @@ export default function AdminTimePage() {
     }
 
     return entries;
-  }, [allEntries, datePreset, category, userSearch]);
+  }, [allEntries, datePreset, customStart, customEnd, category, userSearch]);
 
   // Filter active sessions by category and user search
   const filteredSessions = useMemo(() => {
@@ -398,6 +453,14 @@ export default function AdminTimePage() {
       voidedEntries,
     };
   }, [filteredEntries, filteredSessions]);
+
+  // Stat-card subtitle echoing the active date filter. Honest about what
+  // the number is for ("For This Month" vs the old "For filtered period"
+  // which was true but not informative).
+  const periodSubtitle = useMemo(() => {
+    const label = formatDateRangeLabel(datePreset, customStart, customEnd);
+    return label ? `For ${label}` : "All time";
+  }, [datePreset, customStart, customEnd]);
 
   // Sort handler
   const handleSort = (key: string) => {
@@ -575,7 +638,10 @@ export default function AdminTimePage() {
 
   const handleExport = async (format: "csv" | "json" | "pdf") => {
     setExportOpen(false);
-    const { startDate, endDate } = getDateRange(datePreset);
+    const { startDate, endDate } = getDateRange(datePreset, {
+      start: customStart,
+      end: customEnd,
+    });
     try {
       await exportEntries({
         startDate: startDate ?? undefined,
@@ -629,6 +695,202 @@ export default function AdminTimePage() {
         </Button>
       </div>
 
+      {/* Filter Panel — hoisted above stat cards per UI8 (2026-04 meeting).
+          Wrapped in a Card so it reads as a visual unit, not a floating row. */}
+      <Card className="p-4">
+        <div
+          style={{
+            display: "flex",
+            gap: 16,
+            alignItems: "center",
+            flexWrap: "wrap",
+          }}
+        >
+          {/* Date preset button group — matches /admin/reports pattern */}
+          <div className="flex items-center gap-2">
+            {DATE_PRESET_ORDER.map((preset) => (
+              <button
+                key={preset}
+                type="button"
+                onClick={() => setDatePreset(preset)}
+                className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                  datePreset === preset
+                    ? "bg-kaart-orange text-white"
+                    : "bg-muted text-muted-foreground hover:bg-muted/80"
+                }`}
+              >
+                {DATE_PRESET_LABELS[preset]}
+              </button>
+            ))}
+          </div>
+
+          {datePreset === "custom" && (
+            <div className="flex items-center gap-2">
+              <input
+                type="date"
+                value={customStart}
+                onChange={(e) => setCustomStart(e.target.value)}
+                className="px-3 py-1.5 border border-input rounded-lg text-sm bg-background"
+                aria-label="Custom start date"
+              />
+              <span className="text-sm text-muted-foreground">to</span>
+              <input
+                type="date"
+                value={customEnd}
+                onChange={(e) => setCustomEnd(e.target.value)}
+                className="px-3 py-1.5 border border-input rounded-lg text-sm bg-background"
+                aria-label="Custom end date"
+              />
+            </div>
+          )}
+
+          {/* User search */}
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <input
+              type="text"
+              placeholder="Search user..."
+              className="rounded-md border border-border bg-background px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring w-44"
+              value={userSearch}
+              onChange={(e) => setUserSearch(e.target.value)}
+            />
+          </div>
+
+          <FilterBar
+            dimensions={
+              filterOptions?.dimensions
+                ? Object.entries(filterOptions.dimensions).map(
+                    ([key, values]) => ({
+                      key,
+                      label: key.charAt(0).toUpperCase() + key.slice(1),
+                      options: Array.isArray(values)
+                        ? values.map((v) =>
+                            typeof v === "string"
+                              ? { value: v, label: v }
+                              : {
+                                  value: String(
+                                    v.id ?? v.value ?? v.name
+                                  ),
+                                  label: v.name,
+                                }
+                          )
+                        : [],
+                    })
+                  )
+                : []
+            }
+            activeFilters={activeFilters}
+            onChange={setActiveFilters}
+            loading={filterOptionsLoading}
+          />
+
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <label className="text-sm font-medium text-muted-foreground">
+              Category:
+            </label>
+            <select
+              className="rounded-md border border-border bg-background px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+              value={category}
+              onChange={(e) => setCategory(e.target.value)}
+            >
+              {CATEGORIES.map((cat) => (
+                <option key={cat} value={cat}>
+                  {cat}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Export dropdown — stays in the filter Card, right-aligned */}
+          <div ref={exportRef} className="relative" style={{ marginLeft: "auto" }}>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setExportOpen(!exportOpen)}
+              disabled={exporting}
+              isLoading={exporting}
+            >
+              <svg
+                className="w-4 h-4 mr-1"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                />
+              </svg>
+              Export
+            </Button>
+
+            {exportOpen && (
+              <div className="absolute right-0 top-full z-50 mt-1 min-w-44 rounded-lg border border-border bg-card shadow-md">
+                <div className="py-1">
+                  <button
+                    type="button"
+                    onClick={() => handleExport("csv")}
+                    className="flex w-full items-center px-4 py-2 text-sm hover:bg-accent hover:text-accent-foreground"
+                  >
+                    Download CSV
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleExport("json")}
+                    className="flex w-full items-center px-4 py-2 text-sm hover:bg-accent hover:text-accent-foreground"
+                  >
+                    Download JSON
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleExport("pdf")}
+                    className="flex w-full items-center px-4 py-2 text-sm hover:bg-accent hover:text-accent-foreground"
+                  >
+                    Download PDF
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      </Card>
+
+      {/* Active-filter summary strip — renders only when at least one filter
+          is active, so the page stays clean when nothing is scoped. */}
+      <TimeManagementFilterSummary
+        dateLabel={formatDateRangeLabel(datePreset, customStart, customEnd)}
+        onClearDate={() => {
+          setDatePreset("all_time");
+          setCustomStart("");
+          setCustomEnd("");
+        }}
+        userSearch={userSearch}
+        onClearUserSearch={() => setUserSearch("")}
+        category={category}
+        onClearCategory={() => setCategory("All")}
+        activeFilters={activeFilters}
+        onRemoveFilter={(key, value) =>
+          setActiveFilters((prev) =>
+            prev
+              .map((f) =>
+                f.key === key
+                  ? { ...f, values: f.values.filter((v) => v !== value) }
+                  : f
+              )
+              .filter((f) => f.values.length > 0)
+          )
+        }
+        onClearAll={() => {
+          setDatePreset("all_time");
+          setCustomStart("");
+          setCustomEnd("");
+          setUserSearch("");
+          setCategory("All");
+          clearFilters();
+        }}
+      />
+
       {/* Stat Cards */}
       <div
         style={{
@@ -646,7 +908,7 @@ export default function AdminTimePage() {
               <Val>{formatNumber(stats.totalHours)}</Val>h
             </div>
             <p style={{ fontSize: 11, color: "#6b7280", marginTop: 4 }}>
-              For filtered period
+              {periodSubtitle}
             </p>
           </div>
         </Card>
@@ -710,149 +972,10 @@ export default function AdminTimePage() {
               <Val>{formatNumber(stats.voidedEntries)}</Val>
             </div>
             <p style={{ fontSize: 11, color: "#6b7280", marginTop: 4 }}>
-              In filtered period
+              {periodSubtitle}
             </p>
           </div>
         </Card>
-      </div>
-
-      {/* Filters */}
-      <div
-        style={{
-          display: "flex",
-          gap: 16,
-          alignItems: "center",
-          flexWrap: "wrap",
-        }}
-      >
-        {/* User search */}
-        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <input
-            type="text"
-            placeholder="Search user..."
-            className="rounded-md border border-border bg-background px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring w-44"
-            value={userSearch}
-            onChange={(e) => setUserSearch(e.target.value)}
-          />
-        </div>
-
-        <FilterBar
-          dimensions={
-            filterOptions?.dimensions
-              ? Object.entries(filterOptions.dimensions).map(
-                  ([key, values]) => ({
-                    key,
-                    label: key.charAt(0).toUpperCase() + key.slice(1),
-                    options: Array.isArray(values)
-                      ? values.map((v) =>
-                          typeof v === "string"
-                            ? { value: v, label: v }
-                            : {
-                                value: String(
-                                  v.id ?? v.value ?? v.name
-                                ),
-                                label: v.name,
-                              }
-                        )
-                      : [],
-                  })
-                )
-              : []
-          }
-          activeFilters={activeFilters}
-          onChange={setActiveFilters}
-          loading={filterOptionsLoading}
-        />
-
-        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <label className="text-sm font-medium text-muted-foreground">
-            Category:
-          </label>
-          <select
-            className="rounded-md border border-border bg-background px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-            value={category}
-            onChange={(e) => setCategory(e.target.value)}
-          >
-            {CATEGORIES.map((cat) => (
-              <option key={cat} value={cat}>
-                {cat}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 8 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <label className="text-sm font-medium text-muted-foreground">
-              Date Range:
-            </label>
-            <select
-              className="rounded-md border border-border bg-background px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-              value={datePreset}
-              onChange={(e) => setDatePreset(e.target.value as DatePreset)}
-            >
-              {Object.entries(DATE_PRESET_LABELS).map(([value, label]) => (
-                <option key={value} value={value}>
-                  {label}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          {/* Export dropdown */}
-          <div ref={exportRef} className="relative">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setExportOpen(!exportOpen)}
-              disabled={exporting}
-              isLoading={exporting}
-            >
-              <svg
-                className="w-4 h-4 mr-1"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-                />
-              </svg>
-              Export
-            </Button>
-
-            {exportOpen && (
-              <div className="absolute right-0 top-full z-50 mt-1 min-w-44 rounded-lg border border-border bg-card shadow-md">
-                <div className="py-1">
-                  <button
-                    type="button"
-                    onClick={() => handleExport("csv")}
-                    className="flex w-full items-center px-4 py-2 text-sm hover:bg-accent hover:text-accent-foreground"
-                  >
-                    Download CSV
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handleExport("json")}
-                    className="flex w-full items-center px-4 py-2 text-sm hover:bg-accent hover:text-accent-foreground"
-                  >
-                    Download JSON
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handleExport("pdf")}
-                    className="flex w-full items-center px-4 py-2 text-sm hover:bg-accent hover:text-accent-foreground"
-                  >
-                    Download PDF
-                  </button>
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
       </div>
 
       {/* Active Sessions (collapsible) */}
