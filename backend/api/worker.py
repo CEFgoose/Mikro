@@ -914,13 +914,30 @@ def poll_for_transcription_jobs(app):
                     age = datetime.now(timezone.utc) - running.started_at.replace(
                         tzinfo=timezone.utc
                     )
-                    if age > timedelta(minutes=30):
+                    # Two-tier staleness:
+                    #  - progress == 0 (no segments emitted yet): stuck before
+                    #    transcribe() started streaming. 30 min is plenty.
+                    #  - progress > 0 (actively emitting): genuinely slow run on
+                    #    a long audio. Allow up to 6 hours of wall time.
+                    progress = running.progress or 0
+                    stuck_limit = timedelta(minutes=30)
+                    progressing_limit = timedelta(hours=6)
+                    is_stale = (
+                        (progress == 0 and age > stuck_limit)
+                        or age > progressing_limit
+                    )
+                    if is_stale:
+                        reason = (
+                            f"Stuck at progress=0 after {stuck_limit}"
+                            if progress == 0
+                            else f"Exceeded {progressing_limit} wall time"
+                        )
                         logger.warning(
                             f"[TRANSCRIBE-POLL] Marking stale job {running.id} as failed "
-                            f"(running for {age})"
+                            f"(running for {age}, progress={progress}) — {reason}"
                         )
                         running.status = "error"
-                        running.error = "Timed out (stale after 30 minutes)"
+                        running.error = f"Timed out ({reason})"
                         running.completed_at = datetime.now(timezone.utc)
                         db.session.commit()
                     else:
