@@ -6,8 +6,9 @@ import { NextResponse } from "next/server";
 // - inactivityDuration 7d: idle tab cap
 // - absoluteDuration 30d: hard cap regardless of activity
 // - offline_access scope issues the refresh token used by getAccessToken()
-// - useSessionHeartbeat (client) pings /api/auth/heartbeat every 15 min to keep
+// - useSessionHeartbeat (client) pings /auth/heartbeat every 15 min to keep
 //   the access token fresh; fetchWithAuth catches 401s as a safety net
+//   (NOTE: lives under /auth/ — the /api/ prefix is routed to Flask on prod)
 // Requires Auth0 dashboard: Refresh Token Rotation + Reuse Detection enabled,
 // Refresh Token Absolute Lifetime >= 30 days, Inactivity Lifetime >= 7 days.
 export const auth0 = new Auth0Client({

@@ -55,7 +55,7 @@ export function useSessionHeartbeat() {
     };
 
     try {
-      const response = await fetch("/api/auth/heartbeat", {
+      const response = await fetch("/auth/heartbeat", {
         credentials: "same-origin",
       });
 

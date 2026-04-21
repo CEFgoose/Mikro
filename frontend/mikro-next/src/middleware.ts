@@ -42,15 +42,6 @@ export default async function proxy(request: NextRequest) {
     return NextResponse.redirect(`${origin}/auth/logout`);
   }
 
-  // The heartbeat endpoint is responsible for refreshing the access token
-  // via the refresh token. It must be allowed through even when the current
-  // access token is expired — otherwise it can never do its job, and the
-  // frontend heartbeat would see a redirect to /auth/logout instead of the
-  // 401 JSON response the hook expects.
-  if (request.nextUrl.pathname === "/api/auth/heartbeat") {
-    return authRes;
-  }
-
   // Check if access token is missing or expired — getSession() can return
   // stale sessions where the token is expired, so users appear "logged in"
   // but all API calls fail. Kill the session entirely.
