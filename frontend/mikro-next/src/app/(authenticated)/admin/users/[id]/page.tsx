@@ -560,17 +560,31 @@ export default function UserProfilePage() {
                   }`}>
                     {user.role}
                   </span>
-                  {user.is_tracked_only && (
-                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
-                      Tracked Only
-                    </span>
-                  )}
                   {user.mapper_level > 0 && (
                     <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
                       Level {user.mapper_level}
                     </span>
                   )}
                 </div>
+                {user.name_last_change && (
+                  <p
+                    className="text-xs text-muted-foreground mt-1"
+                    title={`${user.name_last_change.old_first_name ?? ""} ${user.name_last_change.old_last_name ?? ""} → ${user.name_last_change.new_first_name ?? ""} ${user.name_last_change.new_last_name ?? ""}`}
+                  >
+                    Name last changed{" "}
+                    {new Date(user.name_last_change.changed_at).toLocaleString("en-US", {
+                      month: "short",
+                      day: "numeric",
+                      year: "numeric",
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    })}{" "}
+                    via <span className="font-mono">{user.name_last_change.source}</span>
+                    {user.name_last_change.changed_by && (
+                      <> by <span className="font-mono">{user.name_last_change.changed_by}</span></>
+                    )}
+                  </p>
+                )}
               </div>
             </div>
             <div className="flex items-center gap-2">
@@ -613,7 +627,7 @@ export default function UserProfilePage() {
             <div className="border border-border rounded-lg p-3">
               <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Accounts</p>
               <div className="space-y-1.5">
-                {!user.is_tracked_only && user.email && (
+                {user.email && (
                   <div>
                     <span className="text-xs text-muted-foreground">Email</span>
                     <p className="text-sm">{user.email}</p>
@@ -649,7 +663,7 @@ export default function UserProfilePage() {
                     </p>
                   </div>
                 )}
-                {!user.is_tracked_only && user.payment_email && (
+                {user.payment_email && (
                   <div>
                     <span className="text-xs text-muted-foreground">Payment Email</span>
                     <p className="text-sm">{user.payment_email}</p>
@@ -758,8 +772,7 @@ export default function UserProfilePage() {
       )}
 
       {/* Section 4: Payment Summary */}
-      {!user.is_tracked_only && (
-        <Card>
+      <Card>
           <CardHeader>
             <CardTitle>Payment Summary</CardTitle>
           </CardHeader>
@@ -804,7 +817,6 @@ export default function UserProfilePage() {
             </div>
           </CardContent>
         </Card>
-      )}
 
       {/* Section 5b: Project Contribution Stats */}
       {user.projects && user.projects.length > 0 && (
