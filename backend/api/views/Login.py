@@ -9,7 +9,7 @@ Creates or retrieves user records based on Auth0 claims.
 from flask.views import MethodView
 from flask import g, jsonify, current_app, request
 
-from ..database import User
+from ..database import User, UserNameAudit
 
 
 class LoginAPI(MethodView):
@@ -92,6 +92,28 @@ class LoginAPI(MethodView):
                     role=role,
                     org_id=org_id,
                 )
+                # Seed the audit trail so every user has a name-history
+                # starting point. Captures what Auth0 sent on day one.
+                try:
+                    UserNameAudit.create(
+                        user_id=user.id,
+                        old_first_name=None,
+                        old_last_name=None,
+                        new_first_name=first_name or None,
+                        new_last_name=last_name or None,
+                        source="login_create",
+                        changed_by=None,
+                        details=f"auth0_name={(name or '')!r} email={(email or '')!r}",
+                    )
+                    current_app.logger.info(
+                        f"[NAME-AUDIT] user={user.id} source=login_create "
+                        f"to='{first_name} {last_name}'.strip() "
+                        f"auth0_name={name!r} email={email!r}"
+                    )
+                except Exception as audit_e:
+                    current_app.logger.warning(
+                        f"[NAME-AUDIT] Failed audit for login_create {auth0_sub}: {audit_e}"
+                    )
             except Exception as e:
                 current_app.logger.error(f"Error creating user: {e}")
                 return jsonify({"message": "Failed to create user", "status": 500}), 500
@@ -115,10 +137,50 @@ class LoginAPI(MethodView):
                 # Only set first/last name from Auth0 if the user doesn't
                 # already have them set — prevents overwriting admin edits
                 # with Auth0's default (which is often just the email address)
-                if not user.first_name or user.first_name == user.email:
+                write_first = (
+                    not user.first_name or user.first_name == user.email
+                )
+                write_last = not user.last_name
+                if write_first:
                     updates["first_name"] = first_name
-                if not user.last_name:
+                if write_last:
                     updates["last_name"] = last_name
+
+                # Audit any name change BEFORE the write so we capture the
+                # old values. This is the diagnostic that will prove or
+                # disprove the revert theory.
+                if write_first or write_last:
+                    try:
+                        old_first = user.first_name or None
+                        old_last = user.last_name or None
+                        new_first = updates.get("first_name", user.first_name) or None
+                        new_last = updates.get("last_name", user.last_name) or None
+                        if (old_first or "") != (new_first or "") or (old_last or "") != (new_last or ""):
+                            UserNameAudit.create(
+                                user_id=user.id,
+                                old_first_name=old_first,
+                                old_last_name=old_last,
+                                new_first_name=new_first,
+                                new_last_name=new_last,
+                                source="login_guard",
+                                changed_by=None,
+                                details=(
+                                    f"auth0_name={(name or '')!r} "
+                                    f"matched_email={user.first_name == user.email} "
+                                    f"empty_first={not user.first_name} "
+                                    f"empty_last={not user.last_name}"
+                                ),
+                            )
+                            current_app.logger.info(
+                                f"[NAME-AUDIT] user={user.id} source=login_guard "
+                                f"from='{old_first or ''} {old_last or ''}'.strip() "
+                                f"to='{new_first or ''} {new_last or ''}'.strip() "
+                                f"auth0_name={name!r}"
+                            )
+                    except Exception as audit_e:
+                        current_app.logger.warning(
+                            f"[NAME-AUDIT] Failed audit for login_guard {auth0_sub}: {audit_e}"
+                        )
 
                 user.update(**updates)
             except Exception as e:

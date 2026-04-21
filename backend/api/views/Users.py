@@ -16,6 +16,7 @@ from sqlalchemy import func
 from ..utils import requires_admin
 from ..database import (
     User,
+    UserNameAudit,
     Project,
     ProjectUser,
     Task,
@@ -90,6 +91,60 @@ def _format_user_name(user):
     return f"{first} {last}".strip() or user.email or "Unknown"
 
 
+def record_name_change(
+    user,
+    new_first,
+    new_last,
+    source,
+    changed_by=None,
+    details=None,
+):
+    """
+    Audit a change to user.first_name / user.last_name. No-op when the
+    proposed values match the current values — avoids flooding the table
+    on every /api/login page-sync request.
+
+    Caller is responsible for performing the actual write; this function
+    only records the audit row. Emits a structured log line as well so
+    the event is visible in DO logs without DB access.
+
+    Added 2026-04 to diagnose reports of admin-set names reverting to
+    email addresses. Safe to drop once the regression is confirmed fixed.
+    """
+    old_first = user.first_name or ""
+    old_last = user.last_name or ""
+    nf = new_first or ""
+    nl = new_last or ""
+    if old_first == nf and old_last == nl:
+        return None
+    try:
+        row = UserNameAudit.create(
+            user_id=user.id,
+            old_first_name=old_first or None,
+            old_last_name=old_last or None,
+            new_first_name=nf or None,
+            new_last_name=nl or None,
+            source=source,
+            changed_by=changed_by,
+            details=details,
+        )
+        current_app.logger.info(
+            f"[NAME-AUDIT] user={user.id} source={source} "
+            f"from='{old_first} {old_last}'.strip() "
+            f"to='{nf} {nl}'.strip() by={changed_by or 'system'} "
+            f"details={details or ''}"
+        )
+        return row
+    except Exception as e:
+        # Auditing must never block the actual write — this is a debug
+        # tool, not a critical path.
+        current_app.logger.warning(
+            f"[NAME-AUDIT] Failed to record audit for user={user.id} "
+            f"source={source}: {e}"
+        )
+        return None
+
+
 def _resolve_country_region(country_id, country_cache, region_cache):
     if not country_id:
         return None, None
@@ -151,8 +206,6 @@ class UserAPI(MethodView):
             return self.fetch_user_task_history()
         elif path == "admin_update_user_profile":
             return self.admin_update_user_profile()
-        elif path == "create_tracked_user":
-            return self.create_tracked_user()
         elif path == "link_mapillary":
             return self.link_mapillary()
         elif path == "unlink_mapillary":
@@ -290,24 +343,72 @@ class UserAPI(MethodView):
                     if not existing_user:
                         existing_user = User.query.filter_by(id=auth0_user_id).first()
 
-                    update_fields = dict(
-                        first_name=first_name,
-                        last_name=last_name,
-                        role=role,
-                        org_id=g.user.org_id,
-                        auth0_sub=auth0_user_id,
-                    )
-                    if osm_username:
-                        update_fields["osm_username"] = osm_username
-
                     if existing_user:
-                        existing_user.update(**update_fields)
+                        # Updating an existing row. Apply the same guard as
+                        # Login.py so CSV imports can't clobber admin-set
+                        # names. Only write name fields if the existing
+                        # values are empty OR still equal the email (i.e.
+                        # the untouched initial state).
+                        safe_updates = dict(
+                            role=role,
+                            org_id=g.user.org_id,
+                            auth0_sub=auth0_user_id,
+                        )
+                        if osm_username:
+                            safe_updates["osm_username"] = osm_username
+                        write_first = (
+                            not existing_user.first_name
+                            or existing_user.first_name == existing_user.email
+                        )
+                        write_last = not existing_user.last_name
+                        if write_first:
+                            safe_updates["first_name"] = first_name
+                        if write_last:
+                            safe_updates["last_name"] = last_name
+                        # Audit any name changes BEFORE the write
+                        if write_first or write_last:
+                            record_name_change(
+                                existing_user,
+                                safe_updates.get("first_name", existing_user.first_name),
+                                safe_updates.get("last_name", existing_user.last_name),
+                                source="import",
+                                changed_by=g.user.id if getattr(g, "user", None) else None,
+                                details=f"csv_first={first_name!r} csv_last={last_name!r}",
+                            )
+                        existing_user.update(**safe_updates)
                     else:
-                        User.create(
+                        # New row — safe to set names from CSV.
+                        create_fields = dict(
+                            first_name=first_name,
+                            last_name=last_name,
+                            role=role,
+                            org_id=g.user.org_id,
+                            auth0_sub=auth0_user_id,
+                        )
+                        if osm_username:
+                            create_fields["osm_username"] = osm_username
+                        new_user = User.create(
                             id=auth0_user_id,
                             email=email,
-                            **update_fields,
+                            **create_fields,
                         )
+                        # Audit the creation so every user has a name-history
+                        # starting point.
+                        try:
+                            UserNameAudit.create(
+                                user_id=new_user.id,
+                                old_first_name=None,
+                                old_last_name=None,
+                                new_first_name=first_name or None,
+                                new_last_name=last_name or None,
+                                source="import",
+                                changed_by=g.user.id if getattr(g, "user", None) else None,
+                                details=f"csv_first={first_name!r} csv_last={last_name!r}",
+                            )
+                        except Exception as e:
+                            current_app.logger.warning(
+                                f"[NAME-AUDIT] Failed audit for import (new user {email}): {e}"
+                            )
 
                     suffix = " (already in Auth0, synced locally)" if not auth0_created else ""
                     results["success"].append(email + suffix)
@@ -617,6 +718,9 @@ class UserAPI(MethodView):
             "timezone",
         ]
         country_changed = False
+        # Snapshot pre-write name values so we can audit after the loop.
+        pre_first = g.user.first_name
+        pre_last = g.user.last_name
         for field in fields:
             value = request.json.get(field)
             if (
@@ -628,6 +732,31 @@ class UserAPI(MethodView):
                     country_changed = True
                 setattr(g.user, field, value)
                 g.user.update()
+        # Audit name change (helper no-ops if nothing changed).
+        if (g.user.first_name or "") != (pre_first or "") or (g.user.last_name or "") != (pre_last or ""):
+            # Construct a transient User-like object carrying the OLD values
+            # so record_name_change compares correctly. Simpler: just write
+            # a one-off audit row directly here.
+            try:
+                UserNameAudit.create(
+                    user_id=g.user.id,
+                    old_first_name=pre_first or None,
+                    old_last_name=pre_last or None,
+                    new_first_name=g.user.first_name or None,
+                    new_last_name=g.user.last_name or None,
+                    source="self_edit",
+                    changed_by=g.user.id,
+                )
+                current_app.logger.info(
+                    f"[NAME-AUDIT] user={g.user.id} source=self_edit "
+                    f"from='{(pre_first or '')} {(pre_last or '')}'.strip() "
+                    f"to='{g.user.first_name or ''} {g.user.last_name or ''}'.strip() "
+                    f"by={g.user.id}"
+                )
+            except Exception as e:
+                current_app.logger.warning(
+                    f"[NAME-AUDIT] Failed audit for self_edit user={g.user.id}: {e}"
+                )
         # Auto-assign country when country text changes
         if country_changed:
             _auto_assign_country(g.user, g.user.country)
@@ -897,6 +1026,17 @@ class UserAPI(MethodView):
             updates["first_name"] = (request.json["first_name"] or "").strip()
         if "last_name" in request.json:
             updates["last_name"] = (request.json["last_name"] or "").strip()
+
+        # Audit the admin name edit BEFORE the write so we capture the
+        # old values. record_name_change no-ops if nothing changed.
+        if "first_name" in request.json or "last_name" in request.json:
+            record_name_change(
+                user,
+                updates.get("first_name", user.first_name),
+                updates.get("last_name", user.last_name),
+                source="admin_edit",
+                changed_by=g.user.id if getattr(g, "user", None) else None,
+            )
 
         # Handle additional profile fields
         if "osm_username" in request.json:
@@ -1343,11 +1483,40 @@ class UserAPI(MethodView):
                 "mapper_level": user.mapper_level or 0,
                 "mapper_points": user.mapper_points or 0,
                 "validator_points": user.validator_points or 0,
+                # Most recent name-change audit row, if any — exposes the
+                # admin-facing "last edited" badge on the profile header
+                # so we can see who touched the name and through which path.
+                "name_last_change": self._get_last_name_change(user),
                 # Nested
                 "projects": projects_data,
                 "assigned_projects": self._get_assigned_projects(user),
                 "time_entries": [self._format_time_entry(e, te_project_cache) for e in time_entries],
             },
+        }
+
+    @staticmethod
+    def _get_last_name_change(user):
+        """
+        Return the most recent UserNameAudit row for this user as a small
+        dict, or None if there's no audit history. Used by the admin
+        profile page's "name last changed" badge.
+        """
+        row = (
+            UserNameAudit.query
+            .filter_by(user_id=user.id)
+            .order_by(UserNameAudit.changed_at.desc())
+            .first()
+        )
+        if not row:
+            return None
+        return {
+            "changed_at": row.changed_at.isoformat() + "Z" if row.changed_at else None,
+            "source": row.source,
+            "changed_by": row.changed_by,
+            "old_first_name": row.old_first_name,
+            "old_last_name": row.old_last_name,
+            "new_first_name": row.new_first_name,
+            "new_last_name": row.new_last_name,
         }
 
     @requires_admin
@@ -1402,50 +1571,6 @@ class UserAPI(MethodView):
             user.update(**updates)
 
         return {"status": 200, "message": "User profile updated"}
-
-    @requires_admin
-    def create_tracked_user(self):
-        """
-        Create a tracked-only user (no Auth0, no email, no invitation).
-        Just an OSM username for the task sync to match against.
-        """
-        import uuid
-
-        data = request.get_json() or {}
-        osm_username = (data.get("osm_username") or "").strip()
-
-        if not osm_username:
-            return {"message": "osm_username is required", "status": 400}
-
-        # Check for duplicate osm_username
-        existing = User.query.filter_by(osm_username=osm_username).first()
-        if existing:
-            return {
-                "message": f"A user with OSM username '{osm_username}' already exists",
-                "status": 400,
-            }
-
-        user_id = f"tracked|{uuid.uuid4()}"
-        first_name = (data.get("first_name") or osm_username).strip()
-        last_name = (data.get("last_name") or "").strip()
-
-        new_user = User.create(
-            id=user_id,
-            auth0_sub=None,
-            email=None,
-            first_name=first_name,
-            last_name=last_name,
-            osm_username=osm_username,
-            role="user",
-            org_id=g.user.org_id,
-            is_tracked_only=True,
-        )
-
-        return {
-            "message": f"Tracked user '{osm_username}' created successfully",
-            "user_id": new_user.id,
-            "status": 200,
-        }
 
     @requires_admin
     def fetch_user_stats_by_date(self):
