@@ -51,6 +51,8 @@ import type {
   TaskHistoryEntry,
 } from "@/types";
 import { formatNumber, formatCurrency } from "@/lib/utils";
+import { RecentActivityCard } from "@/components/admin/RecentActivityCard";
+import { AssignedProjectsTable } from "@/components/admin/AssignedProjectsTable";
 
 const MappingHeatmap = dynamic(() => import("@/components/MappingHeatmap"), {
   ssr: false,
@@ -707,6 +709,14 @@ export default function UserProfilePage() {
         </CardContent>
       </Card>
 
+      {/* Recent Activity — top-of-page snapshot (added 2026-04 per UI meeting UI11) */}
+      {user && (
+        <RecentActivityCard
+          user={user}
+          recentChangeset={changesets[0] ?? null}
+        />
+      )}
+
       {/* Section 2: All-time Task Stats */}
       {user && (<>
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -795,38 +805,6 @@ export default function UserProfilePage() {
           </CardContent>
         </Card>
       )}
-
-      {/* Section 5a: Assigned Projects */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Assigned Projects ({user.assigned_projects?.length ?? 0})</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {user.assigned_projects && user.assigned_projects.length > 0 ? (
-            <div className="flex flex-wrap gap-2">
-              {user.assigned_projects.map((proj: { id: number; name: string; short_name?: string; source?: string; status?: boolean }) => (
-                <Link
-                  key={proj.id}
-                  href={`/admin/projects/${proj.id}`}
-                  className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-sm transition-colors hover:border-kaart-orange hover:text-kaart-orange ${
-                    proj.status === false ? "opacity-50 border-dashed" : "border-border"
-                  }`}
-                >
-                  {proj.short_name || proj.name}
-                  {proj.source === "mr" && (
-                    <span className="text-[10px] font-medium px-1 py-0.5 rounded bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300">MR</span>
-                  )}
-                  {proj.status === false && (
-                    <span className="text-[10px] font-medium text-muted-foreground">(inactive)</span>
-                  )}
-                </Link>
-              ))}
-            </div>
-          ) : (
-            <p className="text-sm text-muted-foreground">No projects assigned to this user.</p>
-          )}
-        </CardContent>
-      </Card>
 
       {/* Section 5b: Project Contribution Stats */}
       {user.projects && user.projects.length > 0 && (
@@ -1567,6 +1545,21 @@ export default function UserProfilePage() {
         </Card>
       </div>
       </>)}
+
+      {/* Assigned Projects — moved to bottom (was a flex chip grid); now a
+          sortable/filterable/paginated table per 2026-04 meeting B3 + UI12 */}
+      {user && (
+        <Card>
+          <CardHeader>
+            <CardTitle>
+              Assigned Projects ({user.assigned_projects?.length ?? 0})
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <AssignedProjectsTable projects={user.assigned_projects ?? []} />
+          </CardContent>
+        </Card>
+      )}
 
       {/* Edit Time Entry Modal */}
       <Modal

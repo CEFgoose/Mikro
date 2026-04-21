@@ -405,6 +405,21 @@ export interface UserProjectBreakdown {
   validation_earnings: number;
 }
 
+/**
+ * Row shape for the Assigned Projects table on the admin user profile.
+ * Returned by `_get_assigned_projects()` in backend/api/views/Users.py.
+ */
+export interface AssignedProject {
+  id: number;
+  name: string;
+  short_name?: string | null;
+  source?: string | null;
+  status?: boolean;
+  hours_logged: number;
+  last_worked_on: string | null;
+  task_count: number;
+}
+
 export interface UserProfileData {
   id: string;
   first_name: string;
@@ -442,13 +457,7 @@ export interface UserProfileData {
   mapper_points: number;
   validator_points: number;
   projects: UserProjectBreakdown[];
-  assigned_projects?: Array<{
-    id: number;
-    name: string;
-    short_name?: string;
-    source?: string;
-    status?: boolean;
-  }>;
+  assigned_projects?: AssignedProject[];
   time_entries: TimeEntry[];
 }
 

@@ -1093,23 +1093,81 @@ class UserAPI(MethodView):
 
     @staticmethod
     def _get_assigned_projects(user):
-        """Get all projects this user is assigned to (via ProjectUser table)."""
+        """
+        Get all projects this user is assigned to (via ProjectUser table),
+        enriched with per-project activity stats: hours logged (from
+        time_entries), tasks touched (from tasks.mapped_by), and the most
+        recent clock_out timestamp.
+
+        All enrichment is done with two grouped aggregations (no N+1). Works
+        cleanly on the existing time_entries.user_id and tasks.mapped_by
+        indexes — no migration needed.
+        """
         relations = ProjectUser.query.filter_by(user_id=user.id).all()
         if not relations:
             return []
         project_ids = [r.project_id for r in relations]
-        projects = {p.id: p for p in Project.query.filter(Project.id.in_(project_ids)).all()}
+        projects = {
+            p.id: p
+            for p in Project.query.filter(Project.id.in_(project_ids)).all()
+        }
+
+        # Aggregation #1 — hours logged + last worked on, grouped by project
+        time_rows = (
+            db.session.query(
+                TimeEntry.project_id,
+                db.func.coalesce(db.func.sum(TimeEntry.duration_seconds), 0),
+                db.func.max(TimeEntry.clock_out),
+            )
+            .filter(
+                TimeEntry.user_id == user.id,
+                TimeEntry.project_id.in_(project_ids),
+                TimeEntry.status != "voided",
+            )
+            .group_by(TimeEntry.project_id)
+            .all()
+        )
+        time_map = {
+            pid: {
+                "hours_logged": round(float(total_seconds or 0) / 3600.0, 2),
+                "last_worked_on": (
+                    last_clock_out.isoformat() + "Z" if last_clock_out else None
+                ),
+            }
+            for pid, total_seconds, last_clock_out in time_rows
+        }
+
+        # Aggregation #2 — tasks touched by this user, grouped by project.
+        # Only meaningful if we have an osm_username to match tasks against.
+        task_map = {}
+        if user.osm_username:
+            task_rows = (
+                db.session.query(Task.project_id, db.func.count(Task.id))
+                .filter(
+                    Task.mapped_by == user.osm_username,
+                    Task.project_id.in_(project_ids),
+                )
+                .group_by(Task.project_id)
+                .all()
+            )
+            task_map = {pid: count for pid, count in task_rows}
+
         result = []
         for pid in project_ids:
             p = projects.get(pid)
-            if p:
-                result.append({
-                    "id": p.id,
-                    "name": p.name,
-                    "short_name": p.short_name,
-                    "source": p.source,
-                    "status": p.status,
-                })
+            if not p:
+                continue
+            t = time_map.get(pid, {"hours_logged": 0.0, "last_worked_on": None})
+            result.append({
+                "id": p.id,
+                "name": p.name,
+                "short_name": p.short_name,
+                "source": p.source,
+                "status": p.status,
+                "hours_logged": t["hours_logged"],
+                "last_worked_on": t["last_worked_on"],
+                "task_count": task_map.get(pid, 0),
+            })
         return result
 
     @requires_admin
