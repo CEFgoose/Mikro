@@ -163,9 +163,14 @@ export default function TranscribePage() {
             });
           }
         } else {
-          if (data.startedAt) {
-            const startedMs = Date.parse(data.startedAt);
-            if (Number.isFinite(startedMs)) setServerStartedAt(startedMs);
+          // Prefer startedAt (moment worker picked up the job) but fall
+          // back to createdAt (moment upload completed) so the UI never
+          // shows "elapsed 0s" just because one field is missing in the
+          // response. Only set once — we want the earliest known value.
+          const timeIso = data.startedAt ?? data.createdAt;
+          if (timeIso && !serverStartedAt) {
+            const ms = Date.parse(timeIso);
+            if (Number.isFinite(ms)) setServerStartedAt(ms);
           }
           const newProgress = data.progress || 0;
           if (newProgress !== segmentCount) {
@@ -412,8 +417,12 @@ export default function TranscribePage() {
     }
 
     // Making progress. Report throughput. Flag if segments have stalled.
-    const stalled = sinceLastProgressMs > 2 * 60_000;
-    const verySlow = sinceLastProgressMs > 5 * 60_000;
+    // Chunked architecture emits segments streaming within a 5-min chunk,
+    // then pauses ~30-90s at the boundary while the next chunk's first
+    // whisper forward-pass runs. Thresholds below tolerate that gap;
+    // anything beyond it is actually suspicious.
+    const stalled = sinceLastProgressMs > 4 * 60_000;
+    const verySlow = sinceLastProgressMs > 10 * 60_000;
     if (verySlow) {
       return {
         kind: "error",
@@ -424,8 +433,8 @@ export default function TranscribePage() {
     if (stalled) {
       return {
         kind: "warn",
-        label: `Transcribing slowly — last segment ${formatElapsed(sinceLastProgressMs)} ago`,
-        subtitle: `${segmentCount} segments · elapsed ${formatElapsed(elapsedMs)}${rateText()}`,
+        label: `Possible stall — last segment ${formatElapsed(sinceLastProgressMs)} ago`,
+        subtitle: `${segmentCount} segments · elapsed ${formatElapsed(elapsedMs)}${rateText()} · inter-chunk pauses up to ~2 min are normal`,
       };
     }
     return {
