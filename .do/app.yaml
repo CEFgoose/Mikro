@@ -116,7 +116,10 @@ services:
         value: http://mikro-backend:8080
 
 workers:
-  # Background worker - nightly task sync, element analysis, MR backfill
+  # Background worker - nightly task sync, element analysis, MR backfill,
+  # and long-audio transcription (Whisper). 2GB keeps the whisper model
+  # (~500MB) plus audio-chunk buffers (~20MB each) plus Flask overhead
+  # well clear of the OOM line even on hour-plus recordings.
   - name: mikro-worker
     github:
       repo: CEFgoose/Mikro
@@ -125,7 +128,7 @@ workers:
     source_dir: backend
     environment_slug: python
     instance_count: 1
-    instance_size_slug: professional-xs
+    instance_size_slug: professional-s
     run_command: python -m api.worker
     envs:
       # Database

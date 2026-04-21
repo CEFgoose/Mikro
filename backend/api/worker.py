@@ -803,74 +803,87 @@ def run_transcription_job(app, job):
             model = run_transcription_job._model
 
             # ────────────────────────────────────────────────────────
-            # Chunked transcription path.
+            # Streaming chunked transcription with auto-resume.
             #
-            # For long audio (1 hour+) calling model.transcribe(path) once
-            # forces faster-whisper to decode the whole file AND run VAD
-            # over all of it before emitting the first segment. That's
-            # where jobs silently hung for hours with progress=0.
+            # Key properties:
+            #   - Never holds the whole audio file in memory; pyav decodes
+            #     one 5-min chunk at a time via stream_audio_chunks(). This
+            #     is the fix for the OOM kills that lost in-flight jobs.
+            #   - If the job row already has segments (because a previous
+            #     worker got partway through and the process was restarted),
+            #     we RESUME from the last segment's end-timestamp instead of
+            #     starting over. Existing segments are preserved verbatim.
             #
-            # Instead we:
-            #   1. Decode once to a 16kHz mono float32 numpy array.
-            #   2. Slice into N-minute windows.
-            #   3. Call transcribe() per chunk with vad_filter=False so
-            #      each chunk returns an iterator immediately.
-            #   4. Emit + commit segments per chunk, logging chunk boundaries.
-            #
-            # Progress is now segment count across all chunks. If a single
-            # chunk hangs, the UI still shows the last completed chunk's
-            # segments and timings, making the stall much easier to see.
+            # Commit cadence remains per-segment so UI progress is live.
             # ────────────────────────────────────────────────────────
-            logger.info(f"[TRANSCRIBE] job={job.id} decoding audio to 16kHz mono...")
-            from faster_whisper.audio import decode_audio
-            decode_start = datetime.now(timezone.utc)
-            audio = decode_audio(tmp_path, sampling_rate=16000)
-            decode_elapsed = (datetime.now(timezone.utc) - decode_start).total_seconds()
-            total_samples = len(audio)
-            total_seconds = total_samples / 16000.0
+
+            # Pick up any segments already captured from a prior lifetime.
+            segments = []
+            if job.segments:
+                try:
+                    parsed = json.loads(job.segments)
+                    if isinstance(parsed, list):
+                        segments = [s for s in parsed if isinstance(s, dict)]
+                except (json.JSONDecodeError, TypeError):
+                    segments = []
+
+            resume_from_seconds = 0.0
+            if segments:
+                last_end = segments[-1].get("timeEnd", 0) or 0
+                resume_from_seconds = float(last_end)
+                logger.info(
+                    f"[TRANSCRIBE] job={job.id} RESUMING: "
+                    f"{len(segments)} segments already captured, "
+                    f"continuing from {round(resume_from_seconds, 1)}s"
+                )
+
+            total_seconds = get_audio_duration_seconds(tmp_path)
             logger.info(
-                f"[TRANSCRIBE] job={job.id} decoded: {total_samples} samples "
-                f"({round(total_seconds, 1)}s audio) in {round(decode_elapsed, 1)}s"
+                f"[TRANSCRIBE] job={job.id} audio total duration: "
+                f"{round(total_seconds, 1)}s "
+                f"(remaining after resume: "
+                f"{round(max(0, total_seconds - resume_from_seconds), 1)}s)"
             )
 
             chunk_minutes = int(os.environ.get("MIKRO_TRANSCRIBE_CHUNK_MINUTES", "5"))
             chunk_seconds = chunk_minutes * 60
-            chunk_samples = chunk_seconds * 16000
-            num_chunks = max(1, (total_samples + chunk_samples - 1) // chunk_samples)
             logger.info(
-                f"[TRANSCRIBE] job={job.id} splitting into {num_chunks} "
-                f"chunks of up to {chunk_minutes} min each "
+                f"[TRANSCRIBE] job={job.id} streaming "
+                f"{chunk_minutes}-min chunks "
                 f"(vad_filter=False, beam_size={beam_size})"
             )
 
-            segments = []
             cancelled = False
+            chunk_idx = 0
 
-            for chunk_idx in range(num_chunks):
+            for chunk_offset, chunk_audio in stream_audio_chunks(
+                tmp_path,
+                chunk_seconds=chunk_seconds,
+                sampling_rate=16000,
+                skip_seconds=resume_from_seconds,
+            ):
+                chunk_idx += 1
+
                 # Cancellation check at chunk boundary
                 db.session.refresh(job)
                 if job.status != "transcribing":
                     logger.info(
                         f"[TRANSCRIBE] job={job.id} status changed to "
-                        f"'{job.status}' before chunk {chunk_idx + 1}/{num_chunks} — bailing"
+                        f"'{job.status}' before chunk {chunk_idx} — bailing"
                     )
                     cancelled = True
                     break
 
-                start_sample = chunk_idx * chunk_samples
-                end_sample = min(start_sample + chunk_samples, total_samples)
-                offset_seconds = start_sample / 16000.0
-                chunk = audio[start_sample:end_sample]
-
+                chunk_len_sec = float(len(chunk_audio)) / 16000.0
                 chunk_start_time = datetime.now(timezone.utc)
                 logger.info(
-                    f"[TRANSCRIBE] job={job.id} chunk {chunk_idx + 1}/{num_chunks} "
-                    f"starting (offset {round(offset_seconds, 1)}s, "
-                    f"length {round(len(chunk) / 16000.0, 1)}s)"
+                    f"[TRANSCRIBE] job={job.id} chunk {chunk_idx} starting "
+                    f"(offset {round(chunk_offset, 1)}s, length "
+                    f"{round(chunk_len_sec, 1)}s)"
                 )
 
                 seg_iter, _info = model.transcribe(
-                    chunk,
+                    chunk_audio,
                     language="en",
                     beam_size=beam_size,
                     vad_filter=False,
@@ -878,8 +891,6 @@ def run_transcription_job(app, job):
 
                 chunk_segment_count = 0
                 for seg in seg_iter:
-                    # Cancellation check between per-chunk segments too —
-                    # lets a long chunk still be interrupted promptly.
                     if chunk_segment_count % 10 == 0:
                         db.session.refresh(job)
                         if job.status != "transcribing":
@@ -890,12 +901,11 @@ def run_transcription_job(app, job):
                             cancelled = True
                             break
                     segments.append({
-                        "timeStart": round(seg.start + offset_seconds, 2),
-                        "timeEnd": round(seg.end + offset_seconds, 2),
+                        "timeStart": round(seg.start + chunk_offset, 2),
+                        "timeEnd": round(seg.end + chunk_offset, 2),
                         "text": seg.text.strip(),
                     })
                     chunk_segment_count += 1
-                    # Commit every segment so UI updates in near-real-time
                     job.progress = len(segments)
                     job.segments = json.dumps(segments)
                     db.session.commit()
@@ -907,8 +917,8 @@ def run_transcription_job(app, job):
                     datetime.now(timezone.utc) - chunk_start_time
                 ).total_seconds()
                 logger.info(
-                    f"[TRANSCRIBE] job={job.id} chunk {chunk_idx + 1}/{num_chunks} "
-                    f"done: {chunk_segment_count} segments in "
+                    f"[TRANSCRIBE] job={job.id} chunk {chunk_idx} done: "
+                    f"{chunk_segment_count} segments in "
                     f"{round(chunk_elapsed, 1)}s "
                     f"(running total: {len(segments)} segments)"
                 )
@@ -924,11 +934,13 @@ def run_transcription_job(app, job):
             job.duration = round(total_seconds, 1)
             job.progress = len(segments)
             job.completed_at = datetime.now(timezone.utc)
+            # Clear any leftover resume message from a previous lifetime
+            job.error = None
             db.session.commit()
 
             logger.info(
                 f"[TRANSCRIBE] job={job.id} COMPLETED: "
-                f"{len(segments)} segments from {num_chunks} chunks, "
+                f"{len(segments)} segments from {chunk_idx} chunks, "
                 f"{round(total_seconds, 1)}s audio, "
                 f"text length={len(full_text)} chars"
             )
@@ -969,26 +981,123 @@ def run_transcription_job(app, job):
             db.session.rollback()
 
 
+def get_audio_duration_seconds(file_path):
+    """Return the total audio duration in seconds using pyav metadata."""
+    import av
+
+    container = av.open(file_path)
+    try:
+        if container.duration:
+            return float(container.duration) / av.time_base
+        streams = container.streams.audio
+        if streams and streams[0].duration:
+            ts = streams[0].duration
+            tb = streams[0].time_base
+            return float(ts * tb) if ts and tb else 0.0
+        return 0.0
+    finally:
+        container.close()
+
+
+def stream_audio_chunks(file_path, chunk_seconds, sampling_rate=16000, skip_seconds=0.0):
+    """
+    Generator yielding (offset_seconds, mono_float32_numpy_array) tuples for
+    consecutive audio chunks of up to chunk_seconds each, starting at
+    skip_seconds into the file. Memory footprint stays bounded at roughly
+    one chunk's worth of samples, NOT the whole audio file — critical for
+    long recordings on constrained pods.
+
+    Uses pyav (bundled with faster-whisper) to decode + resample + slice on
+    the fly.
+    """
+    import av
+    import numpy as np
+
+    container = av.open(file_path)
+    try:
+        audio_stream = container.streams.audio[0]
+
+        if skip_seconds > 0 and audio_stream.time_base:
+            # pyav seeks to the nearest keyframe BEFORE the target, so we
+            # filter post-seek to drop frames we don't want.
+            target_pts = int(float(skip_seconds) / float(audio_stream.time_base))
+            try:
+                container.seek(target_pts, stream=audio_stream)
+            except av.AVError:
+                # Unseekable container — just iterate from start and skip.
+                pass
+
+        resampler = av.AudioResampler(
+            format="flt",
+            layout="mono",
+            rate=sampling_rate,
+        )
+
+        chunk_samples = int(chunk_seconds * sampling_rate)
+        buffer_arrays = []
+        buffer_samples = 0
+        current_offset = float(skip_seconds)
+
+        for frame in container.decode(audio_stream):
+            # Discard frames that end before our resume point (seek imprecise)
+            if frame.pts is not None and audio_stream.time_base:
+                frame_start = float(frame.pts * audio_stream.time_base)
+                frame_dur = 0.0
+                if frame.samples and frame.sample_rate:
+                    frame_dur = float(frame.samples) / float(frame.sample_rate)
+                if frame_start + frame_dur <= skip_seconds:
+                    continue
+
+            for out in resampler.resample(frame):
+                arr = out.to_ndarray().reshape(-1).astype(np.float32)
+                if arr.shape[0] > 0:
+                    buffer_arrays.append(arr)
+                    buffer_samples += arr.shape[0]
+
+            while buffer_samples >= chunk_samples:
+                combined = np.concatenate(buffer_arrays)
+                yield (current_offset, combined[:chunk_samples].astype(np.float32))
+                remainder = combined[chunk_samples:]
+                buffer_arrays = [remainder] if remainder.shape[0] > 0 else []
+                buffer_samples = remainder.shape[0]
+                current_offset += chunk_seconds
+
+        # Flush any frames the resampler is holding
+        try:
+            for out in resampler.resample(None):
+                arr = out.to_ndarray().reshape(-1).astype(np.float32)
+                if arr.shape[0] > 0:
+                    buffer_arrays.append(arr)
+                    buffer_samples += arr.shape[0]
+        except (av.AVError, TypeError):
+            pass
+
+        if buffer_samples > 0:
+            yield (current_offset, np.concatenate(buffer_arrays).astype(np.float32))
+    finally:
+        container.close()
+
+
 def abandon_orphan_transcriptions(app):
     """
     On worker startup, any TranscriptionJob in status='transcribing' is a
     zombie — the worker process that was running it is dead (restart,
-    redeploy, OOM, etc.). The new worker has no way to resume mid-chunk,
-    so leaving the row in 'transcribing' makes the UI hang indefinitely.
+    redeploy, OOM, etc.).
 
-    Two outcomes, depending on how much work survived:
+    Strategy:
+      - progress > 0: REQUEUE the job. The Spaces audio file is still
+        available (we only delete it on successful completion), the
+        existing segments are stored in job.segments, so the worker's
+        run_transcription_job() will notice the existing segments on
+        pickup and RESUME from the timestamp of the last segment.
+        No work is discarded, no user intervention needed.
+      - progress == 0: mark as error (nothing useful to resume from).
+        Frontend auto-drop cleans it out of the library.
 
-      - If any segments were committed to the DB (progress > 0):
-        PROMOTE the job to status='done' with the partial segments as its
-        text, prefix the title with [PARTIAL] so the user knows. No work
-        is ever discarded — a hour-long transcription that got to 297
-        segments keeps those 297 segments even if the worker died at 298.
-
-      - If nothing was captured (progress == 0):
-        mark as error — there's literally nothing to preserve.
-
-    Frontend's auto-drop only fires on 'error' status, so preserved
-    partials stay in the library.
+    Unlike the previous version of this function, preserved jobs do NOT
+    get promoted to 'done' — they go back to 'queued' so the worker
+    will finish them. The user only sees 'done' when the transcription
+    is actually complete end-to-end (possibly after several restarts).
     """
     import json
     with app.app_context():
@@ -1000,48 +1109,36 @@ def abandon_orphan_transcriptions(app):
             if not orphans:
                 return
 
-            preserved = 0
+            requeued = 0
             discarded = 0
             for job in orphans:
                 progress = job.progress or 0
-                segments = []
+                has_segments = False
+                last_end = 0.0
                 if job.segments:
                     try:
                         parsed = json.loads(job.segments)
-                        if isinstance(parsed, list):
-                            segments = parsed
+                        if isinstance(parsed, list) and parsed:
+                            has_segments = True
+                            last = parsed[-1]
+                            if isinstance(last, dict):
+                                last_end = float(last.get("timeEnd", 0) or 0)
                     except (json.JSONDecodeError, TypeError):
-                        segments = []
+                        pass
 
-                if segments:
-                    # Preserve partial work as a completed transcript.
-                    full_text = " ".join(
-                        (s.get("text", "") if isinstance(s, dict) else "")
-                        for s in segments
-                    ).strip()
-                    last_seg = segments[-1] if isinstance(segments[-1], dict) else {}
-                    last_end = last_seg.get("timeEnd", 0) or 0
-                    original_title = job.title or job.file_name or job.id
-                    if not str(original_title).startswith("[PARTIAL"):
-                        job.title = f"[PARTIAL — worker restart] {original_title}"
-                    job.status = "done"
-                    job.text = full_text
-                    job.duration = float(last_end)
-                    job.progress = len(segments)
-                    job.completed_at = datetime.now(timezone.utc)
-                    # Note the interruption without clobbering segments
-                    job.error = (
-                        f"Worker restart interrupted mid-transcription. "
-                        f"Preserved the {len(segments)} segments captured so far "
-                        f"(covering ~{round(float(last_end) / 60.0, 1)} min of audio). "
-                        f"Re-upload the file if you need the full transcript."
-                    )
+                if has_segments:
+                    # Requeue for auto-resume. Keep segments + progress
+                    # intact; worker pickup will read them and continue
+                    # from the last segment's timestamp.
+                    job.status = "queued"
+                    job.started_at = None
                     logger.warning(
-                        f"[TRANSCRIBE-ORPHAN] Preserved job {job.id} as partial "
-                        f"({len(segments)} segments, {round(float(last_end), 1)}s "
-                        f"covered) — worker restart killed it."
+                        f"[TRANSCRIBE-ORPHAN] Requeued job {job.id} for "
+                        f"auto-resume ({progress} segments, "
+                        f"{round(last_end, 1)}s covered) — worker restart "
+                        f"interrupted, will pick up where it left off."
                     )
-                    preserved += 1
+                    requeued += 1
                 else:
                     job.status = "error"
                     job.error = (
@@ -1058,7 +1155,7 @@ def abandon_orphan_transcriptions(app):
             db.session.commit()
             logger.info(
                 f"[TRANSCRIBE-ORPHAN] Processed {len(orphans)} orphan job(s): "
-                f"{preserved} preserved with partial transcript, "
+                f"{requeued} requeued for auto-resume, "
                 f"{discarded} discarded (nothing captured)."
             )
         except Exception as e:
