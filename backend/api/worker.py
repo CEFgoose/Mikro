@@ -17,6 +17,7 @@ Procfile:
 """
 
 import logging
+import os
 import signal
 import sys
 import time
@@ -764,6 +765,45 @@ def run_transcription_job(app, job):
                 f"{tmp_path} ({file_size} bytes)"
             )
 
+            # Log the actual container/codec pyav sees. Browser MediaRecorder
+            # outputs are usually webm/opus while uploaded files are often
+            # m4a/mp3/wav — knowing which ones crash vs. succeed tells us
+            # immediately whether a codec path is implicated when a worker
+            # dies with no segments captured.
+            try:
+                import av
+                _probe = av.open(tmp_path)
+                try:
+                    _fmt = getattr(_probe.format, "name", "?")
+                    _streams = _probe.streams.audio
+                    if _streams:
+                        _s = _streams[0]
+                        _codec_ctx = getattr(_s, "codec_context", None)
+                        _codec = getattr(_codec_ctx, "name", "?") if _codec_ctx else "?"
+                        _sr = getattr(_s, "sample_rate", "?")
+                        _ch = getattr(_s, "channels", "?")
+                        _dur = getattr(_probe, "duration", None)
+                        _dur_s = (_dur / 1_000_000.0) if _dur else None
+                        logger.info(
+                            f"[TRANSCRIBE] job={job.id} probe: "
+                            f"container={_fmt} codec={_codec} "
+                            f"sr={_sr} ch={_ch} "
+                            f"duration={round(_dur_s, 1) if _dur_s else '?'}s "
+                            f"file_ext={ext}"
+                        )
+                    else:
+                        logger.warning(
+                            f"[TRANSCRIBE] job={job.id} probe: "
+                            f"container={_fmt} NO audio streams"
+                        )
+                finally:
+                    _probe.close()
+            except Exception as _probe_err:
+                logger.warning(
+                    f"[TRANSCRIBE] job={job.id} probe failed: {_probe_err} "
+                    f"(continuing — streaming decode will surface the real error)"
+                )
+
             # Load Whisper model
             logger.info(f"[TRANSCRIBE] job={job.id} importing faster_whisper...")
             try:
@@ -1078,26 +1118,81 @@ def stream_audio_chunks(file_path, chunk_seconds, sampling_rate=16000, skip_seco
         container.close()
 
 
+def _spaces_audio_exists(app, job):
+    """
+    HEAD the Spaces object for a TranscriptionJob to check whether the
+    audio is still available. Returns True/False, or None if we couldn't
+    even attempt the check (missing config, bad URL) — caller should
+    treat None as "unknown, don't discard the job on that basis".
+    """
+    bucket = app.config.get("DO_SPACES_BUCKET")
+    endpoint = app.config.get("DO_SPACES_ENDPOINT")
+    key = app.config.get("DO_SPACES_KEY")
+    secret = app.config.get("DO_SPACES_SECRET")
+    region = app.config.get("DO_SPACES_REGION")
+    if not all([bucket, endpoint, key, secret]):
+        return None
+    if not job.file_url:
+        return None
+    bucket_marker = f"/{bucket}/"
+    if bucket_marker not in job.file_url:
+        return None
+    spaces_key = job.file_url.split(bucket_marker, 1)[-1]
+    try:
+        import boto3
+        from botocore.config import Config as BotoConfig
+        from botocore.exceptions import ClientError
+        cfg = BotoConfig(
+            connect_timeout=10,
+            read_timeout=15,
+            retries={"max_attempts": 2, "mode": "standard"},
+        )
+        s3 = boto3.client(
+            "s3",
+            endpoint_url=endpoint,
+            aws_access_key_id=key,
+            aws_secret_access_key=secret,
+            region_name=region,
+            config=cfg,
+        )
+        try:
+            s3.head_object(Bucket=bucket, Key=spaces_key)
+            return True
+        except ClientError as e:
+            code = e.response.get("Error", {}).get("Code", "")
+            if code in ("404", "NoSuchKey", "NotFound"):
+                return False
+            logger.warning(
+                f"[TRANSCRIBE-ORPHAN] head_object({spaces_key}) "
+                f"returned {code}; treating as unknown."
+            )
+            return None
+    except Exception as e:
+        logger.warning(
+            f"[TRANSCRIBE-ORPHAN] Could not HEAD Spaces object for "
+            f"job {job.id}: {e}"
+        )
+        return None
+
+
 def abandon_orphan_transcriptions(app):
     """
     On worker startup, any TranscriptionJob in status='transcribing' is a
     zombie — the worker process that was running it is dead (restart,
     redeploy, OOM, etc.).
 
-    Strategy:
-      - progress > 0: REQUEUE the job. The Spaces audio file is still
-        available (we only delete it on successful completion), the
-        existing segments are stored in job.segments, so the worker's
-        run_transcription_job() will notice the existing segments on
-        pickup and RESUME from the timestamp of the last segment.
-        No work is discarded, no user intervention needed.
-      - progress == 0: mark as error (nothing useful to resume from).
-        Frontend auto-drop cleans it out of the library.
-
-    Unlike the previous version of this function, preserved jobs do NOT
-    get promoted to 'done' — they go back to 'queued' so the worker
-    will finish them. The user only sees 'done' when the transcription
-    is actually complete end-to-end (possibly after several restarts).
+    Strategy: requeue whenever we can, error only when we truly can't.
+      - progress > 0: REQUEUE. Existing segments stay intact; the worker
+        will RESUME from the last segment's end-timestamp.
+      - progress == 0 and audio still in Spaces: REQUEUE for a full retry.
+        No re-upload needed — same audio, same job, start over. This is
+        the common case after an unexpected worker restart on a fresh job.
+      - progress == 0 and audio missing (delete succeeded but row survived,
+        or Spaces creds gone): mark error.
+      - Spaces reachability unknown (config/URL problems): REQUEUE
+        optimistically — if the audio really is gone the worker will
+        surface that as an error on pickup instead of us pre-emptively
+        failing a job that might have been fine.
     """
     import json
     with app.app_context():
@@ -1109,7 +1204,8 @@ def abandon_orphan_transcriptions(app):
             if not orphans:
                 return
 
-            requeued = 0
+            requeued_resume = 0
+            requeued_restart = 0
             discarded = 0
             for job in orphans:
                 progress = job.progress or 0
@@ -1127,9 +1223,6 @@ def abandon_orphan_transcriptions(app):
                         pass
 
                 if has_segments:
-                    # Requeue for auto-resume. Keep segments + progress
-                    # intact; worker pickup will read them and continue
-                    # from the last segment's timestamp.
                     job.status = "queued"
                     job.started_at = None
                     logger.warning(
@@ -1138,25 +1231,42 @@ def abandon_orphan_transcriptions(app):
                         f"{round(last_end, 1)}s covered) — worker restart "
                         f"interrupted, will pick up where it left off."
                     )
-                    requeued += 1
-                else:
+                    requeued_resume += 1
+                    continue
+
+                audio_present = _spaces_audio_exists(app, job)
+                if audio_present is False:
                     job.status = "error"
                     job.error = (
-                        "Worker restart interrupted transcription before any "
-                        "segments were captured. Please re-upload."
+                        "Worker restart interrupted transcription and the "
+                        "uploaded audio is no longer available. Please "
+                        "re-upload."
                     )
                     job.completed_at = datetime.now(timezone.utc)
                     logger.warning(
                         f"[TRANSCRIBE-ORPHAN] Discarded job {job.id} "
-                        f"(progress=0) — killed before first segment."
+                        f"(progress=0, audio missing from Spaces)."
                     )
                     discarded += 1
+                else:
+                    # True = confirmed present; None = unknown, requeue
+                    # optimistically so the worker gets another shot.
+                    job.status = "queued"
+                    job.started_at = None
+                    job.progress = 0
+                    job.segments = None
+                    logger.warning(
+                        f"[TRANSCRIBE-ORPHAN] Requeued job {job.id} for "
+                        f"full retry (progress=0, audio "
+                        f"{'present' if audio_present else 'reachability unknown'})."
+                    )
+                    requeued_restart += 1
 
             db.session.commit()
             logger.info(
                 f"[TRANSCRIBE-ORPHAN] Processed {len(orphans)} orphan job(s): "
-                f"{requeued} requeued for auto-resume, "
-                f"{discarded} discarded (nothing captured)."
+                f"{requeued_resume} resume, {requeued_restart} retry-from-scratch, "
+                f"{discarded} discarded (audio gone)."
             )
         except Exception as e:
             logger.error(f"[TRANSCRIBE-ORPHAN] Failed to scan/abandon: {e}")
@@ -1361,12 +1471,42 @@ def main():
 
     app = create_app()
 
+    # Crash-detection marker. On clean shutdown (SIGTERM/SIGINT) we write
+    # this file; on startup we check for it. Missing file = previous
+    # lifetime ended ungracefully (OOM, segfault, forced platform restart)
+    # — log loudly so we know why orphans showed up, instead of guessing.
+    _shutdown_marker = "/tmp/mikro_worker_clean_shutdown"
+    if os.path.exists(_shutdown_marker):
+        logger.info(
+            "[LIFECYCLE] Previous worker exited cleanly (shutdown marker "
+            "present). Removing marker for this lifetime."
+        )
+        try:
+            os.remove(_shutdown_marker)
+        except OSError:
+            pass
+    else:
+        logger.warning(
+            "[LIFECYCLE] No clean-shutdown marker found — previous worker "
+            "lifetime ended UNGRACEFULLY (OOM, crash, or platform restart). "
+            "Any orphan transcriptions requeued below are a consequence of "
+            "that ungraceful exit, not a code push."
+        )
+
     # Graceful shutdown
     running = True
 
     def shutdown_handler(signum, frame):
         nonlocal running
-        logger.info("Shutdown signal received — worker exiting")
+        logger.info(
+            f"[LIFECYCLE] Shutdown signal {signum} received — "
+            f"worker exiting cleanly"
+        )
+        try:
+            with open(_shutdown_marker, "w") as f:
+                f.write(str(signum))
+        except OSError as e:
+            logger.warning(f"[LIFECYCLE] Could not write shutdown marker: {e}")
         running = False
 
     signal.signal(signal.SIGTERM, shutdown_handler)
@@ -1376,9 +1516,9 @@ def main():
     logger.info("Nightly task sync + element analysis scheduled at midnight MST (07:00 UTC)")
 
     # Any transcription in 'transcribing' status when we start was being
-    # processed by the previous worker lifetime — there's no way to resume
-    # it mid-chunk so mark it errored with a clear message. Runs before
-    # the poll loop so users get an honest error instead of a silent hang.
+    # processed by the previous worker lifetime. Decide per-job whether to
+    # resume (segments captured) or retry from scratch (audio still in
+    # Spaces) — users should rarely see "please re-upload" now.
     abandon_orphan_transcriptions(app)
 
     # Pre-load Whisper model so first transcription job doesn't wait on
