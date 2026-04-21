@@ -141,11 +141,27 @@ export default function TranscribePage() {
           setServerStartedAt(null);
           setLastProgressAt(null);
         } else if (data.jobStatus === "error") {
+          const failedJobId = data.jobId || jobId;
           setError(data.error || "Transcription failed");
           setTranscriptionStatus("idle");
           setJobId(null);
+          setCurrentJobId(null);
           setServerStartedAt(null);
           setLastProgressAt(null);
+          // Auto-drop the errored row from the DB. The user has already
+          // been notified via setError above; keeping the row around just
+          // clutters the library. Best-effort — failure here is silent.
+          if (failedJobId) {
+            setRecentJobs((prev) => prev.filter((j) => j.jobId !== failedJobId));
+            fetch("/backend/transcribe/delete", {
+              method: "POST",
+              credentials: "include",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ jobIds: [failedJobId] }),
+            }).catch(() => {
+              /* user has been notified — no need to surface a delete failure */
+            });
+          }
         } else {
           if (data.startedAt) {
             const startedMs = Date.parse(data.startedAt);
