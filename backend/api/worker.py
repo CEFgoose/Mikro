@@ -969,6 +969,50 @@ def run_transcription_job(app, job):
             db.session.rollback()
 
 
+def abandon_orphan_transcriptions(app):
+    """
+    On worker startup, any TranscriptionJob in status='transcribing' is a
+    zombie — the worker process that was running it is dead (restart,
+    redeploy, OOM, etc.). The new worker has no way to resume mid-chunk,
+    so leaving the row in 'transcribing' makes the UI hang indefinitely
+    (polling sees status=transcribing, segments stop arriving, user sees
+    'last segment X ago' forever until the 6-hour stale timer fires).
+
+    Mark them errored with an honest message so the user knows they need
+    to re-upload. The frontend's auto-drop behavior cleans them out of
+    the library once observed.
+    """
+    with app.app_context():
+        from .database import db, TranscriptionJob
+        try:
+            orphans = TranscriptionJob.query.filter_by(
+                status="transcribing"
+            ).all()
+            if not orphans:
+                return
+            for job in orphans:
+                progress = job.progress or 0
+                job.status = "error"
+                job.error = (
+                    f"Worker restart interrupted transcription after "
+                    f"{progress} segments. The audio file was consumed; "
+                    f"please re-upload to continue."
+                )
+                job.completed_at = datetime.now(timezone.utc)
+                logger.warning(
+                    f"[TRANSCRIBE-ORPHAN] Abandoning job {job.id} "
+                    f"(progress={progress}) — worker restart killed it."
+                )
+            db.session.commit()
+            logger.info(
+                f"[TRANSCRIBE-ORPHAN] Abandoned {len(orphans)} orphan "
+                f"transcription(s) from previous worker lifetime."
+            )
+        except Exception as e:
+            logger.error(f"[TRANSCRIBE-ORPHAN] Failed to scan/abandon: {e}")
+            db.session.rollback()
+
+
 def preload_whisper_model():
     """
     Pre-load the Whisper model at worker startup so the first transcription
@@ -1180,6 +1224,12 @@ def main():
 
     logger.info("Worker running — polling for sync jobs every 5 seconds")
     logger.info("Nightly task sync + element analysis scheduled at midnight MST (07:00 UTC)")
+
+    # Any transcription in 'transcribing' status when we start was being
+    # processed by the previous worker lifetime — there's no way to resume
+    # it mid-chunk so mark it errored with a clear message. Runs before
+    # the poll loop so users get an honest error instead of a silent hang.
+    abandon_orphan_transcriptions(app)
 
     # Pre-load Whisper model so first transcription job doesn't wait on
     # the 74MB HuggingFace download. Runs in background so we don't block
