@@ -898,6 +898,40 @@ def run_transcription_job(app, job):
             db.session.rollback()
 
 
+def preload_whisper_model():
+    """
+    Pre-load the Whisper model at worker startup so the first transcription
+    job doesn't pay the HuggingFace download cost (~74MB for base.en on
+    unauthenticated connections = can take minutes). Without this, the
+    model load happens inside run_transcription_job and eats into the
+    progress=0 stale-job timer.
+
+    Runs once per worker process. Failure is logged but non-fatal — the
+    first job will retry the download via the existing code path.
+    """
+    import os
+    model_size = os.environ.get("MIKRO_WHISPER_MODEL", "base.en")
+    cpu_threads = int(os.environ.get("MIKRO_WHISPER_THREADS", "4"))
+    logger.info(
+        f"[TRANSCRIBE-PRELOAD] Loading Whisper model size={model_size} "
+        f"threads={cpu_threads} (downloads from HF on first run)..."
+    )
+    try:
+        from faster_whisper import WhisperModel
+        run_transcription_job._model = WhisperModel(
+            model_size,
+            device="cpu",
+            compute_type="int8",
+            cpu_threads=cpu_threads,
+        )
+        logger.info("[TRANSCRIBE-PRELOAD] Model loaded OK, ready for jobs.")
+    except Exception as e:
+        logger.error(
+            f"[TRANSCRIBE-PRELOAD] Failed to pre-load model: {e}. "
+            f"First job will retry the download."
+        )
+
+
 def poll_for_transcription_jobs(app):
     """
     Check for queued transcription jobs and process them.
@@ -920,7 +954,11 @@ def poll_for_transcription_jobs(app):
                     #  - progress > 0 (actively emitting): genuinely slow run on
                     #    a long audio. Allow up to 6 hours of wall time.
                     progress = running.progress or 0
-                    stuck_limit = timedelta(minutes=30)
+                    # 60 min covers worst-case cold-start: model download +
+                    # audio download + first-segment latency. Worker now also
+                    # pre-loads the model on startup, so this should rarely
+                    # fire in practice — it's a fallback for truly stuck jobs.
+                    stuck_limit = timedelta(minutes=60)
                     progressing_limit = timedelta(hours=6)
                     is_stale = (
                         (progress == 0 and age > stuck_limit)
@@ -1072,11 +1110,17 @@ def main():
     logger.info("Worker running — polling for sync jobs every 5 seconds")
     logger.info("Nightly task sync + element analysis scheduled at midnight MST (07:00 UTC)")
 
+    # Pre-load Whisper model so first transcription job doesn't wait on
+    # the 74MB HuggingFace download. Runs in background so we don't block
+    # the worker loop; sync jobs can run while the model downloads.
+    import threading
+    preload_thread = threading.Thread(target=preload_whisper_model, daemon=True)
+    preload_thread.start()
+
     heartbeat_counter = 0
     last_nightly_date = None  # Track last auto-schedule date
 
     # Run transcription polling in its own thread so sync jobs don't block it
-    import threading
 
     def transcription_loop():
         logger.info("[TRANSCRIBE-THREAD] Transcription polling thread started")
