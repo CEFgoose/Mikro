@@ -974,14 +974,23 @@ def abandon_orphan_transcriptions(app):
     On worker startup, any TranscriptionJob in status='transcribing' is a
     zombie — the worker process that was running it is dead (restart,
     redeploy, OOM, etc.). The new worker has no way to resume mid-chunk,
-    so leaving the row in 'transcribing' makes the UI hang indefinitely
-    (polling sees status=transcribing, segments stop arriving, user sees
-    'last segment X ago' forever until the 6-hour stale timer fires).
+    so leaving the row in 'transcribing' makes the UI hang indefinitely.
 
-    Mark them errored with an honest message so the user knows they need
-    to re-upload. The frontend's auto-drop behavior cleans them out of
-    the library once observed.
+    Two outcomes, depending on how much work survived:
+
+      - If any segments were committed to the DB (progress > 0):
+        PROMOTE the job to status='done' with the partial segments as its
+        text, prefix the title with [PARTIAL] so the user knows. No work
+        is ever discarded — a hour-long transcription that got to 297
+        segments keeps those 297 segments even if the worker died at 298.
+
+      - If nothing was captured (progress == 0):
+        mark as error — there's literally nothing to preserve.
+
+    Frontend's auto-drop only fires on 'error' status, so preserved
+    partials stay in the library.
     """
+    import json
     with app.app_context():
         from .database import db, TranscriptionJob
         try:
@@ -990,23 +999,67 @@ def abandon_orphan_transcriptions(app):
             ).all()
             if not orphans:
                 return
+
+            preserved = 0
+            discarded = 0
             for job in orphans:
                 progress = job.progress or 0
-                job.status = "error"
-                job.error = (
-                    f"Worker restart interrupted transcription after "
-                    f"{progress} segments. The audio file was consumed; "
-                    f"please re-upload to continue."
-                )
-                job.completed_at = datetime.now(timezone.utc)
-                logger.warning(
-                    f"[TRANSCRIBE-ORPHAN] Abandoning job {job.id} "
-                    f"(progress={progress}) — worker restart killed it."
-                )
+                segments = []
+                if job.segments:
+                    try:
+                        parsed = json.loads(job.segments)
+                        if isinstance(parsed, list):
+                            segments = parsed
+                    except (json.JSONDecodeError, TypeError):
+                        segments = []
+
+                if segments:
+                    # Preserve partial work as a completed transcript.
+                    full_text = " ".join(
+                        (s.get("text", "") if isinstance(s, dict) else "")
+                        for s in segments
+                    ).strip()
+                    last_seg = segments[-1] if isinstance(segments[-1], dict) else {}
+                    last_end = last_seg.get("timeEnd", 0) or 0
+                    original_title = job.title or job.file_name or job.id
+                    if not str(original_title).startswith("[PARTIAL"):
+                        job.title = f"[PARTIAL — worker restart] {original_title}"
+                    job.status = "done"
+                    job.text = full_text
+                    job.duration = float(last_end)
+                    job.progress = len(segments)
+                    job.completed_at = datetime.now(timezone.utc)
+                    # Note the interruption without clobbering segments
+                    job.error = (
+                        f"Worker restart interrupted mid-transcription. "
+                        f"Preserved the {len(segments)} segments captured so far "
+                        f"(covering ~{round(float(last_end) / 60.0, 1)} min of audio). "
+                        f"Re-upload the file if you need the full transcript."
+                    )
+                    logger.warning(
+                        f"[TRANSCRIBE-ORPHAN] Preserved job {job.id} as partial "
+                        f"({len(segments)} segments, {round(float(last_end), 1)}s "
+                        f"covered) — worker restart killed it."
+                    )
+                    preserved += 1
+                else:
+                    job.status = "error"
+                    job.error = (
+                        "Worker restart interrupted transcription before any "
+                        "segments were captured. Please re-upload."
+                    )
+                    job.completed_at = datetime.now(timezone.utc)
+                    logger.warning(
+                        f"[TRANSCRIBE-ORPHAN] Discarded job {job.id} "
+                        f"(progress=0) — killed before first segment."
+                    )
+                    discarded += 1
+
             db.session.commit()
             logger.info(
-                f"[TRANSCRIBE-ORPHAN] Abandoned {len(orphans)} orphan "
-                f"transcription(s) from previous worker lifetime."
+                f"[TRANSCRIBE-ORPHAN] Processed {len(orphans)} orphan job(s): "
+                f"{preserved} preserved with partial transcript, "
+                f"{discarded} discarded (nothing captured)."
             )
         except Exception as e:
             logger.error(f"[TRANSCRIBE-ORPHAN] Failed to scan/abandon: {e}")
