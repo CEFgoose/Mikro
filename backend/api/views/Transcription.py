@@ -385,6 +385,9 @@ class TranscriptionAPI(MethodView):
             "jobId": job_id,
             "jobStatus": job.status,
             "progress": job.progress or 0,
+            "startedAt": job.started_at.isoformat() if job.started_at else None,
+            "createdAt": job.created_at.isoformat() if job.created_at else None,
+            "error": job.error,
             "status": 200,
         }
 
@@ -434,8 +437,10 @@ class TranscriptionAPI(MethodView):
             "text": job.text or "",
             "duration": job.duration or 0,
             "progress": job.progress or 0,
+            "startedAt": job.started_at.isoformat() if job.started_at else None,
             "createdAt": job.created_at.isoformat() if job.created_at else None,
             "completedAt": job.completed_at.isoformat() if job.completed_at else None,
+            "error": job.error,
             "status": 200,
         }
 

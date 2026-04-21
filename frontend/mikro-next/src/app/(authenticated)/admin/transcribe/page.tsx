@@ -69,6 +69,14 @@ export default function TranscribePage() {
   // jobId of the currently displayed transcript — kept even after completion
   // so AI actions can reference it. null only when the page is truly idle.
   const [currentJobId, setCurrentJobId] = useState<string | null>(null);
+  // Server-reported moment the worker picked up the job. Drives elapsed-time
+  // display and stall detection. Null during upload and before first poll.
+  const [serverStartedAt, setServerStartedAt] = useState<number | null>(null);
+  // Client clock timestamp of the last observed progress change. Used to
+  // detect stalls mid-transcription (segments stopped arriving).
+  const [lastProgressAt, setLastProgressAt] = useState<number | null>(null);
+  // Re-render tick so the elapsed-time / stall warnings update live.
+  const [nowTick, setNowTick] = useState(Date.now());
 
   // Upload progress (chunked upload)
   const [uploadBytes, setUploadBytes] = useState(0);
@@ -130,12 +138,24 @@ export default function TranscribePage() {
           setTranscribeDurationMs(Math.round((data.duration || 0) * 1000));
           // Keep currentJobId populated so AI actions can reference it.
           setJobId(null);
+          setServerStartedAt(null);
+          setLastProgressAt(null);
         } else if (data.jobStatus === "error") {
           setError(data.error || "Transcription failed");
           setTranscriptionStatus("idle");
           setJobId(null);
+          setServerStartedAt(null);
+          setLastProgressAt(null);
         } else {
-          setSegmentCount(data.progress || 0);
+          if (data.startedAt) {
+            const startedMs = Date.parse(data.startedAt);
+            if (Number.isFinite(startedMs)) setServerStartedAt(startedMs);
+          }
+          const newProgress = data.progress || 0;
+          if (newProgress !== segmentCount) {
+            setSegmentCount(newProgress);
+            setLastProgressAt(Date.now());
+          }
           if (data.segments?.length > segments.length) {
             setSegments(data.segments);
           }
@@ -146,7 +166,14 @@ export default function TranscribePage() {
     }, 3000);
 
     return () => clearInterval(interval);
-  }, [jobId, transcriptionStatus, segments.length]);
+  }, [jobId, transcriptionStatus, segments.length, segmentCount]);
+
+  // Live-updating elapsed-time tick while a transcription is running.
+  useEffect(() => {
+    if (transcriptionStatus !== "transcribing") return;
+    const t = setInterval(() => setNowTick(Date.now()), 1000);
+    return () => clearInterval(t);
+  }, [transcriptionStatus]);
 
   // Upload file via chunked multipart direct to Spaces
   const uploadFile = useCallback(async (file: File | Blob, name: string) => {
@@ -161,6 +188,8 @@ export default function TranscribePage() {
     setSegments([]);
     setFullText("");
     setSegmentCount(0);
+    setServerStartedAt(null);
+    setLastProgressAt(null);
     setUploadBytes(0);
     setUploadTotal(file.size);
     setUploadParts(0);
@@ -296,6 +325,106 @@ export default function TranscribePage() {
   };
 
   const isBusy = transcriptionStatus === "uploading" || transcriptionStatus === "transcribing";
+
+  // ─── Phase-aware status text + stall detection ────────────────────────
+  // Nothing here ever lies: each branch either reports what the worker is
+  // actually doing (based on progress + startedAt + last-change time) or
+  // flags an honest warning when the server's gone quiet.
+  const elapsedMs = serverStartedAt ? nowTick - serverStartedAt : 0;
+  const sinceLastProgressMs = lastProgressAt ? nowTick - lastProgressAt : 0;
+  const formatElapsed = (ms: number) => {
+    if (ms < 0) ms = 0;
+    const s = Math.floor(ms / 1000);
+    const m = Math.floor(s / 60);
+    const rem = s % 60;
+    if (m === 0) return `${s}s`;
+    return `${m}m ${String(rem).padStart(2, "0")}s`;
+  };
+  const rateText = () => {
+    if (segmentCount === 0 || elapsedMs < 10000) return "";
+    const perMin = (segmentCount / (elapsedMs / 60000));
+    if (!Number.isFinite(perMin) || perMin <= 0) return "";
+    return ` · ~${perMin.toFixed(1)} segments/min`;
+  };
+
+  type Phase = {
+    kind: "info" | "warn" | "error";
+    label: string;
+    subtitle?: string;
+  };
+  const computePhase = (): Phase | null => {
+    if (transcriptionStatus !== "transcribing") return null;
+
+    // Not started on server yet (haven't seen first poll response).
+    if (!serverStartedAt) {
+      return {
+        kind: "info",
+        label: "Queued — waiting for worker to pick up the job…",
+        subtitle: "Usually starts within a few seconds.",
+      };
+    }
+
+    // Progress = 0: still in pre-segment phase (download, model load, or
+    // transcribe() hasn't emitted its first segment yet).
+    if (segmentCount === 0) {
+      if (elapsedMs < 60_000) {
+        return {
+          kind: "info",
+          label: `Warming up — loading Whisper model and downloading audio…`,
+          subtitle: `Elapsed ${formatElapsed(elapsedMs)}`,
+        };
+      }
+      if (elapsedMs < 5 * 60_000) {
+        return {
+          kind: "info",
+          label: `Still warming up (${formatElapsed(elapsedMs)})`,
+          subtitle: "First job after a redeploy downloads the model (~74MB). Subsequent jobs skip this step.",
+        };
+      }
+      if (elapsedMs < 15 * 60_000) {
+        return {
+          kind: "warn",
+          label: `No segments yet after ${formatElapsed(elapsedMs)}`,
+          subtitle: "Model load or audio download might be slow. You can keep waiting, or Kill Job and retry.",
+        };
+      }
+      return {
+        kind: "error",
+        label: `Likely stuck — no progress after ${formatElapsed(elapsedMs)}`,
+        subtitle: "The stale-job watchdog will kill this at the 30-minute mark. Safe to Kill Job now and retry.",
+      };
+    }
+
+    // Making progress. Report throughput. Flag if segments have stalled.
+    const stalled = sinceLastProgressMs > 2 * 60_000;
+    const verySlow = sinceLastProgressMs > 5 * 60_000;
+    if (verySlow) {
+      return {
+        kind: "error",
+        label: `No new segments in ${formatElapsed(sinceLastProgressMs)}`,
+        subtitle: `${segmentCount} segments captured so far. Worker may be stalled — consider Kill Job.`,
+      };
+    }
+    if (stalled) {
+      return {
+        kind: "warn",
+        label: `Transcribing slowly — last segment ${formatElapsed(sinceLastProgressMs)} ago`,
+        subtitle: `${segmentCount} segments · elapsed ${formatElapsed(elapsedMs)}${rateText()}`,
+      };
+    }
+    return {
+      kind: "info",
+      label: `Transcribing — ${segmentCount} segment${segmentCount === 1 ? "" : "s"} · ${formatElapsed(elapsedMs)}${rateText()}`,
+      subtitle: "Safe to navigate away — results will be here when you come back.",
+    };
+  };
+
+  const phase = computePhase();
+  const phaseColors: Record<"info" | "warn" | "error", { bg: string; border: string; text: string; accent: string }> = {
+    info:  { bg: "#eff6ff", border: "#bfdbfe", text: "#1e40af", accent: "#004e89" },
+    warn:  { bg: "#fff7ed", border: "#fed7aa", text: "#9a3412", accent: "#ea580c" },
+    error: { bg: "#fef2f2", border: "#fca5a5", text: "#991b1b", accent: "#dc2626" },
+  };
 
   return (
     <div
@@ -444,24 +573,58 @@ export default function TranscribePage() {
 
       {/* Progress */}
       {(transcriptionStatus === "uploading" || transcriptionStatus === "transcribing") && (
-        <Card style={{ marginBottom: 20 }}>
+        <Card
+          style={{
+            marginBottom: 20,
+            borderColor: phase ? phaseColors[phase.kind].border : undefined,
+          }}
+        >
           <CardContent>
-            <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "20px 0", justifyContent: "center", flexWrap: "wrap" }}>
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#004e89" strokeWidth="2" style={{ animation: "spin 1s linear infinite" }}>
-                <path d="M21 12a9 9 0 1 1-6.219-8.56" />
-              </svg>
-              <span style={{ fontSize: 15, fontWeight: 500, color: "#555" }}>
-                {transcriptionStatus === "uploading"
-                  ? uploadTotalParts > 0
-                    ? `Uploading ${uploadParts}/${uploadTotalParts} chunks — ${formatBytes(uploadBytes)} / ${formatBytes(uploadTotal)} (${Math.round((uploadBytes / Math.max(uploadTotal, 1)) * 100)}%)`
-                    : "Preparing upload..."
-                  : `Transcribing${segmentCount > 0 ? ` (${segmentCount} segments so far)` : ""}... You can navigate away — results will be here when you come back.`}
-              </span>
+            <div
+              style={{
+                display: "flex",
+                alignItems: "flex-start",
+                gap: 12,
+                padding: "16px 0 8px",
+                flexWrap: "wrap",
+                backgroundColor: phase ? phaseColors[phase.kind].bg : undefined,
+                borderRadius: 8,
+                paddingLeft: phase ? 14 : 0,
+                paddingRight: phase ? 14 : 0,
+              }}
+            >
+              {/* Spinner only while things are healthy — for warn/error show
+                  a warning glyph instead so the UI doesn't *look* fine. */}
+              {transcriptionStatus === "uploading" || phase?.kind === "info" ? (
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={phase ? phaseColors[phase.kind].accent : "#004e89"} strokeWidth="2" style={{ animation: "spin 1s linear infinite", flexShrink: 0, marginTop: 2 }}>
+                  <path d="M21 12a9 9 0 1 1-6.219-8.56" />
+                </svg>
+              ) : (
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={phaseColors[phase!.kind].accent} strokeWidth="2" style={{ flexShrink: 0, marginTop: 2 }}>
+                  <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+                  <line x1="12" y1="9" x2="12" y2="13" />
+                  <line x1="12" y1="17" x2="12.01" y2="17" />
+                </svg>
+              )}
+              <div style={{ flex: 1, minWidth: 220 }}>
+                <div style={{ fontSize: 15, fontWeight: 500, color: phase ? phaseColors[phase.kind].text : "#333" }}>
+                  {transcriptionStatus === "uploading"
+                    ? uploadTotalParts > 0
+                      ? `Uploading ${uploadParts}/${uploadTotalParts} chunks — ${formatBytes(uploadBytes)} / ${formatBytes(uploadTotal)} (${Math.round((uploadBytes / Math.max(uploadTotal, 1)) * 100)}%)`
+                      : "Preparing upload..."
+                    : phase?.label ?? "Transcribing…"}
+                </div>
+                {transcriptionStatus === "transcribing" && phase?.subtitle && (
+                  <div style={{ fontSize: 12, color: phase ? phaseColors[phase.kind].text : "#888", marginTop: 4, opacity: 0.85 }}>
+                    {phase.subtitle}
+                  </div>
+                )}
+              </div>
               {transcriptionStatus === "uploading" && (
                 <Button
                   variant="outline"
                   onClick={cancelUpload}
-                  style={{ fontSize: 12, padding: "4px 12px" }}
+                  style={{ fontSize: 12, padding: "4px 12px", flexShrink: 0 }}
                 >
                   Cancel
                 </Button>
@@ -470,7 +633,7 @@ export default function TranscribePage() {
                 <Button
                   variant="outline"
                   onClick={cancelTranscription}
-                  style={{ fontSize: 12, padding: "4px 12px", color: "#dc2626", borderColor: "#fca5a5" }}
+                  style={{ fontSize: 12, padding: "4px 12px", color: "#dc2626", borderColor: "#fca5a5", flexShrink: 0 }}
                 >
                   Kill job
                 </Button>
