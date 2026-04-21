@@ -47,6 +47,7 @@ export function SidebarClock() {
   const [showConfirmation, setShowConfirmation] = useState(false);
   const [selectedTopic, setSelectedTopic] = useState("");
   const [selectedProject, setSelectedProject] = useState("");
+  const [projectSearch, setProjectSearch] = useState("");
   const [projectDescription, setProjectDescription] = useState("");
   const [todaySeconds, setTodaySeconds] = useState(0);
   const { mutate: fetchHistory } = useFetchMyTimeHistory();
@@ -56,6 +57,18 @@ export function SidebarClock() {
       id: p.id,
       name: p.name,
     })) ?? [];
+
+  // Filter list by search query. If the current selection no longer
+  // matches the filter, keep it visible so the dropdown still shows
+  // what's selected — avoids confusing "where did my choice go?" state.
+  const filteredProjectList = projectSearch.trim()
+    ? projectList.filter((p) => {
+        const q = projectSearch.toLowerCase();
+        if (p.name.toLowerCase().includes(q)) return true;
+        if (selectedProject && p.id.toString() === selectedProject) return true;
+        return false;
+      })
+    : projectList;
 
   const needsProject = topicRequiresProject(selectedTopic);
 
@@ -130,6 +143,7 @@ export function SidebarClock() {
       setElapsedSeconds(0);
       setSelectedTopic("");
       setSelectedProject("");
+      setProjectSearch("");
       setProjectDescription("");
       window.dispatchEvent(new Event("clock-state-changed"));
     } catch {
@@ -158,6 +172,7 @@ export function SidebarClock() {
   useEffect(() => {
     if (selectedTopic && !topicRequiresProject(selectedTopic)) {
       setSelectedProject("");
+      setProjectSearch("");
     }
     if (selectedTopic !== "project_creation") {
       setProjectDescription("");
@@ -286,18 +301,41 @@ export function SidebarClock() {
           ))}
         </select>
         {needsProject && (
-          <select
-            style={selectStyle}
-            value={selectedProject}
-            onChange={(e) => setSelectedProject(e.target.value)}
-          >
-            <option value="">Project...</option>
-            {projectList.map((p) => (
-              <option key={p.id} value={p.id.toString()}>
-                {p.name}
+          <>
+            <input
+              type="text"
+              style={{
+                ...selectStyle,
+                fontStyle: projectSearch ? "normal" : "italic",
+              }}
+              value={projectSearch}
+              onChange={(e) => setProjectSearch(e.target.value)}
+              placeholder={
+                projectList.length > 5
+                  ? `Search ${projectList.length} projects...`
+                  : "Search projects..."
+              }
+              aria-label="Search projects"
+            />
+            <select
+              style={selectStyle}
+              value={selectedProject}
+              onChange={(e) => setSelectedProject(e.target.value)}
+            >
+              <option value="">
+                {filteredProjectList.length === 0
+                  ? "No matching projects"
+                  : projectSearch.trim()
+                  ? `Project (${filteredProjectList.length} match${filteredProjectList.length === 1 ? "" : "es"})...`
+                  : "Project..."}
               </option>
-            ))}
-          </select>
+              {filteredProjectList.map((p) => (
+                <option key={p.id} value={p.id.toString()}>
+                  {p.name}
+                </option>
+              ))}
+            </select>
+          </>
         )}
         {selectedTopic === "project_creation" && (
           <input
