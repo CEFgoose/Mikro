@@ -966,8 +966,9 @@ export default function AdminTimePage() {
                               size="sm"
                               onClick={() => handleForceClockOut(session.id)}
                               disabled={forcingClockOut}
+                              className="whitespace-nowrap"
                             >
-                              Force Clock Out
+                              Clock Out
                             </Button>
                           </td>
                         </tr>

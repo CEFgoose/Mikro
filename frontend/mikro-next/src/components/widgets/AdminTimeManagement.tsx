@@ -326,8 +326,9 @@ export function AdminTimeManagement() {
                             size="sm"
                             onClick={() => handleForceClockOut(entry.id)}
                             disabled={forcingClockOut}
+                            className="whitespace-nowrap"
                           >
-                            Force Clock Out
+                            Clock Out
                           </Button>
                         </td>
                       </tr>
