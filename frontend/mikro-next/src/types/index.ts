@@ -459,6 +459,21 @@ export interface UserProfileData {
   projects: UserProjectBreakdown[];
   assigned_projects?: AssignedProject[];
   time_entries: TimeEntry[];
+  /**
+   * Most recent name-change audit row. Added 2026-04 for debugging
+   * reports of admin-set names reverting to email. Null if the user
+   * has never had a name change recorded. Drop alongside the
+   * user_name_audits table when the regression is confirmed fixed.
+   */
+  name_last_change?: {
+    changed_at: string;
+    source: string;
+    changed_by: string | null;
+    old_first_name: string | null;
+    old_last_name: string | null;
+    new_first_name: string | null;
+    new_last_name: string | null;
+  } | null;
 }
 
 export interface UserProfileResponse {
