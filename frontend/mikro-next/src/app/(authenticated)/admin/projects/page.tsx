@@ -82,7 +82,9 @@ const defaultFormData: ProjectFormData = {
   validation_rate: "0.05",
   max_editors: "5",
   max_validators: "3",
-  visibility: true,
+  // Private by default — only assigned users + teams see the project
+  // until an admin explicitly opts in to publicity.
+  visibility: false,
   difficulty: "Medium",
   status: true,
   payments_enabled: true,
@@ -342,7 +344,7 @@ export default function AdminProjectsPage() {
       validation_rate: project.validation_rate_per_task.toString(),
       max_editors: project.max_editors?.toString() ?? "5",
       max_validators: project.max_validators?.toString() ?? "3",
-      visibility: project.visibility ?? true,
+      visibility: project.visibility ?? false,
       difficulty: project.difficulty ?? "Medium",
       status: project.status ?? true,
       payments_enabled: project.payments_enabled ?? true,
@@ -1004,17 +1006,22 @@ export default function AdminProjectsPage() {
                     onChange={(e) => handleInputChange("max_validators", e.target.value)}
                   />
                 </div>
-                <div className="flex items-center gap-2">
-                  <input
-                    type="checkbox"
-                    id="add-visibility"
-                    checked={formData.visibility}
-                    onChange={(e) => handleInputChange("visibility", e.target.checked)}
-                    className="rounded border-input"
-                  />
-                  <label htmlFor="add-visibility" className="text-sm">
-                    Visible to users
-                  </label>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      id="add-visibility"
+                      checked={formData.visibility}
+                      onChange={(e) => handleInputChange("visibility", e.target.checked)}
+                      className="rounded border-input"
+                    />
+                    <label htmlFor="add-visibility" className="text-sm font-medium">
+                      Publicly visible
+                    </label>
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-1 ml-6">
+                    If checked, anyone in the org can see this project. If unchecked, only assigned users and teams can see it.
+                  </p>
                 </div>
                 <div className="border-t border-border pt-4">
                   <Button variant="outline" onClick={handleCalculateBudget} className="w-full">
@@ -1254,18 +1261,23 @@ export default function AdminProjectsPage() {
                   { value: "Hard", label: "Hard" },
                 ]}
               />
-              <div className="flex items-center gap-4">
-                <div className="flex items-center gap-2">
-                  <input
-                    type="checkbox"
-                    id="edit-visibility"
-                    checked={formData.visibility}
-                    onChange={(e) => handleInputChange("visibility", e.target.checked)}
-                    className="rounded border-input"
-                  />
-                  <label htmlFor="edit-visibility" className="text-sm">
-                    Visible to users
-                  </label>
+              <div className="space-y-3">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      id="edit-visibility"
+                      checked={formData.visibility}
+                      onChange={(e) => handleInputChange("visibility", e.target.checked)}
+                      className="rounded border-input"
+                    />
+                    <label htmlFor="edit-visibility" className="text-sm font-medium">
+                      Publicly visible
+                    </label>
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-1 ml-6">
+                    If checked, anyone in the org can see this project. If unchecked, only assigned users and teams can see it.
+                  </p>
                 </div>
                 <div className="flex items-center gap-2">
                   <input
@@ -1275,7 +1287,7 @@ export default function AdminProjectsPage() {
                     onChange={(e) => handleInputChange("status", e.target.checked)}
                     className="rounded border-input"
                   />
-                  <label htmlFor="edit-status" className="text-sm">
+                  <label htmlFor="edit-status" className="text-sm font-medium">
                     Active
                   </label>
                 </div>
