@@ -28,12 +28,11 @@ export function buildTranscriptText(
   segments: TranscriptionSegment[],
   fullText: string,
 ): string {
-  if (segments.length === 0) return fullText || "";
-  const header = "Transcript\n──────────\n\n";
-  const lines = segments.map(
-    (s) => `[${formatTimestamp(s.timeStart)} → ${formatTimestamp(s.timeEnd)}] ${s.text}`,
-  );
-  return header + lines.join("\n");
+  // Prefer the server-provided fullText (segments joined with spaces) —
+  // that's the cleanest narrative form. Fall back to reassembling from
+  // segments only if fullText is empty for some reason.
+  if (fullText && fullText.trim().length > 0) return fullText;
+  return segments.map((s) => s.text).join(" ");
 }
 
 export function downloadTranscriptTxt(
@@ -69,61 +68,33 @@ export async function downloadTranscriptPdf(
   doc.text(displayName, MARGIN_X, cursorY);
   cursorY += LINE_HEIGHT * 1.5;
 
-  // Subtitle (segment count / date)
+  // Export stamp
   doc.setFont("helvetica", "normal");
   doc.setFontSize(9);
   doc.setTextColor(120);
-  doc.text(
-    `${segments.length} segment${segments.length === 1 ? "" : "s"}  •  ` +
-      `Exported ${new Date().toLocaleString()}`,
-    MARGIN_X,
-    cursorY,
-  );
+  doc.text(`Exported ${new Date().toLocaleString()}`, MARGIN_X, cursorY);
   cursorY += LINE_HEIGHT * 1.5;
   doc.setTextColor(0);
 
-  doc.setFontSize(10);
+  // Body — plain wrapped text, no per-segment timestamp lines. Keeps
+  // the PDF at readable-document size rather than doubling it with
+  // machine-readable markup that has no value in a PDF export.
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(11);
 
-  const emitLine = (text: string, opts?: { bold?: boolean; color?: [number, number, number] }) => {
+  const body =
+    fullText && fullText.trim().length > 0
+      ? fullText
+      : segments.map((s) => s.text).join(" ");
+
+  const wrapped: string[] = doc.splitTextToSize(body, usableW);
+  for (const line of wrapped) {
     if (cursorY > pageH - MARGIN_BOTTOM) {
       doc.addPage();
       cursorY = MARGIN_TOP;
     }
-    if (opts?.bold) {
-      doc.setFont("helvetica", "bold");
-    } else {
-      doc.setFont("helvetica", "normal");
-    }
-    if (opts?.color) {
-      doc.setTextColor(opts.color[0], opts.color[1], opts.color[2]);
-    } else {
-      doc.setTextColor(0);
-    }
-    doc.text(text, MARGIN_X, cursorY);
+    doc.text(line, MARGIN_X, cursorY);
     cursorY += LINE_HEIGHT;
-  };
-
-  const content = segments.length > 0 ? segments : null;
-
-  if (content) {
-    for (const seg of content) {
-      // Timestamp line in blue
-      emitLine(`[${formatTimestamp(seg.timeStart)} → ${formatTimestamp(seg.timeEnd)}]`, {
-        bold: true,
-        color: [0, 78, 137],
-      });
-      // Wrapped body text
-      const wrapped: string[] = doc.splitTextToSize(seg.text.trim(), usableW);
-      for (const line of wrapped) {
-        emitLine(line);
-      }
-      cursorY += LINE_HEIGHT * 0.3;
-    }
-  } else if (fullText) {
-    const wrapped: string[] = doc.splitTextToSize(fullText, usableW);
-    for (const line of wrapped) {
-      emitLine(line);
-    }
   }
 
   doc.save(`${sanitizeFilename(displayName)}.pdf`);
