@@ -216,7 +216,7 @@ Create `~/.claude/notification-config.json`:
     {
       "name": "Viewer",
       "trello_board_id": "64fa566d6d50780e7642d287",
-      "codebase_path": "/Users/goose/Documents/PROJECTS/KAART/Viewer",
+      "codebase_path": "/Users/goose/Documents/PROJECTS/KAART/viewer 2/viewer-2-0",
       "recipients": ["goose@kaart.com"]
     }
   ]

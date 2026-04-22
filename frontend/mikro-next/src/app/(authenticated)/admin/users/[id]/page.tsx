@@ -54,6 +54,7 @@ import type {
 import { formatNumber, formatCurrency } from "@/lib/utils";
 import { RecentActivityCard } from "@/components/admin/RecentActivityCard";
 import { AssignedProjectsTable } from "@/components/admin/AssignedProjectsTable";
+import { openChangesetInJosm, zoomToChangeset } from "@/lib/josmRemoteControl";
 
 const MappingHeatmap = dynamic(() => import("@/components/MappingHeatmap"), {
   ssr: false,
@@ -208,6 +209,15 @@ export default function UserProfilePage() {
   const [heatmapPoints, setHeatmapPoints] = useState<
     [number, number, number][]
   >([]);
+
+  // Follow-in-JOSM — when the admin toggles this, every click on a
+  // changeset row fires a zoom command to their running JOSM instance
+  // in the background. Port of Viewer's followInJosm pattern. Last-ID
+  // is tracked so re-renders don't re-fire the same zoom.
+  const [followInJosm, setFollowInJosm] = useState(false);
+  const [lastFollowedChangesetId, setLastFollowedChangesetId] = useState<
+    number | null
+  >(null);
 
   // Full edit modal state
   const [editModalOpen, setEditModalOpen] = useState(false);
@@ -1369,16 +1379,34 @@ export default function UserProfilePage() {
         {/* Changeset Analysis */}
         <Card className="mb-6">
           <CardHeader>
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between flex-wrap gap-2">
               <CardTitle>Changeset Analysis</CardTitle>
-              {changesets.length > 0 && (
-                <button
-                  onClick={exportChangesetsCSV}
-                  className="px-3 py-1.5 bg-muted text-muted-foreground hover:bg-muted/80 rounded-lg text-sm font-medium transition-colors"
-                >
-                  Export CSV
-                </button>
-              )}
+              <div className="flex items-center gap-3">
+                {/* Follow-in-JOSM toggle — when on, clicking a row zooms
+                    JOSM to that changeset automatically. Mirrors Viewer's
+                    same-named feature. */}
+                <label className="flex items-center gap-2 text-xs text-muted-foreground select-none cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={followInJosm}
+                    onChange={(e) => {
+                      setFollowInJosm(e.target.checked);
+                      if (!e.target.checked) setLastFollowedChangesetId(null);
+                    }}
+                    className="rounded border-input"
+                    title="When on, each row click zooms your running JOSM instance to that changeset"
+                  />
+                  <span>Follow in JOSM</span>
+                </label>
+                {changesets.length > 0 && (
+                  <button
+                    onClick={exportChangesetsCSV}
+                    className="px-3 py-1.5 bg-muted text-muted-foreground hover:bg-muted/80 rounded-lg text-sm font-medium transition-colors"
+                  >
+                    Export CSV
+                  </button>
+                )}
+              </div>
             </div>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -1473,17 +1501,85 @@ export default function UserProfilePage() {
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-border bg-card">
-                      {displayedChangesets.map((cs) => (
-                        <tr key={cs.id}>
+                      {displayedChangesets.map((cs) => {
+                        const canZoomJosm = cs.centroid !== null;
+                        const handleRowClick = () => {
+                          if (!followInJosm) return;
+                          if (lastFollowedChangesetId === cs.id) return;
+                          setLastFollowedChangesetId(cs.id);
+                          // Fire and forget — silent on failure, same as
+                          // Viewer's pattern.
+                          zoomToChangeset(cs).catch(() => {});
+                        };
+                        return (
+                        <tr
+                          key={cs.id}
+                          onClick={handleRowClick}
+                          className={
+                            followInJosm && lastFollowedChangesetId === cs.id
+                              ? "bg-kaart-orange/5"
+                              : undefined
+                          }
+                        >
                           <td className="px-4 py-2">
-                            <a
-                              href={`https://www.openstreetmap.org/changeset/${cs.id}`}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="text-kaart-orange hover:underline font-mono"
-                            >
-                              {cs.id}
-                            </a>
+                            <div className="flex items-center gap-2">
+                              <span className="font-mono text-xs text-muted-foreground">
+                                #{cs.id}
+                              </span>
+                              {/* OSM.org — opens the changeset page in a new tab */}
+                              <a
+                                href={`https://www.openstreetmap.org/changeset/${cs.id}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                onClick={(e) => e.stopPropagation()}
+                                title="Open on OpenStreetMap"
+                                className="inline-flex items-center justify-center w-6 h-6 rounded border border-border text-muted-foreground hover:text-kaart-orange hover:border-kaart-orange transition-colors"
+                                aria-label="Open changeset on OpenStreetMap"
+                              >
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-3.5 h-3.5">
+                                  <circle cx="12" cy="12" r="10" />
+                                  <path d="M2 12h20" />
+                                  <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
+                                </svg>
+                              </a>
+                              {/* JOSM — probe + zoom + import. Disabled if no centroid. */}
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  if (!canZoomJosm) return;
+                                  openChangesetInJosm(cs).catch(() => {});
+                                }}
+                                disabled={!canZoomJosm}
+                                title={
+                                  canZoomJosm
+                                    ? "Open in JOSM (requires Remote Control enabled)"
+                                    : "No bounding box available — JOSM open disabled"
+                                }
+                                className="inline-flex items-center justify-center w-6 h-6 rounded border border-border text-muted-foreground hover:text-kaart-orange hover:border-kaart-orange transition-colors disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:text-muted-foreground disabled:hover:border-border"
+                                aria-label="Open changeset in JOSM"
+                              >
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-3.5 h-3.5">
+                                  <path d="M12 20h9" />
+                                  <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z" />
+                                </svg>
+                              </button>
+                              {/* OSMCha — purpose-built changeset review tool */}
+                              <a
+                                href={`https://osmcha.org/changesets/${cs.id}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                onClick={(e) => e.stopPropagation()}
+                                title="Review on OSMCha"
+                                className="inline-flex items-center justify-center w-6 h-6 rounded border border-border text-muted-foreground hover:text-kaart-orange hover:border-kaart-orange transition-colors"
+                                aria-label="Review changeset on OSMCha"
+                              >
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-3.5 h-3.5">
+                                  <path d="M21 21l-6-6" />
+                                  <circle cx="10" cy="10" r="7" />
+                                </svg>
+                              </a>
+                            </div>
                           </td>
                           <td className="px-4 py-2 whitespace-nowrap">
                             {formatDateTime(cs.createdAt)}
@@ -1516,7 +1612,8 @@ export default function UserProfilePage() {
                             </div>
                           </td>
                         </tr>
-                      ))}
+                        );
+                      })}
                     </tbody>
                   </table>
                 </div>
