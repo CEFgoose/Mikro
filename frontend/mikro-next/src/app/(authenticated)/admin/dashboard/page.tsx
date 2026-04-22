@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
-import { Card, CardContent, CardHeader, CardTitle, Skeleton, Badge, Button, useToastActions, Tooltip, Val } from "@/components/ui";
+import { Card, CardContent, CardHeader, CardTitle, Skeleton, Badge, Button, useToastActions, Tooltip, Val, StatCardLink } from "@/components/ui";
 import { useAdminDashboardStats, useOrgTransactions, useUsersList, useOrgProjects, usePurgeTaskStats, useAdminSyncAllTasks, useCheckSyncStatus, useAdminTimeHistory, useAdminActiveSessions } from "@/hooks";
 import { TimeTrackingWidget } from "@/components/widgets/TimeTrackingWidget";
 import { AdminTimeManagement } from "@/components/widgets/AdminTimeManagement";
@@ -170,19 +170,21 @@ function DashboardStats() {
             <Tooltip content="Projects currently active across Tasking Manager and MapRoulette" position="bottom">
               <CardTitle className="text-sm font-medium">Active Projects</CardTitle>
             </Tooltip>
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth="2"
-              className="h-4 w-4 text-muted-foreground"
-            >
-              <rect width="20" height="14" x="2" y="5" rx="2" />
-              <path d="M2 10h20" />
-            </svg>
+            <StatCardLink href="/admin/projects" label="Manage projects">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="2"
+                className="h-4 w-4"
+              >
+                <rect width="20" height="14" x="2" y="5" rx="2" />
+                <path d="M2 10h20" />
+              </svg>
+            </StatCardLink>
           </CardHeader>
           <CardContent>
             {statsLoading ? (
@@ -203,20 +205,22 @@ function DashboardStats() {
             <Tooltip content="Total registered users in your organization" position="bottom">
               <CardTitle className="text-sm font-medium">Total Users</CardTitle>
             </Tooltip>
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth="2"
-              className="h-4 w-4 text-muted-foreground"
-            >
-              <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
-              <circle cx="9" cy="7" r="4" />
-              <path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" />
-            </svg>
+            <StatCardLink href="/admin/users" label="Manage users">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="2"
+                className="h-4 w-4"
+              >
+                <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+                <circle cx="9" cy="7" r="4" />
+                <path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" />
+              </svg>
+            </StatCardLink>
           </CardHeader>
           <CardContent>
             {usersLoading ? (
@@ -237,18 +241,20 @@ function DashboardStats() {
             <Tooltip content="Total mapping and validation tasks completed this calendar month" position="bottom">
               <CardTitle className="text-sm font-medium">Tasks This Month</CardTitle>
             </Tooltip>
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth="2"
-              className="h-4 w-4 text-muted-foreground"
-            >
-              <path d="M22 12h-4l-3 9L9 3l-3 9H2" />
-            </svg>
+            <StatCardLink href="/admin/reports" label="View task reports">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="2"
+                className="h-4 w-4"
+              >
+                <path d="M22 12h-4l-3 9L9 3l-3 9H2" />
+              </svg>
+            </StatCardLink>
           </CardHeader>
           <CardContent>
             {statsLoading ? (
@@ -275,10 +281,12 @@ function DashboardStats() {
             <Tooltip content="Total hours logged by all users this week (Sunday to now)" position="bottom">
               <CardTitle className="text-sm font-medium">Hours This Week</CardTitle>
             </Tooltip>
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" className="h-4 w-4 text-muted-foreground">
-              <circle cx="12" cy="12" r="10" />
-              <polyline points="12 6 12 12 16 14" />
-            </svg>
+            <StatCardLink href="/admin/time" label="View time tracking">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" className="h-4 w-4">
+                <circle cx="12" cy="12" r="10" />
+                <polyline points="12 6 12 12 16 14" />
+              </svg>
+            </StatCardLink>
           </CardHeader>
           <CardContent>
             {timeHistoryLoading ? (
@@ -299,11 +307,13 @@ function DashboardStats() {
             <Tooltip content="Time entries where a user has requested an adjustment that hasn't been resolved yet" position="bottom">
               <CardTitle className="text-sm font-medium">Pending Adjustments</CardTitle>
             </Tooltip>
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" className="h-4 w-4 text-muted-foreground">
-              <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
-              <line x1="12" y1="9" x2="12" y2="13" />
-              <line x1="12" y1="17" x2="12.01" y2="17" />
-            </svg>
+            <StatCardLink href="/admin/time" label="Review adjustment requests">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" className="h-4 w-4">
+                <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+                <line x1="12" y1="9" x2="12" y2="13" />
+                <line x1="12" y1="17" x2="12.01" y2="17" />
+              </svg>
+            </StatCardLink>
           </CardHeader>
           <CardContent>
             {timeHistoryLoading ? (
@@ -326,11 +336,13 @@ function DashboardStats() {
             <Tooltip content="Active clock-ins running longer than 10 hours — may indicate a user forgot to clock out" position="bottom">
               <CardTitle className="text-sm font-medium">Long-Running Sessions</CardTitle>
             </Tooltip>
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" className="h-4 w-4 text-muted-foreground">
-              <circle cx="12" cy="12" r="10" />
-              <line x1="12" y1="8" x2="12" y2="12" />
-              <line x1="12" y1="16" x2="12.01" y2="16" />
-            </svg>
+            <StatCardLink href="/admin/time" label="Review active sessions">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" className="h-4 w-4">
+                <circle cx="12" cy="12" r="10" />
+                <line x1="12" y1="8" x2="12" y2="12" />
+                <line x1="12" y1="16" x2="12.01" y2="16" />
+              </svg>
+            </StatCardLink>
           </CardHeader>
           <CardContent>
             {timeHistoryLoading ? (
@@ -357,10 +369,11 @@ function DashboardStats() {
       {/* Task Statistics */}
       <div className="grid gap-4 md:grid-cols-3">
         <Card>
-          <CardHeader className="pb-2">
+          <CardHeader className="flex flex-row items-start justify-between space-y-0 pb-2">
             <Tooltip content="Total tasks marked as mapped across all projects since tracking began" position="bottom">
               <CardTitle className="text-sm font-medium">Mapped Tasks (All Time)</CardTitle>
             </Tooltip>
+            <StatCardLink href="/admin/reports" label="View mapped tasks in reports" />
           </CardHeader>
           <CardContent>
             {statsLoading ? (
@@ -374,10 +387,11 @@ function DashboardStats() {
         </Card>
 
         <Card>
-          <CardHeader className="pb-2">
+          <CardHeader className="flex flex-row items-start justify-between space-y-0 pb-2">
             <Tooltip content="Tasks reviewed and approved by a validator since tracking began" position="bottom">
               <CardTitle className="text-sm font-medium">Validated Tasks (All Time)</CardTitle>
             </Tooltip>
+            <StatCardLink href="/admin/reports" label="View validated tasks in reports" />
           </CardHeader>
           <CardContent>
             {statsLoading ? (
@@ -391,10 +405,11 @@ function DashboardStats() {
         </Card>
 
         <Card>
-          <CardHeader className="pb-2">
+          <CardHeader className="flex flex-row items-start justify-between space-y-0 pb-2">
             <Tooltip content="Tasks sent back for rework after validation review since tracking began" position="bottom">
               <CardTitle className="text-sm font-medium">Invalidated Tasks (All Time)</CardTitle>
             </Tooltip>
+            <StatCardLink href="/admin/reports" label="View invalidated tasks in reports" />
           </CardHeader>
           <CardContent>
             {statsLoading ? (
@@ -411,12 +426,13 @@ function DashboardStats() {
       {/* Self-Validation Alert */}
       {stats?.self_validated_count != null && stats.self_validated_count > 0 && (
         <Card className="border-yellow-200 bg-yellow-50">
-          <CardHeader className="pb-2">
+          <CardHeader className="flex flex-row items-start justify-between space-y-0 pb-2">
             <Tooltip content="Tasks where the same user both mapped and validated — flagged as not payable to prevent abuse" position="bottom">
               <CardTitle className="text-sm font-medium text-yellow-800">
                 Self-Validation Alerts
               </CardTitle>
             </Tooltip>
+            <StatCardLink href="/admin/reports" label="View self-validation details in reports" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-yellow-700">
@@ -432,10 +448,11 @@ function DashboardStats() {
       {/* Payment Overview */}
       <div className="grid gap-4 md:grid-cols-3">
         <Card>
-          <CardHeader className="pb-2">
+          <CardHeader className="flex flex-row items-start justify-between space-y-0 pb-2">
             <Tooltip content="Total amount owed to all users based on completed tasks and payment rates" position="bottom">
               <CardTitle className="text-sm font-medium">Total Payable</CardTitle>
             </Tooltip>
+            <StatCardLink href="/admin/payments" label="View payments" />
           </CardHeader>
           <CardContent>
             {statsLoading ? (
@@ -449,10 +466,11 @@ function DashboardStats() {
         </Card>
 
         <Card>
-          <CardHeader className="pb-2">
+          <CardHeader className="flex flex-row items-start justify-between space-y-0 pb-2">
             <Tooltip content="Payment requests submitted by users awaiting admin approval" position="bottom">
               <CardTitle className="text-sm font-medium">Pending Requests</CardTitle>
             </Tooltip>
+            <StatCardLink href="/admin/payments" label="Review payment requests" />
           </CardHeader>
           <CardContent>
             {statsLoading ? (
@@ -471,10 +489,11 @@ function DashboardStats() {
         </Card>
 
         <Card>
-          <CardHeader className="pb-2">
+          <CardHeader className="flex flex-row items-start justify-between space-y-0 pb-2">
             <Tooltip content="Total amount already paid out to users" position="bottom">
               <CardTitle className="text-sm font-medium">Total Paid Out</CardTitle>
             </Tooltip>
+            <StatCardLink href="/admin/payments" label="View payments" />
           </CardHeader>
           <CardContent>
             {statsLoading ? (

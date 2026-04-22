@@ -45,3 +45,4 @@ export {
 export { Tooltip, type TooltipProps } from "./Tooltip";
 export { Val } from "./Val";
 export { StatCard } from "./StatCard";
+export { StatCardLink } from "./StatCardLink";

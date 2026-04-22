@@ -1,7 +1,7 @@
 "use client";
 
 import { useUser } from "@auth0/nextjs-auth0/client";
-import { Card, CardContent, CardHeader, CardTitle, Skeleton, Badge, Button, Val } from "@/components/ui";
+import { Card, CardContent, CardHeader, CardTitle, Skeleton, Badge, Button, Val, StatCardLink } from "@/components/ui";
 import { useUserDashboardStats, useUserProjects, useUserPayable, useSubmitPaymentRequest, useSyncUserTasks, usePaymentsVisible } from "@/hooks";
 import { TimeTrackingWidget } from "@/components/widgets/TimeTrackingWidget";
 import { UserTimeHistory } from "@/components/widgets/UserTimeHistory";
@@ -97,19 +97,21 @@ export default function UserDashboard() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Tasks Mapped</CardTitle>
-            <svg
-              className="h-4 w-4 text-muted-foreground"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-              />
-            </svg>
+            <StatCardLink href="/user/projects" label="View your projects">
+              <svg
+                className="h-4 w-4"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                />
+              </svg>
+            </StatCardLink>
           </CardHeader>
           <CardContent>
             {statsLoading ? (
@@ -130,19 +132,21 @@ export default function UserDashboard() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Tasks Validated</CardTitle>
-            <svg
-              className="h-4 w-4 text-muted-foreground"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M5 13l4 4L19 7"
-              />
-            </svg>
+            <StatCardLink href="/user/projects" label="View your projects">
+              <svg
+                className="h-4 w-4"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M5 13l4 4L19 7"
+                />
+              </svg>
+            </StatCardLink>
           </CardHeader>
           <CardContent>
             {statsLoading ? (
@@ -166,19 +170,21 @@ export default function UserDashboard() {
               <CardTitle className="text-sm font-medium">
                 {(stats?.requests_total ?? 0) > 0 ? "Available Balance" : "Payable Total"}
               </CardTitle>
-              <svg
-                className={`h-4 w-4 ${(stats?.requests_total ?? 0) > 0 ? "text-yellow-500" : "text-muted-foreground"}`}
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                />
-              </svg>
+              <StatCardLink href="/user/payments" label="View payments">
+                <svg
+                  className={`h-4 w-4 ${(stats?.requests_total ?? 0) > 0 ? "text-yellow-500" : ""}`}
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                  />
+                </svg>
+              </StatCardLink>
             </CardHeader>
             <CardContent>
               {payableLoading || statsLoading ? (
@@ -202,19 +208,21 @@ export default function UserDashboard() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Active Projects</CardTitle>
-            <svg
-              className="h-4 w-4 text-muted-foreground"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"
-              />
-            </svg>
+            <StatCardLink href="/user/projects" label="View your projects">
+              <svg
+                className="h-4 w-4"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"
+                />
+              </svg>
+            </StatCardLink>
           </CardHeader>
           <CardContent>
             {projectsLoading ? (
@@ -234,7 +242,10 @@ export default function UserDashboard() {
       {/* Earnings & Payments - Compact Row */}
       {paymentsVisible && <div style={{ display: "grid", gap: 12, gridTemplateColumns: "repeat(5, 1fr)" }} className="grid-earnings">
         <Card style={{ padding: 0 }}>
-          <div style={{ padding: "10px 14px" }}>
+          <div style={{ padding: "10px 14px", position: "relative" }}>
+            <div style={{ position: "absolute", top: 8, right: 10 }}>
+              <StatCardLink href="/user/payments" label="View payments" />
+            </div>
             <p style={{ fontSize: 11, color: "#6b7280", marginBottom: 2 }}>Mapping Earnings</p>
             {payableLoading ? (
               <Skeleton className="h-6 w-20" />
@@ -247,7 +258,10 @@ export default function UserDashboard() {
         </Card>
 
         <Card style={{ padding: 0 }}>
-          <div style={{ padding: "10px 14px" }}>
+          <div style={{ padding: "10px 14px", position: "relative" }}>
+            <div style={{ position: "absolute", top: 8, right: 10 }}>
+              <StatCardLink href="/user/payments" label="View payments" />
+            </div>
             <p style={{ fontSize: 11, color: "#6b7280", marginBottom: 2 }}>Validation Earnings</p>
             {payableLoading ? (
               <Skeleton className="h-6 w-20" />
@@ -260,7 +274,10 @@ export default function UserDashboard() {
         </Card>
 
         <Card style={{ padding: 0 }}>
-          <div style={{ padding: "10px 14px" }}>
+          <div style={{ padding: "10px 14px", position: "relative" }}>
+            <div style={{ position: "absolute", top: 8, right: 10 }}>
+              <StatCardLink href="/user/checklists" label="View your checklists" />
+            </div>
             <p style={{ fontSize: 11, color: "#6b7280", marginBottom: 2 }}>Checklist Earnings</p>
             {payableLoading ? (
               <Skeleton className="h-6 w-20" />
@@ -273,7 +290,10 @@ export default function UserDashboard() {
         </Card>
 
         <Card style={{ padding: 0 }}>
-          <div style={{ padding: "10px 14px" }}>
+          <div style={{ padding: "10px 14px", position: "relative" }}>
+            <div style={{ position: "absolute", top: 8, right: 10 }}>
+              <StatCardLink href="/user/payments" label="Review payment requests" />
+            </div>
             <p style={{ fontSize: 11, color: "#6b7280", marginBottom: 2 }}>Pending Requests</p>
             {statsLoading ? (
               <Skeleton className="h-6 w-20" />
@@ -286,7 +306,10 @@ export default function UserDashboard() {
         </Card>
 
         <Card style={{ padding: 0 }}>
-          <div style={{ padding: "10px 14px" }}>
+          <div style={{ padding: "10px 14px", position: "relative" }}>
+            <div style={{ position: "absolute", top: 8, right: 10 }}>
+              <StatCardLink href="/user/payments" label="View payments" />
+            </div>
             <p style={{ fontSize: 11, color: "#6b7280", marginBottom: 2 }}>Total Received</p>
             {statsLoading ? (
               <Skeleton className="h-6 w-20" />
