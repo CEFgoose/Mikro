@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
@@ -56,6 +56,7 @@ const CATEGORY_OPTIONS = ["mapping", "validation", "review", "training", "other"
 export function AdminTimeManagement() {
   const [activeTab, setActiveTab] = useState<"active" | "history">("active");
   const [liveDurations, setLiveDurations] = useState<Record<number, string>>({});
+  const [search, setSearch] = useState("");
   const [editingEntry, setEditingEntry] = useState<TimeEntry | null>(null);
   const [editClockIn, setEditClockIn] = useState("");
   const [editClockOut, setEditClockOut] = useState("");
@@ -89,6 +90,29 @@ export function AdminTimeManagement() {
 
   const sessions = activeSessions?.sessions || [];
   const historyEntries = historyData?.entries || [];
+
+  // Search matches userName / projectName / category. One-field design so
+  // the widget stays visually compact on the dashboard; the /admin/time
+  // page has the full FilterBar for finer-grained filtering.
+  const filteredSessions = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    if (!q) return sessions;
+    return sessions.filter((s) =>
+      (s.userName || "").toLowerCase().includes(q) ||
+      (s.projectName || "").toLowerCase().includes(q) ||
+      (s.category || "").toLowerCase().includes(q)
+    );
+  }, [sessions, search]);
+
+  const filteredHistory = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    if (!q) return historyEntries;
+    return historyEntries.filter((e) =>
+      (e.userName || "").toLowerCase().includes(q) ||
+      (e.projectName || "").toLowerCase().includes(q) ||
+      (e.category || "").toLowerCase().includes(q)
+    );
+  }, [historyEntries, search]);
 
   // Refetch when sidebar clock or time widget triggers a state change
   useEffect(() => {
@@ -258,7 +282,7 @@ export function AdminTimeManagement() {
                       : "text-muted-foreground hover:text-foreground"
                   }`}
                 >
-                  Active Sessions ({sessions.length})
+                  Active Sessions ({search.trim() ? `${filteredSessions.length}/${sessions.length}` : sessions.length})
                 </button>
                 <button
                   onClick={() => setActiveTab("history")}
@@ -278,13 +302,34 @@ export function AdminTimeManagement() {
           </div>
         </CardHeader>
         <CardContent>
+          {/* Single-field search matching user / project / category —
+              applies to both the Active and History tabs. */}
+          <div className="mb-3 flex items-center gap-2">
+            <input
+              type="text"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search user, project, or category..."
+              className="w-full sm:max-w-sm rounded-md border border-border bg-background px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+              aria-label="Search active sessions and history"
+            />
+            {search && (
+              <button
+                type="button"
+                onClick={() => setSearch("")}
+                className="text-xs text-muted-foreground hover:text-foreground underline underline-offset-2"
+              >
+                Clear
+              </button>
+            )}
+          </div>
           {activeTab === "active" ? (
             sessionsLoading ? (
               <p className="text-sm text-muted-foreground py-4 text-center">
                 Loading active sessions...
               </p>
             ) : sessions.length > 0 ? (
-              <div className="overflow-auto max-h-[384px]">
+              <div className="overflow-auto max-h-[70vh]">
                 <table className="w-full text-sm" style={{ minWidth: 500 }}>
                   <thead className="sticky top-0 bg-background z-10">
                     <tr className="border-b border-border">
@@ -297,7 +342,13 @@ export function AdminTimeManagement() {
                     </tr>
                   </thead>
                   <tbody>
-                    {sessions.map((entry) => (
+                    {filteredSessions.length === 0 ? (
+                      <tr>
+                        <td colSpan={6} className="py-4 px-3 text-center text-sm text-muted-foreground">
+                          No active sessions match &ldquo;{search}&rdquo;.
+                        </td>
+                      </tr>
+                    ) : filteredSessions.map((entry) => (
                       <tr key={entry.id} className="border-b border-border last:border-0">
                         <td className="py-3 px-3">
                           <div className="flex items-center gap-2">
@@ -347,7 +398,7 @@ export function AdminTimeManagement() {
                 Loading history...
               </p>
             ) : historyEntries.length > 0 ? (
-              <div className="overflow-auto max-h-[384px]">
+              <div className="overflow-auto max-h-[70vh]">
                 <table className="w-full text-sm" style={{ minWidth: 500 }}>
                   <thead className="sticky top-0 bg-background z-10">
                     <tr className="border-b border-border">
@@ -362,7 +413,13 @@ export function AdminTimeManagement() {
                     </tr>
                   </thead>
                   <tbody>
-                    {historyEntries.map((entry) => (
+                    {filteredHistory.length === 0 ? (
+                      <tr>
+                        <td colSpan={8} className="py-4 px-3 text-center text-sm text-muted-foreground">
+                          No history entries match &ldquo;{search}&rdquo;.
+                        </td>
+                      </tr>
+                    ) : filteredHistory.map((entry) => (
                       <tr
                         key={entry.id}
                         className={`border-b border-border last:border-0 ${
