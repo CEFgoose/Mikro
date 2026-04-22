@@ -81,7 +81,7 @@ export function Header({ displayName }: HeaderProps) {
             </div>
           ) : (
             <a
-              href="/auth/login"
+              href="/auth/login?prompt=login"
               style={{
                 display: "inline-flex",
                 alignItems: "center",

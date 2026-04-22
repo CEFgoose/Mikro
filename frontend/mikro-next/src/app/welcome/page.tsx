@@ -12,7 +12,7 @@ export default function WelcomePage() {
           Your account is ready. Click below to log in.
         </p>
         <a
-          href="/auth/login"
+          href="/auth/login?prompt=login"
           style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", borderRadius: 8, backgroundColor: "#004e89", padding: "12px 32px", fontSize: 16, fontWeight: 500, color: "white", textDecoration: "none" }}
         >
           Log in to Mikro
