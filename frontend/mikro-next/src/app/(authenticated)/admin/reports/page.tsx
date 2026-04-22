@@ -61,7 +61,26 @@ import {
   Pie,
 } from "recharts";
 import { formatNumber, formatCurrency } from "@/lib/utils";
+import {
+  COLORS,
+  MR_COLORS,
+  CATEGORY_COLORS,
+  WEEKLY_TASK_COLORS,
+  COMMUNITY_OUTREACH_COLORS,
+} from "@/lib/chartColors";
+import { ChartExportButton } from "@/components/admin/ChartExportButton";
+import { TableExportButton } from "@/components/admin/TableExportButton";
 import dynamic from "next/dynamic";
+
+// Numeric axis-tick + tooltip formatter — keeps large numbers readable
+// in charts (UI16). Applied to every Tooltip and to YAxis ticks where
+// the domain is numeric. Signatures match the ones Recharts expects.
+const chartNumberFmt = (n: number) => formatNumber(n).text;
+const chartTooltipFmt = (v: number | string | undefined) => {
+  if (typeof v === "number") return formatNumber(v).text;
+  if (v == null) return "";
+  return String(v);
+};
 
 const MappingHeatmap = dynamic(() => import("@/components/MappingHeatmap"), {
   ssr: false,
@@ -72,65 +91,8 @@ const MappingHeatmap = dynamic(() => import("@/components/MappingHeatmap"), {
   ),
 });
 
-// ─── Color Constants ─────────────────────────────────────────
-
-const COLORS = {
-  mapped: "#f97316",
-  validated: "#3b82f6",
-  invalidated: "#ef4444",
-  hours: "#10b981",
-  review: "#6366f1",
-  training: "#f59e0b",
-  other: "#9ca3af",
-  deleted: "#ef4444",
-  added: "#f97316",
-  modified: "#3b82f6",
-};
-
-const MR_COLORS = {
-  fixed: "#22c55e",
-  already_fixed: "#10b981",
-  false_positive: "#f59e0b",
-  cant_complete: "#f97316",
-  skipped: "#9ca3af",
-};
-
-const CATEGORY_COLORS: Record<string, string> = {
-  mapping: "#f97316",
-  "editing / osm": "#f97316",
-  validation: "#3b82f6",
-  "kaart qc": "#3b82f6",
-  review: "#6366f1",
-  management: "#8b5cf6",
-  training: "#f59e0b",
-  "kaart training / meetings": "#f59e0b",
-  "project creation / team planning": "#06b6d4",
-  "community outreach - general": "#10b981",
-  "community qc": "#14b8a6",
-  "community events / trainings / meetings": "#a855f7",
-  "wiki / osm documentation": "#ec4899",
-  "imagery capture": "#64748b",
-  other: "#9ca3af",
-};
-
-const WEEKLY_TASK_COLORS = [
-  "#8b5cf6", // Management
-  "#f59e0b", // Kaart Training / Meetings
-  "#3b82f6", // Kaart QC
-  "#64748b", // Imagery Capture
-  "#06b6d4", // Project Creation / Team Planning
-  "#14b8a6", // Community QC
-  "#ec4899", // Wiki / OSM Documentation
-  "#a855f7", // Community Events / Trainings / Meetings
-  "#10b981", // Community Outreach - General
-];
-
-const COMMUNITY_OUTREACH_COLORS = {
-  "Wiki / OSM Documentation": "#ec4899",
-  "Community QC": "#14b8a6",
-  "Community Events / Trainings / Meetings": "#a855f7",
-  "Community Outreach - General": "#10b981",
-};
+// Color constants now live in `src/lib/chartColors.ts` so both this
+// page and /admin/reports/weekly stay in sync on palette changes.
 
 // ─── Mock Data (charts requiring Kibana / external sources) ──
 
@@ -428,13 +390,25 @@ export default function AdminReportsPage() {
   const [showRefreshModal, setShowRefreshModal] = useState(false);
   const elementPollRef = useRef<ReturnType<typeof setInterval> | null>(null);
   // Pagination for tables
-  const ROWS_PER_PAGE = 20;
+  const ROWS_PER_PAGE = 10;
   const [projectsTablePage, setProjectsTablePage] = useState(1);
   const [contributorsTablePage, setContributorsTablePage] = useState(1);
   const [timeTrackingPage, setTimeTrackingPage] = useState(1);
   const [tripsPage, setTripsPage] = useState(1);
   const [mrProjectsPage, setMrProjectsPage] = useState(1);
   const [mrContributorsPage, setMrContributorsPage] = useState(1);
+
+  // Chart container refs — each wraps a ResponsiveContainer so the
+  // ChartExportButton can grab the inner <svg> for PNG serialization.
+  const editingTasksOverTimeRef = useRef<HTMLDivElement>(null);
+  const timekeepingHoursByCategoryRef = useRef<HTMLDivElement>(null);
+  const timekeepingTaskBreakdownRef = useRef<HTMLDivElement>(null);
+  const timekeepingWeeklyActivityRef = useRef<HTMLDivElement>(null);
+  const timekeepingWeeklyHoursRef = useRef<HTMLDivElement>(null);
+  const timekeepingCommunityOutreachRef = useRef<HTMLDivElement>(null);
+  const imageryWeeklyUploadsRef = useRef<HTMLDivElement>(null);
+  const imageryByContributorRef = useRef<HTMLDivElement>(null);
+  const mrTasksOverTimeRef = useRef<HTMLDivElement>(null);
 
   const [mrData, setMrData] = useState<EditingStatsResponse | null>(null);
   const [mapillaryData, setMapillaryData] = useState<MapillaryStatsResponse | null>(null);
@@ -937,12 +911,13 @@ export default function AdminReportsPage() {
 
               {/* Tasks Over Time Bar Chart */}
               <Card>
-                <CardHeader>
+                <CardHeader className="flex flex-row items-center justify-between">
                   <CardTitle>Tasks Over Time</CardTitle>
+                  <ChartExportButton containerRef={editingTasksOverTimeRef} filename="editing-tasks-over-time" />
                 </CardHeader>
                 <CardContent>
                   {editingData.tasks_over_time.length > 0 ? (
-                    <div style={{ width: "100%", height: 300 }}>
+                    <div ref={editingTasksOverTimeRef} style={{ width: "100%", height: 300 }}>
                       <ResponsiveContainer>
                         <BarChart data={editingData.tasks_over_time}>
                           <CartesianGrid strokeDasharray="3 3" />
@@ -958,7 +933,7 @@ export default function AdminReportsPage() {
                               })
                             }
                           />
-                          <YAxis tick={{ fontSize: 12 }} />
+                          <YAxis tick={{ fontSize: 12 }} tickFormatter={chartNumberFmt} />
                           <Tooltip
                             labelFormatter={(v) =>
                               new Date(
@@ -969,6 +944,7 @@ export default function AdminReportsPage() {
                                 year: "numeric",
                               })
                             }
+                            formatter={chartTooltipFmt}
                           />
                           <Legend />
                           <Bar
@@ -999,11 +975,24 @@ export default function AdminReportsPage() {
 
               {/* Detailed Project Table */}
               <Card>
-                <CardHeader>
+                <CardHeader className="flex flex-row items-center justify-between">
                   <CardTitle>
                     Detailed Project Table (
                     {editingData.projects.length})
                   </CardTitle>
+                  <TableExportButton
+                    rows={editingData.projects as unknown as Array<Record<string, unknown>>}
+                    columns={[
+                      { key: "name", label: "Project" },
+                      { key: "total_tasks", label: "Total Tasks" },
+                      { key: "mapped_tasks", label: "Mapped" },
+                      { key: "validated_tasks", label: "Validated" },
+                      { key: "invalidated_tasks", label: "Invalidated" },
+                      { key: "mapping_rate_per_task", label: "Mapping Rate" },
+                      { key: "validation_rate_per_task", label: "Validation Rate" },
+                    ]}
+                    filename="editing-projects"
+                  />
                 </CardHeader>
                 <CardContent className="p-0">
                   <div className="overflow-x-auto">
@@ -1141,8 +1130,20 @@ export default function AdminReportsPage() {
 
               {/* Top Contributors Table */}
               <Card>
-                <CardHeader>
+                <CardHeader className="flex flex-row items-center justify-between">
                   <CardTitle>Top Contributors</CardTitle>
+                  <TableExportButton
+                    rows={editingData.top_contributors as unknown as Array<Record<string, unknown>>}
+                    columns={[
+                      { key: "name", label: "Name" },
+                      { key: "osm_username", label: "OSM Username" },
+                      { key: "mapped", label: "Mapped" },
+                      { key: "validated", label: "Validated" },
+                      { key: "invalidated", label: "Invalidated" },
+                      { key: "hours", label: "Hours" },
+                    ]}
+                    filename="editing-top-contributors"
+                  />
                 </CardHeader>
                 <CardContent className="p-0">
                   <div className="overflow-x-auto">
@@ -1807,12 +1808,14 @@ export default function AdminReportsPage() {
 
                 {/* Hours by Category — Horizontal BarChart */}
                 <Card>
-                  <CardHeader className="pb-0">
+                  <CardHeader className="pb-0 flex flex-row items-center justify-between">
                     <CardTitle className="text-base">Task</CardTitle>
+                    <ChartExportButton containerRef={timekeepingHoursByCategoryRef} filename="timekeeping-hours-by-category" />
                   </CardHeader>
                   <CardContent>
                     {timekeepingData.hours_by_category.length > 0 ? (
                       <div
+                        ref={timekeepingHoursByCategoryRef}
                         style={{
                           width: "100%",
                           height: Math.max(
@@ -1830,6 +1833,7 @@ export default function AdminReportsPage() {
                             <XAxis
                               type="number"
                               tick={{ fontSize: 11 }}
+                              tickFormatter={chartNumberFmt}
                             />
                             <YAxis
                               type="category"
@@ -1842,7 +1846,7 @@ export default function AdminReportsPage() {
                             />
                             <Tooltip
                               formatter={(value) => [
-                                `${value}h`,
+                                `${chartTooltipFmt(value as number)}h`,
                                 "Hours",
                               ]}
                             />
@@ -1876,14 +1880,15 @@ export default function AdminReportsPage() {
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
                 {/* Weekly Team Activity — ComposedChart */}
                 <Card>
-                  <CardHeader className="pb-0">
+                  <CardHeader className="pb-0 flex flex-row items-center justify-between">
                     <CardTitle className="text-base">
                       Weekly Team Activity
                     </CardTitle>
+                    <ChartExportButton containerRef={timekeepingWeeklyActivityRef} filename="timekeeping-weekly-activity" />
                   </CardHeader>
                   <CardContent>
                     {timekeepingData.weekly_activity.length > 0 ? (
-                      <div style={{ width: "100%", height: 280 }}>
+                      <div ref={timekeepingWeeklyActivityRef} style={{ width: "100%", height: 280 }}>
                         <ResponsiveContainer>
                           <ComposedChart
                             data={timekeepingData.weekly_activity}
@@ -1904,11 +1909,13 @@ export default function AdminReportsPage() {
                             <YAxis
                               yAxisId="left"
                               tick={{ fontSize: 10 }}
+                              tickFormatter={chartNumberFmt}
                             />
                             <YAxis
                               yAxisId="right"
                               orientation="right"
                               tick={{ fontSize: 10 }}
+                              tickFormatter={chartNumberFmt}
                             />
                             <Tooltip
                               labelFormatter={(v) =>
@@ -1920,6 +1927,7 @@ export default function AdminReportsPage() {
                                   year: "numeric",
                                 })
                               }
+                              formatter={chartTooltipFmt}
                             />
                             <Legend
                               wrapperStyle={{ fontSize: 10 }}
@@ -1959,14 +1967,15 @@ export default function AdminReportsPage() {
 
                 {/* Weekly Task Hours — Stacked BarChart */}
                 <Card>
-                  <CardHeader className="pb-0">
+                  <CardHeader className="pb-0 flex flex-row items-center justify-between">
                     <CardTitle className="text-base">
                       Weekly Task Hours by Category
                     </CardTitle>
+                    <ChartExportButton containerRef={timekeepingWeeklyHoursRef} filename="timekeeping-weekly-hours" />
                   </CardHeader>
                   <CardContent>
                     {timekeepingData.weekly_category_hours?.length > 0 ? (
-                      <div style={{ width: "100%", height: 280 }}>
+                      <div ref={timekeepingWeeklyHoursRef} style={{ width: "100%", height: 280 }}>
                         <ResponsiveContainer>
                           <BarChart data={timekeepingData.weekly_category_hours.map(row => ({
                             ...row,
@@ -1977,9 +1986,10 @@ export default function AdminReportsPage() {
                               dataKey="week"
                               tick={{ fontSize: 10 }}
                             />
-                            <YAxis tick={{ fontSize: 10 }} label={{ value: "Hours", angle: -90, position: "insideLeft", style: { fontSize: 10 } }} />
+                            <YAxis tick={{ fontSize: 10 }} tickFormatter={chartNumberFmt} label={{ value: "Hours", angle: -90, position: "insideLeft", style: { fontSize: 10 } }} />
                             <Tooltip
                               contentStyle={{ fontSize: 11 }}
+                              formatter={chartTooltipFmt}
                             />
                             <Legend
                               wrapperStyle={{ fontSize: 9 }}
@@ -1996,6 +2006,8 @@ export default function AdminReportsPage() {
                                       i % WEEKLY_TASK_COLORS.length
                                     ]
                                   }
+                                  stroke="#ffffff"
+                                  strokeWidth={0.5}
                                 />
                               )
                             )}
@@ -2015,13 +2027,14 @@ export default function AdminReportsPage() {
                   <div className="absolute top-2 right-2 z-10">
                     <span className="bg-yellow-400 text-yellow-900 text-xs font-bold px-2 py-1 rounded uppercase tracking-wider">Sample Data</span>
                   </div>
-                  <CardHeader className="pb-0">
+                  <CardHeader className="pb-0 flex flex-row items-center justify-between">
                     <CardTitle className="text-base">
                       Community Outreach Trends
                     </CardTitle>
+                    <ChartExportButton containerRef={timekeepingCommunityOutreachRef} filename="timekeeping-community-outreach" />
                   </CardHeader>
                   <CardContent>
-                    <div style={{ width: "100%", height: 280 }}>
+                    <div ref={timekeepingCommunityOutreachRef} style={{ width: "100%", height: 280 }}>
                       <ResponsiveContainer>
                         <ComposedChart
                           data={MOCK_COMMUNITY_OUTREACH}
@@ -2031,9 +2044,10 @@ export default function AdminReportsPage() {
                             dataKey="week"
                             tick={{ fontSize: 10 }}
                           />
-                          <YAxis tick={{ fontSize: 10 }} />
+                          <YAxis tick={{ fontSize: 10 }} tickFormatter={chartNumberFmt} />
                           <Tooltip
                             contentStyle={{ fontSize: 11 }}
+                            formatter={chartTooltipFmt}
                           />
                           <Legend
                             wrapperStyle={{ fontSize: 9 }}
@@ -2076,11 +2090,21 @@ export default function AdminReportsPage() {
 
               {/* Per-User Time Tracking Table */}
               <Card>
-                <CardHeader>
+                <CardHeader className="flex flex-row items-center justify-between">
                   <CardTitle>
                     Time Tracking (
                     {timekeepingData.user_breakdown.length})
                   </CardTitle>
+                  <TableExportButton
+                    rows={timekeepingData.user_breakdown as unknown as Array<Record<string, unknown>>}
+                    columns={[
+                      { key: "name", label: "Name" },
+                      { key: "hours", label: "Hours" },
+                      { key: "entries", label: "Entries" },
+                      { key: "avg_session_minutes", label: "Avg Session (min)" },
+                    ]}
+                    filename="timekeeping-user-breakdown"
+                  />
                 </CardHeader>
                 <CardContent className="p-0">
                   <div className="overflow-x-auto">
@@ -2281,19 +2305,22 @@ export default function AdminReportsPage() {
               {/* Weekly Uploads Chart */}
               {mapillaryData.weekly_uploads.length > 0 && (
                 <Card>
-                  <CardHeader>
+                  <CardHeader className="flex flex-row items-center justify-between">
                     <CardTitle>Weekly Image Uploads</CardTitle>
+                    <ChartExportButton containerRef={imageryWeeklyUploadsRef} filename="imagery-weekly-uploads" />
                   </CardHeader>
                   <CardContent>
-                    <ResponsiveContainer width="100%" height={300}>
-                      <BarChart data={mapillaryData.weekly_uploads}>
-                        <CartesianGrid strokeDasharray="3 3" />
-                        <XAxis dataKey="week" />
-                        <YAxis />
-                        <Tooltip />
-                        <Bar dataKey="images" fill="#10b981" name="Images" radius={[4, 4, 0, 0]} />
-                      </BarChart>
-                    </ResponsiveContainer>
+                    <div ref={imageryWeeklyUploadsRef} style={{ width: "100%", height: 300 }}>
+                      <ResponsiveContainer>
+                        <BarChart data={mapillaryData.weekly_uploads}>
+                          <CartesianGrid strokeDasharray="3 3" />
+                          <XAxis dataKey="week" />
+                          <YAxis tickFormatter={chartNumberFmt} />
+                          <Tooltip formatter={chartTooltipFmt} />
+                          <Bar dataKey="images" fill="#10b981" name="Images" radius={[4, 4, 0, 0]} />
+                        </BarChart>
+                      </ResponsiveContainer>
+                    </div>
                   </CardContent>
                 </Card>
               )}
@@ -2301,19 +2328,22 @@ export default function AdminReportsPage() {
               {/* Images by User Chart */}
               {mapillaryData.summary.images_by_user.length > 0 && (
                 <Card>
-                  <CardHeader>
+                  <CardHeader className="flex flex-row items-center justify-between">
                     <CardTitle>Images by Contributor</CardTitle>
+                    <ChartExportButton containerRef={imageryByContributorRef} filename="imagery-by-contributor" />
                   </CardHeader>
                   <CardContent>
-                    <ResponsiveContainer width="100%" height={Math.max(200, mapillaryData.summary.images_by_user.length * 40)}>
-                      <BarChart data={mapillaryData.summary.images_by_user} layout="vertical">
-                        <CartesianGrid strokeDasharray="3 3" />
-                        <XAxis type="number" />
-                        <YAxis type="category" dataKey="name" width={120} />
-                        <Tooltip />
-                        <Bar dataKey="count" fill="#6366f1" name="Images" radius={[0, 4, 4, 0]} />
-                      </BarChart>
-                    </ResponsiveContainer>
+                    <div ref={imageryByContributorRef} style={{ width: "100%", height: Math.max(200, mapillaryData.summary.images_by_user.length * 40) }}>
+                      <ResponsiveContainer>
+                        <BarChart data={mapillaryData.summary.images_by_user} layout="vertical">
+                          <CartesianGrid strokeDasharray="3 3" />
+                          <XAxis type="number" tickFormatter={chartNumberFmt} />
+                          <YAxis type="category" dataKey="name" width={120} />
+                          <Tooltip formatter={chartTooltipFmt} />
+                          <Bar dataKey="count" fill="#6366f1" name="Images" radius={[0, 4, 4, 0]} />
+                        </BarChart>
+                      </ResponsiveContainer>
+                    </div>
                   </CardContent>
                 </Card>
               )}
@@ -2321,8 +2351,19 @@ export default function AdminReportsPage() {
               {/* Trips Table */}
               {mapillaryData.trips.length > 0 && (
                 <Card>
-                  <CardHeader>
+                  <CardHeader className="flex flex-row items-center justify-between">
                     <CardTitle>Capture Trips</CardTitle>
+                    <TableExportButton
+                      rows={mapillaryData.trips as unknown as Array<Record<string, unknown>>}
+                      columns={[
+                        { key: "user_name", label: "User" },
+                        { key: "mapillary_username", label: "Mapillary Username" },
+                        { key: "date", label: "Date" },
+                        { key: "image_count", label: "Images" },
+                        { key: "sequence_count", label: "Sequences" },
+                      ]}
+                      filename="imagery-capture-trips"
+                    />
                   </CardHeader>
                   <CardContent>
                     <div className="overflow-x-auto">
@@ -2410,12 +2451,13 @@ export default function AdminReportsPage() {
 
               {/* Tasks Over Time - MR Status Breakdown */}
               <Card>
-                <CardHeader>
+                <CardHeader className="flex flex-row items-center justify-between">
                   <CardTitle>Tasks Over Time</CardTitle>
+                  <ChartExportButton containerRef={mrTasksOverTimeRef} filename="mr-tasks-over-time" />
                 </CardHeader>
                 <CardContent>
                   {mrData.mr_status_over_time && mrData.mr_status_over_time.length > 0 ? (
-                    <div style={{ width: "100%", height: 300 }}>
+                    <div ref={mrTasksOverTimeRef} style={{ width: "100%", height: 300 }}>
                       <ResponsiveContainer>
                         <BarChart data={mrData.mr_status_over_time}>
                           <CartesianGrid strokeDasharray="3 3" />
@@ -2429,7 +2471,7 @@ export default function AdminReportsPage() {
                               })
                             }
                           />
-                          <YAxis tick={{ fontSize: 12 }} />
+                          <YAxis tick={{ fontSize: 12 }} tickFormatter={chartNumberFmt} />
                           <Tooltip
                             labelFormatter={(v) =>
                               new Date(String(v) + "T00:00:00").toLocaleDateString("en-US", {
@@ -2438,13 +2480,14 @@ export default function AdminReportsPage() {
                                 year: "numeric",
                               })
                             }
+                            formatter={chartTooltipFmt}
                           />
                           <Legend />
-                          <Bar dataKey="fixed" name="Fixed" stackId="status" fill={MR_COLORS.fixed} />
-                          <Bar dataKey="already_fixed" name="Already Fixed" stackId="status" fill={MR_COLORS.already_fixed} />
-                          <Bar dataKey="false_positive" name="Not an Issue" stackId="status" fill={MR_COLORS.false_positive} />
-                          <Bar dataKey="cant_complete" name="Can't Complete" stackId="status" fill={MR_COLORS.cant_complete} />
-                          <Bar dataKey="skipped" name="Skipped" stackId="status" fill={MR_COLORS.skipped} />
+                          <Bar dataKey="fixed" name="Fixed" stackId="status" fill={MR_COLORS.fixed} stroke="#ffffff" strokeWidth={0.5} />
+                          <Bar dataKey="already_fixed" name="Already Fixed" stackId="status" fill={MR_COLORS.already_fixed} stroke="#ffffff" strokeWidth={0.5} />
+                          <Bar dataKey="false_positive" name="Not an Issue" stackId="status" fill={MR_COLORS.false_positive} stroke="#ffffff" strokeWidth={0.5} />
+                          <Bar dataKey="cant_complete" name="Can't Complete" stackId="status" fill={MR_COLORS.cant_complete} stroke="#ffffff" strokeWidth={0.5} />
+                          <Bar dataKey="skipped" name="Skipped" stackId="status" fill={MR_COLORS.skipped} stroke="#ffffff" strokeWidth={0.5} />
                         </BarChart>
                       </ResponsiveContainer>
                     </div>
@@ -2458,10 +2501,23 @@ export default function AdminReportsPage() {
 
               {/* Challenges Table */}
               <Card>
-                <CardHeader>
+                <CardHeader className="flex flex-row items-center justify-between">
                   <CardTitle>
                     Challenges ({mrData.projects.length})
                   </CardTitle>
+                  <TableExportButton
+                    rows={mrData.projects as unknown as Array<Record<string, unknown>>}
+                    columns={[
+                      { key: "name", label: "Challenge" },
+                      { key: "total_tasks", label: "Total Tasks" },
+                      { key: "mapped_tasks", label: "Mapped" },
+                      { key: "validated_tasks", label: "Validated" },
+                      { key: "invalidated_tasks", label: "Invalidated" },
+                      { key: "mapping_rate_per_task", label: "Mapping Rate" },
+                      { key: "validation_rate_per_task", label: "Validation Rate" },
+                    ]}
+                    filename="mr-challenges"
+                  />
                 </CardHeader>
                 <CardContent className="p-0">
                   <div className="overflow-x-auto">
@@ -2576,8 +2632,22 @@ export default function AdminReportsPage() {
 
               {/* Top Contributors Table */}
               <Card>
-                <CardHeader>
+                <CardHeader className="flex flex-row items-center justify-between">
                   <CardTitle>Top Contributors</CardTitle>
+                  <TableExportButton
+                    rows={mrData.top_contributors as unknown as Array<Record<string, unknown>>}
+                    columns={[
+                      { key: "name", label: "Name" },
+                      { key: "osm_username", label: "OSM Username" },
+                      { key: "fixed", label: "Fixed" },
+                      { key: "already_fixed", label: "Already Fixed" },
+                      { key: "false_positive", label: "Not an Issue" },
+                      { key: "cant_complete", label: "Can't Complete" },
+                      { key: "skipped", label: "Skipped" },
+                      { key: "total_contributions", label: "Total" },
+                    ]}
+                    filename="mr-top-contributors"
+                  />
                 </CardHeader>
                 <CardContent className="p-0">
                   <div className="overflow-x-auto">

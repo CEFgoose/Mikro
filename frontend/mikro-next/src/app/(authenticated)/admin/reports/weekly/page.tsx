@@ -43,30 +43,9 @@ import {
   ResponsiveContainer,
 } from "recharts";
 import { formatNumber } from "@/lib/utils";
-
-// ─── Color Constants (matching reports page) ─────────────────
-
-const COLORS = {
-  mapped: "#f97316",
-  validated: "#3b82f6",
-  invalidated: "#ef4444",
-  hours: "#10b981",
-  deleted: "#ef4444",
-  added: "#f97316",
-  modified: "#3b82f6",
-};
-
-const WEEKLY_TASK_COLORS = [
-  "#8b5cf6",
-  "#f59e0b",
-  "#3b82f6",
-  "#64748b",
-  "#06b6d4",
-  "#14b8a6",
-  "#ec4899",
-  "#a855f7",
-  "#10b981",
-];
+// Shared color palette — both this page and /admin/reports/page.tsx
+// import from the same module so future palette tweaks stay in sync.
+import { COLORS, WEEKLY_TASK_COLORS } from "@/lib/chartColors";
 
 // ─── Types ───────────────────────────────────────────────────
 
