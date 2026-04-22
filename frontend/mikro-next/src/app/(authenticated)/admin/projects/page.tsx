@@ -47,6 +47,7 @@ import {
   useFetchTeams,
   useFetchCountries,
   useAssignProjectLocations,
+  useUsersList,
 } from "@/hooks";
 import Link from "next/link";
 import { formatNumber, formatCurrency, getProjectExternalUrl } from "@/lib/utils";
@@ -108,6 +109,10 @@ export default function AdminProjectsPage() {
   const { mutate: unassignTeamFromProject } = useUnassignTeamFromProject();
   const { mutate: syncProject } = useSyncProject();
   const { mutate: checkSyncStatus } = useCheckSyncStatus();
+  // Full org user list — drives the pre-select Users tab on the Add-Project
+  // modal so admins can pick assignees at create time instead of having
+  // to edit the project afterwards (UI20).
+  const { data: allUsersData, loading: loadingAllUsers } = useUsersList();
   const [syncingProjectId, setSyncingProjectId] = useState<number | null>(null);
   const toast = useToastActions();
 
@@ -128,7 +133,7 @@ export default function AdminProjectsPage() {
   const [inactivePageNum, setInactivePageNum] = useState(1);
   const ROWS_PER_PAGE = 20;
   const [newProjectId, setNewProjectId] = useState<number | null>(null);
-  const [addTab, setAddTab] = useState<"details" | "locations" | "teams">("details");
+  const [addTab, setAddTab] = useState<"details" | "locations" | "teams" | "users">("details");
   const [addProjectTeams, setAddProjectTeams] = useState<ProjectTeamItem[]>([]);
 
   // Pre-creation location & team selection
@@ -137,6 +142,9 @@ export default function AdminProjectsPage() {
   const { mutate: assignProjectLocations } = useAssignProjectLocations();
   const [preSelectedCountryIds, setPreSelectedCountryIds] = useState<Set<number>>(new Set());
   const [preSelectedTeamIds, setPreSelectedTeamIds] = useState<Set<number>>(new Set());
+  // User ids are Auth0 sub strings (or tracked|uuid), so Set<string>.
+  const [preSelectedUserIds, setPreSelectedUserIds] = useState<Set<string>>(new Set());
+  const [addUserSearch, setAddUserSearch] = useState("");
   const [addLocationSearch, setAddLocationSearch] = useState("");
 
   // Reset pagination when search or filters change
@@ -235,6 +243,26 @@ export default function AdminProjectsPage() {
         assignResults.push(`${preSelectedTeamIds.size} team(s)`);
       }
 
+      // Assign pre-selected individual users. toggleAssignUser flips the
+      // current state, and on a fresh project every user starts
+      // unassigned, so one call per user results in an assignment.
+      let userAssignFailures = 0;
+      for (const userId of preSelectedUserIds) {
+        try {
+          await toggleAssignUser({ project_id: projectId, user_id: userId });
+        } catch {
+          userAssignFailures += 1;
+        }
+      }
+      if (preSelectedUserIds.size > 0) {
+        const ok = preSelectedUserIds.size - userAssignFailures;
+        assignResults.push(
+          userAssignFailures > 0
+            ? `${ok}/${preSelectedUserIds.size} user(s)`
+            : `${ok} user(s)`,
+        );
+      }
+
       const suffix = assignResults.length > 0 ? ` — assigned ${assignResults.join(", ")}` : "";
       toast.success(`Project created${suffix}`);
 
@@ -247,7 +275,9 @@ export default function AdminProjectsPage() {
       setAddProjectTeams([]);
       setPreSelectedCountryIds(new Set());
       setPreSelectedTeamIds(new Set());
+      setPreSelectedUserIds(new Set());
       setAddLocationSearch("");
+      setAddUserSearch("");
       refetch(filtersBody ? { filters: filtersBody } : {});
     } catch (err) {
       const message = err instanceof Error ? err.message : "Failed to create project";
@@ -897,7 +927,9 @@ export default function AdminProjectsPage() {
           setAddProjectTeams([]);
           setPreSelectedCountryIds(new Set());
           setPreSelectedTeamIds(new Set());
+          setPreSelectedUserIds(new Set());
           setAddLocationSearch("");
+          setAddUserSearch("");
         }}
         title="Add New Project"
         description="Add a TM4 or MapRoulette project to Mikro for payment tracking"
@@ -913,7 +945,7 @@ export default function AdminProjectsPage() {
           </>
         }
       >
-        <Tabs defaultValue="details" value={addTab} onValueChange={(v) => setAddTab(v as "details" | "locations" | "teams")}>
+        <Tabs defaultValue="details" value={addTab} onValueChange={(v) => setAddTab(v as "details" | "locations" | "teams" | "users")}>
           <TabsList className="mb-4">
             <TabsTrigger value="details">Project Details</TabsTrigger>
             <TabsTrigger value="locations">
@@ -921,6 +953,9 @@ export default function AdminProjectsPage() {
             </TabsTrigger>
             <TabsTrigger value="teams">
               Teams{preSelectedTeamIds.size > 0 ? ` (${preSelectedTeamIds.size})` : ""}
+            </TabsTrigger>
+            <TabsTrigger value="users">
+              Users{preSelectedUserIds.size > 0 ? ` (${preSelectedUserIds.size})` : ""}
             </TabsTrigger>
           </TabsList>
 
@@ -1138,6 +1173,83 @@ export default function AdminProjectsPage() {
                 </Table>
               </div>
             )}
+          </TabsContent>
+
+          {/* Users tab — pre-select individual users to assign at create time.
+              Mirrors the Edit modal's Users tab but defers the API calls
+              until the project actually exists (handleCreateProject). */}
+          <TabsContent value="users">
+            <div className="space-y-3">
+              <Input
+                type="text"
+                placeholder="Search users by name, email, or OSM username..."
+                value={addUserSearch}
+                onChange={(e) => setAddUserSearch(e.target.value)}
+              />
+              {loadingAllUsers ? (
+                <div className="space-y-2">
+                  {[1, 2, 3].map((i) => (
+                    <Skeleton key={i} className="h-12 w-full" />
+                  ))}
+                </div>
+              ) : !(allUsersData?.users?.length) ? (
+                <p className="text-muted-foreground text-center py-8">No users in organization</p>
+              ) : (
+                (() => {
+                  const q = addUserSearch.trim().toLowerCase();
+                  const filtered = (allUsersData?.users ?? []).filter((u) => {
+                    if (!q) return true;
+                    return (
+                      (u.name || "").toLowerCase().includes(q) ||
+                      (u.email || "").toLowerCase().includes(q) ||
+                      (u.osm_username || "").toLowerCase().includes(q)
+                    );
+                  });
+                  return filtered.length === 0 ? (
+                    <p className="text-muted-foreground text-center py-8">No users match the search.</p>
+                  ) : (
+                    <div className="max-h-80 overflow-y-auto">
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>User</TableHead>
+                            <TableHead>Email</TableHead>
+                            <TableHead>OSM Username</TableHead>
+                            <TableHead className="text-right">Assign</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {filtered.map((user) => {
+                            const isSelected = preSelectedUserIds.has(user.id);
+                            return (
+                              <TableRow key={user.id}>
+                                <TableCell className="font-medium">{user.name || "—"}</TableCell>
+                                <TableCell className="text-muted-foreground">{user.email || "—"}</TableCell>
+                                <TableCell className="text-muted-foreground">{user.osm_username || "—"}</TableCell>
+                                <TableCell className="text-right">
+                                  <Button
+                                    size="sm"
+                                    variant={isSelected ? "destructive" : "primary"}
+                                    onClick={() => {
+                                      const next = new Set(preSelectedUserIds);
+                                      if (isSelected) next.delete(user.id);
+                                      else next.add(user.id);
+                                      setPreSelectedUserIds(next);
+                                    }}
+                                  >
+                                    {isSelected ? "Remove" : "Assign"}
+                                  </Button>
+                                </TableCell>
+                              </TableRow>
+                            );
+                          })}
+                        </TableBody>
+                      </Table>
+                    </div>
+                  );
+                })()
+              )}
+            </div>
           </TabsContent>
         </Tabs>
       </Modal>
