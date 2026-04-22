@@ -16,7 +16,12 @@ async function handleRequest(
   try {
     const session = await auth0.getSession(request);
 
-    if (!session || !session.tokenSet?.accessToken) {
+    if (!session) {
+      // Real "user has no session" case — fail fast.
+      console.warn(
+        "[BACKEND-PROXY] 401 no session for",
+        request.url,
+      );
       return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
     }
 
@@ -27,10 +32,31 @@ async function handleRequest(
 
     const backendUrl = `${BACKEND_URL}/api/${backendPath}${queryString}`;
 
-    // Get the access token from session — if missing/expired, reject immediately
-    const accessToken = session.tokenSet?.accessToken;
+    // Prefer an actively-refreshed access token over whatever is sitting in
+    // session.tokenSet — browser session cookies can arrive with partially
+    // valid tokens after a just-completed login, and getAccessToken triggers
+    // the refresh-token dance via the SDK when the current token is stale.
+    let accessToken: string | undefined;
+    try {
+      const tokenResp = await auth0.getAccessToken();
+      accessToken = tokenResp?.token ?? session.tokenSet?.accessToken;
+    } catch (err) {
+      console.warn(
+        "[BACKEND-PROXY] getAccessToken threw — falling back to session.tokenSet.accessToken",
+        err,
+      );
+      accessToken = session.tokenSet?.accessToken;
+    }
 
     if (!accessToken) {
+      console.warn(
+        "[BACKEND-PROXY] 401 no access token after refresh attempt for",
+        request.url,
+        "— session present?",
+        !!session,
+        "tokenSet present?",
+        !!session.tokenSet,
+      );
       return NextResponse.json({ error: "Access token expired" }, { status: 401 });
     }
 

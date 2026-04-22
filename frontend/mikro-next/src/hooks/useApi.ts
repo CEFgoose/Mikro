@@ -74,12 +74,29 @@ export function useApiCall<T>(
           body: JSON.stringify(overrideBody || options?.body || {}),
         });
 
-        // Auth failure — kill session and force full logout
+        // Auth failure — retry once before giving up. Transient 401s can
+        // happen right after login when the backend proxy hasn't yet
+        // refreshed the access token; a quick retry lets that finish
+        // instead of blindly kicking the user back to login.
         if (response.status === 401) {
-          try { localStorage.clear(); } catch {}
-          try { sessionStorage.clear(); } catch {}
-          window.location.href = "/auth/logout";
-          return undefined as unknown as T;
+          await new Promise((r) => setTimeout(r, 400));
+          const retryResponse = await fetch(`/backend${endpoint}`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(overrideBody || options?.body || {}),
+          });
+          if (retryResponse.status === 401) {
+            console.warn("[useApi] 401 after retry on", endpoint, "— logging out");
+            try { localStorage.clear(); } catch {}
+            try { sessionStorage.clear(); } catch {}
+            window.location.href = "/auth/logout";
+            return undefined as unknown as T;
+          }
+          // Retry succeeded — use its response instead of the original 401
+          const retryResult = await retryResponse.json();
+          if (retryResponse.ok || retryResult.status === 200) {
+            return retryResult as T;
+          }
         }
 
         const result = await response.json();
@@ -213,10 +230,24 @@ export function useApiMutation<TResponse = { message: string; status: number }>(
           body: JSON.stringify(body),
         });
 
-        // Auth failure — force re-login immediately
+        // Auth failure — retry once before redirecting. Handles transient
+        // 401s during post-login token refresh.
         if (response.status === 401) {
-          window.location.href = "/auth/login";
-          return undefined as unknown as TResponse;
+          await new Promise((r) => setTimeout(r, 400));
+          const retryResponse = await fetch(`/backend${endpoint}`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(body),
+          });
+          if (retryResponse.status === 401) {
+            console.warn("[useApi] mutation 401 after retry on", endpoint);
+            window.location.href = "/auth/login";
+            return undefined as unknown as TResponse;
+          }
+          const retryResult = await retryResponse.json();
+          if (retryResponse.ok || retryResult.status === 200) {
+            return retryResult as TResponse;
+          }
         }
 
         const result = await response.json();
@@ -695,16 +726,26 @@ export function useExportTimeEntries() {
       setError(null);
 
       try {
-        const response = await fetch("/backend/timetracking/export", {
+        let response = await fetch("/backend/timetracking/export", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(params),
         });
 
-        // Auth failure — force re-login immediately
+        // Auth failure — retry once before redirecting. Handles transient
+        // 401s during post-login token refresh.
         if (response.status === 401) {
-          window.location.href = "/auth/login";
-          return;
+          await new Promise((r) => setTimeout(r, 400));
+          response = await fetch("/backend/timetracking/export", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(params),
+          });
+          if (response.status === 401) {
+            console.warn("[useApi] export 401 after retry");
+            window.location.href = "/auth/login";
+            return;
+          }
         }
 
         if (!response.ok) {
