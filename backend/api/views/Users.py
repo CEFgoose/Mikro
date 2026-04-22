@@ -1509,10 +1509,27 @@ class UserAPI(MethodView):
         )
         if not row:
             return None
+
+        # Resolve changed_by from an Auth0 id into a readable name. Raw
+        # Auth0 ids are noise in the admin UI — show the actor's actual
+        # name (or email as a fallback) instead. "system" passes through
+        # unchanged for login_* audit rows.
+        changed_by_name = None
+        if row.changed_by and row.changed_by != "system":
+            actor = User.query.filter_by(id=row.changed_by).first()
+            if actor:
+                changed_by_name = (
+                    _format_user_name(actor)
+                    if (actor.first_name or actor.last_name)
+                    else actor.email
+                )
+        elif row.changed_by == "system":
+            changed_by_name = "system"
         return {
             "changed_at": row.changed_at.isoformat() + "Z" if row.changed_at else None,
             "source": row.source,
-            "changed_by": row.changed_by,
+            "changed_by": row.changed_by,           # raw id kept for debugging
+            "changed_by_name": changed_by_name,     # friendly label for UI
             "old_first_name": row.old_first_name,
             "old_last_name": row.old_last_name,
             "new_first_name": row.new_first_name,

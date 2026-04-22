@@ -14,6 +14,7 @@ import {
   Select,
   Input,
   Skeleton,
+  Spinner,
   useToastActions,
   Val,
   StatCard,
@@ -515,8 +516,35 @@ export default function UserProfilePage() {
     (a, b) => b[1] - a[1]
   );
 
+  const isLoadingAnything =
+    profileLoading || pageLoading || statsLoading || changesetsLoading ||
+    activityLoading || taskHistoryLoading;
+
   return (
     <div className="space-y-6">
+      {/* Top-of-page loading banner. Section-level skeletons on their own
+          don't always read as "active" to users — a visible spinner
+          + label makes it unambiguous that fetches are still in flight.
+          Disappears once every known in-flight request settles. */}
+      {isLoadingAnything && (
+        <div className="flex items-center gap-2 px-4 py-2 rounded-lg bg-muted/60 border border-input text-sm text-muted-foreground sticky top-16 z-30 backdrop-blur">
+          <Spinner size="sm" />
+          <span>
+            {!user
+              ? "Loading user profile..."
+              : statsLoading
+              ? "Loading time stats..."
+              : changesetsLoading
+              ? "Loading change-set analysis..."
+              : activityLoading
+              ? "Loading activity chart..."
+              : taskHistoryLoading
+              ? "Loading task history..."
+              : "Loading..."}
+          </span>
+        </div>
+      )}
+
       {/* Section 1: Header */}
       <Card>
         <CardContent className="p-6">
@@ -580,8 +608,8 @@ export default function UserProfilePage() {
                       minute: "2-digit",
                     })}{" "}
                     via <span className="font-mono">{user.name_last_change.source}</span>
-                    {user.name_last_change.changed_by && (
-                      <> by <span className="font-mono">{user.name_last_change.changed_by}</span></>
+                    {user.name_last_change.changed_by_name && (
+                      <> by {user.name_last_change.changed_by_name}</>
                     )}
                   </p>
                 )}

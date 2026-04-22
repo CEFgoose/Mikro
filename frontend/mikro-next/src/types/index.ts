@@ -468,7 +468,8 @@ export interface UserProfileData {
   name_last_change?: {
     changed_at: string;
     source: string;
-    changed_by: string | null;
+    changed_by: string | null;        // raw id, kept for debugging
+    changed_by_name: string | null;   // resolved friendly name for UI
     old_first_name: string | null;
     old_last_name: string | null;
     new_first_name: string | null;
