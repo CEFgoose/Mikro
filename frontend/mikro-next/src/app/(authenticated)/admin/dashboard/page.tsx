@@ -1,10 +1,11 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
-import { Card, CardContent, CardHeader, CardTitle, Skeleton, Badge, Button, useToastActions, Tooltip, Val, StatCardLink } from "@/components/ui";
+import { Card, CardContent, CardHeader, CardTitle, Skeleton, Badge, Button, useToastActions, Tooltip, Val } from "@/components/ui";
 import { useAdminDashboardStats, useOrgTransactions, useUsersList, useOrgProjects, usePurgeTaskStats, useAdminSyncAllTasks, useCheckSyncStatus, useAdminTimeHistory, useAdminActiveSessions } from "@/hooks";
 import { TimeTrackingWidget } from "@/components/widgets/TimeTrackingWidget";
 import { AdminTimeManagement } from "@/components/widgets/AdminTimeManagement";
+import { DashboardStatCard } from "@/components/admin/DashboardStatCard";
 import { formatNumber, formatCurrency } from "@/lib/utils";
 import Link from "next/link";
 
@@ -42,18 +43,35 @@ function DashboardStats() {
     // This week (Sunday start)
     const dayOfWeek = now.getDay();
     const weekStart = new Date(now.getFullYear(), now.getMonth(), now.getDate() - dayOfWeek);
+    const lastWeekStart = new Date(weekStart);
+    lastWeekStart.setDate(weekStart.getDate() - 7);
 
-    const thisWeekEntries = entries.filter(
-      (e) => e.clockIn && new Date(e.clockIn) >= weekStart && e.status === "completed"
-    );
-    const weekHours = Math.round(
-      thisWeekEntries.reduce((sum, e) => sum + (e.durationSeconds ?? 0), 0) / 3600 * 10
-    ) / 10;
+    // Split entries into this-week vs last-week buckets for the delta.
+    let weekSec = 0;
+    let lastWeekSec = 0;
+    let pendingAdjustments = 0;
+    let lastWeekPendingAdjustments = 0;
 
-    // Pending adjustment requests
-    const pendingAdjustments = entries.filter(
-      (e) => e.notes?.startsWith("[ADJUSTMENT REQUESTED]") && e.status === "completed"
-    ).length;
+    for (const e of entries) {
+      if (!e.clockIn) continue;
+      const t = new Date(e.clockIn).getTime();
+      const inThisWeek = t >= weekStart.getTime();
+      const inLastWeek = t >= lastWeekStart.getTime() && t < weekStart.getTime();
+      if (e.status === "completed") {
+        if (inThisWeek) weekSec += e.durationSeconds ?? 0;
+        else if (inLastWeek) lastWeekSec += e.durationSeconds ?? 0;
+      }
+      if (
+        e.status === "completed" &&
+        e.notes?.startsWith("[ADJUSTMENT REQUESTED]")
+      ) {
+        if (inThisWeek) pendingAdjustments += 1;
+        else if (inLastWeek) lastWeekPendingAdjustments += 1;
+      }
+    }
+
+    const weekHours = Math.round((weekSec / 3600) * 10) / 10;
+    const lastWeekHours = Math.round((lastWeekSec / 3600) * 10) / 10;
 
     // Suspicious long sessions: active sessions running 10+ hours
     const longRunning = sessions.filter((s) => {
@@ -65,7 +83,33 @@ function DashboardStats() {
     // Active session count
     const activeCount = sessions.length;
 
-    return { weekHours, pendingAdjustments, longRunning, activeCount };
+    // Short-session clusters (UI6). A "cluster" = one user logging 3 or
+    // more completed sessions under 5 minutes on the same calendar day.
+    // Catches the "forgot to clock out / kept bouncing" pattern Aaron
+    // flagged (Andre's 3×1-minute sessions).
+    const SHORT_CUTOFF_SEC = 5 * 60;
+    const CLUSTER_MIN_COUNT = 3;
+    const shortByUserDay: Record<string, number> = {};
+    for (const e of entries) {
+      if (!e.clockIn || e.status !== "completed") continue;
+      if ((e.durationSeconds ?? 0) >= SHORT_CUTOFF_SEC) continue;
+      const day = (e.clockIn || "").slice(0, 10);
+      const key = `${e.userId || "?"}::${day}`;
+      shortByUserDay[key] = (shortByUserDay[key] ?? 0) + 1;
+    }
+    const shortSessionClusters = Object.values(shortByUserDay).filter(
+      (n) => n >= CLUSTER_MIN_COUNT,
+    ).length;
+
+    return {
+      weekHours,
+      lastWeekHours,
+      pendingAdjustments,
+      lastWeekPendingAdjustments,
+      longRunning,
+      activeCount,
+      shortSessionClusters,
+    };
   }, [timeHistory, activeSessions]);
   const [purgeConfirm, setPurgeConfirm] = useState(false);
   const [syncProgress, setSyncProgress] = useState<string | null>(null);
@@ -163,202 +207,123 @@ function DashboardStats() {
         </div>
       )}
 
-      {/* Stats Cards */}
-      <div className="grid gap-4 md:grid-cols-3">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <Tooltip content="Projects currently active across Tasking Manager and MapRoulette" position="bottom">
-              <CardTitle className="text-sm font-medium">Active Projects</CardTitle>
-            </Tooltip>
-            <StatCardLink href="/admin/projects" label="Manage projects">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth="2"
-                className="h-4 w-4"
-              >
-                <rect width="20" height="14" x="2" y="5" rx="2" />
-                <path d="M2 10h20" />
-              </svg>
-            </StatCardLink>
-          </CardHeader>
-          <CardContent>
-            {statsLoading ? (
-              <Skeleton className="h-8 w-16" />
-            ) : (
-              <>
-                <div className="text-2xl font-bold"><Val>{formatNumber(stats?.active_projects)}</Val></div>
-                <p className="text-xs text-muted-foreground">
-                  <Val>{formatNumber(stats?.inactive_projects)}</Val> inactive, <Val>{formatNumber(stats?.completed_projects)}</Val> completed
-                </p>
-              </>
-            )}
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <Tooltip content="Total registered users in your organization" position="bottom">
-              <CardTitle className="text-sm font-medium">Total Users</CardTitle>
-            </Tooltip>
-            <StatCardLink href="/admin/users" label="Manage users">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth="2"
-                className="h-4 w-4"
-              >
-                <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
-                <circle cx="9" cy="7" r="4" />
-                <path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" />
-              </svg>
-            </StatCardLink>
-          </CardHeader>
-          <CardContent>
-            {usersLoading ? (
-              <Skeleton className="h-8 w-16" />
-            ) : (
-              <>
-                <div className="text-2xl font-bold"><Val>{formatNumber(users?.users?.length ?? 0)}</Val></div>
-                <p className="text-xs text-muted-foreground">
-                  In organization
-                </p>
-              </>
-            )}
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <Tooltip content="Total mapping and validation tasks completed this calendar month" position="bottom">
-              <CardTitle className="text-sm font-medium">Tasks This Month</CardTitle>
-            </Tooltip>
-            <StatCardLink href="/admin/reports" label="View task reports">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth="2"
-                className="h-4 w-4"
-              >
-                <path d="M22 12h-4l-3 9L9 3l-3 9H2" />
-              </svg>
-            </StatCardLink>
-          </CardHeader>
-          <CardContent>
-            {statsLoading ? (
-              <Skeleton className="h-8 w-16" />
-            ) : (
-              <>
-                <div className="text-2xl font-bold">
-                  <Val>{formatNumber(stats?.total_contributions_for_month)}</Val>
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  {stats?.month_contribution_change !== undefined && stats.month_contribution_change >= 0 ? "+" : ""}
-                  <Val>{formatNumber(stats?.month_contribution_change)}</Val> from last month
-                </p>
-              </>
-            )}
-          </CardContent>
-        </Card>
+      {/* KPI STRIP — 4 compact cards, the headline numbers. Deltas land
+          on rate-type stats (tasks/mo, hours/wk); point-in-time counts
+          (projects, users) show a static subtitle instead. */}
+      <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-4">
+        <DashboardStatCard
+          label="Active Projects"
+          value={formatNumber(stats?.active_projects)}
+          subtitle={`${formatNumber(stats?.inactive_projects).text} inactive, ${formatNumber(stats?.completed_projects).text} completed`}
+          href="/admin/projects"
+          linkLabel="Manage projects"
+          tooltip="Projects currently active across Tasking Manager and MapRoulette"
+          loading={statsLoading}
+        />
+        <DashboardStatCard
+          label="Total Users"
+          value={formatNumber(users?.users?.length ?? 0)}
+          subtitle="In organization"
+          href="/admin/users"
+          linkLabel="Manage users"
+          tooltip="Total registered users in your organization"
+          loading={usersLoading}
+        />
+        <DashboardStatCard
+          label="Tasks This Month"
+          value={formatNumber(stats?.total_contributions_for_month)}
+          delta={
+            stats?.month_contribution_change !== undefined
+              ? {
+                  value: stats.month_contribution_change,
+                  period: "vs last month",
+                  format: "number",
+                  goodDirection: "up",
+                }
+              : null
+          }
+          href="/admin/reports"
+          linkLabel="View task reports"
+          tooltip="Total mapping and validation tasks completed this calendar month"
+          loading={statsLoading}
+        />
+        <DashboardStatCard
+          label="Hours This Week"
+          value={`${timeStats.weekHours}h`}
+          delta={{
+            value: Math.round((timeStats.weekHours - timeStats.lastWeekHours) * 10) / 10,
+            period: "vs last week",
+            format: "hours",
+            goodDirection: "up",
+          }}
+          href="/admin/time"
+          linkLabel="View time tracking"
+          tooltip="Total hours logged by all users this week (Sunday to now)"
+          loading={timeHistoryLoading}
+        />
       </div>
 
-      {/* Time Management Quick Stats */}
-      <div className="grid gap-4 md:grid-cols-3">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <Tooltip content="Total hours logged by all users this week (Sunday to now)" position="bottom">
-              <CardTitle className="text-sm font-medium">Hours This Week</CardTitle>
-            </Tooltip>
-            <StatCardLink href="/admin/time" label="View time tracking">
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" className="h-4 w-4">
-                <circle cx="12" cy="12" r="10" />
-                <polyline points="12 6 12 12 16 14" />
-              </svg>
-            </StatCardLink>
-          </CardHeader>
-          <CardContent>
-            {timeHistoryLoading ? (
-              <Skeleton className="h-8 w-16" />
-            ) : (
-              <>
-                <div className="text-2xl font-bold">{timeStats.weekHours}h</div>
-                <p className="text-xs text-muted-foreground">
-                  {timeStats.activeCount} {timeStats.activeCount === 1 ? "user" : "users"} currently clocked in
-                </p>
-              </>
-            )}
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <Tooltip content="Time entries where a user has requested an adjustment that hasn't been resolved yet" position="bottom">
-              <CardTitle className="text-sm font-medium">Pending Adjustments</CardTitle>
-            </Tooltip>
-            <StatCardLink href="/admin/time" label="Review adjustment requests">
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" className="h-4 w-4">
-                <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
-                <line x1="12" y1="9" x2="12" y2="13" />
-                <line x1="12" y1="17" x2="12.01" y2="17" />
-              </svg>
-            </StatCardLink>
-          </CardHeader>
-          <CardContent>
-            {timeHistoryLoading ? (
-              <Skeleton className="h-8 w-16" />
-            ) : (
-              <>
-                <div className={`text-2xl font-bold ${timeStats.pendingAdjustments > 0 ? "text-yellow-600" : "text-muted-foreground"}`}>
-                  <Val>{formatNumber(timeStats.pendingAdjustments)}</Val>
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  {timeStats.pendingAdjustments > 0 ? "Awaiting admin review" : "No pending requests"}
-                </p>
-              </>
-            )}
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <Tooltip content="Active clock-ins running longer than 10 hours — may indicate a user forgot to clock out" position="bottom">
-              <CardTitle className="text-sm font-medium">Long-Running Sessions</CardTitle>
-            </Tooltip>
-            <StatCardLink href="/admin/time" label="Review active sessions">
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" className="h-4 w-4">
-                <circle cx="12" cy="12" r="10" />
-                <line x1="12" y1="8" x2="12" y2="12" />
-                <line x1="12" y1="16" x2="12.01" y2="16" />
-              </svg>
-            </StatCardLink>
-          </CardHeader>
-          <CardContent>
-            {timeHistoryLoading ? (
-              <Skeleton className="h-8 w-16" />
-            ) : (
-              <>
-                <div className={`text-2xl font-bold ${timeStats.longRunning > 0 ? "text-red-600" : "text-muted-foreground"}`}>
-                  <Val>{formatNumber(timeStats.longRunning)}</Val>
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  {timeStats.longRunning > 0 ? "Sessions over 10 hours — review needed" : "No suspicious sessions"}
-                </p>
-              </>
-            )}
-          </CardContent>
-        </Card>
+      {/* HEALTH STRIP — alerts + anomalies. Severity coloring drives the
+          at-a-glance read; 0s stay neutral. Self-Validation folded in as
+          the 4th card rather than living as a standalone conditional. */}
+      <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-4">
+        <DashboardStatCard
+          label="Pending Adjustments"
+          value={formatNumber(timeStats.pendingAdjustments)}
+          delta={{
+            value: timeStats.pendingAdjustments - timeStats.lastWeekPendingAdjustments,
+            period: "vs last week",
+            format: "number",
+            goodDirection: "down",
+          }}
+          href="/admin/time"
+          linkLabel="Review adjustment requests"
+          tooltip="Time entries where a user has requested an adjustment that hasn't been resolved yet"
+          severity={timeStats.pendingAdjustments > 0 ? "warning" : "neutral"}
+          loading={timeHistoryLoading}
+        />
+        <DashboardStatCard
+          label="Long-Running Sessions"
+          value={formatNumber(timeStats.longRunning)}
+          subtitle={
+            timeStats.longRunning > 0
+              ? "Sessions over 10 hours"
+              : "No suspicious sessions"
+          }
+          href="/admin/time"
+          linkLabel="Review active sessions"
+          tooltip="Active clock-ins running longer than 10 hours — may indicate a user forgot to clock out"
+          severity={timeStats.longRunning > 0 ? "critical" : "neutral"}
+          loading={timeHistoryLoading}
+        />
+        <DashboardStatCard
+          label="Short Sessions"
+          value={formatNumber(timeStats.shortSessionClusters)}
+          subtitle={
+            timeStats.shortSessionClusters > 0
+              ? `${timeStats.shortSessionClusters === 1 ? "user-day" : "user-days"} with 3+ sessions under 5 min`
+              : "No short-session clusters"
+          }
+          href="/admin/time"
+          linkLabel="Review time entries"
+          tooltip="Users who logged three or more sessions under 5 minutes on the same day — often indicates a clock-in/out issue"
+          severity={timeStats.shortSessionClusters > 0 ? "warning" : "neutral"}
+          loading={timeHistoryLoading}
+        />
+        <DashboardStatCard
+          label="Self-Validation Alerts"
+          value={formatNumber(stats?.self_validated_count ?? 0)}
+          subtitle={
+            (stats?.self_validated_count ?? 0) > 0
+              ? "Flagged as not payable"
+              : "No self-validated tasks"
+          }
+          href="/admin/reports"
+          linkLabel="View self-validation details in reports"
+          tooltip="Tasks where the same user both mapped and validated — flagged as not payable to prevent abuse"
+          severity={(stats?.self_validated_count ?? 0) > 0 ? "warning" : "neutral"}
+          loading={statsLoading}
+        />
       </div>
 
       {/* Snapshot notice */}
@@ -366,145 +331,67 @@ function DashboardStats() {
         Stats as of {snapshotTime.toLocaleString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit", hour12: true })}
       </p>
 
-      {/* Task Statistics */}
-      <div className="grid gap-4 md:grid-cols-3">
-        <Card>
-          <CardHeader className="flex flex-row items-start justify-between space-y-0 pb-2">
-            <Tooltip content="Total tasks marked as mapped across all projects since tracking began" position="bottom">
-              <CardTitle className="text-sm font-medium">Mapped Tasks (All Time)</CardTitle>
-            </Tooltip>
-            <StatCardLink href="/admin/reports" label="View mapped tasks in reports" />
-          </CardHeader>
-          <CardContent>
-            {statsLoading ? (
-              <Skeleton className="h-10 w-20" />
-            ) : (
-              <div className="text-3xl font-bold text-kaart-orange">
-                <Val>{formatNumber(stats?.mapped_tasks)}</Val>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-start justify-between space-y-0 pb-2">
-            <Tooltip content="Tasks reviewed and approved by a validator since tracking began" position="bottom">
-              <CardTitle className="text-sm font-medium">Validated Tasks (All Time)</CardTitle>
-            </Tooltip>
-            <StatCardLink href="/admin/reports" label="View validated tasks in reports" />
-          </CardHeader>
-          <CardContent>
-            {statsLoading ? (
-              <Skeleton className="h-10 w-20" />
-            ) : (
-              <div className="text-3xl font-bold text-green-600">
-                <Val>{formatNumber(stats?.validated_tasks)}</Val>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-start justify-between space-y-0 pb-2">
-            <Tooltip content="Tasks sent back for rework after validation review since tracking began" position="bottom">
-              <CardTitle className="text-sm font-medium">Invalidated Tasks (All Time)</CardTitle>
-            </Tooltip>
-            <StatCardLink href="/admin/reports" label="View invalidated tasks in reports" />
-          </CardHeader>
-          <CardContent>
-            {statsLoading ? (
-              <Skeleton className="h-10 w-20" />
-            ) : (
-              <div className="text-3xl font-bold text-red-600">
-                <Val>{formatNumber(stats?.invalidated_tasks)}</Val>
-              </div>
-            )}
-          </CardContent>
-        </Card>
+      {/* TASKS STRIP — all-time totals. Brand colors preserved (orange/
+          green/red) per Aaron's preference: 'the boss likes colors'. */}
+      <div className="grid gap-3 md:grid-cols-3">
+        <DashboardStatCard
+          label="Mapped Tasks (All Time)"
+          value={formatNumber(stats?.mapped_tasks)}
+          href="/admin/reports"
+          linkLabel="View mapped tasks in reports"
+          tooltip="Total tasks marked as mapped across all projects since tracking began"
+          severity="info"
+          loading={statsLoading}
+        />
+        <DashboardStatCard
+          label="Validated Tasks (All Time)"
+          value={formatNumber(stats?.validated_tasks)}
+          href="/admin/reports"
+          linkLabel="View validated tasks in reports"
+          tooltip="Tasks reviewed and approved by a validator since tracking began"
+          severity="success"
+          loading={statsLoading}
+        />
+        <DashboardStatCard
+          label="Invalidated Tasks (All Time)"
+          value={formatNumber(stats?.invalidated_tasks)}
+          href="/admin/reports"
+          linkLabel="View invalidated tasks in reports"
+          tooltip="Tasks sent back for rework after validation review since tracking began"
+          severity="critical"
+          loading={statsLoading}
+        />
       </div>
 
-      {/* Self-Validation Alert */}
-      {stats?.self_validated_count != null && stats.self_validated_count > 0 && (
-        <Card className="border-yellow-200 bg-yellow-50">
-          <CardHeader className="flex flex-row items-start justify-between space-y-0 pb-2">
-            <Tooltip content="Tasks where the same user both mapped and validated — flagged as not payable to prevent abuse" position="bottom">
-              <CardTitle className="text-sm font-medium text-yellow-800">
-                Self-Validation Alerts
-              </CardTitle>
-            </Tooltip>
-            <StatCardLink href="/admin/reports" label="View self-validation details in reports" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-yellow-700">
-              <Val>{formatNumber(stats.self_validated_count)}</Val>
-            </div>
-            <p className="text-xs text-yellow-600 mt-1">
-              Tasks flagged as self-validated (not payable)
-            </p>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Payment Overview */}
-      <div className="grid gap-4 md:grid-cols-3">
-        <Card>
-          <CardHeader className="flex flex-row items-start justify-between space-y-0 pb-2">
-            <Tooltip content="Total amount owed to all users based on completed tasks and payment rates" position="bottom">
-              <CardTitle className="text-sm font-medium">Total Payable</CardTitle>
-            </Tooltip>
-            <StatCardLink href="/admin/payments" label="View payments" />
-          </CardHeader>
-          <CardContent>
-            {statsLoading ? (
-              <Skeleton className="h-10 w-28" />
-            ) : (
-              <div className="text-3xl font-bold">
-                <Val>{formatCurrency(stats?.payable_total)}</Val>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-start justify-between space-y-0 pb-2">
-            <Tooltip content="Payment requests submitted by users awaiting admin approval" position="bottom">
-              <CardTitle className="text-sm font-medium">Pending Requests</CardTitle>
-            </Tooltip>
-            <StatCardLink href="/admin/payments" label="Review payment requests" />
-          </CardHeader>
-          <CardContent>
-            {statsLoading ? (
-              <Skeleton className="h-10 w-28" />
-            ) : (
-              <>
-                <div className="text-3xl font-bold text-yellow-600">
-                  <Val>{formatCurrency(stats?.requests_total)}</Val>
-                </div>
-                <p className="text-xs text-muted-foreground mt-1">
-                  <Val>{formatNumber(transactions?.requests?.length ?? 0)}</Val> pending requests
-                </p>
-              </>
-            )}
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-start justify-between space-y-0 pb-2">
-            <Tooltip content="Total amount already paid out to users" position="bottom">
-              <CardTitle className="text-sm font-medium">Total Paid Out</CardTitle>
-            </Tooltip>
-            <StatCardLink href="/admin/payments" label="View payments" />
-          </CardHeader>
-          <CardContent>
-            {statsLoading ? (
-              <Skeleton className="h-10 w-28" />
-            ) : (
-              <div className="text-3xl font-bold text-green-600">
-                <Val>{formatCurrency(stats?.payouts_total)}</Val>
-              </div>
-            )}
-          </CardContent>
-        </Card>
+      {/* PAYMENTS STRIP. */}
+      <div className="grid gap-3 md:grid-cols-3">
+        <DashboardStatCard
+          label="Total Payable"
+          value={formatCurrency(stats?.payable_total)}
+          href="/admin/payments"
+          linkLabel="View payments"
+          tooltip="Total amount owed to all users based on completed tasks and payment rates"
+          loading={statsLoading}
+        />
+        <DashboardStatCard
+          label="Pending Requests"
+          value={formatCurrency(stats?.requests_total)}
+          subtitle={`${formatNumber(transactions?.requests?.length ?? 0).text} pending request${(transactions?.requests?.length ?? 0) === 1 ? "" : "s"}`}
+          href="/admin/payments"
+          linkLabel="Review payment requests"
+          tooltip="Payment requests submitted by users awaiting admin approval"
+          severity={(stats?.requests_total ?? 0) > 0 ? "warning" : "neutral"}
+          loading={statsLoading}
+        />
+        <DashboardStatCard
+          label="Total Paid Out"
+          value={formatCurrency(stats?.payouts_total)}
+          href="/admin/payments"
+          linkLabel="View payments"
+          tooltip="Total amount already paid out to users"
+          severity="success"
+          loading={statsLoading}
+        />
       </div>
 
       {/* Recent Activity */}
