@@ -52,11 +52,25 @@ export function SidebarClock() {
   const [todaySeconds, setTodaySeconds] = useState(0);
   const { mutate: fetchHistory } = useFetchMyTimeHistory();
 
-  const projectList: { id: number; name: string }[] =
-    projects?.user_projects?.map((p: { id: number; name: string }) => ({
-      id: p.id,
-      name: p.name,
-    })) ?? [];
+  // Sort by most-recently-worked-on first (F1). Backend ships a
+  // `last_worked_on` ISO timestamp per project; nulls sink to the
+  // bottom and tie-break by name alphabetically.
+  const projectList: { id: number; name: string; last_worked_on: string | null }[] = (
+    projects?.user_projects?.map(
+      (p: { id: number; name: string; last_worked_on?: string | null }) => ({
+        id: p.id,
+        name: p.name,
+        last_worked_on: p.last_worked_on ?? null,
+      }),
+    ) ?? []
+  ).sort((a: { name: string; last_worked_on: string | null }, b: { name: string; last_worked_on: string | null }) => {
+    if (a.last_worked_on && b.last_worked_on) {
+      return b.last_worked_on.localeCompare(a.last_worked_on);
+    }
+    if (a.last_worked_on) return -1;
+    if (b.last_worked_on) return 1;
+    return a.name.localeCompare(b.name);
+  });
 
   // Filter list by search query. If the current selection no longer
   // matches the filter, keep it visible so the dropdown still shows

@@ -12,6 +12,9 @@ export const TOPIC_OPTIONS = [
   { value: "documentation", label: "Documentation" },
   { value: "imagery_capture", label: "Imagery Capture" },
   { value: "project_creation", label: "Project Creation" },
+  // Added 2026-04 per F10 — covers Jorge's community-discussion /
+  // outreach work that previously had no trackable category.
+  { value: "community", label: "Community" },
   { value: "other", label: "Other" },
 ] as const;
 

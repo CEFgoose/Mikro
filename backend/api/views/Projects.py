@@ -1490,6 +1490,30 @@ class ProjectAPI(MethodView):
             if is_visible_by_location(proj_loc_map.get(p.id, set()), user_cids)
         ]
 
+        # Per-project "last worked on" timestamps for THIS user (F1).
+        # Drives the clock-in dropdown's recent-first sort on the
+        # frontend. One grouped aggregation over time_entries — lands
+        # on the existing (user_id, status) + project_id indexes.
+        last_worked_map = {}
+        if active_projects:
+            last_worked_rows = (
+                db.session.query(
+                    TimeEntry.project_id,
+                    func.max(TimeEntry.clock_out),
+                )
+                .filter(
+                    TimeEntry.user_id == g.user.id,
+                    TimeEntry.project_id.in_([p.id for p in active_projects]),
+                    TimeEntry.status != "voided",
+                )
+                .group_by(TimeEntry.project_id)
+                .all()
+            )
+            last_worked_map = {
+                pid: (last_ts.isoformat() + "Z") if last_ts else None
+                for pid, last_ts in last_worked_rows
+            }
+
         for project in active_projects:
             user_task_ids = [
                 relation.task_id
@@ -1553,6 +1577,11 @@ class ProjectAPI(MethodView):
                     "total_invalidated": _proj_stats["tasks_invalidated"],
                     "user_earnings": user_project_earnings,
                     "status": project.status,
+                    # For F1 — frontend sorts the clock-in dropdown
+                    # so the user's most-recent project pins to the
+                    # top. null for projects they've never clocked
+                    # into (sort to bottom on the client).
+                    "last_worked_on": last_worked_map.get(project.id),
                 }
             )
 
