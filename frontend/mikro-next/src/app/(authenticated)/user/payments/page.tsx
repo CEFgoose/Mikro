@@ -30,6 +30,8 @@ import {
   usePaymentsVisible,
 } from "@/hooks";
 import { formatNumber, formatCurrency } from "@/lib/utils";
+import { PayRateCard } from "@/components/user/PayRateCard";
+import { MonthlyPaySummaryCard } from "@/components/user/MonthlyPaySummaryCard";
 
 function formatDate(dateString: string): string {
   return new Date(dateString).toLocaleDateString("en-US", {
@@ -131,6 +133,13 @@ export default function UserPaymentsPage() {
         <p className="text-muted-foreground" style={{ marginTop: 8 }}>
           Track your earnings and payment history
         </p>
+      </div>
+
+      {/* Pay section — F12 hourly rate + F13 monthly summary. Also shown
+          on /account; final placement TBD with Aaron. */}
+      <div style={{ display: "grid", gap: 16, gridTemplateColumns: "1fr 2fr" }} className="grid-pay-row">
+        <PayRateCard />
+        <MonthlyPaySummaryCard />
       </div>
 
       {/* Stats Row */}

@@ -46,6 +46,7 @@ import type {
   ChannelsResponse,
   ChannelSummariesResponse,
   HourlySummaryResponse,
+  MyMonthlySummaryResponse,
 } from "@/types";
 
 /**
@@ -663,6 +664,13 @@ export function useMyTimeHistory() {
 
 export function useFetchMyTimeHistory() {
   return useApiMutation<TimeTrackingHistoryResponse>("/timetracking/my_history");
+}
+
+// User: self-scoped monthly pay+hours summary (F13). Accepts
+// { startDate, endDate } ISO UTC instants aligned to the viewer's
+// local month.
+export function useMyMonthlySummary() {
+  return useApiMutation<MyMonthlySummaryResponse>("/timetracking/my_monthly_summary");
 }
 
 // Admin: get all active sessions

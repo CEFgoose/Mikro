@@ -18,7 +18,7 @@ from flask import g, request, jsonify, Response
 from ..utils import requires_admin
 from ..utils.tz import org_month_bounds_utc, parse_filter_datetime
 from sqlalchemy import func
-from ..database import TimeEntry, User, Project, TeamUser, CustomTopic, HourlyPayment, db
+from ..database import TimeEntry, User, Project, Task, TeamUser, CustomTopic, HourlyPayment, db
 from ..filters import resolve_filtered_user_ids
 
 logger = logging.getLogger(__name__)
@@ -63,6 +63,8 @@ class TimeTrackingAPI(MethodView):
             return self.my_active_session()
         elif path == "my_history":
             return self.my_history()
+        elif path == "my_monthly_summary":
+            return self.my_monthly_summary()
         # Admin endpoints
         elif path == "active_sessions":
             return self.admin_active_sessions()
@@ -457,6 +459,106 @@ class TimeTrackingAPI(MethodView):
             "status": 200,
             "entries": [self._format_entry(e) for e in entries],
             "total": total,
+        }), 200
+
+    def my_monthly_summary(self):
+        """Self-scoped monthly pay+hours summary for the current user.
+
+        Body: `{ startDate, endDate }` as ISO UTC instants aligned to
+        the user's local month (see lib/timeTracking.ts helpers). One
+        round-trip powering F13's "This month" card.
+        """
+        if not hasattr(g, "user") or not g.user:
+            return jsonify({"message": "Unauthorized", "status": 401}), 401
+
+        data = request.get_json() or {}
+        start_dt, _ = parse_filter_datetime(data.get("startDate"))
+        end_dt, end_was_date_only = parse_filter_datetime(data.get("endDate"))
+        if start_dt is None or end_dt is None:
+            return jsonify({
+                "message": "startDate and endDate are required (ISO 8601).",
+                "status": 400,
+            }), 400
+        if end_was_date_only:
+            end_dt = end_dt + timedelta(days=1)
+
+        user = g.user
+
+        # Hours: sum of completed time entries in the window
+        total_seconds = db.session.query(
+            func.coalesce(func.sum(TimeEntry.duration_seconds), 0)
+        ).filter(
+            TimeEntry.user_id == user.id,
+            TimeEntry.status == "completed",
+            TimeEntry.clock_in >= start_dt,
+            TimeEntry.clock_in < end_dt,
+        ).scalar() or 0
+        total_hours = round(total_seconds / 3600, 2)
+
+        # Tasks mapped/validated by this user in the window. Tasks track
+        # the actor by osm_username (not user_id), so users without one
+        # linked just get zero — honest.
+        tasks_mapped = 0
+        tasks_validated = 0
+        mapping_earnings = 0.0
+        validation_earnings = 0.0
+        if user.osm_username:
+            mapped_row = db.session.query(
+                func.count(Task.id),
+                func.coalesce(func.sum(Task.mapping_rate), 0),
+            ).filter(
+                Task.mapped_by == user.osm_username,
+                Task.mapped == True,  # noqa: E712
+                Task.date_mapped >= start_dt,
+                Task.date_mapped < end_dt,
+            ).first()
+            tasks_mapped = int(mapped_row[0] or 0)
+            mapping_earnings = float(mapped_row[1] or 0)
+
+            validated_row = db.session.query(
+                func.count(Task.id),
+                func.coalesce(func.sum(Task.validation_rate), 0),
+            ).filter(
+                Task.validated_by == user.osm_username,
+                Task.validated == True,  # noqa: E712
+                Task.date_validated >= start_dt,
+                Task.date_validated < end_dt,
+            ).first()
+            tasks_validated = int(validated_row[0] or 0)
+            validation_earnings = float(validated_row[1] or 0)
+
+        # "Amount owed" = the relevant earnings for this user's pay model.
+        # Hourly contractors → hours × rate. Per-task mappers → sum of
+        # task rates. If neither applies → zero, with pay_mode="none".
+        hourly_rate = user.hourly_rate
+        hourly_earnings = (
+            round(total_hours * hourly_rate, 2) if hourly_rate else None
+        )
+        task_earnings = round(mapping_earnings + validation_earnings, 2)
+        if hourly_rate:
+            amount_owed = hourly_earnings or 0.0
+            pay_mode = "hourly"
+        elif task_earnings > 0:
+            amount_owed = task_earnings
+            pay_mode = "per_task"
+        else:
+            amount_owed = 0.0
+            pay_mode = "none"
+
+        return jsonify({
+            "status": 200,
+            "start_date": start_dt.isoformat() + "Z",
+            "end_date": end_dt.isoformat() + "Z",
+            "total_seconds": int(total_seconds),
+            "total_hours": total_hours,
+            "hourly_rate": hourly_rate,
+            "hourly_earnings": hourly_earnings,
+            "tasks_mapped": tasks_mapped,
+            "tasks_validated": tasks_validated,
+            "mapping_earnings": round(mapping_earnings, 2),
+            "validation_earnings": round(validation_earnings, 2),
+            "amount_owed": amount_owed,
+            "pay_mode": pay_mode,
         }), 200
 
     def request_adjustment(self):

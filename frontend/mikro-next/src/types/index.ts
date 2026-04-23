@@ -393,6 +393,22 @@ export interface TimeTrackingActiveSessionsResponse {
   sessions: TimeEntry[];
 }
 
+export interface MyMonthlySummaryResponse {
+  status: number;
+  start_date: string;
+  end_date: string;
+  total_seconds: number;
+  total_hours: number;
+  hourly_rate: number | null;
+  hourly_earnings: number | null;
+  tasks_mapped: number;
+  tasks_validated: number;
+  mapping_earnings: number;
+  validation_earnings: number;
+  amount_owed: number;
+  pay_mode: "hourly" | "per_task" | "none";
+}
+
 // User Profile types
 export interface UserProjectBreakdown {
   id: number;
@@ -1097,6 +1113,7 @@ export interface UserDetailsResponse {
   email: string;
   payment_email: string;
   micropayments_visible: boolean;
+  hourly_rate: number | null;
   status: number;
 }
 

@@ -6,6 +6,8 @@ import { useSearchParams } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle, Button, Input, Val } from "@/components/ui";
 import { useTheme } from "@/contexts/ThemeContext";
 import { usePaymentsVisible } from "@/hooks";
+import { PayRateCard } from "@/components/user/PayRateCard";
+import { MonthlyPaySummaryCard } from "@/components/user/MonthlyPaySummaryCard";
 
 interface UserProfile {
   id: number;
@@ -258,6 +260,15 @@ export default function AccountPage() {
           Manage your profile and preferences
         </p>
       </div>
+
+      {/* Pay section — F12 hourly rate + F13 monthly summary. Also shown
+          on /user/payments; final placement TBD with Aaron. */}
+      {paymentsVisible && (
+        <>
+          <PayRateCard />
+          <MonthlyPaySummaryCard />
+        </>
+      )}
 
       {/* OSM Account Linking Card */}
       <Card>
