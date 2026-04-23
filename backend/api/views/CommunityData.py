@@ -12,7 +12,10 @@ from datetime import datetime
 from flask.views import MethodView
 from flask import g, request, current_app
 
+from datetime import timedelta
+
 from ..utils import requires_admin
+from ..utils.tz import parse_filter_datetime
 from ..database import db, CommunityEntry
 
 logger = logging.getLogger(__name__)
@@ -180,18 +183,21 @@ class CommunityDataAPI(MethodView):
             query = CommunityEntry.query.filter_by(org_id=g.user.org_id)
 
             if start_date_str:
-                try:
-                    start_date = datetime.strptime(start_date_str, "%Y-%m-%d")
-                    query = query.filter(CommunityEntry.submitted_at >= start_date)
-                except ValueError:
-                    return {"message": "Invalid startDate format. Use YYYY-MM-DD", "status": 400}
+                start_date, _ = parse_filter_datetime(start_date_str)
+                if start_date is None:
+                    return {"message": "Invalid startDate format", "status": 400}
+                query = query.filter(CommunityEntry.submitted_at >= start_date)
 
             if end_date_str:
-                try:
-                    end_date = datetime.strptime(end_date_str, "%Y-%m-%d")
-                    query = query.filter(CommunityEntry.submitted_at <= end_date)
-                except ValueError:
-                    return {"message": "Invalid endDate format. Use YYYY-MM-DD", "status": 400}
+                end_date, end_was_date_only = parse_filter_datetime(end_date_str)
+                if end_date is None:
+                    return {"message": "Invalid endDate format", "status": 400}
+                # Legacy behavior leaked the full boundary day via `<=`. Use
+                # an exclusive upper bound for date-only input (add a day),
+                # and treat explicit instants as-is.
+                if end_was_date_only:
+                    end_date = end_date + timedelta(days=1)
+                query = query.filter(CommunityEntry.submitted_at < end_date)
 
             if entry_type:
                 query = query.filter_by(entry_type=entry_type)

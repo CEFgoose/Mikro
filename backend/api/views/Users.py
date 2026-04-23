@@ -14,6 +14,7 @@ from flask import g, request, current_app
 from sqlalchemy import func
 
 from ..utils import requires_admin
+from ..utils.tz import parse_filter_datetime
 from ..database import (
     User,
     UserNameAudit,
@@ -434,12 +435,31 @@ class UserAPI(MethodView):
         response = {}
         # check if the user information is available in the global context
         if not g.user:
+            # This endpoint is hit by the frontend's AuthGuard on every
+            # authenticated page mount. A 304 here is NOT an error from
+            # Flask's perspective, but the frontend treats anything !=
+            # 200-with-a-valid-role as a session failure. Log so we can
+            # correlate with the redirect loop when a user reports one.
+            sub = None
+            try:
+                if hasattr(g, "current_user") and g.current_user:
+                    sub = g.current_user.get("sub")
+            except Exception:
+                pass
+            current_app.logger.warning(
+                "[AUTH-TRACE] event=fetch_user_role_no_g_user "
+                f"sub={sub!r}"
+            )
             response["message"] = "User not found"
             response["status"] = 304
             return response
         else:
             # extract the role and name from the user information
             role = g.user.role
+            current_app.logger.info(
+                "[AUTH-TRACE] event=fetch_user_role_ok "
+                f"user_id={g.user.id!r} role={role!r}"
+            )
             # update the response dictionary with the extracted information
             response["role"] = role
             response["name"] = _format_user_name(g.user)
@@ -1604,18 +1624,14 @@ class UserAPI(MethodView):
         if not user or user.org_id != g.user.org_id:
             return {"message": "User not found in your organization", "status": 404}
 
-        # Support both date-only and datetime formats
-        try:
-            try:
-                start_date = datetime.strptime(start_date_str, "%Y-%m-%dT%H:%M:%S")
-            except ValueError:
-                start_date = datetime.strptime(start_date_str, "%Y-%m-%d")
-            try:
-                end_date = datetime.strptime(end_date_str, "%Y-%m-%dT%H:%M:%S")
-            except ValueError:
-                end_date = datetime.strptime(end_date_str, "%Y-%m-%d") + timedelta(days=1)
-        except ValueError:
-            return {"message": "Invalid date format. Use YYYY-MM-DD or YYYY-MM-DDTHH:MM:SS.", "status": 400}
+        # Accept ISO UTC instants (preferred — frontend aligns them to the
+        # viewer-admin's local midnights) or legacy date-only strings.
+        start_date, _ = parse_filter_datetime(start_date_str)
+        end_date, end_was_date_only = parse_filter_datetime(end_date_str)
+        if start_date is None or end_date is None:
+            return {"message": "Invalid date format. Use ISO 8601.", "status": 400}
+        if end_was_date_only:
+            end_date = end_date + timedelta(days=1)
 
         # Query time entries in date range
         entries = (

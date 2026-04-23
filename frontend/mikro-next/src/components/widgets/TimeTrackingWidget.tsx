@@ -17,7 +17,13 @@ interface TimeTrackingWidgetProps {
   projects?: { id: number; name: string; short_name?: string }[];
 }
 
-import { TOPIC_OPTIONS as _TOPIC_OPTIONS, topicRequiresProject } from "@/lib/timeTracking";
+import {
+  TOPIC_OPTIONS as _TOPIC_OPTIONS,
+  topicRequiresProject,
+  localDayStartIsoUtc,
+  localDayEndIsoUtc,
+  localWeekStartIsoUtc,
+} from "@/lib/timeTracking";
 
 const TOPIC_OPTIONS: SelectOption[] = _TOPIC_OPTIONS.map((t) => ({ value: t.value, label: t.label }));
 
@@ -34,19 +40,6 @@ function formatHoursMinutes(totalSeconds: number): string {
   const h = Math.floor(totalSeconds / 3600);
   const m = Math.floor((totalSeconds % 3600) / 60);
   return `${h}h ${m}m`;
-}
-
-function getMonday(d: Date): Date {
-  const date = new Date(d);
-  const day = date.getDay();
-  const diff = date.getDate() - day + (day === 0 ? -6 : 1);
-  date.setDate(diff);
-  date.setHours(0, 0, 0, 0);
-  return date;
-}
-
-function toDateStr(d: Date): string {
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
 
 export function TimeTrackingWidget({
@@ -172,15 +165,23 @@ export function TimeTrackingWidget({
     }
   }, [selectedTopic]);
 
-  // Fetch daily/weekly totals when clocked in
+  // Fetch daily/weekly totals when clocked in. Windows are aligned to
+  // the user's browser-local calendar (via ISO UTC instants), so "today"
+  // is literally today on their wall clock regardless of their TZ.
   const fetchTotals = useCallback(async () => {
     try {
-      const today = toDateStr(new Date());
-      const monday = toDateStr(getMonday(new Date()));
-
+      const dayEnd = localDayEndIsoUtc();
       const [todayResult, weekResult] = await Promise.all([
-        fetchHistory({ startDate: today, endDate: today, limit: 1000 }),
-        fetchHistory({ startDate: monday, endDate: today, limit: 1000 }),
+        fetchHistory({
+          startDate: localDayStartIsoUtc(),
+          endDate: dayEnd,
+          limit: 1000,
+        }),
+        fetchHistory({
+          startDate: localWeekStartIsoUtc(),
+          endDate: dayEnd,
+          limit: 1000,
+        }),
       ]);
 
       const todayTotal = (todayResult?.entries || [])

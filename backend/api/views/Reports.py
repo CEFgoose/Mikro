@@ -18,6 +18,7 @@ from sqlalchemy import func
 logger = logging.getLogger(__name__)
 
 from ..utils import requires_admin
+from ..utils.tz import parse_filter_datetime
 from ..database import db, Task, Project, User, TimeEntry, TeamUser, SyncJob, ElementAnalysisCache
 from ..filters import resolve_filtered_user_ids, resolve_filtered_osm_usernames
 from ..stats import get_batch_project_stats
@@ -70,14 +71,15 @@ class ReportsAPI(MethodView):
         if not start_date_str or not end_date_str:
             return {"message": "startDate and endDate required", "status": 400}
 
-        try:
-            start_date = datetime.strptime(start_date_str, "%Y-%m-%dT%H:%M:%S")
-        except ValueError:
-            start_date = datetime.strptime(start_date_str, "%Y-%m-%d")
-        try:
-            end_date = datetime.strptime(end_date_str, "%Y-%m-%dT%H:%M:%S")
-        except ValueError:
-            end_date = datetime.strptime(end_date_str, "%Y-%m-%d") + timedelta(days=1)
+        # Accept ISO UTC instants (frontend sends user-local midnights
+        # converted to UTC) OR legacy date-only strings. Legacy end-dates
+        # get the add-a-day upper bound; explicit instants do not.
+        start_date, _ = parse_filter_datetime(start_date_str)
+        end_date, end_was_date_only = parse_filter_datetime(end_date_str)
+        if start_date is None or end_date is None:
+            return {"message": "Invalid startDate or endDate", "status": 400}
+        if end_was_date_only:
+            end_date = end_date + timedelta(days=1)
 
         # Universal filter system (backward compat with teamId/userId)
         filters = request.json.get("filters")
@@ -501,14 +503,12 @@ class ReportsAPI(MethodView):
         # --- Comparison period (optional) ---
         comparison = None
         if compare_start_str and compare_end_str:
-            try:
-                cmp_start = datetime.strptime(compare_start_str, "%Y-%m-%dT%H:%M:%S")
-            except ValueError:
-                cmp_start = datetime.strptime(compare_start_str, "%Y-%m-%d")
-            try:
-                cmp_end = datetime.strptime(compare_end_str, "%Y-%m-%dT%H:%M:%S")
-            except ValueError:
-                cmp_end = datetime.strptime(compare_end_str, "%Y-%m-%d") + timedelta(days=1)
+            cmp_start, _ = parse_filter_datetime(compare_start_str)
+            cmp_end, cmp_end_was_date_only = parse_filter_datetime(compare_end_str)
+            if cmp_start is None or cmp_end is None:
+                return {"message": "Invalid compareStartDate or compareEndDate", "status": 400}
+            if cmp_end_was_date_only:
+                cmp_end = cmp_end + timedelta(days=1)
 
             cmp_mapped_q = Task.query.filter(
                 Task.org_id == g.user.org_id,
@@ -585,14 +585,12 @@ class ReportsAPI(MethodView):
         if not start_date_str or not end_date_str:
             return {"message": "startDate and endDate required", "status": 400}
 
-        try:
-            start_date = datetime.strptime(start_date_str, "%Y-%m-%dT%H:%M:%S")
-        except ValueError:
-            start_date = datetime.strptime(start_date_str, "%Y-%m-%d")
-        try:
-            end_date = datetime.strptime(end_date_str, "%Y-%m-%dT%H:%M:%S")
-        except ValueError:
-            end_date = datetime.strptime(end_date_str, "%Y-%m-%d") + timedelta(days=1)
+        start_date, _ = parse_filter_datetime(start_date_str)
+        end_date, end_was_date_only = parse_filter_datetime(end_date_str)
+        if start_date is None or end_date is None:
+            return {"message": "Invalid startDate or endDate", "status": 400}
+        if end_was_date_only:
+            end_date = end_date + timedelta(days=1)
 
         # Build base filter — universal filter system (backward compat with teamId/userId)
         base_filter = [
@@ -779,14 +777,12 @@ class ReportsAPI(MethodView):
         # --- Comparison period (optional) ---
         comparison = None
         if compare_start_str and compare_end_str:
-            try:
-                cmp_start = datetime.strptime(compare_start_str, "%Y-%m-%dT%H:%M:%S")
-            except ValueError:
-                cmp_start = datetime.strptime(compare_start_str, "%Y-%m-%d")
-            try:
-                cmp_end = datetime.strptime(compare_end_str, "%Y-%m-%dT%H:%M:%S")
-            except ValueError:
-                cmp_end = datetime.strptime(compare_end_str, "%Y-%m-%d") + timedelta(days=1)
+            cmp_start, _ = parse_filter_datetime(compare_start_str)
+            cmp_end, cmp_end_was_date_only = parse_filter_datetime(compare_end_str)
+            if cmp_start is None or cmp_end is None:
+                return {"message": "Invalid compareStartDate or compareEndDate", "status": 400}
+            if cmp_end_was_date_only:
+                cmp_end = cmp_end + timedelta(days=1)
 
             cmp_filter = [
                 TimeEntry.org_id == g.user.org_id,
@@ -893,14 +889,12 @@ class ReportsAPI(MethodView):
         if not start_date_str or not end_date_str:
             return {"message": "startDate and endDate required", "status": 400}
 
-        try:
-            start_date = datetime.strptime(start_date_str, "%Y-%m-%dT%H:%M:%S")
-        except ValueError:
-            start_date = datetime.strptime(start_date_str, "%Y-%m-%d")
-        try:
-            end_date = datetime.strptime(end_date_str, "%Y-%m-%dT%H:%M:%S")
-        except ValueError:
-            end_date = datetime.strptime(end_date_str, "%Y-%m-%d") + timedelta(days=1)
+        start_date, _ = parse_filter_datetime(start_date_str)
+        end_date, end_was_date_only = parse_filter_datetime(end_date_str)
+        if start_date is None or end_date is None:
+            return {"message": "Invalid startDate or endDate", "status": 400}
+        if end_was_date_only:
+            end_date = end_date + timedelta(days=1)
 
         # Get OSM usernames of mappers active in this period
         active_mappers_q = (
@@ -1031,14 +1025,14 @@ class ReportsAPI(MethodView):
         if not start_date_str or not end_date_str:
             return {"message": "startDate and endDate required", "status": 400}
 
-        try:
-            start_date = datetime.strptime(start_date_str, "%Y-%m-%d").date()
-        except ValueError:
-            start_date = datetime.strptime(start_date_str, "%Y-%m-%dT%H:%M:%S").date()
-        try:
-            end_date = datetime.strptime(end_date_str, "%Y-%m-%d").date()
-        except ValueError:
-            end_date = datetime.strptime(end_date_str, "%Y-%m-%dT%H:%M:%S").date()
+        # ElementAnalysisCache.week is a stored date (week start), so we
+        # want pure .date() bounds here, not a TZ-aware instant.
+        start_dt, _ = parse_filter_datetime(start_date_str)
+        end_dt, _ = parse_filter_datetime(end_date_str)
+        if start_dt is None or end_dt is None:
+            return {"message": "Invalid startDate or endDate", "status": 400}
+        start_date = start_dt.date()
+        end_date = end_dt.date()
 
         rows = ElementAnalysisCache.query.filter(
             ElementAnalysisCache.org_id == g.user.org_id,
@@ -1212,10 +1206,14 @@ class ReportsAPI(MethodView):
                 "message": "No users have Mapillary usernames linked",
             }
 
-        # Build date range
+        # Build date range — this one talks to Mapillary's API, which
+        # expects UTC ISO strings. The frontend can send ISO instants or
+        # date-only; either way we end up with a UTC window.
         if start_date_str and end_date_str:
-            start_dt = datetime.strptime(start_date_str, "%Y-%m-%d")
-            end_dt = datetime.strptime(end_date_str, "%Y-%m-%d")
+            start_dt, _ = parse_filter_datetime(start_date_str)
+            end_dt, _ = parse_filter_datetime(end_date_str)
+            if start_dt is None or end_dt is None:
+                return {"message": "Invalid startDate or endDate", "status": 400}
         else:
             end_dt = datetime.utcnow()
             start_dt = end_dt - timedelta(days=30)

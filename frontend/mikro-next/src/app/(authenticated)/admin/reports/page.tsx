@@ -35,6 +35,10 @@ import {
   useFetchAllSummaries,
 } from "@/hooks/useApi";
 import { useFilters } from "@/hooks";
+import {
+  dateInputToLocalStartIsoUtc,
+  dateInputToLocalEndIsoUtc,
+} from "@/lib/timeTracking";
 import { FilterBar } from "@/components/filters";
 import type {
   EditingStatsResponse,
@@ -475,13 +479,18 @@ export default function AdminReportsPage() {
       endDate = range.end;
     }
 
+    // Convert picked calendar days to local-midnight ISO UTC instants so
+    // the backend's window lines up with the admin's wall clock.
+    const startIso = dateInputToLocalStartIsoUtc(startDate);
+    const endIso = dateInputToLocalEndIsoUtc(endDate);
+
     const params: Record<string, unknown> = {
-      startDate,
-      endDate,
+      startDate: startIso,
+      endDate: endIso,
       filters: filtersBody,
     };
 
-    // Add comparison period if enabled
+    // Add comparison period if enabled (same length, immediately prior).
     if (compareEnabled) {
       const start = new Date(startDate + "T00:00:00");
       const end = new Date(endDate + "T00:00:00");
@@ -490,8 +499,8 @@ export default function AdminReportsPage() {
       const compareEnd = new Date(start.getTime());
       const compareStart = new Date(start.getTime() - periodMs);
       const fmtDate = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-      params.compareStartDate = fmtDate(compareStart);
-      params.compareEndDate = fmtDate(compareEnd);
+      params.compareStartDate = dateInputToLocalStartIsoUtc(fmtDate(compareStart));
+      params.compareEndDate = dateInputToLocalEndIsoUtc(fmtDate(compareEnd));
     }
 
     try {
@@ -516,7 +525,7 @@ export default function AdminReportsPage() {
 
         // Fetch element analysis cache (non-blocking)
         setElementLoading(true);
-        fetchElementAnalysis({ startDate, endDate })
+        fetchElementAnalysis({ startDate: startIso, endDate: endIso })
           .then((elRes) => {
             if (elRes?.status === 200) {
               setElementCategories(elRes.categories || []);
@@ -540,8 +549,8 @@ export default function AdminReportsPage() {
         setMapillaryLoading(true);
         try {
           const mapRes = await fetchMapillaryStats({
-            startDate,
-            endDate,
+            startDate: startIso,
+            endDate: endIso,
             ...(filtersBody?.team ? { teamId: filtersBody.team[0] } : {}),
             ...(filtersBody?.user ? { userId: filtersBody.user[0] } : {}),
           });
@@ -1344,7 +1353,10 @@ export default function AdminReportsPage() {
                                         startDate = range.start;
                                         endDate = range.end;
                                       }
-                                      const elRes = await fetchElementAnalysis({ startDate, endDate });
+                                      const elRes = await fetchElementAnalysis({
+                                        startDate: dateInputToLocalStartIsoUtc(startDate),
+                                        endDate: dateInputToLocalEndIsoUtc(endDate),
+                                      });
                                       if (elRes?.status === 200) {
                                         setElementCategories(elRes.categories || []);
                                         setElementLastUpdated(elRes.lastUpdated);

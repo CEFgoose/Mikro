@@ -18,6 +18,12 @@ import {
 import { useToastActions } from "@/components/ui";
 import { useMyTimeHistory, useRequestTimeAdjustment, useUserProjects } from "@/hooks";
 import { formatNumber } from "@/lib/utils";
+import {
+  localWeekStartIsoUtc,
+  localMonthStartIsoUtc,
+  localMonthStartAgoIsoUtc,
+  localDayEndIsoUtc,
+} from "@/lib/timeTracking";
 import { TimeTrackingWidget } from "@/components/widgets/TimeTrackingWidget";
 import type { TimeEntry } from "@/types";
 
@@ -33,33 +39,22 @@ const DATE_PRESET_LABELS: Record<DatePreset, string> = {
   all_time: "All Time",
 };
 
+// Windows are computed from the user's local calendar (via ISO UTC
+// instants), so "This Week" starts Sunday midnight in the USER's timezone
+// — not UTC — and the backend filters accordingly.
 function getDateRange(preset: DatePreset): { startDate: string | null; endDate: string | null } {
-  const now = new Date();
-  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-
   switch (preset) {
-    case "this_week": {
-      const dayOfWeek = today.getDay();
-      const start = new Date(today);
-      start.setDate(today.getDate() - dayOfWeek);
-      return { startDate: start.toISOString().split("T")[0], endDate: null };
-    }
-    case "this_month": {
-      const start = new Date(today.getFullYear(), today.getMonth(), 1);
-      return { startDate: start.toISOString().split("T")[0], endDate: null };
-    }
-    case "last_month": {
-      const start = new Date(today.getFullYear(), today.getMonth() - 1, 1);
-      const end = new Date(today.getFullYear(), today.getMonth(), 1);
+    case "this_week":
+      return { startDate: localWeekStartIsoUtc(), endDate: localDayEndIsoUtc() };
+    case "this_month":
+      return { startDate: localMonthStartIsoUtc(), endDate: localDayEndIsoUtc() };
+    case "last_month":
       return {
-        startDate: start.toISOString().split("T")[0],
-        endDate: end.toISOString().split("T")[0],
+        startDate: localMonthStartAgoIsoUtc(1),
+        endDate: localMonthStartIsoUtc(),
       };
-    }
-    case "last_3_months": {
-      const start = new Date(today.getFullYear(), today.getMonth() - 3, 1);
-      return { startDate: start.toISOString().split("T")[0], endDate: null };
-    }
+    case "last_3_months":
+      return { startDate: localMonthStartAgoIsoUtc(3), endDate: localDayEndIsoUtc() };
     case "all_time":
       return { startDate: null, endDate: null };
   }
@@ -296,11 +291,13 @@ export default function UserTimePage() {
       <div style={{ display: "grid", gap: 16, gridTemplateColumns: "repeat(3, 1fr)" }}>
         <Card style={{ padding: 0 }}>
           <div style={{ padding: "12px 16px" }}>
-            <p style={{ fontSize: 12, color: "#6b7280", marginBottom: 4 }}>Total Hours</p>
+            <p style={{ fontSize: 12, color: "#6b7280", marginBottom: 4 }}>Hours</p>
             <div style={{ fontSize: 20, fontWeight: 700, color: "#ff6b35" }}>
               {formatNumber(stats.totalHours).text}h
             </div>
-            <p style={{ fontSize: 11, color: "#6b7280", marginTop: 4 }}>All time</p>
+            <p style={{ fontSize: 11, color: "#6b7280", marginTop: 4 }}>
+              For {DATE_PRESET_LABELS[datePreset]}
+            </p>
           </div>
         </Card>
 

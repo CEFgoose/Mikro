@@ -2,16 +2,17 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useActiveTimeSession, useClockIn, useClockOut, useUserProjects, useFetchMyTimeHistory } from "@/hooks";
-import { TOPIC_OPTIONS, topicRequiresProject } from "@/lib/timeTracking";
+import {
+  TOPIC_OPTIONS,
+  topicRequiresProject,
+  localDayStartIsoUtc,
+  localDayEndIsoUtc,
+} from "@/lib/timeTracking";
 
 function formatHoursMinutes(totalSeconds: number): string {
   const h = Math.floor(totalSeconds / 3600);
   const m = Math.floor((totalSeconds % 3600) / 60);
   return `${h}h ${m}m`;
-}
-
-function toDateStr(d: Date): string {
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
 
 function formatElapsedTime(seconds: number): string {
@@ -117,8 +118,11 @@ export function SidebarClock() {
     if (!isClockedIn) return;
     const fetchTodayTotal = async () => {
       try {
-        const today = toDateStr(new Date());
-        const result = await fetchHistory({ startDate: today, endDate: today, limit: 1000 });
+        const result = await fetchHistory({
+          startDate: localDayStartIsoUtc(),
+          endDate: localDayEndIsoUtc(),
+          limit: 1000,
+        });
         const total = (result?.entries || [])
           .filter((e: { status: string; durationSeconds: number | null }) => e.status === "completed")
           .reduce((sum: number, e: { durationSeconds: number | null }) => sum + (e.durationSeconds || 0), 0);

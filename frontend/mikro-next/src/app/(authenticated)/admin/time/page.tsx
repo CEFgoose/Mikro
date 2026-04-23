@@ -32,6 +32,14 @@ import {
   useOrgProjects,
 } from "@/hooks/useApi";
 import { formatNumber } from "@/lib/utils";
+import {
+  localWeekStartIsoUtc,
+  localMonthStartIsoUtc,
+  localMonthStartAgoIsoUtc,
+  localDayEndIsoUtc,
+  dateInputToLocalStartIsoUtc,
+  dateInputToLocalEndIsoUtc,
+} from "@/lib/timeTracking";
 import type { TimeEntry } from "@/types";
 import { TimeManagementFilterSummary } from "@/components/admin/TimeManagementFilterSummary";
 
@@ -63,6 +71,9 @@ const DATE_PRESET_ORDER: DatePreset[] = [
   "custom",
 ];
 
+// Windows are browser-local (admin's wall clock), emitted as ISO UTC
+// instants so the backend filters against UTC-stored clock_in without
+// drift for non-UTC admins.
 function getDateRange(
   preset: DatePreset,
   custom?: { start: string; end: string }
@@ -70,38 +81,24 @@ function getDateRange(
   startDate: string | null;
   endDate: string | null;
 } {
-  const now = new Date();
-  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-
   switch (preset) {
-    case "this_week": {
-      const dayOfWeek = today.getDay();
-      const start = new Date(today);
-      start.setDate(today.getDate() - dayOfWeek);
-      return { startDate: start.toISOString().split("T")[0], endDate: null };
-    }
-    case "this_month": {
-      const start = new Date(today.getFullYear(), today.getMonth(), 1);
-      return { startDate: start.toISOString().split("T")[0], endDate: null };
-    }
-    case "last_month": {
-      const start = new Date(today.getFullYear(), today.getMonth() - 1, 1);
-      const end = new Date(today.getFullYear(), today.getMonth(), 1);
+    case "this_week":
+      return { startDate: localWeekStartIsoUtc(), endDate: localDayEndIsoUtc() };
+    case "this_month":
+      return { startDate: localMonthStartIsoUtc(), endDate: localDayEndIsoUtc() };
+    case "last_month":
       return {
-        startDate: start.toISOString().split("T")[0],
-        endDate: end.toISOString().split("T")[0],
+        startDate: localMonthStartAgoIsoUtc(1),
+        endDate: localMonthStartIsoUtc(),
       };
-    }
-    case "last_3_months": {
-      const start = new Date(today.getFullYear(), today.getMonth() - 3, 1);
-      return { startDate: start.toISOString().split("T")[0], endDate: null };
-    }
+    case "last_3_months":
+      return { startDate: localMonthStartAgoIsoUtc(3), endDate: localDayEndIsoUtc() };
     case "all_time":
       return { startDate: null, endDate: null };
     case "custom":
       return {
-        startDate: custom?.start || null,
-        endDate: custom?.end || null,
+        startDate: dateInputToLocalStartIsoUtc(custom?.start),
+        endDate: dateInputToLocalEndIsoUtc(custom?.end),
       };
   }
 }
@@ -356,6 +353,19 @@ export default function AdminTimePage() {
   useEffect(() => {
     fetchWithFilters();
   }, [fetchWithFilters]);
+
+  // Refresh stats + active sessions when anyone clocks in/out so admins
+  // watching this page see live numbers without a manual reload.
+  useEffect(() => {
+    const handler = () => {
+      setTimeout(() => {
+        fetchWithFilters();
+        refetchSessions().catch(() => {});
+      }, 500);
+    };
+    window.addEventListener("clock-state-changed", handler);
+    return () => window.removeEventListener("clock-state-changed", handler);
+  }, [fetchWithFilters, refetchSessions]);
 
   // Reset page when filters change
   useEffect(() => {

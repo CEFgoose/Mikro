@@ -52,6 +52,10 @@ import type {
   TaskHistoryEntry,
 } from "@/types";
 import { formatNumber, formatCurrency } from "@/lib/utils";
+import {
+  dateInputToLocalStartIsoUtc,
+  dateInputToLocalEndIsoUtc,
+} from "@/lib/timeTracking";
 import { RecentActivityCard } from "@/components/admin/RecentActivityCard";
 import { AssignedProjectsTable } from "@/components/admin/AssignedProjectsTable";
 import { openChangesetInJosm, zoomToChangeset } from "@/lib/josmRemoteControl";
@@ -109,9 +113,14 @@ function formatDuration(seconds: number | null): string {
   return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
 }
 
+// Returns YYYY-MM-DD strings anchored to the admin's local calendar.
+// Those get converted to local-midnight ISO UTC instants at the call site
+// before hitting the backend (see dateInputToLocal*IsoUtc helpers).
 function getDateRange(preset: DatePreset): { start: string; end: string } {
   const now = new Date();
-  const end = now.toISOString().split("T")[0];
+  const fmt = (d: Date) =>
+    `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  const end = fmt(now);
   let start: string;
   switch (preset) {
     case "daily":
@@ -120,13 +129,13 @@ function getDateRange(preset: DatePreset): { start: string; end: string } {
     case "weekly": {
       const weekAgo = new Date(now);
       weekAgo.setDate(weekAgo.getDate() - 7);
-      start = weekAgo.toISOString().split("T")[0];
+      start = fmt(weekAgo);
       break;
     }
     case "monthly": {
       const monthAgo = new Date(now);
       monthAgo.setMonth(monthAgo.getMonth() - 1);
-      start = monthAgo.toISOString().split("T")[0];
+      start = fmt(monthAgo);
       break;
     }
     default:
@@ -254,7 +263,11 @@ export default function UserProfilePage() {
   const loadDateStats = useCallback(
     async (startDate: string, endDate: string) => {
       try {
-        const res = await fetchStats({ userId, startDate, endDate });
+        const res = await fetchStats({
+          userId,
+          startDate: dateInputToLocalStartIsoUtc(startDate),
+          endDate: dateInputToLocalEndIsoUtc(endDate),
+        });
         if (res?.stats) {
           setFilteredEntries(res.stats.time_entries || []);
           setFilteredProjects(res.stats.projects || []);

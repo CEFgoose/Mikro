@@ -16,6 +16,7 @@ from flask.views import MethodView
 from flask import g, request, jsonify, Response
 
 from ..utils import requires_admin
+from ..utils.tz import org_month_bounds_utc, parse_filter_datetime
 from sqlalchemy import func
 from ..database import TimeEntry, User, Project, TeamUser, CustomTopic, HourlyPayment, db
 from ..filters import resolve_filtered_user_ids
@@ -181,19 +182,9 @@ class TimeTrackingAPI(MethodView):
         logger.error(f"OSM changeset fetch failed after 3 attempts for {osm_username}")
         return 0, 0
 
-    @staticmethod
-    def _parse_date(date_str):
-        """Parse an ISO date or datetime string. Returns naive datetime or None."""
-        if not date_str:
-            return None
-        try:
-            dt = datetime.fromisoformat(date_str.replace("Z", "+00:00"))
-            return dt.replace(tzinfo=None)
-        except (ValueError, AttributeError):
-            try:
-                return datetime.strptime(date_str, "%Y-%m-%d")
-            except (ValueError, AttributeError):
-                return None
+    # _parse_date: thin wrapper around the shared parser so existing in-file
+    # callers keep working. New code should use parse_filter_datetime directly.
+    _parse_date = staticmethod(parse_filter_datetime)
 
     @staticmethod
     def _build_filtered_query(org_id, data, restrict_user_id=None):
@@ -239,14 +230,16 @@ class TimeTrackingAPI(MethodView):
                     # Team has no members — return empty result
                     conditions.append(TimeEntry.user_id == None)  # noqa: E711
 
-        # Date filters
-        start_date = TimeTrackingAPI._parse_date(data.get("startDate"))
-        end_date = TimeTrackingAPI._parse_date(data.get("endDate"))
+        # Date filters. Frontend usually sends ISO UTC instants aligned to
+        # the user's local midnights — in that case we use the explicit
+        # instant as-is. Legacy date-only strings ("2026-04-23") still work
+        # and get the add-a-day upper bound for back-compat.
+        start_date, _ = TimeTrackingAPI._parse_date(data.get("startDate"))
+        end_date, end_was_date_only = TimeTrackingAPI._parse_date(data.get("endDate"))
         if start_date:
             conditions.append(TimeEntry.clock_in >= start_date)
         if end_date:
-            # If only a date (midnight), add a day for exclusive upper bound
-            if end_date.hour == 0 and end_date.minute == 0 and end_date.second == 0:
+            if end_was_date_only:
                 end_date = end_date + timedelta(days=1)
             conditions.append(TimeEntry.clock_in < end_date)
 
@@ -1143,35 +1136,31 @@ class TimeTrackingAPI(MethodView):
             return jsonify({"status": 200, "year": year, "contractors": []})
 
         contractor_ids = [c.id for c in contractors]
-        year_start = datetime(year, 1, 1)
-        year_end = datetime(year + 1, 1, 1)
 
-        # Aggregate time entries per user per month
-        time_agg = (
-            db.session.query(
-                TimeEntry.user_id,
-                func.extract("month", TimeEntry.clock_in).label("month"),
-                func.sum(TimeEntry.duration_seconds).label("total_seconds"),
-            )
-            .filter(
-                TimeEntry.org_id == org_id,
-                TimeEntry.status == "completed",
-                TimeEntry.clock_in >= year_start,
-                TimeEntry.clock_in < year_end,
-                TimeEntry.user_id.in_(contractor_ids),
-            )
-            .group_by(TimeEntry.user_id, func.extract("month", TimeEntry.clock_in))
-            .all()
-        )
-
-        # Build lookup: {user_id: {month: total_seconds}}
+        # Months are bucketed against the org timezone (America/Denver), not
+        # UTC. A session worked Mar 31 9pm Manila (= Apr 1 01:00 UTC) lands
+        # in March for payroll because Kaart runs one monthly close from
+        # Denver. Without this, those hours would silently cross the month.
         time_lookup = {}
-        for row in time_agg:
-            uid = row.user_id
-            m = int(row.month)
-            if uid not in time_lookup:
-                time_lookup[uid] = {}
-            time_lookup[uid][m] = row.total_seconds or 0
+        for m in range(1, 13):
+            m_start, m_end = org_month_bounds_utc(year, m)
+            rows = (
+                db.session.query(
+                    TimeEntry.user_id,
+                    func.sum(TimeEntry.duration_seconds).label("total_seconds"),
+                )
+                .filter(
+                    TimeEntry.org_id == org_id,
+                    TimeEntry.status == "completed",
+                    TimeEntry.clock_in >= m_start,
+                    TimeEntry.clock_in < m_end,
+                    TimeEntry.user_id.in_(contractor_ids),
+                )
+                .group_by(TimeEntry.user_id)
+                .all()
+            )
+            for row in rows:
+                time_lookup.setdefault(row.user_id, {})[m] = row.total_seconds or 0
 
         # Get existing HourlyPayment records for this year
         payments = HourlyPayment.query.filter(
@@ -1266,9 +1255,10 @@ class TimeTrackingAPI(MethodView):
         user.hourly_rate = hourly_rate
         db.session.commit()
 
+        action = "removed" if hourly_rate is None else f"set to ${hourly_rate:.2f}"
         return jsonify({
             "status": 200,
-            "message": f"Hourly rate {'removed' if hourly_rate is None else f'set to ${hourly_rate:.2f}'} for {user.full_name}",
+            "message": f"Hourly rate {action} for {user.full_name}",
         })
 
     @requires_admin
@@ -1296,12 +1286,9 @@ class TimeTrackingAPI(MethodView):
         ).first()
 
         if paid:
-            # Compute current totals from time entries
-            month_start = datetime(year, month, 1)
-            if month == 12:
-                month_end = datetime(year + 1, 1, 1)
-            else:
-                month_end = datetime(year, month + 1, 1)
+            # Month window is org-TZ anchored (America/Denver), matching the
+            # payroll summary view so snapshots and live totals agree.
+            month_start, month_end = org_month_bounds_utc(year, month)
 
             total_seconds = db.session.query(
                 func.coalesce(func.sum(TimeEntry.duration_seconds), 0)

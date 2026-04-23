@@ -22,6 +22,10 @@ import {
   useSyncCommunitySheet,
   useFetchCommunityEntries,
 } from "@/hooks/useApi";
+import {
+  dateInputToLocalStartIsoUtc,
+  dateInputToLocalEndIsoUtc,
+} from "@/lib/timeTracking";
 import type {
   TimekeepingStatsResponse,
   ElementAnalysisCategory,
@@ -383,12 +387,16 @@ export default function WeeklyReportBuilderPage() {
     setTkFetched(false);
     setElemFetched(false);
 
+    // Convert the admin's picked calendar days (YYYY-MM-DD) to local-midnight
+    // ISO UTC instants so the backend windows match their wall clock.
+    const startIso = dateInputToLocalStartIsoUtc(startDate);
+    const endIso = dateInputToLocalEndIsoUtc(endDate);
     try {
-      const tkParams: Record<string, unknown> = { startDate, endDate };
+      const tkParams: Record<string, unknown> = { startDate: startIso, endDate: endIso };
       if (selectedTeamId) tkParams.teamId = selectedTeamId;
       if (compareEnabled && prevDraft) {
-        tkParams.compareStartDate = prevDraft.start_date;
-        tkParams.compareEndDate = prevDraft.end_date;
+        tkParams.compareStartDate = dateInputToLocalStartIsoUtc(prevDraft.start_date);
+        tkParams.compareEndDate = dateInputToLocalEndIsoUtc(prevDraft.end_date);
       }
       const tkResult = await fetchTimekeeping(tkParams);
       setTimekeepingData(tkResult);
@@ -398,7 +406,7 @@ export default function WeeklyReportBuilderPage() {
     }
 
     try {
-      const elemResult = await fetchElements({ startDate, endDate });
+      const elemResult = await fetchElements({ startDate: startIso, endDate: endIso });
       if (elemResult && "categories" in elemResult) {
         setElementCategories(
           (elemResult as unknown as { categories: ElementAnalysisCategory[] }).categories || []
@@ -512,8 +520,8 @@ export default function WeeklyReportBuilderPage() {
   const handlePullCommunityData = async (sectionType: "community_outreach" | "community_discussions" | "investigations") => {
     try {
       const result = await fetchCommunityEntries({
-        startDate,
-        endDate,
+        startDate: dateInputToLocalStartIsoUtc(startDate),
+        endDate: dateInputToLocalEndIsoUtc(endDate),
         entryType: sectionType === "community_outreach" ? "outreach" : sectionType === "community_discussions" ? "discussion" : "investigation",
       });
       if (result?.entries && result.entries.length > 0) {

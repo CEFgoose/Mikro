@@ -156,6 +156,14 @@ function DashboardStats() {
     return () => stopPolling();
   }, [stopPolling]);
 
+  // Refresh stats when a clock-in/out happens elsewhere (sidebar, widget,
+  // other admins) so the dashboard numbers don't go stale on this page.
+  useEffect(() => {
+    const handler = () => setTimeout(() => refetchStats(), 500);
+    window.addEventListener("clock-state-changed", handler);
+    return () => window.removeEventListener("clock-state-changed", handler);
+  }, [refetchStats]);
+
   const handleSyncAllTasks = async () => {
     try {
       const result = await syncAllTasks({});
