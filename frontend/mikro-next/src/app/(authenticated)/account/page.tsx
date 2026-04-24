@@ -8,7 +8,6 @@ import { useTheme } from "@/contexts/ThemeContext";
 import { usePaymentsVisible } from "@/hooks";
 import { PayRateCard } from "@/components/user/PayRateCard";
 import { MonthlyPaySummaryCard } from "@/components/user/MonthlyPaySummaryCard";
-import { NotificationPreferencesCard } from "@/components/comms/NotificationPreferencesCard";
 
 interface UserProfile {
   id: number;
@@ -270,10 +269,6 @@ export default function AccountPage() {
           <MonthlyPaySummaryCard />
         </>
       )}
-
-      {/* Notification preferences — email toggles for each notification
-          type (in-app bell notifications always show). */}
-      <NotificationPreferencesCard />
 
       {/* OSM Account Linking Card */}
       <Card>

@@ -20,7 +20,6 @@ from ..utils.tz import org_month_bounds_utc, parse_filter_datetime
 from sqlalchemy import func
 from ..database import TimeEntry, User, Project, Task, TeamUser, CustomTopic, HourlyPayment, db
 from ..filters import resolve_filtered_user_ids
-from ..notifications import create_notification
 
 logger = logging.getLogger(__name__)
 
@@ -602,31 +601,6 @@ class TimeTrackingAPI(MethodView):
         entry.notes = f"[ADJUSTMENT REQUESTED] {reason}"
         entry.save()
 
-        # Notify every admin in the org that a review was requested.
-        try:
-            admins = User.query.filter(
-                User.org_id == g.user.org_id, User.role == "admin"
-            ).all()
-            requester_name = g.user.full_name or g.user.email or "A user"
-            snippet = reason[:120] + ("…" if len(reason) > 120 else "")
-            for a in admins:
-                if a.id == g.user.id:
-                    continue
-                create_notification(
-                    user_id=a.id,
-                    org_id=g.user.org_id,
-                    type="adjustment_requested",
-                    message=f"{requester_name} requested a time-entry adjustment: {snippet}",
-                    link="/admin/time",
-                    actor_id=g.user.id,
-                    entity_type="time_entry",
-                    entity_id=entry.id,
-                    commit=False,
-                )
-            db.session.commit()
-        except Exception:
-            db.session.rollback()
-
         return jsonify({
             "message": "Adjustment request submitted",
             "status": 200,
@@ -736,24 +710,6 @@ class TimeTrackingAPI(MethodView):
 
         entry.save()
 
-        # Notify the editor whose session got force-closed.
-        try:
-            create_notification(
-                user_id=entry.user_id,
-                org_id=g.user.org_id,
-                type="entry_force_closed",
-                message=(
-                    f"An admin ended your {entry.category or 'active'} session "
-                    f"(duration {entry.duration_seconds or 0}s)."
-                ),
-                link="/user/time",
-                actor_id=g.user.id,
-                entity_type="time_entry",
-                entity_id=entry.id,
-            )
-        except Exception:
-            pass
-
         return jsonify({
             "message": "Force clock out successful",
             "status": 200,
@@ -796,20 +752,6 @@ class TimeTrackingAPI(MethodView):
         entry.voided_by = g.user.id
         entry.voided_at = datetime.utcnow()
         entry.save()
-
-        try:
-            create_notification(
-                user_id=entry.user_id,
-                org_id=g.user.org_id,
-                type="entry_adjusted",
-                message="An admin voided one of your time entries.",
-                link="/user/time",
-                actor_id=g.user.id,
-                entity_type="time_entry",
-                entity_id=entry.id,
-            )
-        except Exception:
-            pass
 
         return jsonify({
             "message": "Entry voided",
@@ -893,20 +835,6 @@ class TimeTrackingAPI(MethodView):
         entry.edited_by = g.user.id
         entry.edited_at = datetime.utcnow()
         entry.save()
-
-        try:
-            create_notification(
-                user_id=entry.user_id,
-                org_id=g.user.org_id,
-                type="entry_adjusted",
-                message="An admin adjusted one of your time entries.",
-                link="/user/time",
-                actor_id=g.user.id,
-                entity_type="time_entry",
-                entity_id=entry.id,
-            )
-        except Exception:
-            pass
 
         return jsonify({
             "message": "Entry updated",
@@ -1512,25 +1440,6 @@ class TimeTrackingAPI(MethodView):
                     hp.notes = notes
 
         db.session.commit()
-
-        # Notify the contractor when their month is freshly marked paid.
-        if paid:
-            try:
-                create_notification(
-                    user_id=user_id,
-                    org_id=g.user.org_id,
-                    type="payment_sent",
-                    message=(
-                        f"Your {year}-{month:02d} hourly payment has been "
-                        f"marked paid."
-                    ),
-                    link="/user/payments",
-                    actor_id=g.user.id,
-                    entity_type="hourly_payment",
-                    entity_id=hp.id if hp else None,
-                )
-            except Exception:
-                pass
 
         return jsonify({
             "status": 200,

@@ -409,131 +409,6 @@ export interface MyMonthlySummaryResponse {
   pay_mode: "hourly" | "per_task" | "none";
 }
 
-// Comms platform — notifications + email + messenger.
-
-export interface Notification {
-  id: number;
-  type: string;
-  message: string;
-  link: string | null;
-  actor_id: string | null;
-  entity_type: string | null;
-  entity_id: number | null;
-  is_read: boolean;
-  created_at: string;
-}
-
-export interface NotificationsResponse {
-  status: number;
-  notifications: Notification[];
-  total: number;
-}
-
-export interface NotificationUnreadCountResponse {
-  status: number;
-  unread_count: number;
-}
-
-export interface NotificationPreferences {
-  notify_entry_adjusted: boolean;
-  notify_entry_force_closed: boolean;
-  notify_adjustment_requested: boolean;
-  notify_assigned_to_project: boolean;
-  notify_payment_sent: boolean;
-  notify_bank_info_changed: boolean;
-  notify_announcement: boolean;
-  notify_message_received: boolean;
-}
-
-export interface NotificationPreferencesResponse {
-  status: number;
-  preferences: NotificationPreferences;
-}
-
-export interface EmailCampaign {
-  id: number;
-  subject: string;
-  audience: string;
-  is_forced: boolean;
-  sent_by: string | null;
-  sent_by_name: string | null;
-  sent_at: string | null;
-  recipient_count: number | null;
-  created_at: string;
-}
-
-export interface EmailCampaignsListResponse {
-  status: number;
-  campaigns: EmailCampaign[];
-}
-
-export interface EmailCampaignCreateResponse {
-  status: number;
-  campaign: EmailCampaign;
-  recipient_count: number;
-}
-
-export interface EmailCampaignPreviewResponse {
-  status: number;
-  recipient_count: number;
-}
-
-export type MessageScopeType = "user" | "team" | "region" | "org";
-
-export interface Message {
-  id: number;
-  sender_id: string;
-  sender_name: string;
-  target_type: MessageScopeType;
-  target_user_id: string | null;
-  target_team_id: number | null;
-  target_region_id: number | null;
-  content: string;
-  created_at: string;
-}
-
-export interface MessagesThreadResponse {
-  status: number;
-  messages: Message[];
-  total: number;
-}
-
-export interface Conversation {
-  scope_type: MessageScopeType;
-  scope_key: string;
-  label: string;
-  subtitle: string;
-  last_message: Message | null;
-  unread_count: number;
-}
-
-export interface ConversationsResponse {
-  status: number;
-  conversations: Conversation[];
-}
-
-export interface MessagesSendResponse {
-  status: number;
-  message: Message;
-}
-
-export interface MessagesUnreadCountResponse {
-  status: number;
-  unread_count: number;
-}
-
-export interface MessagesContact {
-  id: string;
-  name: string;
-  email: string;
-  role: string;
-}
-
-export interface MessagesContactsResponse {
-  status: number;
-  contacts: MessagesContact[];
-}
-
 // User Profile types
 export interface UserProjectBreakdown {
   id: number;
@@ -1228,7 +1103,6 @@ export interface UsersResponse {
 }
 
 export interface UserDetailsResponse {
-  id: string;
   role: string;
   first_name: string;
   last_name: string;
