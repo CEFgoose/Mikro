@@ -20,7 +20,7 @@ from ..utils.tz import org_month_bounds_utc, parse_filter_datetime
 from sqlalchemy import func
 from ..database import TimeEntry, User, Project, Task, TeamUser, CustomTopic, HourlyPayment, db
 from ..filters import resolve_filtered_user_ids
-from ..notifications import create_notification
+from ..notifications import create_notification, NotificationType
 
 logger = logging.getLogger(__name__)
 
@@ -615,7 +615,7 @@ class TimeTrackingAPI(MethodView):
                 create_notification(
                     user_id=a.id,
                     org_id=g.user.org_id,
-                    type="adjustment_requested",
+                    type=NotificationType.ADJUSTMENT_REQUESTED,
                     message=f"{requester_name} requested a time-entry adjustment: {snippet}",
                     link="/admin/time",
                     actor_id=g.user.id,
@@ -741,7 +741,7 @@ class TimeTrackingAPI(MethodView):
             create_notification(
                 user_id=entry.user_id,
                 org_id=g.user.org_id,
-                type="entry_force_closed",
+                type=NotificationType.ENTRY_FORCE_CLOSED,
                 message=(
                     f"An admin ended your {entry.category or 'active'} session "
                     f"(duration {entry.duration_seconds or 0}s)."
@@ -801,7 +801,7 @@ class TimeTrackingAPI(MethodView):
             create_notification(
                 user_id=entry.user_id,
                 org_id=g.user.org_id,
-                type="entry_adjusted",
+                type=NotificationType.ENTRY_ADJUSTED,
                 message="An admin voided one of your time entries.",
                 link="/user/time",
                 actor_id=g.user.id,
@@ -898,7 +898,7 @@ class TimeTrackingAPI(MethodView):
             create_notification(
                 user_id=entry.user_id,
                 org_id=g.user.org_id,
-                type="entry_adjusted",
+                type=NotificationType.ENTRY_ADJUSTED,
                 message="An admin adjusted one of your time entries.",
                 link="/user/time",
                 actor_id=g.user.id,
@@ -1519,7 +1519,7 @@ class TimeTrackingAPI(MethodView):
                 create_notification(
                     user_id=user_id,
                     org_id=g.user.org_id,
-                    type="payment_sent",
+                    type=NotificationType.PAYMENT_SENT,
                     message=(
                         f"Your {year}-{month:02d} hourly payment has been "
                         f"marked paid."

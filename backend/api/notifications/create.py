@@ -20,6 +20,7 @@ from typing import Optional
 from flask import current_app
 
 from ..database import Notification, User, db
+from .types import NotificationType
 
 
 # Notification type → the User.notify_* column that controls email
@@ -27,14 +28,14 @@ from ..database import Notification, User, db
 # (kept quiet). Admin campaigns check notify_announcement via their own
 # path — they don't flow through this helper.
 NOTIFICATION_EMAIL_PREFS: dict[str, str] = {
-    "entry_adjusted": "notify_entry_adjusted",
-    "entry_force_closed": "notify_entry_force_closed",
-    "adjustment_requested": "notify_adjustment_requested",
-    "assigned_to_project": "notify_assigned_to_project",
-    "payment_sent": "notify_payment_sent",
-    "bank_info_changed": "notify_bank_info_changed",
-    "announcement": "notify_announcement",
-    "message_received": "notify_message_received",
+    NotificationType.ENTRY_ADJUSTED: "notify_entry_adjusted",
+    NotificationType.ENTRY_FORCE_CLOSED: "notify_entry_force_closed",
+    NotificationType.ADJUSTMENT_REQUESTED: "notify_adjustment_requested",
+    NotificationType.ASSIGNED_TO_PROJECT: "notify_assigned_to_project",
+    NotificationType.PAYMENT_SENT: "notify_payment_sent",
+    NotificationType.BANK_INFO_CHANGED: "notify_bank_info_changed",
+    NotificationType.ANNOUNCEMENT: "notify_announcement",
+    NotificationType.MESSAGE_RECEIVED: "notify_message_received",
 }
 
 

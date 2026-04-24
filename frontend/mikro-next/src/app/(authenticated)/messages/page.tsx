@@ -20,6 +20,8 @@ import type {
   MessagesContact,
 } from "@/types";
 import { useUserDetails } from "@/hooks";
+import { relativeTime } from "@/lib/relativeTime";
+import { CountBadge } from "@/components/comms/CountBadge";
 
 /*
  * Messenger page — two-pane layout. Left: conversation list grouped
@@ -36,20 +38,6 @@ const TARGET_LABELS: Record<MessageScopeType, string> = {
   region: "Regions",
   org: "Organization",
 };
-
-function relativeTime(iso: string): string {
-  const now = Date.now();
-  const then = new Date(iso).getTime();
-  const diff = Math.max(0, now - then);
-  const minutes = Math.floor(diff / 60000);
-  if (minutes < 1) return "just now";
-  if (minutes < 60) return `${minutes}m ago`;
-  const hours = Math.floor(minutes / 60);
-  if (hours < 24) return `${hours}h ago`;
-  const days = Math.floor(hours / 24);
-  if (days < 7) return `${days}d ago`;
-  return new Date(iso).toLocaleDateString();
-}
 
 function MessagesPageInner() {
   const params = useSearchParams();
@@ -263,25 +251,7 @@ function MessagesPageInner() {
                     >
                       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                         <span style={{ fontWeight: 600, fontSize: 13 }}>{c.label}</span>
-                        {c.unread_count > 0 && (
-                          <span
-                            style={{
-                              minWidth: 18,
-                              height: 18,
-                              padding: "0 5px",
-                              borderRadius: 9,
-                              background: "#dc2626",
-                              color: "#fff",
-                              fontSize: 10,
-                              fontWeight: 700,
-                              display: "inline-flex",
-                              alignItems: "center",
-                              justifyContent: "center",
-                            }}
-                          >
-                            {c.unread_count > 99 ? "99+" : c.unread_count}
-                          </span>
-                        )}
+                        <CountBadge count={c.unread_count} position="inline" />
                       </div>
                       {c.last_message && (
                         <div style={{ fontSize: 11, color: "var(--muted-foreground)", marginTop: 4, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>

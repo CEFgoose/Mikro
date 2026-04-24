@@ -10,7 +10,7 @@ from flask import g, request
 
 from ..utils import requires_admin
 from ..database import db, User, PayRequests, Payments, UserTasks, Task, Project
-from ..notifications import create_notification
+from ..notifications import create_notification, NotificationType
 from ..stats import get_user_payment_balances
 
 
@@ -281,7 +281,7 @@ class TransactionAPI(MethodView):
             create_notification(
                 user_id=user_id,
                 org_id=g.user.org_id,
-                type="payment_sent",
+                type=NotificationType.PAYMENT_SENT,
                 message=(
                     f"Your payment of ${request_amount:.2f} has been sent."
                 ),

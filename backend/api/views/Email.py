@@ -14,14 +14,13 @@ from flask import g, jsonify, request
 from flask.views import MethodView
 
 from ..database import (
-    Country,
     EmailCampaign,
-    Team,
-    TeamUser,
     User,
     db,
 )
 from ..email import mailer
+from ..email.audience import parse_audience
+from ..targeting import org_users, region_users, team_member_users
 from ..utils import requires_admin
 
 
@@ -43,52 +42,25 @@ class EmailAPI(MethodView):
     ) -> list[User]:
         """Resolve an audience identifier to a concrete list of User rows.
 
-        Audience values:
-          - "all_org"        — everyone in the admin's org
-          - "team:<id>"      — members of that team (team must be in org)
-          - "region:<id>"    — users whose country belongs to that region
-                               AND are in the admin's org
+        See `api.email.audience` for the audience-string format.
 
         Filtered by notify_announcement = True unless `is_forced` is set.
         """
-        users: list[User] = []
+        require_pref = None if is_forced else "notify_announcement"
+        kind, target_id = parse_audience(audience)
 
-        if audience == "all_org":
-            q = User.query.filter(User.org_id == org_id)
-            if not is_forced:
-                q = q.filter(User.notify_announcement.is_(True))
-            users = q.all()
-
-        elif audience.startswith("team:"):
-            try:
-                team_id = int(audience.split(":", 1)[1])
-            except (ValueError, IndexError):
-                return []
-            team = Team.query.get(team_id)
-            if not team or team.org_id != org_id:
-                return []
-            member_rows = TeamUser.query.filter_by(team_id=team_id).all()
-            member_ids = [m.user_id for m in member_rows]
-            if not member_ids:
-                return []
-            q = User.query.filter(User.org_id == org_id, User.id.in_(member_ids))
-            if not is_forced:
-                q = q.filter(User.notify_announcement.is_(True))
-            users = q.all()
-
-        elif audience.startswith("region:"):
-            try:
-                region_id = int(audience.split(":", 1)[1])
-            except (ValueError, IndexError):
-                return []
-            # Users whose country.region_id == region_id AND are in org
-            q = (
-                User.query.join(Country, User.country_id == Country.id)
-                .filter(User.org_id == org_id, Country.region_id == region_id)
+        if kind == "all_org":
+            users = org_users(org_id, require_pref=require_pref)
+        elif kind == "team" and target_id is not None:
+            users = team_member_users(
+                target_id, org_id, require_pref=require_pref
             )
-            if not is_forced:
-                q = q.filter(User.notify_announcement.is_(True))
-            users = q.all()
+        elif kind == "region" and target_id is not None:
+            users = region_users(
+                target_id, org_id, require_pref=require_pref
+            )
+        else:
+            users = []
 
         # Filter to users with a real email set
         return [u for u in users if u.email]
