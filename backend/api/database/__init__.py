@@ -46,6 +46,10 @@ from .core import (
     CommunityEntry,
     MonitoredChannel,
     ChannelPost,
+    Notification,
+    EmailCampaign,
+    Message,
+    MessageRead,
 )
 
 __all__ = [
@@ -95,4 +99,8 @@ __all__ = [
     "CommunityEntry",
     "MonitoredChannel",
     "ChannelPost",
+    "Notification",
+    "EmailCampaign",
+    "Message",
+    "MessageRead",
 ]

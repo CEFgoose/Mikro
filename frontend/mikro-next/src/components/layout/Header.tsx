@@ -3,6 +3,8 @@
 import Link from "next/link";
 import Image from "next/image";
 import { useUser } from "@auth0/nextjs-auth0/client";
+import { NotificationBell } from "@/components/comms/NotificationBell";
+import { MessengerIcon } from "@/components/comms/MessengerIcon";
 
 interface HeaderProps {
   displayName?: string;
@@ -47,6 +49,8 @@ export function Header({ displayName }: HeaderProps) {
             <div style={{ width: 32, height: 32, borderRadius: "50%", backgroundColor: "var(--border)" }} />
           ) : user ? (
             <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+              <MessengerIcon />
+              <NotificationBell />
               <span className="hide-mobile" style={{ fontSize: 14, color: "var(--muted-foreground)" }}>
                 {displayName || user.name || user.email}
               </span>

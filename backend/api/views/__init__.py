@@ -19,6 +19,9 @@ from .Friends import FriendAPI
 from .CommunityData import CommunityDataAPI
 from .ChannelMonitor import ChannelMonitorAPI
 from .Transcription import TranscriptionAPI
+from .Notifications import NotificationsAPI
+from .Email import EmailAPI
+from .Messages import MessagesAPI
 
 __all__ = {
     "UserAPI",
@@ -40,4 +43,7 @@ __all__ = {
     "CommunityDataAPI",
     "ChannelMonitorAPI",
     "TranscriptionAPI",
+    "NotificationsAPI",
+    "EmailAPI",
+    "MessagesAPI",
 }

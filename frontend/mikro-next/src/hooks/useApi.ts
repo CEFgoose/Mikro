@@ -47,6 +47,17 @@ import type {
   ChannelSummariesResponse,
   HourlySummaryResponse,
   MyMonthlySummaryResponse,
+  NotificationsResponse,
+  NotificationUnreadCountResponse,
+  NotificationPreferencesResponse,
+  EmailCampaignsListResponse,
+  EmailCampaignCreateResponse,
+  EmailCampaignPreviewResponse,
+  ConversationsResponse,
+  MessagesThreadResponse,
+  MessagesSendResponse,
+  MessagesUnreadCountResponse,
+  MessagesContactsResponse,
 } from "@/types";
 
 /**
@@ -671,6 +682,73 @@ export function useFetchMyTimeHistory() {
 // local month.
 export function useMyMonthlySummary() {
   return useApiMutation<MyMonthlySummaryResponse>("/timetracking/my_monthly_summary");
+}
+
+// ─── Comms platform: notifications ───────────────────────────────
+
+// User: paginated notification list for the bell panel.
+export function useNotifications() {
+  return useApiMutation<NotificationsResponse>("/notifications/fetch");
+}
+
+// User: unread count for the bell badge. Polled every 30s.
+export function useNotificationUnreadCount() {
+  return useApiCall<NotificationUnreadCountResponse>("/notifications/unread_count");
+}
+
+// User: mark one-or-all notifications as read.
+export function useMarkNotificationsRead() {
+  return useApiMutation<{ status: number; updated: number }>("/notifications/mark_read");
+}
+
+// User: fetch notify_* preference flags.
+export function useNotificationPreferences() {
+  return useApiCall<NotificationPreferencesResponse>("/notifications/preferences");
+}
+
+// User: update notify_* preference flags.
+export function useUpdateNotificationPreferences() {
+  return useApiMutation<NotificationPreferencesResponse>("/notifications/update_preferences");
+}
+
+// ─── Comms platform: email campaigns (admin) ─────────────────────
+
+export function useEmailCampaignsList() {
+  return useApiCall<EmailCampaignsListResponse>("/email/campaigns_list");
+}
+
+export function useCreateEmailCampaign() {
+  return useApiMutation<EmailCampaignCreateResponse>("/email/campaigns_create");
+}
+
+export function usePreviewEmailCampaign() {
+  return useApiMutation<EmailCampaignPreviewResponse>("/email/campaigns_preview");
+}
+
+// ─── Comms platform: messenger ───────────────────────────────────
+
+export function useConversations() {
+  return useApiCall<ConversationsResponse>("/messages/conversations");
+}
+
+export function useMessageThread() {
+  return useApiMutation<MessagesThreadResponse>("/messages/thread");
+}
+
+export function useSendMessage() {
+  return useApiMutation<MessagesSendResponse>("/messages/send");
+}
+
+export function useMarkMessagesRead() {
+  return useApiMutation<{ status: number }>("/messages/mark_read");
+}
+
+export function useMessagesUnreadCount() {
+  return useApiCall<MessagesUnreadCountResponse>("/messages/unread_count");
+}
+
+export function useMessagesContacts() {
+  return useApiCall<MessagesContactsResponse>("/messages/contacts");
 }
 
 // Admin: get all active sessions

@@ -10,6 +10,7 @@ from flask import g, request
 
 from ..utils import requires_admin
 from ..database import db, User, PayRequests, Payments, UserTasks, Task, Project
+from ..notifications import create_notification
 from ..stats import get_user_payment_balances
 
 
@@ -274,6 +275,24 @@ class TransactionAPI(MethodView):
         )
         if notes:
             new_payment.update(notes=notes)
+
+        # Notify the payee that their payment was sent.
+        try:
+            create_notification(
+                user_id=user_id,
+                org_id=g.user.org_id,
+                type="payment_sent",
+                message=(
+                    f"Your payment of ${request_amount:.2f} has been sent."
+                ),
+                link="/user/payments",
+                actor_id=g.user.id,
+                entity_type="payment",
+                entity_id=new_payment.id,
+            )
+        except Exception:
+            pass
+
         return {
             "message": f"Payment Request {request_id} has been processed",
             "status": 200,

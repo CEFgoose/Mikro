@@ -128,6 +128,9 @@ def _register_views(app):
         CommunityDataAPI,
         ChannelMonitorAPI,
         TranscriptionAPI,
+        NotificationsAPI,
+        EmailAPI,
+        MessagesAPI,
     )
 
     # Authentication
@@ -207,6 +210,24 @@ def _register_views(app):
         "/api/transcribe/<path>",
         view_func=TranscriptionAPI.as_view("transcribe"),
         methods=["GET", "POST"],
+    )
+
+    # Notifications (bell + user prefs)
+    app.add_url_rule(
+        "/api/notifications/<path>",
+        view_func=NotificationsAPI.as_view("notifications"),
+    )
+
+    # Admin email campaigns
+    app.add_url_rule(
+        "/api/email/<path>",
+        view_func=EmailAPI.as_view("email"),
+    )
+
+    # Messenger
+    app.add_url_rule(
+        "/api/messages/<path>",
+        view_func=MessagesAPI.as_view("messages"),
     )
 
 
