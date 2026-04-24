@@ -10,12 +10,6 @@ import {
   useFetchRegions,
 } from "@/hooks";
 import type { TeamsResponse, RegionsResponse, EmailCampaign } from "@/types";
-import {
-  audienceLabel,
-  formatTeamAudience,
-  formatRegionAudience,
-  AUDIENCE_ALL_ORG,
-} from "@/lib/emailAudience";
 
 /**
  * Admin-only email campaign composer + history (F21 etc). Sends a
@@ -34,6 +28,21 @@ function formatDateTime(iso: string | null): string {
   });
 }
 
+function audienceLabel(a: string, teams: { id: number; name: string }[], regions: { id: number; name: string }[]): string {
+  if (a === "all_org") return "All Organization";
+  if (a.startsWith("team:")) {
+    const id = Number(a.slice(5));
+    const team = teams.find((t) => t.id === id);
+    return team ? `Team: ${team.name}` : a;
+  }
+  if (a.startsWith("region:")) {
+    const id = Number(a.slice(7));
+    const region = regions.find((r) => r.id === id);
+    return region ? `Region: ${region.name}` : a;
+  }
+  return a;
+}
+
 export default function AnnouncementsPage() {
   const toast = useToastActions();
   const { data: listData, refetch: refetchList } = useEmailCampaignsList();
@@ -47,7 +56,7 @@ export default function AnnouncementsPage() {
 
   const [subject, setSubject] = useState("");
   const [body, setBody] = useState("");
-  const [audience, setAudience] = useState(AUDIENCE_ALL_ORG);
+  const [audience, setAudience] = useState("all_org");
   const [isForced, setIsForced] = useState(false);
   const [previewCount, setPreviewCount] = useState<number | null>(null);
 
@@ -153,17 +162,17 @@ export default function AnnouncementsPage() {
                   fontSize: 14,
                 }}
               >
-                <option value={AUDIENCE_ALL_ORG}>All Organization</option>
+                <option value="all_org">All Organization</option>
                 <optgroup label="Teams">
                   {teams.map((t: { id: number; name: string }) => (
-                    <option key={`team-${t.id}`} value={formatTeamAudience(t.id)}>
+                    <option key={`team-${t.id}`} value={`team:${t.id}`}>
                       Team: {t.name}
                     </option>
                   ))}
                 </optgroup>
                 <optgroup label="Regions">
                   {regions.map((r: { id: number; name: string }) => (
-                    <option key={`region-${r.id}`} value={formatRegionAudience(r.id)}>
+                    <option key={`region-${r.id}`} value={`region:${r.id}`}>
                       Region: {r.name}
                     </option>
                   ))}

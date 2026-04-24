@@ -33,8 +33,7 @@ from ..database import (
     User,
     db,
 )
-from ..notifications import create_notification, NotificationType
-from ..targeting import org_users, region_users, team_member_users
+from ..notifications import create_notification
 
 
 VALID_SCOPES = ("user", "team", "region", "org")
@@ -229,15 +228,27 @@ class MessagesAPI(MethodView):
             peer = User.query.get(target_user_id)
             return [peer] if peer and peer.org_id == org_id else []
         if target_type == "team" and target_team_id is not None:
-            return team_member_users(
-                target_team_id, org_id, exclude_user_id=g.user.id
-            )
+            member_rows = TeamUser.query.filter_by(team_id=target_team_id).all()
+            ids = [m.user_id for m in member_rows if m.user_id != g.user.id]
+            if not ids:
+                return []
+            return User.query.filter(
+                User.org_id == org_id, User.id.in_(ids)
+            ).all()
         if target_type == "region" and target_region_id is not None:
-            return region_users(
-                target_region_id, org_id, exclude_user_id=g.user.id
+            return (
+                User.query.join(Country, User.country_id == Country.id)
+                .filter(
+                    User.org_id == org_id,
+                    Country.region_id == target_region_id,
+                    User.id != g.user.id,
+                )
+                .all()
             )
         if target_type == "org":
-            return org_users(org_id, exclude_user_id=g.user.id)
+            return (
+                User.query.filter(User.org_id == org_id, User.id != g.user.id).all()
+            )
         return []
 
     def _get_last_read(self, scope_type: str, scope_key: str) -> Optional[datetime]:
@@ -500,7 +511,7 @@ class MessagesAPI(MethodView):
                 create_notification(
                     user_id=r.id,
                     org_id=g.user.org_id,
-                    type=NotificationType.MESSAGE_RECEIVED,
+                    type="message_received",
                     message=f"{sender_name} sent a message to {scope_label}: {snippet}",
                     link=link,
                     actor_id=g.user.id,

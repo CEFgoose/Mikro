@@ -6,11 +6,8 @@ import {
   useNotificationUnreadCount,
   useNotifications,
   useMarkNotificationsRead,
-  useVisibilityPoll,
 } from "@/hooks";
 import type { Notification } from "@/types";
-import { relativeTime } from "@/lib/relativeTime";
-import { HeaderIconButton } from "./HeaderIconButton";
 
 /**
  * F9 — bell + dropdown panel for in-app notifications. Polls the
@@ -20,6 +17,20 @@ import { HeaderIconButton } from "./HeaderIconButton";
  * Per the comms-platform plan, in-app bell rows are ALWAYS created
  * regardless of user preferences (prefs only control email delivery).
  */
+
+function relativeTime(iso: string): string {
+  const now = Date.now();
+  const then = new Date(iso).getTime();
+  const diff = Math.max(0, now - then);
+  const minutes = Math.floor(diff / 60000);
+  if (minutes < 1) return "just now";
+  if (minutes < 60) return `${minutes}m ago`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours}h ago`;
+  const days = Math.floor(hours / 24);
+  if (days < 7) return `${days}d ago`;
+  return new Date(iso).toLocaleDateString();
+}
 
 export function NotificationBell() {
   const router = useRouter();
@@ -32,12 +43,22 @@ export function NotificationBell() {
   const [items, setItems] = useState<Notification[]>([]);
   const [listLoading, setListLoading] = useState(false);
   const panelRef = useRef<HTMLDivElement | null>(null);
-  const buttonRef = useRef<HTMLElement | null>(null);
+  const buttonRef = useRef<HTMLButtonElement | null>(null);
 
   // Poll unread count every 30s while tab is visible.
-  useVisibilityPoll(() => {
-    refetchUnread().catch(() => {});
-  }, 30000);
+  useEffect(() => {
+    const tick = () => {
+      if (typeof document !== "undefined" && document.visibilityState !== "visible") return;
+      refetchUnread().catch(() => {});
+    };
+    const id = window.setInterval(tick, 30000);
+    const onVis = () => { if (document.visibilityState === "visible") refetchUnread().catch(() => {}); };
+    document.addEventListener("visibilitychange", onVis);
+    return () => {
+      window.clearInterval(id);
+      document.removeEventListener("visibilitychange", onVis);
+    };
+  }, [refetchUnread]);
 
   // Close the panel when clicking outside.
   useEffect(() => {
@@ -101,17 +122,50 @@ export function NotificationBell() {
 
   return (
     <div style={{ position: "relative" }}>
-      <HeaderIconButton
+      <button
         ref={buttonRef}
-        ariaLabel="Notifications"
-        unreadCount={unread}
         onClick={handleToggle}
+        aria-label={unread > 0 ? `Notifications (${unread} unread)` : "Notifications"}
+        style={{
+          position: "relative",
+          width: 36,
+          height: 36,
+          display: "inline-flex",
+          alignItems: "center",
+          justifyContent: "center",
+          borderRadius: 8,
+          border: "1px solid var(--border)",
+          background: "var(--background)",
+          cursor: "pointer",
+        }}
       >
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
           <path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9" />
           <path d="M13.73 21a2 2 0 0 1-3.46 0" />
         </svg>
-      </HeaderIconButton>
+        {unread > 0 && (
+          <span
+            style={{
+              position: "absolute",
+              top: 2,
+              right: 2,
+              minWidth: 18,
+              height: 18,
+              padding: "0 5px",
+              borderRadius: 9,
+              background: "#dc2626",
+              color: "#fff",
+              fontSize: 10,
+              fontWeight: 700,
+              display: "inline-flex",
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+          >
+            {unread > 99 ? "99+" : unread}
+          </span>
+        )}
+      </button>
 
       {open && (
         <div
