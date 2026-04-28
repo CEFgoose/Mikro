@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
 import { Modal } from "@/components/ui/Modal";
+import { NotesButton } from "./NotesButton";
 import {
   useAdminActiveSessions,
   useAdminTimeHistory,
@@ -338,13 +339,14 @@ export function AdminTimeManagement() {
                       <th className="text-left py-2 px-3 font-medium text-muted-foreground">Category</th>
                       <th className="text-left py-2 px-3 font-medium text-muted-foreground">Clocked In</th>
                       <th className="text-left py-2 px-3 font-medium text-muted-foreground">Duration</th>
+                      <th className="text-left py-2 px-3 font-medium text-muted-foreground">Notes</th>
                       <th className="text-left py-2 px-3 font-medium text-muted-foreground">Actions</th>
                     </tr>
                   </thead>
                   <tbody>
                     {filteredSessions.length === 0 ? (
                       <tr>
-                        <td colSpan={6} className="py-4 px-3 text-center text-sm text-muted-foreground">
+                        <td colSpan={7} className="py-4 px-3 text-center text-sm text-muted-foreground">
                           No active sessions match &ldquo;{search}&rdquo;.
                         </td>
                       </tr>
@@ -370,6 +372,14 @@ export function AdminTimeManagement() {
                           <span className="font-mono text-green-600 font-medium">
                             {liveDurations[entry.id] || entry.duration || "—"}
                           </span>
+                        </td>
+                        <td className="py-3 px-3">
+                          <NotesButton
+                            notes={entry.userNotes}
+                            editable={false}
+                            size="xs"
+                            title={`Note from ${entry.userName}`}
+                          />
                         </td>
                         <td className="py-3 px-3">
                           <Button
@@ -409,13 +419,14 @@ export function AdminTimeManagement() {
                       <th className="text-left py-2 px-3 font-medium text-muted-foreground">Clock Out</th>
                       <th className="text-left py-2 px-3 font-medium text-muted-foreground">Duration</th>
                       <th className="text-left py-2 px-3 font-medium text-muted-foreground">Status</th>
+                      <th className="text-left py-2 px-3 font-medium text-muted-foreground">Notes</th>
                       <th className="text-left py-2 px-3 font-medium text-muted-foreground">Actions</th>
                     </tr>
                   </thead>
                   <tbody>
                     {filteredHistory.length === 0 ? (
                       <tr>
-                        <td colSpan={8} className="py-4 px-3 text-center text-sm text-muted-foreground">
+                        <td colSpan={9} className="py-4 px-3 text-center text-sm text-muted-foreground">
                           No history entries match &ldquo;{search}&rdquo;.
                         </td>
                       </tr>
@@ -458,6 +469,14 @@ export function AdminTimeManagement() {
                           {entry.notes?.startsWith("[ADJUSTED]") && (
                             <Badge className="ml-1 text-xs uppercase bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300">Adjusted</Badge>
                           )}
+                        </td>
+                        <td className="py-3 px-3">
+                          <NotesButton
+                            notes={entry.userNotes}
+                            editable={false}
+                            size="xs"
+                            title={`Note from ${entry.userName}`}
+                          />
                         </td>
                         <td className="py-3 px-3">
                           {entry.status !== "voided" && (

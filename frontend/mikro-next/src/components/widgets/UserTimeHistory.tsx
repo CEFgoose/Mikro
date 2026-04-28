@@ -5,7 +5,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
 import { Modal } from "@/components/ui/Modal";
-import { useMyTimeHistory, useRequestTimeAdjustment } from "@/hooks";
+import { useMyTimeHistory, useRequestTimeAdjustment, useUpdateMyNotes } from "@/hooks";
+import { NotesButton } from "./NotesButton";
 
 function formatDateTime(iso: string): string {
   return new Date(iso).toLocaleString("en-US", {
@@ -32,6 +33,12 @@ export function UserTimeHistory() {
 
   const { data: historyData, loading: historyLoading, refetch: refetchHistory } = useMyTimeHistory();
   const { mutate: requestAdjustment, loading: submitting } = useRequestTimeAdjustment();
+  const { mutate: updateMyNotes } = useUpdateMyNotes();
+
+  const handleSaveNotes = async (entryId: number, value: string | null) => {
+    await updateMyNotes({ entry_id: entryId, userNotes: value });
+    await refetchHistory();
+  };
 
   const entries = historyData?.entries || [];
   const recentEntries = entries.slice(0, 5);
@@ -112,6 +119,7 @@ export function UserTimeHistory() {
                     <th className="text-left py-1.5 px-2 font-medium text-muted-foreground">Category</th>
                     <th className="text-left py-1.5 px-2 font-medium text-muted-foreground">Duration</th>
                     <th className="text-left py-1.5 px-2 font-medium text-muted-foreground">Status</th>
+                    <th className="text-left py-1.5 px-2 font-medium text-muted-foreground">Notes</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -144,6 +152,14 @@ export function UserTimeHistory() {
                         >
                           {entry.status}
                         </Badge>
+                      </td>
+                      <td className="py-2 px-2">
+                        <NotesButton
+                          notes={entry.userNotes}
+                          editable={entry.status !== "voided"}
+                          onSave={(v) => handleSaveNotes(entry.id, v)}
+                          size="xs"
+                        />
                       </td>
                     </tr>
                   ))}
@@ -187,6 +203,7 @@ export function UserTimeHistory() {
                   <th className="text-left py-2 px-3 font-medium text-muted-foreground">Clock Out</th>
                   <th className="text-left py-2 px-3 font-medium text-muted-foreground">Duration</th>
                   <th className="text-left py-2 px-3 font-medium text-muted-foreground">Status</th>
+                  <th className="text-left py-2 px-3 font-medium text-muted-foreground">Notes</th>
                   <th className="text-left py-2 px-3 font-medium text-muted-foreground">Actions</th>
                 </tr>
               </thead>
@@ -226,6 +243,14 @@ export function UserTimeHistory() {
                       {entry.notes?.startsWith("[ADJUSTMENT REQUESTED]") && (
                         <Badge variant="warning" className="ml-1">adjustment pending</Badge>
                       )}
+                    </td>
+                    <td className="py-3 px-3">
+                      <NotesButton
+                        notes={entry.userNotes}
+                        editable={entry.status !== "voided"}
+                        onSave={(v) => handleSaveNotes(entry.id, v)}
+                        size="xs"
+                      />
                     </td>
                     <td className="py-3 px-3">
                       {entry.status === "completed" && !entry.notes?.startsWith("[ADJUSTMENT REQUESTED]") && (

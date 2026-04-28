@@ -16,7 +16,8 @@ import {
   Val,
 } from "@/components/ui";
 import { useToastActions } from "@/components/ui";
-import { useMyTimeHistory, useRequestTimeAdjustment, useUserProjects } from "@/hooks";
+import { useMyTimeHistory, useRequestTimeAdjustment, useUpdateMyNotes, useUserProjects } from "@/hooks";
+import { NotesButton } from "@/components/widgets/NotesButton";
 import { formatNumber } from "@/lib/utils";
 import {
   localWeekStartIsoUtc,
@@ -142,6 +143,12 @@ export default function UserTimePage() {
   // Data fetching
   const { data: historyData, loading, refetch } = useMyTimeHistory();
   const { mutate: requestAdjustment, loading: submitting } = useRequestTimeAdjustment();
+  const { mutate: updateMyNotes } = useUpdateMyNotes();
+
+  const handleSaveNotes = async (entryId: number, value: string | null) => {
+    await updateMyNotes({ entry_id: entryId, userNotes: value });
+    await refetch();
+  };
 
   const allEntries: TimeEntry[] = historyData?.entries || [];
 
@@ -373,6 +380,7 @@ export default function UserTimePage() {
                 <TableHead>Clock Out</TableHead>
                 <TableHead>Duration</TableHead>
                 <TableHead>Status</TableHead>
+                <TableHead>Notes</TableHead>
                 <TableHead>Actions</TableHead>
               </TableRow>
             </TableHeader>
@@ -428,6 +436,14 @@ export default function UserTimePage() {
                           adjustment pending
                         </Badge>
                       )}
+                    </TableCell>
+                    <TableCell>
+                      <NotesButton
+                        notes={entry.userNotes}
+                        editable={!isVoided}
+                        onSave={(v) => handleSaveNotes(entry.id, v)}
+                        size="xs"
+                      />
                     </TableCell>
                     <TableCell>
                       {canRequestAdjustment && (

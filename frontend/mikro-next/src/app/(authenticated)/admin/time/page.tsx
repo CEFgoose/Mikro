@@ -42,6 +42,7 @@ import {
 } from "@/lib/timeTracking";
 import type { TimeEntry } from "@/types";
 import { TimeManagementFilterSummary } from "@/components/admin/TimeManagementFilterSummary";
+import { NotesButton } from "@/components/widgets/NotesButton";
 
 // --- Date range presets ---
 
@@ -1052,6 +1053,9 @@ export default function AdminTimePage() {
                           Live Duration
                         </th>
                         <th className="text-left py-1.5 px-2 text-xs whitespace-nowrap font-medium text-muted-foreground">
+                          Notes
+                        </th>
+                        <th className="text-left py-1.5 px-2 text-xs whitespace-nowrap font-medium text-muted-foreground">
                           Actions
                         </th>
                       </tr>
@@ -1092,6 +1096,14 @@ export default function AdminTimePage() {
                                 session.duration ||
                                 "--"}
                             </span>
+                          </td>
+                          <td className="py-2 px-2">
+                            <NotesButton
+                              notes={session.userNotes}
+                              editable={false}
+                              size="xs"
+                              title={`Note from ${session.userName}`}
+                            />
                           </td>
                           <td className="py-2 px-2">
                             <Button
@@ -1147,6 +1159,7 @@ export default function AdminTimePage() {
                     </span>
                   </TableHead>
                 ))}
+                <TableHead>Notes</TableHead>
                 <TableHead>Actions</TableHead>
               </TableRow>
             </TableHeader>
@@ -1227,6 +1240,14 @@ export default function AdminTimePage() {
                       </div>
                     </TableCell>
                     <TableCell>
+                      <NotesButton
+                        notes={entry.userNotes}
+                        editable={false}
+                        size="xs"
+                        title={`Note from ${entry.userName ?? "user"}`}
+                      />
+                    </TableCell>
+                    <TableCell>
                       {!isVoided && (
                         <div className="flex gap-1">
                           <button
@@ -1301,7 +1322,7 @@ export default function AdminTimePage() {
               {pagedEntries.length === 0 && (
                 <TableRow>
                   <TableCell
-                    colSpan={9}
+                    colSpan={10}
                     style={{
                       textAlign: "center",
                       padding: "32px 16px",

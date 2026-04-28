@@ -821,6 +821,7 @@ class TimeEntry(CRUDMixin, db.Model):
     edited_at = db.Column(DateTime, nullable=True)
     force_clocked_out_by = db.Column(db.String(255), nullable=True)
     notes = db.Column(db.Text, nullable=True)
+    user_notes = db.Column(db.Text, nullable=True)
 
     # Relationships
     user = db.relationship("User", backref="time_entries")

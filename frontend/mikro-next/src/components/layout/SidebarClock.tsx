@@ -1,13 +1,14 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { useActiveTimeSession, useClockIn, useClockOut, useUserProjects, useFetchMyTimeHistory } from "@/hooks";
+import { useActiveTimeSession, useClockIn, useClockOut, useUserProjects, useFetchMyTimeHistory, useUpdateMyNotes } from "@/hooks";
 import {
   TOPIC_OPTIONS,
   topicRequiresProject,
   localDayStartIsoUtc,
   localDayEndIsoUtc,
 } from "@/lib/timeTracking";
+import { NotesButton } from "@/components/widgets/NotesButton";
 
 function formatHoursMinutes(totalSeconds: number): string {
   const h = Math.floor(totalSeconds / 3600);
@@ -39,6 +40,7 @@ export function SidebarClock() {
   const { data: activeSession, loading: sessionLoading, refetch } = useActiveTimeSession();
   const { mutate: clockIn, loading: clockingIn } = useClockIn();
   const { mutate: clockOut, loading: clockingOut } = useClockOut();
+  const { mutate: updateMyNotes } = useUpdateMyNotes();
   const { data: projects } = useUserProjects();
 
   const [isClockedIn, setIsClockedIn] = useState(false);
@@ -50,6 +52,9 @@ export function SidebarClock() {
   const [selectedProject, setSelectedProject] = useState("");
   const [projectSearch, setProjectSearch] = useState("");
   const [projectDescription, setProjectDescription] = useState("");
+  const [pendingUserNotes, setPendingUserNotes] = useState<string | null>(null);
+  const [activeSessionId, setActiveSessionId] = useState<number | null>(null);
+  const [activeSessionUserNotes, setActiveSessionUserNotes] = useState<string | null>(null);
   const [todaySeconds, setTodaySeconds] = useState(0);
   const { mutate: fetchHistory } = useFetchMyTimeHistory();
 
@@ -96,11 +101,15 @@ export function SidebarClock() {
       setTimerStartedAt(Date.now());
       setElapsedSeconds(serverElapsed);
       setShowConfirmation(false);
+      setActiveSessionId(activeSession.session.id);
+      setActiveSessionUserNotes(activeSession.session.userNotes ?? null);
     } else if (activeSession && !activeSession.session) {
       setIsClockedIn(false);
       setTimerStartedAt(null);
       setInitialElapsed(0);
       setElapsedSeconds(0);
+      setActiveSessionId(null);
+      setActiveSessionUserNotes(null);
     }
   }, [activeSession]);
 
@@ -154,6 +163,7 @@ export function SidebarClock() {
         project_id: selectedProject ? parseInt(selectedProject) : null,
         category: selectedTopic,
         task_name: selectedTopic === "project_creation" && projectDescription ? projectDescription : null,
+        userNotes: pendingUserNotes,
       });
       setIsClockedIn(true);
       setInitialElapsed(0);
@@ -163,11 +173,23 @@ export function SidebarClock() {
       setSelectedProject("");
       setProjectSearch("");
       setProjectDescription("");
+      setActiveSessionUserNotes(pendingUserNotes);
+      setPendingUserNotes(null);
       window.dispatchEvent(new Event("clock-state-changed"));
+      refetch().catch(() => {});
     } catch {
       // Silently handle — dashboard/time page will show full errors
     }
-  }, [selectedTopic, selectedProject, needsProject, projectDescription, clockIn]);
+  }, [selectedTopic, selectedProject, needsProject, projectDescription, clockIn, pendingUserNotes, refetch]);
+
+  const handleSaveActiveNotes = useCallback(
+    async (value: string | null) => {
+      if (!activeSessionId) return;
+      await updateMyNotes({ entry_id: activeSessionId, userNotes: value });
+      setActiveSessionUserNotes(value);
+    },
+    [activeSessionId, updateMyNotes]
+  );
 
   const handleClockOut = useCallback(async () => {
     try {
@@ -277,6 +299,14 @@ export function SidebarClock() {
             {formatElapsedTime(elapsedSeconds)}
           </span>
         </div>
+        <div style={{ display: "flex", justifyContent: "center", marginBottom: 6 }}>
+          <NotesButton
+            notes={activeSessionUserNotes}
+            editable={true}
+            onSave={handleSaveActiveNotes}
+            size="xs"
+          />
+        </div>
         <button
           onClick={handleClockOut}
           disabled={clockingOut}
@@ -366,6 +396,19 @@ export function SidebarClock() {
             onChange={(e) => setProjectDescription(e.target.value)}
             placeholder="Project description (optional)"
           />
+        )}
+        {selectedTopic && (
+          <div style={{ display: "flex", justifyContent: "flex-start" }}>
+            <NotesButton
+              notes={pendingUserNotes}
+              editable={true}
+              onSave={(v) => {
+                setPendingUserNotes(v);
+                return Promise.resolve();
+              }}
+              size="xs"
+            />
+          </div>
         )}
         <button
           onClick={handleClockIn}

@@ -11,7 +11,9 @@ import {
   useApiCall,
   useCustomTopics,
   useFetchMyTimeHistory,
+  useUpdateMyNotes,
 } from "@/hooks";
+import { NotesButton } from "./NotesButton";
 
 interface TimeTrackingWidgetProps {
   projects?: { id: number; name: string; short_name?: string }[];
@@ -61,6 +63,9 @@ export function TimeTrackingWidget({
   const [activeSessionProjectName, setActiveSessionProjectName] = useState<string>("");
   const [activeSessionTopic, setActiveSessionTopic] = useState<string>("");
   const [activeSessionTaskName, setActiveSessionTaskName] = useState<string>("");
+  const [activeSessionId, setActiveSessionId] = useState<number | null>(null);
+  const [activeSessionUserNotes, setActiveSessionUserNotes] = useState<string | null>(null);
+  const [pendingUserNotes, setPendingUserNotes] = useState<string | null>(null);
   const [todaySeconds, setTodaySeconds] = useState(0);
   const [weekSeconds, setWeekSeconds] = useState(0);
   const [switchMode, setSwitchMode] = useState(false);
@@ -68,6 +73,7 @@ export function TimeTrackingWidget({
   const { data: activeSession, loading: sessionLoading, refetch: refetchSession } = useActiveTimeSession();
   const { mutate: clockIn, loading: clockingIn } = useClockIn();
   const { mutate: clockOut, loading: clockingOut } = useClockOut();
+  const { mutate: updateMyNotes } = useUpdateMyNotes();
 
   // Lazy-loaded data for training and checklist topics
   const {
@@ -113,6 +119,8 @@ export function TimeTrackingWidget({
       setActiveSessionProjectName(session.projectName || "");
       setActiveSessionTopic(session.category || "");
       setActiveSessionTaskName(session.taskName || "");
+      setActiveSessionId(session.id);
+      setActiveSessionUserNotes(session.userNotes ?? null);
       if (session.projectId) {
         setSelectedProject(session.projectId.toString());
       }
@@ -125,6 +133,8 @@ export function TimeTrackingWidget({
       setActiveSessionProjectName("");
       setActiveSessionTopic("");
       setActiveSessionTaskName("");
+      setActiveSessionId(null);
+      setActiveSessionUserNotes(null);
     }
   }, [activeSession]);
 
@@ -217,6 +227,7 @@ export function TimeTrackingWidget({
         task_name: taskName || null,
         task_ref_type: taskRefType || null,
         task_ref_id: taskRefId || null,
+        userNotes: pendingUserNotes,
       });
 
       setIsClockedIn(true);
@@ -230,13 +241,26 @@ export function TimeTrackingWidget({
         TOPIC_OPTIONS.find((t) => t.value === selectedTopic)?.label || ""
       );
       setActiveSessionTaskName(taskName || "");
+      setActiveSessionUserNotes(pendingUserNotes);
+      setPendingUserNotes(null);
       window.dispatchEvent(new Event("clock-state-changed"));
       setSwitchMode(false);
       fetchTotals();
+      // Pull the new server-side session so we get the entry id for later note edits
+      refetchSession().catch(() => {});
     } catch (err) {
       setApiError(err instanceof Error ? err.message : "Failed to clock in");
     }
-  }, [selectedProject, selectedTopic, taskName, taskRefType, taskRefId, clockIn, projects, fetchTotals]);
+  }, [selectedProject, selectedTopic, taskName, taskRefType, taskRefId, clockIn, projects, fetchTotals, pendingUserNotes, refetchSession]);
+
+  const handleSaveActiveNotes = useCallback(
+    async (value: string | null) => {
+      if (!activeSessionId) return;
+      await updateMyNotes({ entry_id: activeSessionId, userNotes: value });
+      setActiveSessionUserNotes(value);
+    },
+    [activeSessionId, updateMyNotes]
+  );
 
   const handleClockOut = useCallback(async () => {
     setApiError(null);
@@ -570,10 +594,17 @@ export function TimeTrackingWidget({
                 {activeSessionTaskName}
               </p>
             )}
-            <div className="flex justify-center gap-3 text-xs text-muted-foreground mb-4">
+            <div className="flex justify-center gap-3 text-xs text-muted-foreground mb-3">
               <span>Today: {formatHoursMinutes(todaySeconds + elapsedSeconds)}</span>
               <span>·</span>
               <span>Week: {formatHoursMinutes(weekSeconds + elapsedSeconds)}</span>
+            </div>
+            <div className="flex justify-center mb-3">
+              <NotesButton
+                notes={activeSessionUserNotes}
+                editable={true}
+                onSave={handleSaveActiveNotes}
+              />
             </div>
             {apiError && (
               <p className="text-xs text-red-600 mb-2">{apiError}</p>
@@ -691,6 +722,18 @@ export function TimeTrackingWidget({
             />
           )}
           {renderTaskSelector()}
+          {selectedTopic && (
+            <div>
+              <NotesButton
+                notes={pendingUserNotes}
+                editable={true}
+                onSave={(v) => {
+                  setPendingUserNotes(v);
+                  return Promise.resolve();
+                }}
+              />
+            </div>
+          )}
           <Button
             variant="primary"
             onClick={handleClockIn}

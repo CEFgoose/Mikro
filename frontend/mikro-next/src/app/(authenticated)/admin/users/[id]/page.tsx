@@ -58,6 +58,7 @@ import {
 } from "@/lib/timeTracking";
 import { RecentActivityCard } from "@/components/admin/RecentActivityCard";
 import { AssignedProjectsTable } from "@/components/admin/AssignedProjectsTable";
+import { NotesButton } from "@/components/widgets/NotesButton";
 import { openChangesetInJosm, zoomToChangeset } from "@/lib/josmRemoteControl";
 
 const MappingHeatmap = dynamic(() => import("@/components/MappingHeatmap"), {
@@ -1169,6 +1170,9 @@ export default function UserProfilePage() {
                       <th className="px-4 py-2 text-left font-semibold text-muted-foreground">
                         Status
                       </th>
+                      <th className="px-4 py-2 text-left font-semibold text-muted-foreground">
+                        Notes
+                      </th>
                       <th className="px-4 py-2 text-right font-semibold text-muted-foreground">
                         Actions
                       </th>
@@ -1208,6 +1212,14 @@ export default function UserProfilePage() {
                           ) : (
                             <span className="text-red-500">Voided</span>
                           )}
+                        </td>
+                        <td className="px-4 py-2">
+                          <NotesButton
+                            notes={entry.userNotes}
+                            editable={false}
+                            size="xs"
+                            title="Note from this entry"
+                          />
                         </td>
                         <td className="px-4 py-2 text-right">
                           {entry.status !== "voided" && (

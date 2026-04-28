@@ -1026,6 +1026,7 @@ class ProjectAPI(MethodView):
                 "clock_in": e.clock_in.isoformat() if e.clock_in else None,
                 "clock_out": e.clock_out.isoformat() if e.clock_out else None,
                 "duration_seconds": e.duration_seconds,
+                "user_notes": e.user_notes,
             })
 
         # --- Assigned trainings ---

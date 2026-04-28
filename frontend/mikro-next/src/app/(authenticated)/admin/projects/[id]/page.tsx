@@ -17,6 +17,7 @@ import { useFetchProjectProfile, useSyncProject } from "@/hooks/useApi";
 import { useToastActions } from "@/components/ui";
 import { formatNumber, formatCurrency, displayRole } from "@/lib/utils";
 import type { ProjectProfileResponse } from "@/types";
+import { NotesButton } from "@/components/widgets/NotesButton";
 
 function ProgressBar({
   value,
@@ -494,6 +495,9 @@ export default function AdminProjectProfilePage() {
                         <th className="px-4 py-2 text-right font-semibold">
                           Duration
                         </th>
+                        <th className="px-4 py-2 text-left font-semibold">
+                          Notes
+                        </th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-border">
@@ -511,6 +515,14 @@ export default function AdminProjectProfilePage() {
                           </td>
                           <td className="px-4 py-2 text-right">
                             {formatDuration(entry.duration_seconds)}
+                          </td>
+                          <td className="px-4 py-2">
+                            <NotesButton
+                              notes={entry.user_notes}
+                              editable={false}
+                              size="xs"
+                              title={`Note from ${entry.user_name}`}
+                            />
                           </td>
                         </tr>
                       ))}

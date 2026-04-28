@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui";
 import type { UserProfileData, Changeset } from "@/types";
+import { NotesButton } from "@/components/widgets/NotesButton";
 
 function formatRelative(iso: string | null | undefined): string {
   if (!iso) return "—";
@@ -127,6 +128,16 @@ export function RecentActivityCard({ user, recentChangeset }: Props) {
                     </>
                   )}
                 </p>
+                {mostRecentEntry.userNotes && (
+                  <div className="mt-1.5">
+                    <NotesButton
+                      notes={mostRecentEntry.userNotes}
+                      editable={false}
+                      size="xs"
+                      title="Note from this session"
+                    />
+                  </div>
+                )}
               </>
             ) : (
               <p className="text-sm text-muted-foreground">No sessions yet</p>

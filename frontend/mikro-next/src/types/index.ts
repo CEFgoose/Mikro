@@ -356,6 +356,7 @@ export interface TimeEntry {
   changesetCount: number;
   changesCount: number;
   notes: string | null;
+  userNotes: string | null;
   voidedBy: string | null;
   voidedAt: string | null;
   editedBy: string | null;
@@ -770,6 +771,7 @@ export interface ProjectProfileTimeEntry {
   clock_in: string | null;
   clock_out: string | null;
   duration_seconds: number | null;
+  user_notes: string | null;
 }
 
 export interface ProjectProfileTraining {

@@ -84,6 +84,8 @@ class TimeTrackingAPI(MethodView):
             return self.purge_all_time_entries()
         elif path == "request_adjustment":
             return self.request_adjustment()
+        elif path == "update_my_notes":
+            return self.update_my_notes()
         elif path == "export":
             return self.admin_export()
         elif path == "fetch_custom_topics":
@@ -98,6 +100,29 @@ class TimeTrackingAPI(MethodView):
         return jsonify({"message": "Endpoint not found", "status": 404}), 404
 
     # ─── Helpers ───────────────────────────────────────────────
+
+    USER_NOTES_MAX_LEN = 500
+
+    @staticmethod
+    def _normalize_user_notes(value):
+        """Coerce incoming user_notes payload into a clean column value.
+
+        Returns None for missing / empty input so we don't store empty
+        strings. Raises ValueError if the trimmed value exceeds the
+        500-char limit — caller turns that into a 400 response.
+        """
+        if value is None:
+            return None
+        if not isinstance(value, str):
+            raise ValueError("user_notes must be a string")
+        trimmed = value.strip()
+        if not trimmed:
+            return None
+        if len(trimmed) > TimeTrackingAPI.USER_NOTES_MAX_LEN:
+            raise ValueError(
+                f"user_notes exceeds {TimeTrackingAPI.USER_NOTES_MAX_LEN}-character limit"
+            )
+        return trimmed
 
     @staticmethod
     def _format_entry(entry):
@@ -133,6 +158,7 @@ class TimeTrackingAPI(MethodView):
             "changesetCount": entry.changeset_count or 0,
             "changesCount": entry.changes_count or 0,
             "notes": entry.notes,
+            "userNotes": entry.user_notes,
             "voidedBy": entry.voided_by,
             "voidedAt": entry.voided_at.isoformat() + "Z" if entry.voided_at else None,
             "editedBy": entry.edited_by,
@@ -285,6 +311,11 @@ class TimeTrackingAPI(MethodView):
                     "status": 404,
                 }), 404
 
+        try:
+            user_notes = self._normalize_user_notes(data.get("userNotes"))
+        except ValueError as e:
+            return jsonify({"message": str(e), "status": 400}), 400
+
         # Check for existing active session
         active = TimeEntry.query.filter_by(
             user_id=g.user.id, status="active"
@@ -310,6 +341,7 @@ class TimeTrackingAPI(MethodView):
         entry.task_ref_id = data.get("task_ref_id")
         entry.clock_in = datetime.utcnow()
         entry.status = "active"
+        entry.user_notes = user_notes
         entry.save()
 
         # If "other" with a custom task_name, upsert into custom_topics
@@ -371,6 +403,15 @@ class TimeTrackingAPI(MethodView):
                 "message": "No active session found",
                 "status": 404,
             }), 404
+
+        # Optional notes update at clock-out. If the key is absent we leave
+        # whatever the user typed during the session intact; if present we
+        # apply the same normalize/validate path as elsewhere.
+        if "userNotes" in data:
+            try:
+                entry.user_notes = self._normalize_user_notes(data.get("userNotes"))
+            except ValueError as e:
+                return jsonify({"message": str(e), "status": 400}), 400
 
         logger.info(
             f"[CLOCK] clock_out PROCESSING — user={g.user.id} session_id={entry.id} "
@@ -604,6 +645,48 @@ class TimeTrackingAPI(MethodView):
         return jsonify({
             "message": "Adjustment request submitted",
             "status": 200,
+        }), 200
+
+    def update_my_notes(self):
+        """Set or clear the current user's user_notes on one of their entries.
+
+        Owner-scoped: only the entry's user_id == g.user.id can edit. Admins
+        do not use this endpoint — admin endpoints intentionally ignore
+        user_notes per the read-only-for-admins policy.
+        """
+        if not hasattr(g, "user") or not g.user:
+            return jsonify({"message": "Unauthorized", "status": 401}), 401
+
+        data = request.get_json() or {}
+        entry_id = data.get("entry_id")
+
+        if not entry_id:
+            return jsonify({
+                "message": "entry_id is required",
+                "status": 400,
+            }), 400
+
+        try:
+            user_notes = self._normalize_user_notes(data.get("userNotes"))
+        except ValueError as e:
+            return jsonify({"message": str(e), "status": 400}), 400
+
+        entry = TimeEntry.query.filter_by(
+            id=entry_id, user_id=g.user.id
+        ).first()
+
+        if not entry:
+            return jsonify({
+                "message": "Entry not found",
+                "status": 404,
+            }), 404
+
+        entry.user_notes = user_notes
+        entry.save()
+
+        return jsonify({
+            "status": 200,
+            "session": self._format_entry(entry),
         }), 200
 
     def fetch_custom_topics(self):
@@ -1030,7 +1113,7 @@ class TimeTrackingAPI(MethodView):
         writer.writerow([
             "User", "OSM Username", "Project", "Category", "Task",
             "Clock In", "Clock Out", "Duration (hours)", "Status",
-            "Changesets", "Changes", "Notes",
+            "Changesets", "Changes", "Notes", "User Notes",
         ])
 
         for entry in entries:
@@ -1049,6 +1132,7 @@ class TimeTrackingAPI(MethodView):
                 entry.changeset_count or 0,
                 entry.changes_count or 0,
                 entry.notes or "",
+                entry.user_notes or "",
             ])
 
         csv_data = output.getvalue()

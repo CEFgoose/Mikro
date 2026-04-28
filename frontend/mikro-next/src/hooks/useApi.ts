@@ -705,6 +705,11 @@ export function useRequestTimeAdjustment() {
   return useApiMutation<{ message: string; status: number }>("/timetracking/request_adjustment");
 }
 
+// User: update user_notes on one of their own entries (owner-scoped)
+export function useUpdateMyNotes() {
+  return useApiMutation<TimeTrackingSessionResponse>("/timetracking/update_my_notes");
+}
+
 // Admin: add new time entry
 export function useAdminAddTimeEntry() {
   return useApiMutation<{ message: string; status: number; entry: TimeTrackingSessionResponse }>("/timetracking/admin_add_entry");
