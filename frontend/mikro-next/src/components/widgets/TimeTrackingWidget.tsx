@@ -516,16 +516,16 @@ export function TimeTrackingWidget({
         <div>
           {!isAddingCustomTopic ? (
             <Select
-              label="Custom Topic"
+              label="Custom Task"
               options={customTopicOptions}
               value={taskRefId ? taskRefId.toString() : ""}
               onChange={handleCustomTopicSelect}
-              placeholder="Select topic or add new (optional)"
+              placeholder="Select task or add new (optional)"
             />
           ) : (
             <div>
               <label className="block text-sm font-medium text-foreground mb-1">
-                New Topic
+                New Task
               </label>
               <div className="flex gap-2">
                 <input
@@ -537,7 +537,7 @@ export function TimeTrackingWidget({
                     setTaskRefType(null);
                     setTaskRefId(null);
                   }}
-                  placeholder="Enter topic name"
+                  placeholder="Enter task name"
                   className="flex-1 rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
                 />
                 <button
@@ -756,11 +756,11 @@ export function TimeTrackingWidget({
             </div>
           )}
           <Select
-            label="Topic"
+            label="Task"
             options={TOPIC_OPTIONS}
             value={selectedTopic}
             onChange={setSelectedTopic}
-            placeholder="Select topic"
+            placeholder="Select task"
           />
           {selectedTopic && topicRequiresProject(selectedTopic) && (
             <Select

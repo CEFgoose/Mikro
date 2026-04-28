@@ -395,7 +395,7 @@ export function SidebarClock() {
           value={selectedTopic}
           onChange={(e) => setSelectedTopic(e.target.value)}
         >
-          <option value="">Topic...</option>
+          <option value="">Task...</option>
           {TOPIC_OPTIONS.map((t) => (
             <option key={t.value} value={t.value}>
               {t.label}
