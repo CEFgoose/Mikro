@@ -26,6 +26,8 @@ import {
 import { formatNumber } from "@/lib/utils";
 import {
   localWeekStartIsoUtc,
+  localWeekEndIsoUtc,
+  localWeekStartAgoIsoUtc,
   localMonthStartIsoUtc,
   localMonthStartAgoIsoUtc,
   localDayEndIsoUtc,
@@ -35,23 +37,35 @@ import type { TimeEntry } from "@/types";
 
 // --- Date range presets ---
 
-type DatePreset = "this_week" | "this_month" | "last_month" | "last_3_months" | "all_time";
+type DatePreset =
+  | "this_week"
+  | "last_week"
+  | "this_month"
+  | "last_month"
+  | "last_3_months"
+  | "all_time";
 
 const DATE_PRESET_LABELS: Record<DatePreset, string> = {
   this_week: "This Week",
+  last_week: "Last Week",
   this_month: "This Month",
   last_month: "Last Month",
   last_3_months: "Last 3 Months",
   all_time: "All Time",
 };
 
-// Windows are computed from the user's local calendar (via ISO UTC
-// instants), so "This Week" starts Sunday midnight in the USER's timezone
-// — not UTC — and the backend filters accordingly.
+// Calendar-aligned semantics — same spec as /admin/time. See that file's
+// `getDateRange` for the full prose. Week starts Sunday; "Last 3 Months"
+// excludes the current (incomplete) calendar month.
 function getDateRange(preset: DatePreset): { startDate: string | null; endDate: string | null } {
   switch (preset) {
     case "this_week":
-      return { startDate: localWeekStartIsoUtc(), endDate: localDayEndIsoUtc() };
+      return { startDate: localWeekStartIsoUtc(), endDate: localWeekEndIsoUtc() };
+    case "last_week":
+      return {
+        startDate: localWeekStartAgoIsoUtc(1),
+        endDate: localWeekStartIsoUtc(),
+      };
     case "this_month":
       return { startDate: localMonthStartIsoUtc(), endDate: localDayEndIsoUtc() };
     case "last_month":
@@ -60,7 +74,10 @@ function getDateRange(preset: DatePreset): { startDate: string | null; endDate: 
         endDate: localMonthStartIsoUtc(),
       };
     case "last_3_months":
-      return { startDate: localMonthStartAgoIsoUtc(3), endDate: localDayEndIsoUtc() };
+      return {
+        startDate: localMonthStartAgoIsoUtc(3),
+        endDate: localMonthStartIsoUtc(),
+      };
     case "all_time":
       return { startDate: null, endDate: null };
   }

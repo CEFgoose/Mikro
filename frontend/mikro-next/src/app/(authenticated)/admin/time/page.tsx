@@ -34,6 +34,8 @@ import {
 import { formatNumber } from "@/lib/utils";
 import {
   localWeekStartIsoUtc,
+  localWeekEndIsoUtc,
+  localWeekStartAgoIsoUtc,
   localMonthStartIsoUtc,
   localMonthStartAgoIsoUtc,
   localDayEndIsoUtc,
@@ -56,6 +58,7 @@ import {
 
 type DatePreset =
   | "this_week"
+  | "last_week"
   | "this_month"
   | "last_month"
   | "last_3_months"
@@ -64,6 +67,7 @@ type DatePreset =
 
 const DATE_PRESET_LABELS: Record<DatePreset, string> = {
   this_week: "This Week",
+  last_week: "Last Week",
   this_month: "This Month",
   last_month: "Last Month",
   last_3_months: "Last 3 Months",
@@ -73,6 +77,7 @@ const DATE_PRESET_LABELS: Record<DatePreset, string> = {
 
 const DATE_PRESET_ORDER: DatePreset[] = [
   "this_week",
+  "last_week",
   "this_month",
   "last_month",
   "last_3_months",
@@ -80,6 +85,14 @@ const DATE_PRESET_ORDER: DatePreset[] = [
   "custom",
 ];
 
+// Calendar-aligned semantics (locked 2026-04-21 meeting):
+//   This Week     = Sun → end of Sat (current Sun-Sat week)
+//   Last Week     = previous full Sun-Sat week
+//   This Month    = month-to-date (1st of current month → end of today)
+//   Last Month    = full previous calendar month
+//   Last 3 Months = three FULL calendar months ending at the end of last
+//                   month (e.g. on Apr 28: Jan 1 → Mar 31; current month
+//                   is excluded).
 // Windows are browser-local (admin's wall clock), emitted as ISO UTC
 // instants so the backend filters against UTC-stored clock_in without
 // drift for non-UTC admins.
@@ -92,7 +105,12 @@ function getDateRange(
 } {
   switch (preset) {
     case "this_week":
-      return { startDate: localWeekStartIsoUtc(), endDate: localDayEndIsoUtc() };
+      return { startDate: localWeekStartIsoUtc(), endDate: localWeekEndIsoUtc() };
+    case "last_week":
+      return {
+        startDate: localWeekStartAgoIsoUtc(1),
+        endDate: localWeekStartIsoUtc(),
+      };
     case "this_month":
       return { startDate: localMonthStartIsoUtc(), endDate: localDayEndIsoUtc() };
     case "last_month":
@@ -101,7 +119,10 @@ function getDateRange(
         endDate: localMonthStartIsoUtc(),
       };
     case "last_3_months":
-      return { startDate: localMonthStartAgoIsoUtc(3), endDate: localDayEndIsoUtc() };
+      return {
+        startDate: localMonthStartAgoIsoUtc(3),
+        endDate: localMonthStartIsoUtc(),
+      };
     case "all_time":
       return { startDate: null, endDate: null };
     case "custom":

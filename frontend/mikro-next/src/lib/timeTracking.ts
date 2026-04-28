@@ -169,6 +169,24 @@ export function localWeekStartIsoUtc(d: Date = new Date()): string {
   return new Date(d.getFullYear(), d.getMonth(), d.getDate() - day).toISOString();
 }
 
+/** Start of the user's local NEXT Sunday — i.e. the exclusive upper
+ *  bound for "this week" (Sunday–Saturday). On a Saturday this is
+ *  midnight tonight; on a Sunday it's a week from now. */
+export function localWeekEndIsoUtc(d: Date = new Date()): string {
+  const day = d.getDay();
+  return new Date(d.getFullYear(), d.getMonth(), d.getDate() - day + 7).toISOString();
+}
+
+/** Start of the user's local Sunday N weeks ago as an ISO UTC string.
+ *  weeksAgo=1 returns the Sunday that began the previous week. */
+export function localWeekStartAgoIsoUtc(weeksAgo: number, d: Date = new Date()): string {
+  const day = d.getDay();
+  return new Date(
+    d.getFullYear(), d.getMonth(),
+    d.getDate() - day - 7 * weeksAgo,
+  ).toISOString();
+}
+
 /** Start of the user's local month as an ISO UTC string. */
 export function localMonthStartIsoUtc(d: Date = new Date()): string {
   return new Date(d.getFullYear(), d.getMonth(), 1).toISOString();

@@ -321,31 +321,36 @@ function getProjectStatus(proj: {
 
 // ─── Helper Functions ────────────────────────────────────────
 
+// Calendar-aligned semantics (locked 2026-04-21 meeting):
+//   Daily   = today (single day)
+//   Weekly  = Sun → Sat of the CURRENT week (calendar week, NOT
+//             rolling 7-day)
+//   Monthly = month-to-date (1st of current month → today, calendar
+//             month, NOT rolling 30-day)
 function getDateRange(preset: "daily" | "weekly" | "monthly"): {
   start: string;
   end: string;
 } {
+  const ymd = (d: Date) =>
+    `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+
   const now = new Date();
-  const end = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
-  let start: string;
+  const today = ymd(now);
+
   switch (preset) {
     case "daily":
-      start = end;
-      break;
+      return { start: today, end: today };
     case "weekly": {
-      const d = new Date(now);
-      d.setDate(d.getDate() - 7);
-      start = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-      break;
+      const day = now.getDay(); // 0 = Sunday
+      const sunday = new Date(now.getFullYear(), now.getMonth(), now.getDate() - day);
+      const saturday = new Date(now.getFullYear(), now.getMonth(), now.getDate() - day + 6);
+      return { start: ymd(sunday), end: ymd(saturday) };
     }
     case "monthly": {
-      const d = new Date(now);
-      d.setMonth(d.getMonth() - 1);
-      start = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-      break;
+      const firstOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+      return { start: ymd(firstOfMonth), end: today };
     }
   }
-  return { start, end };
 }
 
 function formatDateTime(iso: string | null): string {

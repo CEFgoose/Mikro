@@ -111,6 +111,10 @@ function formatDuration(seconds: number | null): string {
   return formatDurationHM(seconds);
 }
 
+// Calendar-aligned semantics — same spec as the rest of Mikro:
+//   Daily   = today (single day)
+//   Weekly  = Sun → Sat of the CURRENT week (NOT rolling 7-day)
+//   Monthly = month-to-date (NOT rolling 30-day)
 // Returns YYYY-MM-DD strings anchored to the admin's local calendar.
 // Those get converted to local-midnight ISO UTC instants at the call site
 // before hitting the backend (see dateInputToLocal*IsoUtc helpers).
@@ -118,28 +122,24 @@ function getDateRange(preset: DatePreset): { start: string; end: string } {
   const now = new Date();
   const fmt = (d: Date) =>
     `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-  const end = fmt(now);
-  let start: string;
+  const today = fmt(now);
+
   switch (preset) {
     case "daily":
-      start = end;
-      break;
+      return { start: today, end: today };
     case "weekly": {
-      const weekAgo = new Date(now);
-      weekAgo.setDate(weekAgo.getDate() - 7);
-      start = fmt(weekAgo);
-      break;
+      const day = now.getDay(); // 0 = Sunday
+      const sunday = new Date(now.getFullYear(), now.getMonth(), now.getDate() - day);
+      const saturday = new Date(now.getFullYear(), now.getMonth(), now.getDate() - day + 6);
+      return { start: fmt(sunday), end: fmt(saturday) };
     }
     case "monthly": {
-      const monthAgo = new Date(now);
-      monthAgo.setMonth(monthAgo.getMonth() - 1);
-      start = fmt(monthAgo);
-      break;
+      const firstOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+      return { start: fmt(firstOfMonth), end: today };
     }
     default:
-      start = end;
+      return { start: today, end: today };
   }
-  return { start, end };
 }
 
 export default function UserProfilePage() {
@@ -404,22 +404,12 @@ export default function UserProfilePage() {
       });
       setEditingEntry(null);
       toast.success("Time entry updated");
-      // Refresh the current date range
+      // Refresh the current date range. Always go through getDateRange so
+      // this stays in lock-step with the calendar-aligned semantics
+      // (Sun-Sat week, MTD month) and never drifts back to rolling math.
       if (datePreset !== "custom") {
-        const now = new Date();
-        let start: string;
-        if (datePreset === "daily") {
-          start = now.toISOString().slice(0, 10) + "T00:00:00";
-        } else if (datePreset === "weekly") {
-          const d = new Date(now);
-          d.setDate(d.getDate() - 7);
-          start = d.toISOString().slice(0, 10) + "T00:00:00";
-        } else {
-          const d = new Date(now);
-          d.setMonth(d.getMonth() - 1);
-          start = d.toISOString().slice(0, 10) + "T00:00:00";
-        }
-        loadDateStats(start, now.toISOString());
+        const range = getDateRange(datePreset);
+        loadDateStats(`${range.start}T00:00:00`, `${range.end}T23:59:59`);
       } else if (customStart && customEnd) {
         loadDateStats(
           `${customStart}T${customStartTime}:00`,
