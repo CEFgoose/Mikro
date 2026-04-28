@@ -1,6 +1,6 @@
 """Add user_notes column to time_entries for optional user-supplied context.
 
-Revision ID: a7b8c9d0e1f2
+Revision ID: aa7f8a9b0c1d
 Revises: z6e7f8a9b0c1
 Create Date: 2026-04-28
 
@@ -13,7 +13,7 @@ with those markers. Admins can read user_notes but cannot edit them.
 from alembic import op
 import sqlalchemy as sa
 
-revision = "a7b8c9d0e1f2"
+revision = "aa7f8a9b0c1d"
 down_revision = "z6e7f8a9b0c1"
 branch_labels = None
 depends_on = None
