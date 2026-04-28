@@ -26,30 +26,28 @@ export function topicRequiresProject(topic: string): boolean {
 }
 
 /**
- * SSOT duration formatters.
+ * SSOT duration formatter — `HH:MM:SS` everywhere, app-wide.
  *
- * - formatDurationHM(seconds): "HH:MM" — used everywhere a completed or
- *   aggregated duration is shown (history tables, totals, summaries).
- *   Hours not zero-padded if ≥100; minutes always 2 digits.
- * - formatLiveDuration(seconds): "HH:MM:SS" — used only for the live
- *   ticking timer in the clocked-in state, where seconds give the user
- *   feedback that the clock is running.
+ * Both live timers and completed/aggregated durations share this format
+ * so the time-tracking UI is visually consistent.
+ *
+ * Returns "--:--:--" for null/invalid input.
+ *
+ * Aliases `formatDurationHM` and `formatLiveDuration` are retained for
+ * backwards compatibility with existing imports — they all resolve here.
  */
-export function formatDurationHM(seconds: number | null | undefined): string {
-  if (seconds == null || isNaN(seconds) || seconds < 0) return "--";
-  const h = Math.floor(seconds / 3600);
-  const m = Math.floor((seconds % 3600) / 60);
-  const hStr = h < 10 ? `0${h}` : String(h);
-  const mStr = m < 10 ? `0${m}` : String(m);
-  return `${hStr}:${mStr}`;
-}
-
-export function formatLiveDuration(seconds: number): string {
-  const h = Math.floor(seconds / 3600);
-  const m = Math.floor((seconds % 3600) / 60);
-  const s = seconds % 60;
+export function formatDuration(seconds: number | null | undefined): string {
+  if (seconds == null || isNaN(seconds) || seconds < 0) return "--:--:--";
+  const safe = Math.max(0, Math.floor(seconds));
+  const h = Math.floor(safe / 3600);
+  const m = Math.floor((safe % 3600) / 60);
+  const s = safe % 60;
   return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
 }
+
+// Aliases — same function, kept so existing import sites still work.
+export const formatDurationHM = formatDuration;
+export const formatLiveDuration = formatDuration;
 
 /*
  * Timezone-correct filter-window helpers.
