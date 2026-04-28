@@ -44,7 +44,13 @@ import type { TimeEntry } from "@/types";
 import { TimeManagementFilterSummary } from "@/components/admin/TimeManagementFilterSummary";
 import { NotesButton } from "@/components/widgets/NotesButton";
 import { sortProjectsAlphabetical } from "@/lib/sortProjects";
-import { formatDurationHM } from "@/lib/timeTracking";
+import {
+  formatDurationHM,
+  resolveCategoryKey,
+  categoryLabel,
+  CATEGORY_LABELS,
+  CATEGORY_FILTER_LABELS,
+} from "@/lib/timeTracking";
 
 // --- Date range presets ---
 
@@ -134,43 +140,11 @@ function formatDateRangeLabel(
 }
 
 // --- Category options ---
+// Sourced from the SSOT in @/lib/timeTracking so this dropdown can never
+// drift from the backend's VALID_CATEGORIES.
 
-const CATEGORIES = [
-  "All",
-  "Editing",
-  "Validating",
-  "Training",
-  "Checklist",
-  "QC / Review",
-  "Meeting",
-  "Documentation",
-  "Imagery Capture",
-  "Other",
-] as const;
-
-const CATEGORY_OPTIONS = [
-  "editing",
-  "validating",
-  "training",
-  "checklist",
-  "qc_review",
-  "meeting",
-  "documentation",
-  "imagery_capture",
-  "other",
-];
-
-const CATEGORY_LABEL_MAP: Record<string, string> = {
-  editing: "Editing",
-  validating: "Validating",
-  training: "Training",
-  checklist: "Checklist",
-  qc_review: "QC / Review",
-  meeting: "Meeting",
-  documentation: "Documentation",
-  imagery_capture: "Imagery Capture",
-  other: "Other",
-};
+const CATEGORIES = CATEGORY_FILTER_LABELS;
+const CATEGORY_OPTIONS = Object.keys(CATEGORY_LABELS);
 
 // --- Formatting helpers ---
 
@@ -260,6 +234,7 @@ export default function AdminTimePage() {
 
   // Export dropdown
   const [exportOpen, setExportOpen] = useState(false);
+  const [hideOsmUsername, setHideOsmUsername] = useState(false);
   const exportRef = useRef<HTMLDivElement>(null);
 
   // Live durations for active sessions
@@ -338,10 +313,8 @@ export default function AdminTimePage() {
     const body: Record<string, unknown> = {};
     if (startDate) body.startDate = startDate;
     if (endDate) body.endDate = endDate;
-    if (category !== "All") {
-      const catEntry = Object.entries(CATEGORY_LABEL_MAP).find(([, label]) => label === category);
-      body.category = catEntry ? catEntry[0] : category.toLowerCase();
-    }
+    const categoryKey = resolveCategoryKey(category);
+    if (categoryKey) body.category = categoryKey;
     if (filtersBody) body.filters = filtersBody;
     body.limit = 500;
     body.offset = 0;
@@ -406,10 +379,9 @@ export default function AdminTimePage() {
       entries = entries.filter((e) => e.clockIn && new Date(e.clockIn) < end);
     }
 
-    if (category !== "All") {
-      entries = entries.filter(
-        (e) => e.category === category || e.category?.toLowerCase() === category.toLowerCase()
-      );
+    const filterKey = resolveCategoryKey(category);
+    if (filterKey) {
+      entries = entries.filter((e) => resolveCategoryKey(e.category) === filterKey);
     }
 
     if (userSearch.trim()) {
@@ -425,10 +397,9 @@ export default function AdminTimePage() {
   // Filter active sessions by category and user search
   const filteredSessions = useMemo(() => {
     let filtered = sessions;
-    if (category !== "All") {
-      filtered = filtered.filter(
-        (s) => s.category === category || s.category?.toLowerCase() === category.toLowerCase()
-      );
+    const filterKey = resolveCategoryKey(category);
+    if (filterKey) {
+      filtered = filtered.filter((s) => resolveCategoryKey(s.category) === filterKey);
     }
     if (userSearch.trim()) {
       const search = userSearch.trim().toLowerCase();
@@ -558,7 +529,7 @@ export default function AdminTimePage() {
     setEditingEntry(entry);
     setEditClockIn(entry.clockIn ? toDatetimeLocal(entry.clockIn) : "");
     setEditClockOut(entry.clockOut ? toDatetimeLocal(entry.clockOut) : "");
-    setEditCategory(entry.category?.toLowerCase() || "editing");
+    setEditCategory(resolveCategoryKey(entry.category) ?? "editing");
     setEditError(null);
   };
 
@@ -650,13 +621,16 @@ export default function AdminTimePage() {
       start: customStart,
       end: customEnd,
     });
+    const omitColumns: string[] = [];
+    if (hideOsmUsername) omitColumns.push("osm_username");
     try {
       await exportEntries({
         startDate: startDate ?? undefined,
         endDate: endDate ?? undefined,
-        category: category !== "All" ? (Object.entries(CATEGORY_LABEL_MAP).find(([, label]) => label === category)?.[0] ?? category.toLowerCase()) : undefined,
+        category: resolveCategoryKey(category) ?? undefined,
         filters: filtersBody,
         format,
+        omit_columns: omitColumns.length ? omitColumns : undefined,
       });
       toast.success("Report downloaded");
     } catch {
@@ -834,7 +808,16 @@ export default function AdminTimePage() {
             </Button>
 
             {exportOpen && (
-              <div className="absolute right-0 top-full z-50 mt-1 min-w-44 rounded-lg border border-border bg-card shadow-md">
+              <div className="absolute right-0 top-full z-50 mt-1 min-w-52 rounded-lg border border-border bg-card shadow-md">
+                <label className="flex items-center gap-2 px-4 py-2 text-xs text-muted-foreground border-b border-border cursor-pointer hover:bg-accent/50">
+                  <input
+                    type="checkbox"
+                    checked={hideOsmUsername}
+                    onChange={(e) => setHideOsmUsername(e.target.checked)}
+                    className="h-3 w-3"
+                  />
+                  Hide OSM username column
+                </label>
                 <div className="py-1">
                   <button
                     type="button"
@@ -1447,7 +1430,7 @@ export default function AdminTimePage() {
               >
                 {CATEGORY_OPTIONS.map((cat) => (
                   <option key={cat} value={cat}>
-                    {CATEGORY_LABEL_MAP[cat] || cat}
+                    {categoryLabel(cat)}
                   </option>
                 ))}
               </select>
@@ -1524,7 +1507,7 @@ export default function AdminTimePage() {
             >
               {CATEGORY_OPTIONS.map((cat) => (
                 <option key={cat} value={cat}>
-                  {CATEGORY_LABEL_MAP[cat] || cat}
+                  {categoryLabel(cat)}
                 </option>
               ))}
             </select>

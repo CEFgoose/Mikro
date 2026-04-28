@@ -1147,6 +1147,10 @@ class TimeTrackingAPI(MethodView):
                 "status": 400,
             }), 400
 
+        omit_columns = data.get("omit_columns") or []
+        if not isinstance(omit_columns, list):
+            omit_columns = []
+
         # Build filtered query (no limit/offset for export — get all matching)
         query = self._build_filtered_query(g.user.org_id, data)
         entries = query.all()
@@ -1154,11 +1158,11 @@ class TimeTrackingAPI(MethodView):
         today_str = datetime.utcnow().strftime("%Y-%m-%d")
 
         if export_format == "csv":
-            return self._export_csv(entries, today_str)
+            return self._export_csv(entries, today_str, omit_columns=omit_columns)
         elif export_format == "json":
             return self._export_json(entries, today_str)
         elif export_format == "pdf":
-            return self._export_pdf(entries, data, today_str)
+            return self._export_pdf(entries, data, today_str, omit_columns=omit_columns)
 
     @staticmethod
     def _format_duration_hours(duration_seconds):
@@ -1168,41 +1172,56 @@ class TimeTrackingAPI(MethodView):
         hours = duration_seconds / 3600
         return f"{hours:.2f}"
 
-    def _export_csv(self, entries, today_str):
-        """Generate a CSV export of time entries."""
+    def _export_columns(self):
+        """Single source of truth for export column order, labels, and value
+        extractors. Each entry: (key, label, value_fn(user, project, entry)).
+
+        Both CSV and PDF iterate this list; `omit_columns` filters by `key`.
+        """
+        return [
+            ("user_name",     "User",             lambda u, p, e: u.full_name if u else "Unknown"),
+            ("osm_username",  "OSM Username",     lambda u, p, e: (u.osm_username if u else "") or ""),
+            ("project",       "Project",          lambda u, p, e: (p.name if p else "") or ""),
+            ("category",      "Category",         lambda u, p, e: CATEGORY_DISPLAY_MAP.get(e.category, e.category.capitalize() if e.category else "")),
+            ("task",          "Task",             lambda u, p, e: e.task_name or ""),
+            ("clock_in",      "Clock In",         lambda u, p, e: e.clock_in.isoformat() + "Z" if e.clock_in else ""),
+            ("clock_out",     "Clock Out",        lambda u, p, e: e.clock_out.isoformat() + "Z" if e.clock_out else ""),
+            ("duration_hours","Duration (hours)", lambda u, p, e: self._format_duration_hours(e.duration_seconds)),
+            ("status",        "Status",           lambda u, p, e: e.status or ""),
+            ("changesets",    "Changesets",       lambda u, p, e: e.changeset_count or 0),
+            ("changes",       "Changes",          lambda u, p, e: e.changes_count or 0),
+            ("notes",         "Notes",            lambda u, p, e: e.notes or ""),
+            ("user_notes",    "User Notes",       lambda u, p, e: e.user_notes or ""),
+        ]
+
+    def _export_csv(self, entries, today_str, omit_columns=None):
+        """Generate a CSV export of time entries.
+
+        - QUOTE_ALL so non-ASCII / multi-byte OSM usernames can never
+          break column alignment in Excel/Numbers.
+        - UTF-8 BOM prefix (\\ufeff) so Excel opens the file as UTF-8
+          rather than Latin-1 (without BOM, multi-byte chars render as
+          mojibake).
+        """
+        omit = set(omit_columns or [])
+        active = [c for c in self._export_columns() if c[0] not in omit]
+
         output = io.StringIO()
-        writer = csv.writer(output)
-        writer.writerow([
-            "User", "OSM Username", "Project", "Category", "Task",
-            "Clock In", "Clock Out", "Duration (hours)", "Status",
-            "Changesets", "Changes", "Notes", "User Notes",
-        ])
+        output.write("﻿")  # UTF-8 BOM — Excel needs this for non-ASCII
+        writer = csv.writer(output, quoting=csv.QUOTE_ALL)
+        writer.writerow([label for _, label, _ in active])
 
         for entry in entries:
             user = User.query.get(entry.user_id)
             project = Project.query.get(entry.project_id) if entry.project_id else None
-            writer.writerow([
-                user.full_name if user else "Unknown",
-                user.osm_username if user else "",
-                project.name if project else "",
-                CATEGORY_DISPLAY_MAP.get(entry.category, entry.category.capitalize() if entry.category else ""),
-                entry.task_name or "",
-                entry.clock_in.isoformat() + "Z" if entry.clock_in else "",
-                entry.clock_out.isoformat() + "Z" if entry.clock_out else "",
-                self._format_duration_hours(entry.duration_seconds),
-                entry.status or "",
-                entry.changeset_count or 0,
-                entry.changes_count or 0,
-                entry.notes or "",
-                entry.user_notes or "",
-            ])
+            writer.writerow([fn(user, project, entry) for _, _, fn in active])
 
         csv_data = output.getvalue()
         output.close()
 
         return Response(
-            csv_data,
-            mimetype="text/csv",
+            csv_data.encode("utf-8"),
+            mimetype="text/csv; charset=utf-8",
             headers={
                 "Content-Disposition": f'attachment; filename="time-report-{today_str}.csv"'
             },
@@ -1217,21 +1236,30 @@ class TimeTrackingAPI(MethodView):
         )
         return resp
 
-    def _export_pdf(self, entries, data, today_str):
-        """Generate a PDF export of time entries."""
+    def _export_pdf(self, entries, data, today_str, omit_columns=None):
+        """Generate a PDF export of time entries.
+
+        - Notes / User Notes are excluded from PDF by default (too long
+          for a printable table); request other columns via omit_columns.
+        - Text-heavy cells (User, OSM Username, Project, Task) wrap with
+          reportlab Paragraph so multi-byte / long values flow into
+          multiple lines instead of being chopped at 20 chars.
+        """
         try:
             from reportlab.lib.pagesizes import letter, landscape
             from reportlab.lib import colors
             from reportlab.platypus import (
                 SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer,
             )
-            from reportlab.lib.styles import getSampleStyleSheet
+            from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
             from reportlab.lib.units import inch
         except ImportError:
             return jsonify({
                 "message": "PDF export requires the reportlab library. Install with: pip install reportlab",
                 "status": 500,
             }), 500
+
+        from xml.sax.saxutils import escape as xml_escape
 
         buffer = io.BytesIO()
         doc = SimpleDocTemplate(
@@ -1240,6 +1268,10 @@ class TimeTrackingAPI(MethodView):
             topMargin=0.5 * inch, bottomMargin=0.5 * inch,
         )
         styles = getSampleStyleSheet()
+        cell_style = ParagraphStyle(
+            "Cell", parent=styles["Normal"], fontSize=7, leading=8,
+            wordWrap="CJK",  # break anywhere — works for non-spaced scripts too
+        )
         elements = []
 
         # Title
@@ -1263,12 +1295,38 @@ class TimeTrackingAPI(MethodView):
             ))
         elements.append(Spacer(1, 12))
 
-        # Build table data
-        headers = [
-            "User", "OSM Username", "Project", "Category", "Task",
-            "Clock In", "Clock Out", "Duration (h)", "Status",
-            "Changesets", "Changes",
-        ]
+        # Column subset for PDF: registry minus notes/user_notes (too long)
+        # plus any keys explicitly omitted by the caller.
+        pdf_skip = set(omit_columns or []) | {"notes", "user_notes"}
+        active = [c for c in self._export_columns() if c[0] not in pdf_skip]
+
+        PDF_WIDTHS = {
+            "user_name":      1.2 * inch,
+            "osm_username":   1.3 * inch,
+            "project":        1.4 * inch,
+            "category":       0.85 * inch,
+            "task":           1.4 * inch,
+            "clock_in":       1.05 * inch,
+            "clock_out":      1.05 * inch,
+            "duration_hours": 0.7 * inch,
+            "status":         0.75 * inch,
+            "changesets":     0.65 * inch,
+            "changes":        0.65 * inch,
+        }
+        # Cells that may contain long / multi-byte text — wrap in Paragraph.
+        PDF_WRAPPED_COLS = {"user_name", "osm_username", "project", "task"}
+
+        # Override clock_in/clock_out value fns so PDF gets the shorter
+        # "YYYY-MM-DD HH:MM" string instead of the ISO8601 the registry
+        # returns by default (the registry is shared with CSV).
+        def pdf_value(key, fn, user, project, entry):
+            if key == "clock_in":
+                return entry.clock_in.strftime("%Y-%m-%d %H:%M") if entry.clock_in else ""
+            if key == "clock_out":
+                return entry.clock_out.strftime("%Y-%m-%d %H:%M") if entry.clock_out else ""
+            return fn(user, project, entry)
+
+        headers = [label for _, label, _ in active]
         table_data = [headers]
 
         total_seconds = 0
@@ -1277,43 +1335,32 @@ class TimeTrackingAPI(MethodView):
 
         for entry in entries:
             user = User.query.get(entry.user_id)
-            project = (
-                Project.query.get(entry.project_id) if entry.project_id else None
-            )
-            dur_secs = entry.duration_seconds or 0
-            total_seconds += dur_secs
+            project = Project.query.get(entry.project_id) if entry.project_id else None
+            total_seconds += entry.duration_seconds or 0
             total_changesets += entry.changeset_count or 0
             total_changes += entry.changes_count or 0
 
-            table_data.append([
-                (user.full_name if user else "Unknown")[:20],
-                (user.osm_username if user else "")[:20],
-                (project.name if project else "")[:20],
-                CATEGORY_DISPLAY_MAP.get(entry.category, entry.category.capitalize() if entry.category else ""),
-                (entry.task_name or "")[:20],
-                (entry.clock_in.strftime("%Y-%m-%d %H:%M") if entry.clock_in else ""),
-                (entry.clock_out.strftime("%Y-%m-%d %H:%M") if entry.clock_out else ""),
-                self._format_duration_hours(dur_secs),
-                entry.status or "",
-                str(entry.changeset_count or 0),
-                str(entry.changes_count or 0),
-            ])
+            row = []
+            for key, _label, fn in active:
+                val = pdf_value(key, fn, user, project, entry)
+                if key in PDF_WRAPPED_COLS:
+                    row.append(Paragraph(xml_escape(str(val)), cell_style))
+                else:
+                    row.append(str(val))
+            table_data.append(row)
 
-        # Totals row
-        table_data.append([
-            "TOTALS", "", "", "", "", "", "",
-            self._format_duration_hours(total_seconds),
-            f"{len(entries)} entries",
-            str(total_changesets),
-            str(total_changes),
-        ])
+        # Totals row keyed by column so it stays aligned no matter what
+        # was omitted.
+        totals_by_key = {
+            "user_name":      "TOTALS",
+            "duration_hours": self._format_duration_hours(total_seconds),
+            "status":         f"{len(entries)} entries",
+            "changesets":     str(total_changesets),
+            "changes":        str(total_changes),
+        }
+        table_data.append([totals_by_key.get(key, "") for key, _, _ in active])
 
-        # Create and style table
-        col_widths = [
-            1.0 * inch, 1.0 * inch, 1.0 * inch, 0.8 * inch, 0.8 * inch,
-            1.1 * inch, 1.1 * inch, 0.7 * inch, 0.6 * inch,
-            0.6 * inch, 0.6 * inch,
-        ]
+        col_widths = [PDF_WIDTHS.get(key, 1.0 * inch) for key, _, _ in active]
         table = Table(table_data, colWidths=col_widths, repeatRows=1)
         table.setStyle(TableStyle([
             ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#2563eb")),

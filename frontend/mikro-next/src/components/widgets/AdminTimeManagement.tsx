@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/Badge";
 import { Modal } from "@/components/ui/Modal";
 import { NotesButton } from "./NotesButton";
 import { sortProjectsAlphabetical } from "@/lib/sortProjects";
-import { formatDurationHM } from "@/lib/timeTracking";
+import { formatDurationHM, resolveCategoryKey } from "@/lib/timeTracking";
 import {
   useAdminActiveSessions,
   useAdminTimeHistory,
@@ -169,7 +169,7 @@ export function AdminTimeManagement() {
     setEditingEntry(entry);
     setEditClockIn(entry.clockIn ? toDatetimeLocal(entry.clockIn) : "");
     setEditClockOut(entry.clockOut ? toDatetimeLocal(entry.clockOut) : "");
-    setEditCategory(entry.category.toLowerCase());
+    setEditCategory(resolveCategoryKey(entry.category) ?? "editing");
     setEditError(null);
   };
 

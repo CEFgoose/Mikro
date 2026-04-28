@@ -26,6 +26,100 @@ export function topicRequiresProject(topic: string): boolean {
 }
 
 /**
+ * Category SSOT — mirrors `VALID_CATEGORIES` and `CATEGORY_DISPLAY_MAP`
+ * on the backend (`backend/api/views/TimeTracking.py`). Every category
+ * translation in the frontend should go through `resolveCategoryKey()`
+ * or `categoryLabel()` rather than handcrafted reverse lookups, so any
+ * locale-quirky `.toLowerCase()` (e.g. Turkish dotless I) or input we
+ * don't recognize fails closed instead of being silently misrouted.
+ */
+
+/** Canonical category key → display label. */
+export const CATEGORY_LABELS: Record<string, string> = {
+  editing: "Editing",
+  validating: "Validating",
+  training: "Training",
+  checklist: "Checklist",
+  qc_review: "QC / Review",
+  meeting: "Meeting",
+  documentation: "Documentation",
+  imagery_capture: "Imagery Capture",
+  project_creation: "Project Creation",
+  community: "Community",
+  other: "Other",
+};
+
+/**
+ * Legacy keys the backend still accepts. We don't render them in dropdowns
+ * (the canonical equivalents already cover them) but if a stored entry's
+ * category is one of these we display it via its canonical label.
+ */
+const LEGACY_CATEGORY_KEYS: Record<string, string> = {
+  mapping: "editing",
+  validation: "validating",
+  review: "qc_review",
+};
+
+// Built once: case-insensitive label → canonical key.
+const LABEL_TO_KEY: Record<string, string> = (() => {
+  const out: Record<string, string> = {};
+  for (const [key, label] of Object.entries(CATEGORY_LABELS)) {
+    out[label.toLowerCase()] = key;
+  }
+  return out;
+})();
+
+/**
+ * Resolve any category-ish input to a canonical backend key.
+ *
+ * Accepts:
+ * - canonical keys ("editing", "qc_review") — case-insensitive
+ * - display labels ("Editing", "QC / Review") — case-insensitive
+ * - legacy keys ("mapping", "validation", "review") — pass through
+ * - surrounding whitespace
+ *
+ * Returns `null` for empty / "All" / unrecognized input. Callers should
+ * treat null as "no category filter" rather than substituting a guess —
+ * that's the failure mode the previous `.toLowerCase()` fallback hid.
+ */
+export function resolveCategoryKey(input: string | null | undefined): string | null {
+  if (input == null) return null;
+  const trimmed = String(input).trim().toLowerCase();
+  if (!trimmed || trimmed === "all") return null;
+  if (trimmed in CATEGORY_LABELS) return trimmed;
+  if (trimmed in LEGACY_CATEGORY_KEYS) return trimmed;
+  if (trimmed in LABEL_TO_KEY) return LABEL_TO_KEY[trimmed];
+  return null;
+}
+
+/**
+ * Display label for any category-ish input. Legacy keys render via their
+ * canonical equivalent; unknown values get a Title-Cased fallback so the
+ * UI never shows raw garbage even if a new key arrives from the backend
+ * before this map is updated.
+ */
+export function categoryLabel(input: string | null | undefined): string {
+  if (input == null) return "";
+  const trimmed = String(input).trim();
+  if (!trimmed) return "";
+  const lower = trimmed.toLowerCase();
+  if (lower in CATEGORY_LABELS) return CATEGORY_LABELS[lower];
+  if (lower in LEGACY_CATEGORY_KEYS) {
+    return CATEGORY_LABELS[LEGACY_CATEGORY_KEYS[lower]];
+  }
+  if (lower in LABEL_TO_KEY) {
+    return CATEGORY_LABELS[LABEL_TO_KEY[lower]];
+  }
+  return trimmed.charAt(0).toUpperCase() + trimmed.slice(1);
+}
+
+/** Filter-bar dropdown options: "All" plus every canonical label. */
+export const CATEGORY_FILTER_LABELS: string[] = [
+  "All",
+  ...Object.values(CATEGORY_LABELS),
+];
+
+/**
  * SSOT duration formatter — `HH:MM:SS` everywhere, app-wide.
  *
  * Both live timers and completed/aggregated durations share this format

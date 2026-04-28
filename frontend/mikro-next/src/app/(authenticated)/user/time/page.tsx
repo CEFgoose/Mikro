@@ -18,7 +18,11 @@ import {
 import { useToastActions } from "@/components/ui";
 import { useMyTimeHistory, useRequestTimeAdjustment, useUpdateMyNotes, useUserProjects } from "@/hooks";
 import { NotesButton } from "@/components/widgets/NotesButton";
-import { formatDurationHM } from "@/lib/timeTracking";
+import {
+  formatDurationHM,
+  resolveCategoryKey,
+  CATEGORY_FILTER_LABELS,
+} from "@/lib/timeTracking";
 import { formatNumber } from "@/lib/utils";
 import {
   localWeekStartIsoUtc,
@@ -63,31 +67,9 @@ function getDateRange(preset: DatePreset): { startDate: string | null; endDate: 
 }
 
 // --- Category options ---
+// Sourced from the SSOT in @/lib/timeTracking.
 
-const CATEGORIES = [
-  "All",
-  "Editing",
-  "Validating",
-  "Training",
-  "Checklist",
-  "QC / Review",
-  "Meeting",
-  "Documentation",
-  "Imagery Capture",
-  "Other",
-] as const;
-
-const CATEGORY_LABEL_MAP: Record<string, string> = {
-  editing: "Editing",
-  validating: "Validating",
-  training: "Training",
-  checklist: "Checklist",
-  qc_review: "QC / Review",
-  meeting: "Meeting",
-  documentation: "Documentation",
-  imagery_capture: "Imagery Capture",
-  other: "Other",
-};
+const CATEGORIES = CATEGORY_FILTER_LABELS;
 
 // --- Formatting helpers ---
 
@@ -154,10 +136,8 @@ export default function UserTimePage() {
     const body: Record<string, unknown> = {};
     if (startDate) body.startDate = startDate;
     if (endDate) body.endDate = endDate;
-    if (category !== "All") {
-      const catEntry = Object.entries(CATEGORY_LABEL_MAP).find(([, label]) => label === category);
-      body.category = catEntry ? catEntry[0] : category.toLowerCase();
-    }
+    const categoryKey = resolveCategoryKey(category);
+    if (categoryKey) body.category = categoryKey;
     body.limit = 500;
     body.offset = 0;
     refetch(body).catch(() => {});
@@ -197,10 +177,9 @@ export default function UserTimePage() {
     }
 
     // Client-side category filtering (fallback)
-    if (category !== "All") {
-      entries = entries.filter(
-        (e) => e.category === category || e.category?.toLowerCase() === category.toLowerCase()
-      );
+    const filterKey = resolveCategoryKey(category);
+    if (filterKey) {
+      entries = entries.filter((e) => resolveCategoryKey(e.category) === filterKey);
     }
 
     return entries;

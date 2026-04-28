@@ -739,7 +739,7 @@ export function useExportTimeEntries() {
   const [error, setError] = useState<string | null>(null);
 
   const exportEntries = useCallback(
-    async (params: TimeHistoryFilterParams & { format?: "csv" | "json" | "pdf" }) => {
+    async (params: TimeHistoryFilterParams & { format?: "csv" | "json" | "pdf"; omit_columns?: string[] }) => {
       setLoading(true);
       setError(null);
 

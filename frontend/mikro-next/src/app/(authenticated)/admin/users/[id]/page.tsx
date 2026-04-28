@@ -59,7 +59,7 @@ import {
 import { RecentActivityCard } from "@/components/admin/RecentActivityCard";
 import { AssignedProjectsTable } from "@/components/admin/AssignedProjectsTable";
 import { NotesButton } from "@/components/widgets/NotesButton";
-import { formatDurationHM } from "@/lib/timeTracking";
+import { formatDurationHM, resolveCategoryKey } from "@/lib/timeTracking";
 import { openChangesetInJosm, zoomToChangeset } from "@/lib/josmRemoteControl";
 
 const MappingHeatmap = dynamic(() => import("@/components/MappingHeatmap"), {
@@ -384,7 +384,7 @@ export default function UserProfilePage() {
     setEditingEntry(entry);
     setEditClockIn(entry.clockIn ? toDatetimeLocal(entry.clockIn) : "");
     setEditClockOut(entry.clockOut ? toDatetimeLocal(entry.clockOut) : "");
-    setEditCategory(entry.category.toLowerCase());
+    setEditCategory(resolveCategoryKey(entry.category) ?? "editing");
     setEditError(null);
   };
 
