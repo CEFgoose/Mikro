@@ -710,6 +710,11 @@ export function useUpdateMyNotes() {
   return useApiMutation<TimeTrackingSessionResponse>("/timetracking/update_my_notes");
 }
 
+// User: hard-discard the active session within the 5-min window
+export function useDiscardActiveSession() {
+  return useApiMutation<{ message: string; status: number; elapsed_seconds?: number; max_seconds?: number }>("/timetracking/discard_active");
+}
+
 // Admin: add new time entry
 export function useAdminAddTimeEntry() {
   return useApiMutation<{ message: string; status: number; entry: TimeTrackingSessionResponse }>("/timetracking/admin_add_entry");

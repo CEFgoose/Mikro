@@ -25,6 +25,32 @@ export function topicRequiresProject(topic: string): boolean {
   return PROJECT_REQUIRED_TOPICS.includes(topic);
 }
 
+/**
+ * SSOT duration formatters.
+ *
+ * - formatDurationHM(seconds): "HH:MM" — used everywhere a completed or
+ *   aggregated duration is shown (history tables, totals, summaries).
+ *   Hours not zero-padded if ≥100; minutes always 2 digits.
+ * - formatLiveDuration(seconds): "HH:MM:SS" — used only for the live
+ *   ticking timer in the clocked-in state, where seconds give the user
+ *   feedback that the clock is running.
+ */
+export function formatDurationHM(seconds: number | null | undefined): string {
+  if (seconds == null || isNaN(seconds) || seconds < 0) return "--";
+  const h = Math.floor(seconds / 3600);
+  const m = Math.floor((seconds % 3600) / 60);
+  const hStr = h < 10 ? `0${h}` : String(h);
+  const mStr = m < 10 ? `0${m}` : String(m);
+  return `${hStr}:${mStr}`;
+}
+
+export function formatLiveDuration(seconds: number): string {
+  const h = Math.floor(seconds / 3600);
+  const m = Math.floor((seconds % 3600) / 60);
+  const s = seconds % 60;
+  return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
+}
+
 /*
  * Timezone-correct filter-window helpers.
  *

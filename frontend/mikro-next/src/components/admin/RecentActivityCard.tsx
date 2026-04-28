@@ -4,6 +4,7 @@ import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui";
 import type { UserProfileData, Changeset } from "@/types";
 import { NotesButton } from "@/components/widgets/NotesButton";
+import { formatDurationHM } from "@/lib/timeTracking";
 
 function formatRelative(iso: string | null | undefined): string {
   if (!iso) return "—";
@@ -24,10 +25,7 @@ function formatRelative(iso: string | null | undefined): string {
 
 function formatDuration(seconds: number | null | undefined): string {
   if (seconds == null) return "—";
-  const h = Math.floor(seconds / 3600);
-  const m = Math.floor((seconds % 3600) / 60);
-  if (h > 0) return `${h}h ${m}m`;
-  return `${m}m`;
+  return formatDurationHM(seconds);
 }
 
 interface Props {

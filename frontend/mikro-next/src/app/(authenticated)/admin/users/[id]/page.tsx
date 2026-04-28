@@ -59,6 +59,7 @@ import {
 import { RecentActivityCard } from "@/components/admin/RecentActivityCard";
 import { AssignedProjectsTable } from "@/components/admin/AssignedProjectsTable";
 import { NotesButton } from "@/components/widgets/NotesButton";
+import { formatDurationHM } from "@/lib/timeTracking";
 import { openChangesetInJosm, zoomToChangeset } from "@/lib/josmRemoteControl";
 
 const MappingHeatmap = dynamic(() => import("@/components/MappingHeatmap"), {
@@ -107,11 +108,7 @@ function formatDateTime(iso: string | null): string {
 }
 
 function formatDuration(seconds: number | null): string {
-  if (seconds == null) return "-";
-  const h = Math.floor(seconds / 3600);
-  const m = Math.floor((seconds % 3600) / 60);
-  const s = seconds % 60;
-  return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
+  return formatDurationHM(seconds);
 }
 
 // Returns YYYY-MM-DD strings anchored to the admin's local calendar.

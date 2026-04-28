@@ -44,6 +44,7 @@ import type { TimeEntry } from "@/types";
 import { TimeManagementFilterSummary } from "@/components/admin/TimeManagementFilterSummary";
 import { NotesButton } from "@/components/widgets/NotesButton";
 import { sortProjectsAlphabetical } from "@/lib/sortProjects";
+import { formatDurationHM } from "@/lib/timeTracking";
 
 // --- Date range presets ---
 
@@ -200,12 +201,7 @@ function formatDateTime(iso: string): string {
 }
 
 function formatDuration(seconds: number | null): string {
-  if (seconds == null || seconds <= 0) return "--";
-  const hours = Math.floor(seconds / 3600);
-  const minutes = Math.floor((seconds % 3600) / 60);
-  if (hours === 0) return `${minutes}m`;
-  if (minutes === 0) return `${hours}h`;
-  return `${hours}h ${minutes}m`;
+  return formatDurationHM(seconds);
 }
 
 function formatLiveDuration(clockIn: string): string {

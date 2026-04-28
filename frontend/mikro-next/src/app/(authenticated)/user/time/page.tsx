@@ -18,6 +18,7 @@ import {
 import { useToastActions } from "@/components/ui";
 import { useMyTimeHistory, useRequestTimeAdjustment, useUpdateMyNotes, useUserProjects } from "@/hooks";
 import { NotesButton } from "@/components/widgets/NotesButton";
+import { formatDurationHM } from "@/lib/timeTracking";
 import { formatNumber } from "@/lib/utils";
 import {
   localWeekStartIsoUtc,
@@ -107,12 +108,7 @@ function formatTime(iso: string): string {
 }
 
 function formatDuration(seconds: number | null): string {
-  if (seconds == null || seconds <= 0) return "--";
-  const hours = Math.floor(seconds / 3600);
-  const minutes = Math.floor((seconds % 3600) / 60);
-  if (hours === 0) return `${minutes}m`;
-  if (minutes === 0) return `${hours}h`;
-  return `${hours}h ${minutes}m`;
+  return formatDurationHM(seconds);
 }
 
 function secondsToHours(seconds: number): number {

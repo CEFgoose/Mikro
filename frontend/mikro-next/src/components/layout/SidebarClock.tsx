@@ -1,30 +1,25 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { useActiveTimeSession, useClockIn, useClockOut, useUserProjects, useFetchMyTimeHistory, useUpdateMyNotes } from "@/hooks";
+import { useActiveTimeSession, useClockIn, useClockOut, useUserProjects, useFetchMyTimeHistory, useUpdateMyNotes, useDiscardActiveSession } from "@/hooks";
 import {
   TOPIC_OPTIONS,
   topicRequiresProject,
   localDayStartIsoUtc,
   localDayEndIsoUtc,
+  localWeekStartIsoUtc,
+  formatDurationHM,
+  formatLiveDuration,
 } from "@/lib/timeTracking";
 import { NotesButton } from "@/components/widgets/NotesButton";
 import { sortProjectsRecentPinned } from "@/lib/sortProjects";
+import { ConfirmDialog } from "@/components/ui/Modal";
 
-function formatHoursMinutes(totalSeconds: number): string {
-  const h = Math.floor(totalSeconds / 3600);
-  const m = Math.floor((totalSeconds % 3600) / 60);
-  return `${h}h ${m}m`;
-}
+const DISCARD_WINDOW_SECONDS = 300;
 
-function formatElapsedTime(seconds: number): string {
-  const hours = Math.floor(seconds / 3600);
-  const minutes = Math.floor((seconds % 3600) / 60);
-  const secs = seconds % 60;
-  return `${hours.toString().padStart(2, "0")}:${minutes
-    .toString()
-    .padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
-}
+// Local helpers replaced by SSOT in @/lib/timeTracking:
+// formatHoursMinutes → formatDurationHM (HH:MM)
+// formatElapsedTime → formatLiveDuration (HH:MM:SS, live ticker only)
 
 const selectStyle: React.CSSProperties = {
   width: "100%",
@@ -42,7 +37,10 @@ export function SidebarClock() {
   const { mutate: clockIn, loading: clockingIn } = useClockIn();
   const { mutate: clockOut, loading: clockingOut } = useClockOut();
   const { mutate: updateMyNotes } = useUpdateMyNotes();
+  const { mutate: discardActive, loading: discarding } = useDiscardActiveSession();
   const { data: projects } = useUserProjects();
+  const [showDiscardConfirm, setShowDiscardConfirm] = useState(false);
+  const [discardError, setDiscardError] = useState<string | null>(null);
 
   const [isClockedIn, setIsClockedIn] = useState(false);
   const [timerStartedAt, setTimerStartedAt] = useState<number | null>(null);
@@ -57,6 +55,7 @@ export function SidebarClock() {
   const [activeSessionId, setActiveSessionId] = useState<number | null>(null);
   const [activeSessionUserNotes, setActiveSessionUserNotes] = useState<string | null>(null);
   const [todaySeconds, setTodaySeconds] = useState(0);
+  const [weekSeconds, setWeekSeconds] = useState(0);
   const { mutate: fetchHistory } = useFetchMyTimeHistory();
 
   // Project ordering: most-recently-worked-on project pinned at the
@@ -117,23 +116,25 @@ export function SidebarClock() {
     return () => window.removeEventListener("clock-state-changed", handler);
   }, [refetch]);
 
-  // Fetch today's completed hours
+  // Fetch today's + this week's completed hours (parallel)
   useEffect(() => {
     if (!isClockedIn) return;
-    const fetchTodayTotal = async () => {
+    const fetchTotals = async () => {
       try {
-        const result = await fetchHistory({
-          startDate: localDayStartIsoUtc(),
-          endDate: localDayEndIsoUtc(),
-          limit: 1000,
-        });
-        const total = (result?.entries || [])
-          .filter((e: { status: string; durationSeconds: number | null }) => e.status === "completed")
-          .reduce((sum: number, e: { durationSeconds: number | null }) => sum + (e.durationSeconds || 0), 0);
-        setTodaySeconds(total);
+        const dayEnd = localDayEndIsoUtc();
+        const [todayResult, weekResult] = await Promise.all([
+          fetchHistory({ startDate: localDayStartIsoUtc(), endDate: dayEnd, limit: 1000 }),
+          fetchHistory({ startDate: localWeekStartIsoUtc(), endDate: dayEnd, limit: 1000 }),
+        ]);
+        const sumCompleted = (entries: { status: string; durationSeconds: number | null }[] | undefined) =>
+          (entries || [])
+            .filter((e) => e.status === "completed")
+            .reduce((sum: number, e) => sum + (e.durationSeconds || 0), 0);
+        setTodaySeconds(sumCompleted(todayResult?.entries));
+        setWeekSeconds(sumCompleted(weekResult?.entries));
       } catch { /* ignore */ }
     };
-    fetchTodayTotal();
+    fetchTotals();
   }, [isClockedIn, fetchHistory]);
 
   // Timer — uses only client-side clock deltas, never compares against server time
@@ -185,6 +186,25 @@ export function SidebarClock() {
     },
     [activeSessionId, updateMyNotes]
   );
+
+  const handleDiscardConfirmed = useCallback(async () => {
+    setDiscardError(null);
+    try {
+      await discardActive({});
+      setShowDiscardConfirm(false);
+      // Reset local state — same effect as clock_out without saving anything
+      setIsClockedIn(false);
+      setTimerStartedAt(null);
+      setInitialElapsed(0);
+      setElapsedSeconds(0);
+      setActiveSessionId(null);
+      setActiveSessionUserNotes(null);
+      window.dispatchEvent(new Event("clock-state-changed"));
+      refetch().catch(() => {});
+    } catch (err) {
+      setDiscardError(err instanceof Error ? err.message : "Failed to discard");
+    }
+  }, [discardActive, refetch]);
 
   const handleClockOut = useCallback(async () => {
     try {
@@ -238,7 +258,7 @@ export function SidebarClock() {
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
           </svg>
           <span style={{ fontSize: 11, color: "#2563eb", fontWeight: 500 }}>
-            {formatElapsedTime(elapsedSeconds)}
+            {formatDurationHM(elapsedSeconds)}
           </span>
         </div>
       </div>
@@ -257,7 +277,7 @@ export function SidebarClock() {
       >
         <div style={{ textAlign: "center", marginBottom: 2 }}>
           <span style={{ fontSize: 10, color: "var(--muted-foreground)" }}>
-            Today: {formatHoursMinutes(todaySeconds + elapsedSeconds)}
+            Today: {formatDurationHM(todaySeconds + elapsedSeconds)} · Week: {formatDurationHM(weekSeconds + elapsedSeconds)}
           </span>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 4, justifyContent: "center" }}>
@@ -291,7 +311,7 @@ export function SidebarClock() {
               color: "#16a34a",
             }}
           >
-            {formatElapsedTime(elapsedSeconds)}
+            {formatLiveDuration(elapsedSeconds)}
           </span>
         </div>
         <div style={{ display: "flex", justifyContent: "center", marginBottom: 6 }}>
@@ -302,6 +322,11 @@ export function SidebarClock() {
             size="xs"
           />
         </div>
+        {discardError && (
+          <div style={{ fontSize: 10, color: "#dc2626", marginBottom: 4, textAlign: "center" }}>
+            {discardError}
+          </div>
+        )}
         <button
           onClick={handleClockOut}
           disabled={clockingOut}
@@ -321,6 +346,40 @@ export function SidebarClock() {
         >
           {clockingOut ? "..." : "Clock Out"}
         </button>
+        {elapsedSeconds <= DISCARD_WINDOW_SECONDS && (
+          <button
+            onClick={() => { setDiscardError(null); setShowDiscardConfirm(true); }}
+            disabled={discarding}
+            style={{
+              width: "100%",
+              marginTop: 4,
+              padding: "4px 0",
+              fontSize: 10,
+              fontWeight: 500,
+              color: "var(--muted-foreground)",
+              backgroundColor: "transparent",
+              border: "1px solid var(--border)",
+              borderRadius: 5,
+              cursor: discarding ? "not-allowed" : "pointer",
+              opacity: discarding ? 0.6 : 1,
+              transition: "opacity 0.15s",
+            }}
+            title="Throw away this entry without saving (within 5 min of clock-in)"
+          >
+            {discarding ? "..." : "Discard"}
+          </button>
+        )}
+        <ConfirmDialog
+          isOpen={showDiscardConfirm}
+          onClose={() => setShowDiscardConfirm(false)}
+          onConfirm={handleDiscardConfirmed}
+          title="Discard active time entry?"
+          message="This entry will not be saved or counted in any totals. You can clock in fresh after."
+          confirmText="Discard"
+          cancelText="Cancel"
+          variant="destructive"
+          isLoading={discarding}
+        />
       </div>
     );
   }

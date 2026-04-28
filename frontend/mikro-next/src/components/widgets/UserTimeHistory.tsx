@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/Badge";
 import { Modal } from "@/components/ui/Modal";
 import { useMyTimeHistory, useRequestTimeAdjustment, useUpdateMyNotes } from "@/hooks";
 import { NotesButton } from "./NotesButton";
+import { formatDurationHM } from "@/lib/timeTracking";
 
 function formatDateTime(iso: string): string {
   return new Date(iso).toLocaleString("en-US", {
@@ -138,7 +139,7 @@ export function UserTimeHistory() {
                         <Badge variant="secondary">{entry.category}</Badge>
                       </td>
                       <td className="py-2 px-2">
-                        <span className="font-mono">{entry.duration || "—"}</span>
+                        <span className="font-mono">{formatDurationHM(entry.durationSeconds)}</span>
                       </td>
                       <td className="py-2 px-2">
                         <Badge
@@ -226,7 +227,7 @@ export function UserTimeHistory() {
                       {entry.clockOut ? formatDateTime(entry.clockOut) : "—"}
                     </td>
                     <td className="py-3 px-3">
-                      <span className="font-mono">{entry.duration || "—"}</span>
+                      <span className="font-mono">{formatDurationHM(entry.durationSeconds)}</span>
                     </td>
                     <td className="py-3 px-3">
                       <Badge

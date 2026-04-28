@@ -12,9 +12,13 @@ import {
   useCustomTopics,
   useFetchMyTimeHistory,
   useUpdateMyNotes,
+  useDiscardActiveSession,
 } from "@/hooks";
 import { NotesButton } from "./NotesButton";
 import { sortProjectsRecentPinned } from "@/lib/sortProjects";
+import { ConfirmDialog } from "@/components/ui/Modal";
+
+const DISCARD_WINDOW_SECONDS = 300;
 
 interface TimeTrackingWidgetProps {
   projects?: {
@@ -31,24 +35,15 @@ import {
   localDayStartIsoUtc,
   localDayEndIsoUtc,
   localWeekStartIsoUtc,
+  formatDurationHM,
+  formatLiveDuration,
 } from "@/lib/timeTracking";
 
 const TOPIC_OPTIONS: SelectOption[] = _TOPIC_OPTIONS.map((t) => ({ value: t.value, label: t.label }));
 
-function formatElapsedTime(seconds: number): string {
-  const hours = Math.floor(seconds / 3600);
-  const minutes = Math.floor((seconds % 3600) / 60);
-  const secs = seconds % 60;
-  return `${hours.toString().padStart(2, "0")}:${minutes
-    .toString()
-    .padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
-}
-
-function formatHoursMinutes(totalSeconds: number): string {
-  const h = Math.floor(totalSeconds / 3600);
-  const m = Math.floor((totalSeconds % 3600) / 60);
-  return `${h}h ${m}m`;
-}
+// Duration helpers consolidated into @/lib/timeTracking:
+// formatElapsedTime → formatLiveDuration (HH:MM:SS)
+// formatHoursMinutes → formatDurationHM (HH:MM)
 
 export function TimeTrackingWidget({
   projects = [],
@@ -80,6 +75,9 @@ export function TimeTrackingWidget({
   const { mutate: clockIn, loading: clockingIn } = useClockIn();
   const { mutate: clockOut, loading: clockingOut } = useClockOut();
   const { mutate: updateMyNotes } = useUpdateMyNotes();
+  const { mutate: discardActive, loading: discarding } = useDiscardActiveSession();
+  const [showDiscardConfirm, setShowDiscardConfirm] = useState(false);
+  const [discardError, setDiscardError] = useState<string | null>(null);
 
   // Lazy-loaded data for training and checklist topics
   const {
@@ -267,6 +265,27 @@ export function TimeTrackingWidget({
     },
     [activeSessionId, updateMyNotes]
   );
+
+  const handleDiscardConfirmed = useCallback(async () => {
+    setDiscardError(null);
+    try {
+      await discardActive({});
+      setShowDiscardConfirm(false);
+      setIsClockedIn(false);
+      setTimerStartedAt(null);
+      setInitialElapsed(0);
+      setElapsedSeconds(0);
+      setActiveSessionProjectName("");
+      setActiveSessionTopic("");
+      setActiveSessionTaskName("");
+      setActiveSessionId(null);
+      setActiveSessionUserNotes(null);
+      window.dispatchEvent(new Event("clock-state-changed"));
+      refetchSession().catch(() => {});
+    } catch (err) {
+      setDiscardError(err instanceof Error ? err.message : "Failed to discard");
+    }
+  }, [discardActive, refetchSession]);
 
   const handleClockOut = useCallback(async () => {
     setApiError(null);
@@ -587,7 +606,7 @@ export function TimeTrackingWidget({
         <CardContent>
           <div className="text-center">
             <div className="text-4xl font-mono font-bold text-green-600 dark:text-green-400 mb-2">
-              {formatElapsedTime(elapsedSeconds)}
+              {formatLiveDuration(elapsedSeconds)}
             </div>
             <p className="text-sm font-medium mb-1">
               {activeSessionProjectName}
@@ -601,9 +620,9 @@ export function TimeTrackingWidget({
               </p>
             )}
             <div className="flex justify-center gap-3 text-xs text-muted-foreground mb-3">
-              <span>Today: {formatHoursMinutes(todaySeconds + elapsedSeconds)}</span>
+              <span>Today: {formatDurationHM(todaySeconds + elapsedSeconds)}</span>
               <span>·</span>
-              <span>Week: {formatHoursMinutes(weekSeconds + elapsedSeconds)}</span>
+              <span>Week: {formatDurationHM(weekSeconds + elapsedSeconds)}</span>
             </div>
             <div className="flex justify-center mb-3">
               <NotesButton
@@ -614,6 +633,9 @@ export function TimeTrackingWidget({
             </div>
             {apiError && (
               <p className="text-xs text-red-600 mb-2">{apiError}</p>
+            )}
+            {discardError && (
+              <p className="text-xs text-red-600 mb-2">{discardError}</p>
             )}
             <div className="flex gap-2">
               <Button
@@ -637,8 +659,31 @@ export function TimeTrackingWidget({
                 {clockingOut ? "..." : "Clock Out"}
               </Button>
             </div>
+            {elapsedSeconds <= DISCARD_WINDOW_SECONDS && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => { setDiscardError(null); setShowDiscardConfirm(true); }}
+                disabled={discarding}
+                className="w-full mt-2 text-muted-foreground"
+                title="Throw away this entry without saving (within 5 min of clock-in)"
+              >
+                {discarding ? "..." : "Discard"}
+              </Button>
+            )}
           </div>
         </CardContent>
+        <ConfirmDialog
+          isOpen={showDiscardConfirm}
+          onClose={() => setShowDiscardConfirm(false)}
+          onConfirm={handleDiscardConfirmed}
+          title="Discard active time entry?"
+          message="This entry will not be saved or counted in any totals. You can clock in fresh after."
+          confirmText="Discard"
+          cancelText="Cancel"
+          variant="destructive"
+          isLoading={discarding}
+        />
       </Card>
     );
   }
@@ -669,7 +714,7 @@ export function TimeTrackingWidget({
               Time logged successfully!
             </p>
             <p className="text-sm text-blue-600 dark:text-blue-300 mt-1">
-              Total: {formatElapsedTime(elapsedSeconds)}
+              Total: {formatDurationHM(elapsedSeconds)}
             </p>
           </div>
         </CardContent>

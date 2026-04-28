@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/Badge";
 import { Modal } from "@/components/ui/Modal";
 import { NotesButton } from "./NotesButton";
 import { sortProjectsAlphabetical } from "@/lib/sortProjects";
+import { formatDurationHM } from "@/lib/timeTracking";
 import {
   useAdminActiveSessions,
   useAdminTimeHistory,
@@ -450,7 +451,7 @@ export function AdminTimeManagement() {
                           {entry.clockOut ? formatDateTime(entry.clockOut) : "—"}
                         </td>
                         <td className="py-3 px-3">
-                          <span className="font-mono">{entry.duration || "—"}</span>
+                          <span className="font-mono">{formatDurationHM(entry.durationSeconds)}</span>
                         </td>
                         <td className="py-3 px-3">
                           <Badge

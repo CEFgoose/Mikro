@@ -86,6 +86,8 @@ class TimeTrackingAPI(MethodView):
             return self.request_adjustment()
         elif path == "update_my_notes":
             return self.update_my_notes()
+        elif path == "discard_active":
+            return self.discard_active()
         elif path == "export":
             return self.admin_export()
         elif path == "fetch_custom_topics":
@@ -102,6 +104,11 @@ class TimeTrackingAPI(MethodView):
     # ─── Helpers ───────────────────────────────────────────────
 
     USER_NOTES_MAX_LEN = 500
+
+    # Self-service "discard active record" is allowed within this window
+    # only. Past it, users must clock out and request an adjustment so the
+    # admin has visibility on retroactive changes.
+    DISCARD_WINDOW_SECONDS = 300  # 5 minutes
 
     @staticmethod
     def _normalize_user_notes(value):
@@ -644,6 +651,61 @@ class TimeTrackingAPI(MethodView):
 
         return jsonify({
             "message": "Adjustment request submitted",
+            "status": 200,
+        }), 200
+
+    def discard_active(self):
+        """Hard-delete the user's active session if it's still inside the
+        DISCARD_WINDOW. Past the window the request is rejected and the
+        user is pointed at the Request Adjustment flow.
+        """
+        if not hasattr(g, "user") or not g.user:
+            return jsonify({"message": "Unauthorized", "status": 401}), 401
+
+        data = request.get_json() or {}
+        session_id = data.get("session_id")
+
+        if session_id:
+            entry = TimeEntry.query.filter_by(
+                id=session_id, user_id=g.user.id, status="active"
+            ).first()
+        else:
+            entry = TimeEntry.query.filter_by(
+                user_id=g.user.id, status="active"
+            ).first()
+
+        if not entry:
+            return jsonify({
+                "message": "No active session to discard",
+                "status": 404,
+            }), 404
+
+        elapsed = int((datetime.utcnow() - entry.clock_in).total_seconds())
+        if elapsed > self.DISCARD_WINDOW_SECONDS:
+            return jsonify({
+                "message": (
+                    f"Cannot discard — this session is "
+                    f"{elapsed // 60}m {elapsed % 60}s old. Discard is "
+                    f"only allowed within the first "
+                    f"{self.DISCARD_WINDOW_SECONDS // 60} minutes. "
+                    f"Clock out and use Request Adjustment instead."
+                ),
+                "status": 400,
+                "elapsed_seconds": elapsed,
+                "max_seconds": self.DISCARD_WINDOW_SECONDS,
+            }), 400
+
+        logger.info(
+            f"[CLOCK] discard_active by user={g.user.id} "
+            f"({g.user.osm_username or g.user.email}) "
+            f"session_id={entry.id} elapsed={elapsed}s"
+        )
+
+        db.session.delete(entry)
+        db.session.commit()
+
+        return jsonify({
+            "message": "Active session discarded",
             "status": 200,
         }), 200
 
