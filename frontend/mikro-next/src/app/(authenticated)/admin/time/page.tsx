@@ -43,6 +43,7 @@ import {
 import type { TimeEntry } from "@/types";
 import { TimeManagementFilterSummary } from "@/components/admin/TimeManagementFilterSummary";
 import { NotesButton } from "@/components/widgets/NotesButton";
+import { sortProjectsAlphabetical } from "@/lib/sortProjects";
 
 // --- Date range presets ---
 
@@ -1510,7 +1511,7 @@ export default function AdminTimePage() {
               onChange={(e) => setAddProjectId(e.target.value)}
             >
               <option value="">No project</option>
-              {projects.map((p) => (
+              {sortProjectsAlphabetical(projects).map((p) => (
                 <option key={p.id} value={p.id}>
                   {p.name}
                 </option>

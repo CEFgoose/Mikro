@@ -290,7 +290,7 @@ export default function UserTimePage() {
       {/* Clock Widget */}
       <div style={{ maxWidth: 320 }}>
         <TimeTrackingWidget
-          projects={projects?.user_projects?.map((p: { id: number; name: string; short_name?: string }) => ({ id: p.id, name: p.name, short_name: p.short_name })) ?? []}
+          projects={projects?.user_projects?.map((p: { id: number; name: string; short_name?: string; last_worked_on?: string | null }) => ({ id: p.id, name: p.name, short_name: p.short_name, last_worked_on: p.last_worked_on ?? null })) ?? []}
         />
       </div>
 

@@ -14,9 +14,15 @@ import {
   useUpdateMyNotes,
 } from "@/hooks";
 import { NotesButton } from "./NotesButton";
+import { sortProjectsRecentPinned } from "@/lib/sortProjects";
 
 interface TimeTrackingWidgetProps {
-  projects?: { id: number; name: string; short_name?: string }[];
+  projects?: {
+    id: number;
+    name: string;
+    short_name?: string;
+    last_worked_on?: string | null;
+  }[];
 }
 
 import {
@@ -376,7 +382,7 @@ export function TimeTrackingWidget({
     [customTopicsData]
   );
 
-  const projectOptions: SelectOption[] = projects.map((p) => ({
+  const projectOptions: SelectOption[] = sortProjectsRecentPinned(projects).map((p) => ({
     value: p.id.toString(),
     label: p.short_name || p.name,
   }));

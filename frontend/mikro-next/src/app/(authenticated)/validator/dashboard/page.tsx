@@ -125,7 +125,7 @@ export default function ValidatorDashboard() {
       <div style={{ display: "grid", gap: 16, gridTemplateColumns: "repeat(4, 1fr)" }}>
         <div style={{ gridColumn: "span 1" }}>
           <TimeTrackingWidget
-            projects={projects.map((p) => ({ id: p.id, name: p.name, short_name: p.short_name }))}
+            projects={projects.map((p) => ({ id: p.id, name: p.name, short_name: p.short_name, last_worked_on: (p as { last_worked_on?: string | null }).last_worked_on ?? null }))}
           />
         </div>
         <div style={{ gridColumn: "span 3" }}>

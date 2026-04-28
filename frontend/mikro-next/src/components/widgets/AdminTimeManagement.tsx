@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
 import { Modal } from "@/components/ui/Modal";
 import { NotesButton } from "./NotesButton";
+import { sortProjectsAlphabetical } from "@/lib/sortProjects";
 import {
   useAdminActiveSessions,
   useAdminTimeHistory,
@@ -641,7 +642,7 @@ export function AdminTimeManagement() {
               onChange={(e) => setAddProjectId(e.target.value)}
             >
               <option value="">No project</option>
-              {projects.map((p) => (
+              {sortProjectsAlphabetical(projects).map((p) => (
                 <option key={p.id} value={p.id}>{p.name}</option>
               ))}
             </select>

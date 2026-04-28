@@ -84,7 +84,7 @@ export default function UserDashboard() {
       <div style={{ display: "grid", gap: 16, gridTemplateColumns: "repeat(4, 1fr)" }}>
         <div style={{ gridColumn: "span 1" }}>
           <TimeTrackingWidget
-            projects={projects?.user_projects?.map((p: { id: number; name: string; short_name?: string }) => ({ id: p.id, name: p.name, short_name: p.short_name })) ?? []}
+            projects={projects?.user_projects?.map((p: { id: number; name: string; short_name?: string; last_worked_on?: string | null }) => ({ id: p.id, name: p.name, short_name: p.short_name, last_worked_on: p.last_worked_on ?? null })) ?? []}
           />
         </div>
         <div style={{ gridColumn: "span 3" }}>
