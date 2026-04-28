@@ -779,13 +779,30 @@ class TimeTrackingAPI(MethodView):
 
     @requires_admin
     def admin_active_sessions(self):
-        """Get all active sessions for the admin's org."""
-        entries = (
-            TimeEntry.query
-            .filter_by(org_id=g.user.org_id, status="active")
-            .order_by(TimeEntry.clock_in.asc())
-            .all()
+        """Get all active sessions for the admin's org.
+
+        Accepts optional `teamId` in the request body to scope to members
+        of that team — used by the dashboard's team-scope dropdown (F22).
+        """
+        data = request.get_json(silent=True) or {}
+        team_id = data.get("teamId")
+
+        query = TimeEntry.query.filter_by(
+            org_id=g.user.org_id, status="active"
         )
+
+        if team_id:
+            member_ids = [
+                tu.user_id
+                for tu in TeamUser.query.filter_by(team_id=team_id).all()
+            ]
+            if member_ids:
+                query = query.filter(TimeEntry.user_id.in_(member_ids))
+            else:
+                # Team has no members — return empty rather than the whole org.
+                query = query.filter(TimeEntry.user_id == None)  # noqa: E711
+
+        entries = query.order_by(TimeEntry.clock_in.asc()).all()
 
         return jsonify({
             "status": 200,

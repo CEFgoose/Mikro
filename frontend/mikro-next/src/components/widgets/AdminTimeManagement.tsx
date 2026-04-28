@@ -56,7 +56,12 @@ function fromDatetimeLocal(value: string): string {
 
 const CATEGORY_OPTIONS = ["mapping", "validation", "review", "training", "other"];
 
-export function AdminTimeManagement() {
+export interface AdminTimeManagementProps {
+  /** Restrict every query in this widget to members of this team. */
+  teamId?: number | null;
+}
+
+export function AdminTimeManagement({ teamId = null }: AdminTimeManagementProps = {}) {
   const [activeTab, setActiveTab] = useState<"active" | "history">("active");
   const [liveDurations, setLiveDurations] = useState<Record<number, string>>({});
   const [search, setSearch] = useState("");
@@ -117,17 +122,25 @@ export function AdminTimeManagement() {
     );
   }, [historyEntries, search]);
 
-  // Refetch when sidebar clock or time widget triggers a state change
+  // Refetch when sidebar clock or time widget triggers a state change.
+  // The teamId param is passed through so the widget stays in lock-step
+  // with the dashboard's Team scope selector.
   useEffect(() => {
     const handler = () => {
       setTimeout(() => {
-        refetchSessions();
-        refetchHistory();
+        refetchSessions(teamId ? { teamId } : undefined);
+        refetchHistory(teamId ? { teamId } : undefined);
       }, 500);
     };
     window.addEventListener("clock-state-changed", handler);
     return () => window.removeEventListener("clock-state-changed", handler);
-  }, [refetchSessions, refetchHistory]);
+  }, [refetchSessions, refetchHistory, teamId]);
+
+  // Re-fetch whenever the team scope changes.
+  useEffect(() => {
+    refetchSessions(teamId ? { teamId } : undefined);
+    refetchHistory(teamId ? { teamId } : undefined);
+  }, [teamId, refetchSessions, refetchHistory]);
 
   // Live duration ticker for active sessions
   useEffect(() => {

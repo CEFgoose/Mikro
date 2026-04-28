@@ -6,6 +6,7 @@ import { useAdminDashboardStats, useOrgTransactions, useUsersList, useOrgProject
 import { TimeTrackingWidget } from "@/components/widgets/TimeTrackingWidget";
 import { AdminTimeManagement } from "@/components/widgets/AdminTimeManagement";
 import { DashboardStatCard } from "@/components/admin/DashboardStatCard";
+import { TeamScopeSelector } from "@/components/admin/TeamScopeSelector";
 import { formatNumber, formatCurrency } from "@/lib/utils";
 import Link from "next/link";
 
@@ -20,12 +21,27 @@ function formatDate(dateString: string): string {
 // --- Lower dashboard section (deferred) ---
 // This component manages its own data fetching so it doesn't block the time section above.
 
-function DashboardStats() {
+interface DashboardStatsProps {
+  /** Selected team scope (controlled from the page); null = all teams. */
+  teamId: number | null;
+  /** Setter for the team scope; rendered inside the toolbar near Sync All Tasks. */
+  onTeamIdChange: (teamId: number | null) => void;
+}
+
+function DashboardStats({ teamId, onTeamIdChange }: DashboardStatsProps) {
   const { data: stats, loading: statsLoading, error: statsError, refetch: refetchStats } = useAdminDashboardStats();
   const { data: transactions, loading: transactionsLoading } = useOrgTransactions();
   const { data: users, loading: usersLoading } = useUsersList();
-  const { data: timeHistory, loading: timeHistoryLoading } = useAdminTimeHistory();
-  const { data: activeSessions } = useAdminActiveSessions();
+  const { data: timeHistory, loading: timeHistoryLoading, refetch: refetchTimeHistory } = useAdminTimeHistory();
+  const { data: activeSessions, refetch: refetchActiveSessions } = useAdminActiveSessions();
+
+  // When the team scope changes, refetch the time-related panels with
+  // the new scope. Other dashboard panels stay org-wide for now —
+  // they need backend work to support team scoping (tracked under F23).
+  useEffect(() => {
+    refetchTimeHistory(teamId ? { teamId } : undefined).catch(() => {});
+    refetchActiveSessions(teamId ? { teamId } : undefined).catch(() => {});
+  }, [teamId, refetchTimeHistory, refetchActiveSessions]);
   const { mutate: purgeTaskStats, loading: purging } = usePurgeTaskStats();
   const { mutate: syncAllTasks } = useAdminSyncAllTasks();
   const { mutate: checkSyncStatus } = useCheckSyncStatus();
@@ -192,8 +208,9 @@ function DashboardStats() {
 
   return (
     <>
-      {/* Sync button */}
-      <div className="flex items-center justify-end gap-3">
+      {/* Toolbar: Team scope selector + Sync button */}
+      <div className="flex items-center justify-end gap-4">
+        <TeamScopeSelector value={teamId} onChange={onTeamIdChange} />
         {syncing && syncProgress && (
           <span className="text-sm text-muted-foreground">{syncProgress}</span>
         )}
@@ -208,6 +225,16 @@ function DashboardStats() {
           </Button>
         </Tooltip>
       </div>
+
+      {/* Subtle scope indicator — makes it clear that only the time-related
+          panels below are filtered. Other panels (project counts, payment
+          totals) stay org-wide until F23/follow-up backend work. */}
+      {teamId !== null && (
+        <div className="text-xs text-muted-foreground italic -mt-2">
+          Time stats below are scoped to the selected team. Project counts
+          and payment totals remain org-wide.
+        </div>
+      )}
 
       {statsError && (
         <div className="rounded-lg bg-destructive/10 p-4 text-destructive">
@@ -581,9 +608,37 @@ function DashboardStats() {
 // --- Main page component ---
 // Only the time section loads here; everything else is deferred to DashboardStats.
 
+const TEAM_SCOPE_STORAGE_KEY = "mikro.dashboard.teamScope";
+
 export default function AdminDashboard() {
   const { data: projects } = useOrgProjects();
   const [showStats, setShowStats] = useState(false);
+
+  // Team scope persists across reloads via localStorage. Hydration
+  // happens AFTER first render so SSR doesn't try to read window.
+  const [teamId, setTeamId] = useState<number | null>(null);
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(TEAM_SCOPE_STORAGE_KEY);
+      if (raw && raw !== "all") {
+        const parsed = parseInt(raw, 10);
+        if (!Number.isNaN(parsed)) setTeamId(parsed);
+      }
+    } catch {
+      // localStorage unavailable (private mode etc.) — silently ignore.
+    }
+  }, []);
+  const handleTeamIdChange = useCallback((next: number | null) => {
+    setTeamId(next);
+    try {
+      localStorage.setItem(
+        TEAM_SCOPE_STORAGE_KEY,
+        next == null ? "all" : String(next),
+      );
+    } catch {
+      // Ignore — selection still applies for this session.
+    }
+  }, []);
 
   // Defer lower sections until after the time section has painted
   useEffect(() => {
@@ -608,13 +663,13 @@ export default function AdminDashboard() {
           />
         </div>
         <div className="lg:col-span-3">
-          <AdminTimeManagement />
+          <AdminTimeManagement teamId={teamId} />
         </div>
       </div>
 
       {/* Lower sections — deferred */}
       {showStats ? (
-        <DashboardStats />
+        <DashboardStats teamId={teamId} onTeamIdChange={handleTeamIdChange} />
       ) : (
         <div className="space-y-6">
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
