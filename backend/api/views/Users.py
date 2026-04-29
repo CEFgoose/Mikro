@@ -46,7 +46,7 @@ from ..database import (
     db,
 )
 from ..filters import resolve_filtered_user_ids
-from ..stats import get_user_task_stats, get_batch_user_task_stats, get_user_payment_balances, get_batch_user_payment_balances, get_batch_user_task_stats_fast, get_batch_user_payment_balances_fast
+from ..stats import get_user_task_stats, get_batch_user_task_stats, get_user_payment_balances, get_batch_user_payment_balances, get_batch_user_task_stats_fast, get_batch_user_payment_balances_fast, _get_claimed_task_ids
 
 
 def _auto_assign_country(user, country_text):
@@ -203,6 +203,8 @@ class UserAPI(MethodView):
             return self.fetch_user_profile_by_id()
         elif path == "fetch_user_stats_by_date":
             return self.fetch_user_stats_by_date()
+        elif path == "fetch_user_payment_summary":
+            return self.fetch_user_payment_summary()
         elif path == "fetch_user_changesets":
             return self.fetch_user_changesets()
         elif path == "fetch_user_activity_chart":
@@ -1820,6 +1822,229 @@ class UserAPI(MethodView):
                 "validator_validated": validator_validated_in_range,
                 "mapping_earnings": round(mapping_earnings_in_range, 2),
                 "validation_earnings": round(validation_earnings_in_range, 2),
+            },
+        }
+
+    @requires_admin
+    def fetch_user_payment_summary(self):
+        """Read-only payment summary for the admin user-profile Payment tab.
+
+        Returns one bundle covering: lifetime paid, pending balance,
+        open requested total, last payment, hourly rate, recent payments
+        (last 25) with resolved project names, all open pay requests,
+        and an anomaly count for validated tasks > 30 days old that are
+        not yet attached to any PayRequest or Payment.
+        """
+        data = request.get_json() or {}
+        user_id = data.get("userId") or data.get("user_id")
+        if not user_id:
+            return {"message": "userId is required", "status": 400}
+
+        user = User.query.get(user_id)
+        if not user or user.org_id != g.user.org_id:
+            return {"message": "User not found in your organization", "status": 404}
+
+        # Lifetime paid + recent payments
+        all_payments = (
+            Payments.query
+            .filter_by(org_id=g.user.org_id, user_id=user_id)
+            .order_by(Payments.date_paid.desc())
+            .all()
+        )
+        lifetime_paid = round(sum((p.amount_paid or 0) for p in all_payments), 2)
+        recent_raw = all_payments[:25]
+
+        # Open pay requests (anything outstanding for this user)
+        open_requests_raw = (
+            PayRequests.query
+            .filter_by(org_id=g.user.org_id, user_id=user_id)
+            .order_by(PayRequests.date_requested.desc())
+            .all()
+        )
+        open_request_total = round(
+            sum((r.amount_requested or 0) for r in open_requests_raw), 2
+        )
+
+        # Resolve project names for recent payments in one batched query.
+        # Each payment.task_ids is an array; collect the union, look up
+        # Task → Project once, then for each payment derive a deduped
+        # list of project names.
+        all_recent_task_ids = set()
+        for p in recent_raw:
+            if p.task_ids:
+                all_recent_task_ids.update(p.task_ids)
+        task_to_project = {}
+        project_id_to_name = {}
+        if all_recent_task_ids:
+            for t in (
+                Task.query
+                .filter(Task.id.in_(all_recent_task_ids))
+                .with_entities(Task.id, Task.project_id)
+                .all()
+            ):
+                task_to_project[t.id] = t.project_id
+            project_ids = {pid for pid in task_to_project.values() if pid}
+            if project_ids:
+                for proj in (
+                    Project.query
+                    .filter(Project.id.in_(project_ids))
+                    .with_entities(Project.id, Project.name)
+                    .all()
+                ):
+                    project_id_to_name[proj.id] = proj.name
+
+        def _project_names_for(task_ids):
+            if not task_ids:
+                return []
+            seen = []
+            for tid in task_ids:
+                pid = task_to_project.get(tid)
+                if not pid:
+                    continue
+                name = project_id_to_name.get(pid)
+                if name and name not in seen:
+                    seen.append(name)
+            return seen
+
+        recent_payments = [
+            {
+                "id": p.id,
+                "date": p.date_paid.isoformat() if p.date_paid else None,
+                "amount": p.amount_paid,
+                "projects": _project_names_for(p.task_ids),
+                "task_count": len(p.task_ids) if p.task_ids else 0,
+                "notes": p.notes or "",
+            }
+            for p in recent_raw
+        ]
+
+        last_payment_obj = recent_raw[0] if recent_raw else None
+        last_payment = None
+        if last_payment_obj:
+            last_payment = {
+                "date": (
+                    last_payment_obj.date_paid.isoformat()
+                    if last_payment_obj.date_paid
+                    else None
+                ),
+                "amount": last_payment_obj.amount_paid,
+                "payment_email": last_payment_obj.payment_email or "",
+                "notes": last_payment_obj.notes or "",
+            }
+
+        open_requests = [
+            {
+                "id": r.id,
+                "date_requested": (
+                    r.date_requested.isoformat() if r.date_requested else None
+                ),
+                "amount_requested": r.amount_requested,
+                "task_count": len(r.task_ids) if r.task_ids else 0,
+                "notes": r.notes or "",
+            }
+            for r in open_requests_raw
+        ]
+
+        # Live pending balance — same computation /transaction/fetch_user_payable
+        # uses, so the number matches what the user sees on their own page.
+        balances = get_user_payment_balances(user)
+        pending_balance = round(
+            (balances.get("mapping_payable_total") or 0)
+            + (balances.get("validation_payable_total") or 0)
+            + (user.checklist_payable_total or 0),
+            2,
+        )
+
+        # Anomalies: validated tasks > 30 days old, mapped or validated by
+        # this user, not yet attached to any PayRequest/Payment.
+        cutoff = datetime.utcnow() - timedelta(days=30)
+        claimed = _get_claimed_task_ids(user.id)
+        osm_un = user.osm_username
+
+        # User's mapped tasks
+        user_task_ids = set(
+            ut.task_id
+            for ut in UserTasks.query.filter_by(user_id=user.id).all()
+        )
+
+        anomaly_tasks = []
+        anomaly_amount = 0.0
+        if osm_un and (user_task_ids or True):
+            # Mapping side: validated tasks the user mapped, > 30d ago
+            mapped_anom = (
+                Task.query
+                .filter(
+                    Task.org_id == g.user.org_id,
+                    Task.validated == True,  # noqa: E712
+                    Task.date_validated <= cutoff,
+                )
+                .all()
+            )
+            for t in mapped_anom:
+                if t.id in claimed:
+                    continue
+                if getattr(t, "self_validated", False):
+                    continue
+                # Mapper-side claim: user owns this task via UserTasks
+                if t.id in user_task_ids and t.mapping_rate:
+                    anomaly_tasks.append({
+                        "task_id": t.id,
+                        "project_id": t.project_id,
+                        "date_validated": (
+                            t.date_validated.isoformat()
+                            if t.date_validated
+                            else None
+                        ),
+                        "rate": t.mapping_rate,
+                        "type": "mapping",
+                    })
+                    anomaly_amount += t.mapping_rate
+                # Validator-side claim: user validated this task
+                if t.validated_by == osm_un and t.validation_rate:
+                    anomaly_tasks.append({
+                        "task_id": t.id,
+                        "project_id": t.project_id,
+                        "date_validated": (
+                            t.date_validated.isoformat()
+                            if t.date_validated
+                            else None
+                        ),
+                        "rate": t.validation_rate,
+                        "type": "validation",
+                    })
+                    anomaly_amount += t.validation_rate
+
+        # Resolve project names for the anomaly task list (capped at 50 in response)
+        anom_project_ids = {a["project_id"] for a in anomaly_tasks if a["project_id"]}
+        anom_project_names = {}
+        if anom_project_ids:
+            for proj in (
+                Project.query
+                .filter(Project.id.in_(anom_project_ids))
+                .with_entities(Project.id, Project.name)
+                .all()
+            ):
+                anom_project_names[proj.id] = proj.name
+        anomaly_list = [
+            {**a, "project": anom_project_names.get(a["project_id"]) or "—"}
+            for a in anomaly_tasks[:50]
+        ]
+
+        return {
+            "status": 200,
+            "summary": {
+                "lifetime_paid": lifetime_paid,
+                "pending_balance": pending_balance,
+                "open_request_total": open_request_total,
+                "last_payment": last_payment,
+                "hourly_rate": user.hourly_rate,
+                "recent_payments": recent_payments,
+                "open_requests": open_requests,
+                "anomalies": {
+                    "unpaid_over_30d_count": len(anomaly_tasks),
+                    "unpaid_over_30d_amount": round(anomaly_amount, 2),
+                    "tasks": anomaly_list,
+                },
             },
         }
 

@@ -528,6 +528,61 @@ export interface UserStatsDateResponse {
   status: number;
 }
 
+// Admin Payment tab response (sibling to UserStatsDateResponse, fed by
+// /user/fetch_user_payment_summary). Read-only view of one user's
+// payment data: lifetime totals, recent payments, open requests, and
+// an anomaly list of validated tasks unpaid > 30 days.
+export interface PaymentTabRecentPayment {
+  id: number;
+  date: string | null;
+  amount: number | null;
+  projects: string[];
+  task_count: number;
+  notes: string;
+}
+
+export interface PaymentTabOpenRequest {
+  id: number;
+  date_requested: string | null;
+  amount_requested: number | null;
+  task_count: number;
+  notes: string;
+}
+
+export interface PaymentTabLastPayment {
+  date: string | null;
+  amount: number | null;
+  payment_email: string;
+  notes: string;
+}
+
+export interface PaymentTabAnomalyTask {
+  task_id: number;
+  project_id: number | null;
+  project: string;
+  date_validated: string | null;
+  rate: number | null;
+  type: "mapping" | "validation";
+}
+
+export interface UserPaymentSummaryResponse {
+  summary: {
+    lifetime_paid: number;
+    pending_balance: number;
+    open_request_total: number;
+    last_payment: PaymentTabLastPayment | null;
+    hourly_rate: number | null;
+    recent_payments: PaymentTabRecentPayment[];
+    open_requests: PaymentTabOpenRequest[];
+    anomalies: {
+      unpaid_over_30d_count: number;
+      unpaid_over_30d_amount: number;
+      tasks: PaymentTabAnomalyTask[];
+    };
+  };
+  status: number;
+}
+
 // Team types
 export interface Team {
   id: number;

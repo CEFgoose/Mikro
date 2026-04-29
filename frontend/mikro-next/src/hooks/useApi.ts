@@ -18,6 +18,7 @@ import type {
   TimeHistoryFilterParams,
   UserProfileResponse,
   UserStatsDateResponse,
+  UserPaymentSummaryResponse,
   ChangesetsResponse,
   ActivityChartResponse,
   TaskHistoryResponse,
@@ -839,6 +840,11 @@ export function useFetchUserProfile() {
 // Admin: fetch date-filtered user stats
 export function useFetchUserStatsByDate() {
   return useApiMutation<UserStatsDateResponse>("/user/fetch_user_stats_by_date");
+}
+
+// Admin: fetch read-only payment summary for one user (Payment tab)
+export function useFetchUserPaymentSummary() {
+  return useApiMutation<UserPaymentSummaryResponse>("/user/fetch_user_payment_summary");
 }
 
 // DEV ONLY: Purge all time entries

@@ -22,6 +22,7 @@ import {
 import {
   useFetchUserProfile,
   useFetchUserStatsByDate,
+  useFetchUserPaymentSummary,
   useFetchUserChangesets,
   useFetchUserActivityChart,
   useFetchUserTaskHistory,
@@ -52,6 +53,7 @@ import type {
   ChangesetSummary,
   ActivityDataPoint,
   TaskHistoryEntry,
+  UserPaymentSummaryResponse,
 } from "@/types";
 import { formatNumber, formatCurrency } from "@/lib/utils";
 import {
@@ -155,6 +157,7 @@ export default function UserProfilePage() {
   } = useFetchUserProfile();
   const { mutate: fetchStats, loading: statsLoading } =
     useFetchUserStatsByDate();
+  const { mutate: fetchPaymentSummary } = useFetchUserPaymentSummary();
   const { mutate: fetchChangesets } = useFetchUserChangesets();
   const { mutate: fetchActivity } = useFetchUserActivityChart();
   const { mutate: fetchTaskHistory } = useFetchUserTaskHistory();
@@ -186,11 +189,21 @@ export default function UserProfilePage() {
   // independent of the page's date-preset selector. Activates only
   // when the admin clicks the Time tab so the Overview path doesn't
   // pay the cost.
-  const [activeTab, setActiveTab] = useState<"overview" | "time">("overview");
+  const [activeTab, setActiveTab] = useState<"overview" | "time" | "payment">("overview");
   const [timeTabEntries, setTimeTabEntries] = useState<TimeEntry[]>([]);
   const [timeTabLoaded, setTimeTabLoaded] = useState(false);
   const [timeTabLoading, setTimeTabLoading] = useState(false);
   const [timeTabPage, setTimeTabPage] = useState(1);
+
+  // Payment tab — lazy-loaded sibling to the Time tab. Read-only admin
+  // view: lifetime totals, recent payments, open requests, and an
+  // anomaly list of validated tasks unpaid > 30 days.
+  const [paymentSummary, setPaymentSummary] =
+    useState<UserPaymentSummaryResponse["summary"] | null>(null);
+  const [paymentTabLoaded, setPaymentTabLoaded] = useState(false);
+  const [paymentTabLoading, setPaymentTabLoading] = useState(false);
+  const PAYMENT_TAB_PAGE_SIZE = 10;
+  const [paymentTabPage, setPaymentTabPage] = useState(1);
 
   // Date-filtered task stats
   const [periodTaskStats, setPeriodTaskStats] = useState({
@@ -411,6 +424,25 @@ export default function UserProfilePage() {
       })
       .finally(() => setTimeTabLoading(false));
   }, [userId, activeTab, timeTabLoaded, timeTabLoading, fetchStats]);
+
+  // Payment tab — lazy-loaded on first activation. Single round-trip
+  // returns lifetime totals, recent payments, open requests, and
+  // anomalies (validated tasks unpaid > 30 days).
+  useEffect(() => {
+    if (!userId || activeTab !== "payment" || paymentTabLoaded || paymentTabLoading) return;
+    setPaymentTabLoading(true);
+    fetchPaymentSummary({ userId })
+      .then((res) => {
+        if (res?.summary) {
+          setPaymentSummary(res.summary);
+        }
+        setPaymentTabLoaded(true);
+      })
+      .catch(() => {
+        setPaymentTabLoaded(true);
+      })
+      .finally(() => setPaymentTabLoading(false));
+  }, [userId, activeTab, paymentTabLoaded, paymentTabLoading, fetchPaymentSummary]);
 
   const handleApplyCustom = () => {
     if (customStart && customEnd) {
@@ -976,8 +1008,9 @@ export default function UserProfilePage() {
           F6 acceptance criteria (hours this week/month, avg session,
           recent entries, anomalies). */}
       <div className="flex items-center gap-1 border-b border-border">
-        {(["overview", "time"] as const).map((tab) => {
-          const label = tab === "overview" ? "Overview" : "Time";
+        {(["overview", "time", "payment"] as const).map((tab) => {
+          const label =
+            tab === "overview" ? "Overview" : tab === "time" ? "Time" : "Payment";
           const selected = activeTab === tab;
           return (
             <button
@@ -2093,6 +2126,295 @@ export default function UserProfilePage() {
                         </div>
                       )}
                     </>
+                  )}
+                </CardContent>
+              </Card>
+            </>
+          )}
+        </div>
+      )}
+
+      {/* Payment tab — read-only admin view of one user's payment data.
+          Lazy-loaded; single round-trip via fetch_user_payment_summary. */}
+      {user && activeTab === "payment" && (
+        <div className="space-y-6">
+          {paymentTabLoading && !paymentSummary ? (
+            <div className="flex items-center gap-2 text-sm text-muted-foreground py-8">
+              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-kaart-orange" />
+              Loading payment data…
+            </div>
+          ) : !paymentSummary ? (
+            <p className="text-sm text-muted-foreground italic py-8">
+              Payment data unavailable.
+            </p>
+          ) : (
+            <>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <StatCard
+                  label="Lifetime Paid"
+                  value={formatCurrency(paymentSummary.lifetime_paid)}
+                />
+                <StatCard
+                  label="Pending Balance"
+                  value={formatCurrency(paymentSummary.pending_balance)}
+                />
+                <StatCard
+                  label="Open Requests"
+                  value={formatCurrency(paymentSummary.open_request_total)}
+                />
+              </div>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base">Pay Rate &amp; Last Payment</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                    <div>
+                      <p className="text-muted-foreground">Hourly Rate</p>
+                      <p className="font-medium mt-1">
+                        {paymentSummary.hourly_rate != null ? (
+                          <>
+                            <Val>{formatCurrency(paymentSummary.hourly_rate)}</Val>/hr
+                          </>
+                        ) : (
+                          <span className="text-muted-foreground italic">
+                            Per-task (varies by project)
+                          </span>
+                        )}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-muted-foreground">Last Payment</p>
+                      {paymentSummary.last_payment ? (
+                        <p className="font-medium mt-1">
+                          <Val>{formatCurrency(paymentSummary.last_payment.amount)}</Val>
+                          <span className="text-muted-foreground">
+                            {" "}· {formatDate(paymentSummary.last_payment.date)}
+                          </span>
+                          {paymentSummary.last_payment.payment_email && (
+                            <span className="text-xs text-muted-foreground block mt-0.5">
+                              {paymentSummary.last_payment.payment_email}
+                            </span>
+                          )}
+                        </p>
+                      ) : (
+                        <p className="text-muted-foreground italic mt-1">No payments yet</p>
+                      )}
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base">
+                    Anomalies — Unpaid &gt; 30 days
+                    {paymentSummary.anomalies.unpaid_over_30d_count > 0 && (
+                      <span className="ml-2 inline-flex items-center justify-center min-w-[1.5rem] px-1.5 rounded-full text-xs bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200">
+                        {paymentSummary.anomalies.unpaid_over_30d_count}
+                      </span>
+                    )}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {paymentSummary.anomalies.unpaid_over_30d_count === 0 ? (
+                    <p className="text-sm text-muted-foreground italic">
+                      No validated tasks older than 30 days are awaiting payment.
+                    </p>
+                  ) : (
+                    <>
+                      <p className="text-sm text-muted-foreground mb-3">
+                        Total unpaid:{" "}
+                        <Val>
+                          {formatCurrency(paymentSummary.anomalies.unpaid_over_30d_amount)}
+                        </Val>
+                        {paymentSummary.anomalies.tasks.length <
+                          paymentSummary.anomalies.unpaid_over_30d_count && (
+                          <span className="ml-2 text-xs">
+                            (showing first {paymentSummary.anomalies.tasks.length} of{" "}
+                            {paymentSummary.anomalies.unpaid_over_30d_count})
+                          </span>
+                        )}
+                      </p>
+                      <div className="overflow-x-auto">
+                        <table className="w-full text-sm" style={{ minWidth: 500 }}>
+                          <thead className="bg-muted border-b border-border">
+                            <tr>
+                              <th className="px-3 py-2 text-left font-semibold text-muted-foreground">Task</th>
+                              <th className="px-3 py-2 text-left font-semibold text-muted-foreground">Project</th>
+                              <th className="px-3 py-2 text-left font-semibold text-muted-foreground">Type</th>
+                              <th className="px-3 py-2 text-left font-semibold text-muted-foreground">Validated</th>
+                              <th className="px-3 py-2 text-left font-semibold text-muted-foreground">Rate</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-border">
+                            {paymentSummary.anomalies.tasks.map((a) => (
+                              <tr key={`${a.task_id}-${a.type}`}>
+                                <td className="px-3 py-2 font-mono">#{a.task_id}</td>
+                                <td className="px-3 py-2">{a.project}</td>
+                                <td className="px-3 py-2 capitalize">{a.type}</td>
+                                <td className="px-3 py-2 whitespace-nowrap">
+                                  {formatDate(a.date_validated)}
+                                </td>
+                                <td className="px-3 py-2">
+                                  <Val>{formatCurrency(a.rate)}</Val>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    </>
+                  )}
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base">
+                    Open Pay Requests
+                    {paymentSummary.open_requests.length > 0 && (
+                      <span className="ml-2 text-sm font-normal text-muted-foreground">
+                        ({paymentSummary.open_requests.length})
+                      </span>
+                    )}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {paymentSummary.open_requests.length === 0 ? (
+                    <p className="text-sm text-muted-foreground italic">
+                      No open pay requests.
+                    </p>
+                  ) : (
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-sm" style={{ minWidth: 500 }}>
+                        <thead className="bg-muted border-b border-border">
+                          <tr>
+                            <th className="px-3 py-2 text-left font-semibold text-muted-foreground">Date</th>
+                            <th className="px-3 py-2 text-left font-semibold text-muted-foreground">Amount</th>
+                            <th className="px-3 py-2 text-left font-semibold text-muted-foreground">Tasks</th>
+                            <th className="px-3 py-2 text-left font-semibold text-muted-foreground">Notes</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-border">
+                          {paymentSummary.open_requests.map((r) => (
+                            <tr key={r.id}>
+                              <td className="px-3 py-2 whitespace-nowrap">
+                                {formatDate(r.date_requested)}
+                              </td>
+                              <td className="px-3 py-2">
+                                <Val>{formatCurrency(r.amount_requested)}</Val>
+                              </td>
+                              <td className="px-3 py-2">{r.task_count}</td>
+                              <td className="px-3 py-2 text-muted-foreground">
+                                {r.notes || "—"}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base">Recent Payments</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {paymentSummary.recent_payments.length === 0 ? (
+                    <p className="text-sm text-muted-foreground italic">
+                      No payments yet.
+                    </p>
+                  ) : (
+                    (() => {
+                      const totalPages = Math.max(
+                        1,
+                        Math.ceil(
+                          paymentSummary.recent_payments.length /
+                            PAYMENT_TAB_PAGE_SIZE,
+                        ),
+                      );
+                      const safePage = Math.min(paymentTabPage, totalPages);
+                      const slice = paymentSummary.recent_payments.slice(
+                        (safePage - 1) * PAYMENT_TAB_PAGE_SIZE,
+                        safePage * PAYMENT_TAB_PAGE_SIZE,
+                      );
+                      return (
+                        <>
+                          <div className="overflow-x-auto">
+                            <table className="w-full text-sm" style={{ minWidth: 500 }}>
+                              <thead className="bg-muted border-b border-border">
+                                <tr>
+                                  <th className="px-3 py-2 text-left font-semibold text-muted-foreground">Date</th>
+                                  <th className="px-3 py-2 text-left font-semibold text-muted-foreground">Amount</th>
+                                  <th className="px-3 py-2 text-left font-semibold text-muted-foreground">Projects</th>
+                                  <th className="px-3 py-2 text-left font-semibold text-muted-foreground">Tasks</th>
+                                  <th className="px-3 py-2 text-left font-semibold text-muted-foreground">Notes</th>
+                                </tr>
+                              </thead>
+                              <tbody className="divide-y divide-border">
+                                {slice.map((p) => (
+                                  <tr key={p.id}>
+                                    <td className="px-3 py-2 whitespace-nowrap">
+                                      {formatDate(p.date)}
+                                    </td>
+                                    <td className="px-3 py-2">
+                                      <Val>{formatCurrency(p.amount)}</Val>
+                                    </td>
+                                    <td className="px-3 py-2">
+                                      {p.projects.length > 0
+                                        ? p.projects.join(", ")
+                                        : "—"}
+                                    </td>
+                                    <td className="px-3 py-2">{p.task_count}</td>
+                                    <td className="px-3 py-2 text-muted-foreground">
+                                      {p.notes || "—"}
+                                    </td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
+                          {paymentSummary.recent_payments.length >
+                            PAYMENT_TAB_PAGE_SIZE && (
+                            <div className="flex items-center justify-between mt-3 text-sm text-muted-foreground">
+                              <span>
+                                Showing {(safePage - 1) * PAYMENT_TAB_PAGE_SIZE + 1}–
+                                {Math.min(
+                                  safePage * PAYMENT_TAB_PAGE_SIZE,
+                                  paymentSummary.recent_payments.length,
+                                )}{" "}
+                                of {paymentSummary.recent_payments.length}
+                              </span>
+                              <div className="flex gap-2">
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  disabled={safePage === 1}
+                                  onClick={() => setPaymentTabPage((p) => p - 1)}
+                                >
+                                  Previous
+                                </Button>
+                                <span className="flex items-center px-2">
+                                  Page {safePage} of {totalPages}
+                                </span>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  disabled={safePage >= totalPages}
+                                  onClick={() => setPaymentTabPage((p) => p + 1)}
+                                >
+                                  Next
+                                </Button>
+                              </div>
+                            </div>
+                          )}
+                        </>
+                      );
+                    })()
                   )}
                 </CardContent>
               </Card>
