@@ -26,7 +26,7 @@ logger = logging.getLogger(__name__)
 VALID_CATEGORIES = {
     "editing", "validating", "training", "checklist",
     "qc_review", "meeting", "documentation", "imagery_capture",
-    "project_creation", "other",
+    "project_creation", "community", "other",
     # Legacy values — still accepted for backward compat
     "mapping", "validation", "review",
 }
@@ -42,6 +42,7 @@ CATEGORY_DISPLAY_MAP = {
     "documentation": "Documentation",
     "imagery_capture": "Imagery Capture",
     "project_creation": "Project Creation",
+    "community": "Community",
     "other": "Other",
     # Legacy mappings
     "mapping": "Editing",
@@ -84,6 +85,8 @@ class TimeTrackingAPI(MethodView):
             return self.purge_all_time_entries()
         elif path == "request_adjustment":
             return self.request_adjustment()
+        elif path == "pending_adjustments":
+            return self.admin_pending_adjustments()
         elif path == "update_my_notes":
             return self.update_my_notes()
         elif path == "discard_active":
@@ -607,6 +610,42 @@ class TimeTrackingAPI(MethodView):
             "validation_earnings": round(validation_earnings, 2),
             "amount_owed": amount_owed,
             "pay_mode": pay_mode,
+        }), 200
+
+    @requires_admin
+    def admin_pending_adjustments(self):
+        """Return every entry in the admin's org that has a pending
+        adjustment request, regardless of date — these are admin
+        action items and must not get hidden by the page's current
+        date filter.
+
+        Honors optional `teamId` so the dashboard team-scope dropdown
+        carries through.
+        """
+        data = request.get_json(silent=True) or {}
+        team_id = data.get("teamId")
+
+        query = TimeEntry.query.filter(
+            TimeEntry.org_id == g.user.org_id,
+            TimeEntry.notes.like("[ADJUSTMENT REQUESTED]%"),
+            TimeEntry.status != "voided",
+        )
+
+        if team_id:
+            member_ids = [
+                tu.user_id
+                for tu in TeamUser.query.filter_by(team_id=team_id).all()
+            ]
+            if member_ids:
+                query = query.filter(TimeEntry.user_id.in_(member_ids))
+            else:
+                query = query.filter(TimeEntry.user_id == None)  # noqa: E711
+
+        entries = query.order_by(TimeEntry.clock_in.desc()).limit(100).all()
+
+        return jsonify({
+            "status": 200,
+            "entries": [self._format_entry(e) for e in entries],
         }), 200
 
     def request_adjustment(self):

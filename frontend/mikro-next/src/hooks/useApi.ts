@@ -11,6 +11,7 @@ import type {
   ChecklistsResponse,
   UserPayableResponse,
   UserDetailsResponse,
+  TimeEntry,
   TimeTrackingSessionResponse,
   TimeTrackingHistoryResponse,
   TimeTrackingActiveSessionsResponse,
@@ -676,6 +677,12 @@ export function useMyMonthlySummary() {
 // Admin: get all active sessions
 export function useAdminActiveSessions() {
   return useApiCall<TimeTrackingActiveSessionsResponse>("/timetracking/active_sessions");
+}
+
+// Admin: get every entry with a pending adjustment request, regardless
+// of date — for the prominent "needs your attention" strip on /admin/time.
+export function useAdminPendingAdjustments() {
+  return useApiCall<{ status: number; entries: TimeEntry[] }>("/timetracking/pending_adjustments");
 }
 
 // Admin: get history for org (auto-fetches on mount; call refetch(params) with filters)

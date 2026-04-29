@@ -45,6 +45,7 @@ import {
 import type { TimeEntry } from "@/types";
 import { TimeManagementFilterSummary } from "@/components/admin/TimeManagementFilterSummary";
 import { NotesButton } from "@/components/widgets/NotesButton";
+import { PendingAdjustmentsStrip } from "@/components/admin/PendingAdjustmentsStrip";
 import { sortProjectsAlphabetical } from "@/lib/sortProjects";
 import {
   formatDurationHM,
@@ -573,6 +574,9 @@ export default function AdminTimePage() {
       setEditingEntry(null);
       toast.success("Time entry updated");
       fetchWithFilters();
+      // Tell PendingAdjustmentsStrip (and anyone else listening) to
+      // re-fetch so a just-resolved adjustment disappears immediately.
+      window.dispatchEvent(new Event("time-entry-updated"));
     } catch (err) {
       setEditError(
         err instanceof Error ? err.message : "Failed to update entry"
@@ -867,6 +871,14 @@ export default function AdminTimePage() {
           </div>
         </div>
       </Card>
+
+      {/* Pending adjustment requests — sits above everything else so admins
+          land on it directly from the dashboard's "Pending Adjustments" stat
+          (which now deep-links to #pending-adjustments). The strip pulls
+          its own data via /timetracking/pending_adjustments so it ignores
+          the page's date filter — a request from last month never hides
+          behind the default "this month" preset. Empty state renders nothing. */}
+      <PendingAdjustmentsStrip onEdit={handleOpenEdit} />
 
       {/* Active-filter summary strip — renders only when at least one filter
           is active, so the page stays clean when nothing is scoped. */}

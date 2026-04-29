@@ -311,7 +311,7 @@ function DashboardStats({ teamId, onTeamIdChange }: DashboardStatsProps) {
             format: "number",
             goodDirection: "down",
           }}
-          href="/admin/time"
+          href="/admin/time#pending-adjustments"
           linkLabel="Review adjustment requests"
           tooltip="Time entries where a user has requested an adjustment that hasn't been resolved yet"
           severity={timeStats.pendingAdjustments > 0 ? "warning" : "neutral"}
