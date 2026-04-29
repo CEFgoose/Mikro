@@ -178,8 +178,8 @@ export default function UserProfilePage() {
   const [filteredProjects, setFilteredProjects] = useState<
     UserStatsDateProjectBreakdown[]
   >([]);
-  const [filteredTotalHours, setFilteredTotalHours] = useState(0);
-  const [filteredEntriesCount, setFilteredEntriesCount] = useState(0);
+  // filteredTotalHours / filteredEntriesCount removed — derived now from
+  // filteredEntries via the timeStats useMemo (F6 stats strip).
   const [dateLabel, setDateLabel] = useState("");
 
   // Date-filtered task stats
@@ -273,8 +273,9 @@ export default function UserProfilePage() {
         if (res?.stats) {
           setFilteredEntries(res.stats.time_entries || []);
           setFilteredProjects(res.stats.projects || []);
-          setFilteredTotalHours(res.stats.total_hours || 0);
-          setFilteredEntriesCount(res.stats.entries_count || 0);
+          // Total hours / sessions count are now computed from the
+          // filteredEntries list via the timeStats useMemo, so we no
+          // longer need to mirror res.stats.total_hours into state.
           setDateLabel(
             `${formatDate(res.stats.startDate)} - ${formatDate(res.stats.endDate)}`
           );
@@ -520,6 +521,27 @@ export default function UserProfilePage() {
       toast.error(`Failed to ${verb} user`);
     }
   };
+
+  // F6 — per-user time-detail stats. Computed from the entries the
+  // existing date-preset already pulled, so this is "free" — no extra
+  // request. Voided entries are excluded so they don't pollute the
+  // averages or longest-session figure.
+  const timeStats = useMemo(() => {
+    const completed = filteredEntries.filter(
+      (e) => e.status === "completed" && (e.durationSeconds ?? 0) > 0
+    );
+    const totalSeconds = completed.reduce(
+      (sum, e) => sum + (e.durationSeconds ?? 0),
+      0
+    );
+    const count = completed.length;
+    const avgSeconds = count > 0 ? Math.round(totalSeconds / count) : 0;
+    const longestSeconds = completed.reduce(
+      (max, e) => Math.max(max, e.durationSeconds ?? 0),
+      0
+    );
+    return { totalSeconds, count, avgSeconds, longestSeconds };
+  }, [filteredEntries]);
 
   const countryOptions = useMemo(() => {
     const countries = countriesData?.countries || [];
@@ -1164,16 +1186,36 @@ export default function UserProfilePage() {
           </CardHeader>
           <CardContent className="space-y-4">
             {dateLabel && (
-              <div className="text-sm text-muted-foreground">
-                <p>
-                  <span className="font-medium text-foreground">
-                    {filteredTotalHours.toFixed(1)} hours
-                  </span>{" "}
-                  across{" "}
-                  <span className="font-medium text-foreground">
-                    {filteredEntriesCount} sessions
-                  </span>
+              <div className="space-y-2">
+                <p className="text-xs uppercase tracking-wide text-muted-foreground">
+                  {dateLabel}
                 </p>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                  <StatCard
+                    label="Total Hours"
+                    value={formatDurationHM(timeStats.totalSeconds)}
+                  />
+                  <StatCard
+                    label="Sessions"
+                    value={formatNumber(timeStats.count)}
+                  />
+                  <StatCard
+                    label="Avg Session"
+                    value={
+                      timeStats.count > 0
+                        ? formatDurationHM(timeStats.avgSeconds)
+                        : "—"
+                    }
+                  />
+                  <StatCard
+                    label="Longest Session"
+                    value={
+                      timeStats.count > 0
+                        ? formatDurationHM(timeStats.longestSeconds)
+                        : "—"
+                    }
+                  />
+                </div>
               </div>
             )}
 
