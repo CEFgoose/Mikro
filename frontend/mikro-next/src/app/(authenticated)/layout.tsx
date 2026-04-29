@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { Header } from "@/components/layout/Header";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { AprilFools } from "@/components/layout/AprilFools";
+import { WhatsNewModal } from "@/components/layout/WhatsNewModal";
 import { AuthGuard } from "@/components/AuthGuard";
 
 const BACKEND_URL = process.env.FLASK_BACKEND_URL || "http://localhost:5004";
@@ -94,10 +95,13 @@ export default async function AuthenticatedLayout({
     paymentsVisible = true;
   }
 
+  const userId = (session.user.sub as string | undefined) ?? "";
+
   return (
     <div style={{ minHeight: "100vh", backgroundColor: "var(--muted)" }}>
       <AuthGuard />
       <AprilFools />
+      <WhatsNewModal userId={userId} role={role} />
       <Header displayName={displayName} />
       <Sidebar role={role as "user" | "validator" | "admin"} paymentsVisible={paymentsVisible} />
       <main
