@@ -79,6 +79,15 @@ class LoginAPI(MethodView):
         # Try to get existing user
         user = User.query.filter_by(auth0_sub=auth0_sub).first()
 
+        # Log every /api/login request — this is THE most-hit endpoint for
+        # auth debugging. Captures whether this was a new user, what sub/email/org
+        # came from the JWT, and (a few lines down) what role is returned.
+        current_app.logger.warning(
+            "[AUTH-TRACE] event=login_start "
+            f"sub={auth0_sub!r} email={email!r} org_id={org_id!r} "
+            f"roles_from_token={roles!r} existing_user={user is not None}"
+        )
+
         if not user:
             # Create new user
             current_app.logger.info(f"Creating new user for {auth0_sub}")
@@ -193,6 +202,13 @@ class LoginAPI(MethodView):
         # Only require payment_email if payments are visible for this user
         needs_onboarding = not user.osm_username or (
             user.micropayments_visible and not user.payment_email
+        )
+
+        current_app.logger.warning(
+            "[AUTH-TRACE] event=login_success "
+            f"sub={auth0_sub!r} user_id={user.id!r} role={user.role!r} "
+            f"org_id={user.org_id!r} osm_username={user.osm_username!r} "
+            f"needs_onboarding={needs_onboarding}"
         )
 
         # Build response

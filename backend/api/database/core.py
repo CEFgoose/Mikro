@@ -69,6 +69,13 @@ class User(ModelWithSoftDeleteAndCRUD, SurrogatePK):
     role = Column(String(50), default="user")  # user, validator, admin
     org_id = Column(String(255), nullable=True)  # Auth0 org ID (string)
 
+    # Deactivation flag — distinct from soft-delete (deleted_date).
+    # False blocks login at the auth gate AND filters from default
+    # admin user lists. Historical data is preserved either way.
+    is_active = db.Column(
+        db.Boolean, nullable=False, default=True, server_default="true"
+    )
+
     # Timestamps
     create_time = Column(DateTime, default=func.now())
 

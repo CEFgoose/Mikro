@@ -30,6 +30,8 @@ import {
   useVoidTimeEntry,
   useModifyUserRole,
   useSyncUserProjects,
+  useDeactivateUser,
+  useReactivateUser,
 } from "@/hooks/useApi";
 import {
   ComposedChart,
@@ -161,6 +163,8 @@ export default function UserProfilePage() {
   const { mutate: voidTimeEntry } = useVoidTimeEntry();
   const { mutate: modifyUser, loading: updateDetailsLoading } = useModifyUserRole();
   const { mutate: syncUserProjects, loading: syncing } = useSyncUserProjects();
+  const { mutate: deactivateUser, loading: deactivating } = useDeactivateUser();
+  const { mutate: reactivateUser, loading: reactivating } = useReactivateUser();
   const toast = useToastActions();
 
   const [user, setUser] = useState<UserProfileData | null>(null);
@@ -491,6 +495,32 @@ export default function UserProfilePage() {
     }
   };
 
+  const handleToggleActive = async () => {
+    if (!user) return;
+    const isCurrentlyActive = user.is_active !== false;
+    const verb = isCurrentlyActive ? "deactivate" : "reactivate";
+    if (
+      !window.confirm(
+        isCurrentlyActive
+          ? `Deactivate ${user.full_name || user.email || "this user"}? They will be blocked from logging in until you reactivate them. Their historical data is preserved.`
+          : `Reactivate ${user.full_name || user.email || "this user"}? They will be able to log in again.`,
+      )
+    )
+      return;
+    try {
+      if (isCurrentlyActive) {
+        await deactivateUser({ user_id: userId });
+      } else {
+        await reactivateUser({ user_id: userId });
+      }
+      toast.success(`User ${verb}d`);
+      const res = await fetchProfile({ userId });
+      if (res?.user) setUser(res.user);
+    } catch {
+      toast.error(`Failed to ${verb} user`);
+    }
+  };
+
   const countryOptions = useMemo(() => {
     const countries = countriesData?.countries || [];
     return [
@@ -604,6 +634,11 @@ export default function UserProfilePage() {
                       Level {user.mapper_level}
                     </span>
                   )}
+                  {user.is_active === false && (
+                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200">
+                      Deactivated
+                    </span>
+                  )}
                 </div>
                 {user.name_last_change && (
                   <p
@@ -627,6 +662,25 @@ export default function UserProfilePage() {
               </div>
             </div>
             <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={handleToggleActive}
+                disabled={deactivating || reactivating}
+                className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors disabled:opacity-50 ${
+                  user.is_active === false
+                    ? "bg-kaart-orange text-white hover:bg-kaart-orange-dark"
+                    : "border border-red-300 dark:border-red-800 text-red-600 hover:bg-red-50 dark:hover:bg-red-950"
+                }`}
+                title={
+                  user.is_active === false
+                    ? "Allow this user to log in again"
+                    : "Block this user from logging in (data preserved)"
+                }
+              >
+                {user.is_active === false
+                  ? reactivating ? "Reactivating..." : "Reactivate"
+                  : deactivating ? "Deactivating..." : "Deactivate"}
+              </button>
               <button
                 onClick={async () => {
                   try {

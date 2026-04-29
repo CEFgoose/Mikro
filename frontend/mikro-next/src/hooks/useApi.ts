@@ -392,6 +392,17 @@ export function useRemoveUser() {
   return useApiMutation("/user/remove_users");
 }
 
+// Admin: deactivate a user (soft-disable; data preserved; auth gate
+// blocks them until reactivated).
+export function useDeactivateUser() {
+  return useApiMutation<{ message: string; status: number; user_id: string; is_active: boolean }>("/user/deactivate_user");
+}
+
+// Admin: reactivate a deactivated user.
+export function useReactivateUser() {
+  return useApiMutation<{ message: string; status: number; user_id: string; is_active: boolean }>("/user/reactivate_user");
+}
+
 // Task sync - pulls latest task data from TM4
 export function useSyncUserTasks() {
   return useApiMutation("/task/update_user_tasks");

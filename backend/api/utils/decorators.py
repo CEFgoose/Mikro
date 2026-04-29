@@ -11,7 +11,28 @@ import pstats
 from functools import wraps
 from enum import IntFlag
 
-from flask import g, request, jsonify
+from flask import g, request, jsonify, current_app
+
+
+def _trace_decorator(event: str, **kw):
+    """[AUTH-TRACE] logger for decorator-level rejects."""
+    try:
+        ip = request.headers.get("X-Forwarded-For", "").split(",")[0].strip() or request.remote_addr
+    except Exception:
+        ip = "?"
+    path = getattr(request, "path", "?")
+    sub = None
+    try:
+        if hasattr(g, "current_user") and g.current_user:
+            sub = g.current_user.get("sub")
+    except Exception:
+        pass
+    parts = [f"event={event}", f"path={path}", f"ip={ip}"]
+    if sub:
+        parts.append(f"sub={sub!r}")
+    for k, v in kw.items():
+        parts.append(f"{k}={v!r}")
+    current_app.logger.warning("[AUTH-TRACE] " + " ".join(parts))
 
 
 class TeamRole(IntFlag):
@@ -66,7 +87,17 @@ def requires_auth(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
         if not hasattr(g, "user") or not g.user:
+            _trace_decorator("requires_auth_reject", reason="no_g_user")
             return jsonify({"message": "Unauthorized", "status": 401}), 401
+        # Deactivated accounts are blocked even with a valid token.
+        # Admin must reactivate before they can use the app again.
+        if not getattr(g.user, "is_active", True):
+            _trace_decorator("requires_auth_reject", reason="user_inactive")
+            return jsonify({
+                "message": "Your account has been deactivated. Contact your admin.",
+                "status": 401,
+                "reason": "deactivated",
+            }), 401
         return f(*args, **kwargs)
 
     return decorated_function
@@ -82,8 +113,22 @@ def requires_admin(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
         if not hasattr(g, "user") or not g.user:
+            _trace_decorator("requires_admin_reject", reason="no_g_user")
             return jsonify({"message": "Unauthorized", "status": 401}), 401
+        if not getattr(g.user, "is_active", True):
+            _trace_decorator("requires_admin_reject", reason="user_inactive")
+            return jsonify({
+                "message": "Your account has been deactivated. Contact your admin.",
+                "status": 401,
+                "reason": "deactivated",
+            }), 401
         if g.user.role != "admin":
+            _trace_decorator(
+                "requires_admin_reject",
+                reason="wrong_role",
+                role=g.user.role,
+                user_id=g.user.id,
+            )
             return (
                 jsonify(
                     {
@@ -108,8 +153,15 @@ def requires_validator(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
         if not hasattr(g, "user") or not g.user:
+            _trace_decorator("requires_validator_reject", reason="no_g_user")
             return jsonify({"message": "Unauthorized", "status": 401}), 401
         if g.user.role not in ["admin", "validator"]:
+            _trace_decorator(
+                "requires_validator_reject",
+                reason="wrong_role",
+                role=g.user.role,
+                user_id=g.user.id,
+            )
             return (
                 jsonify(
                     {

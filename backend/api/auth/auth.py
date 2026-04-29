@@ -27,6 +27,30 @@ class AuthError(Exception):
         self.status_code = status_code
 
 
+def _trace_auth(event: str, **kw):
+    """
+    Emit a [AUTH-TRACE] structured log for the auth flow.
+
+    Every 401 / redirect / decision point in the auth path calls this so
+    DO logs can be filtered with `grep AUTH-TRACE` when a user reports
+    a login issue. Keep fields short + parseable.
+    """
+    try:
+        ip = request.headers.get("X-Forwarded-For", "").split(",")[0].strip() or request.remote_addr
+    except Exception:
+        ip = "?"
+    try:
+        ua = (request.headers.get("User-Agent") or "")[:80]
+    except Exception:
+        ua = "?"
+    path = getattr(request, "path", "?")
+    parts = [f"event={event}", f"path={path}", f"ip={ip}"]
+    for k, v in kw.items():
+        parts.append(f"{k}={v!r}")
+    parts.append(f"ua={ua!r}")
+    current_app.logger.warning("[AUTH-TRACE] " + " ".join(parts))
+
+
 def get_token_auth_header():
     """
     Extract the Bearer token from the Authorization header.
@@ -40,6 +64,7 @@ def get_token_auth_header():
     auth = request.headers.get("Authorization", None)
 
     if not auth:
+        _trace_auth("reject_no_auth_header")
         raise AuthError(
             {
                 "code": "authorization_header_missing",
@@ -51,6 +76,7 @@ def get_token_auth_header():
     parts = auth.split()
 
     if parts[0].lower() != "bearer":
+        _trace_auth("reject_bearer_prefix", got_prefix=parts[0] if parts else "")
         raise AuthError(
             {
                 "code": "invalid_header",
@@ -59,10 +85,12 @@ def get_token_auth_header():
             401,
         )
     elif len(parts) == 1:
+        _trace_auth("reject_bearer_no_token")
         raise AuthError(
             {"code": "invalid_header", "description": "Token not found"}, 401
         )
     elif len(parts) > 2:
+        _trace_auth("reject_bearer_extra_parts", part_count=len(parts))
         raise AuthError(
             {
                 "code": "invalid_header",
@@ -167,20 +195,37 @@ def authenticate_request():
                     if auth0_sub:
                         user = User.query.filter_by(auth0_sub=auth0_sub).first()
                         g.user = user
+                        if user is None:
+                            # Token verified but no DB row for this sub yet.
+                            # Most endpoints will 401 via @requires_auth right
+                            # after this — log so we can see it in the trail.
+                            _trace_auth(
+                                "jwt_ok_no_db_user",
+                                sub=auth0_sub,
+                                email=payload.get("email"),
+                            )
                     else:
+                        _trace_auth("jwt_ok_no_sub_claim")
                         g.user = None
                 except Exception as e:
                     current_app.logger.warning(f"Could not load user from DB: {e}")
+                    _trace_auth("db_lookup_failed", err=str(e))
                     g.user = None
 
                 return None
 
             except jwt.ExpiredSignatureError:
+                _trace_auth("reject_token_expired")
                 raise AuthError(
                     {"code": "token_expired", "description": "Token has expired"}, 401
                 )
 
-            except jwt.JWTClaimsError:
+            except jwt.JWTClaimsError as e:
+                _trace_auth(
+                    "reject_invalid_claims",
+                    err=str(e),
+                    audience_expected=api_audience,
+                )
                 raise AuthError(
                     {
                         "code": "invalid_claims",
@@ -191,6 +236,7 @@ def authenticate_request():
 
             except Exception as e:
                 current_app.logger.error(f"Token parsing error: {e}")
+                _trace_auth("reject_token_parse_error", err=str(e))
                 raise AuthError(
                     {
                         "code": "invalid_header",
@@ -199,6 +245,11 @@ def authenticate_request():
                     401,
                 )
 
+        _trace_auth(
+            "reject_no_matching_jwks_key",
+            kid=unverified_header.get("kid"),
+            jwks_kids=[k.get("kid") for k in jwks.get("keys", [])],
+        )
         raise AuthError(
             {"code": "invalid_header", "description": "Unable to find appropriate key"},
             401,
@@ -209,6 +260,7 @@ def authenticate_request():
 
     except Exception as e:
         current_app.logger.error(f"Authentication error: {e}")
+        _trace_auth("reject_unhandled_auth_error", err=str(e))
         return (
             jsonify(
                 {

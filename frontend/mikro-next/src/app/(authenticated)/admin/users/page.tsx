@@ -47,6 +47,7 @@ export default function AdminUsersPage() {
   const [showPurgeModal, setShowPurgeModal] = useState(false);
   const [isPurging, setIsPurging] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
+  const [activeUsersTab, setActiveUsersTab] = useState<"active" | "deactivated">("active");
   const ROWS_PER_PAGE = 20;
   const toast = useToastActions();
   const { activeFilters, setActiveFilters, filtersBody, clearFilters } = useFilters();
@@ -131,7 +132,7 @@ export default function AdminUsersPage() {
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [userSearch, filtersBody]);
+  }, [userSearch, filtersBody, activeUsersTab]);
 
   useEffect(() => {
     fetchUsers();
@@ -414,7 +415,10 @@ export default function AdminUsersPage() {
     );
   }
 
-  const filteredUsers = sortUsers(filterUsersBySearch(users));
+  const activeUsersAll = users.filter((u) => u.is_active !== false);
+  const deactivatedUsersAll = users.filter((u) => u.is_active === false);
+  const tabUsers = activeUsersTab === "deactivated" ? deactivatedUsersAll : activeUsersAll;
+  const filteredUsers = sortUsers(filterUsersBySearch(tabUsers));
   const totalPages = Math.ceil(filteredUsers.length / ROWS_PER_PAGE);
   const paginatedUsers = filteredUsers.slice(
     (currentPage - 1) * ROWS_PER_PAGE,
@@ -475,6 +479,39 @@ export default function AdminUsersPage() {
         loading={filterOptionsLoading}
       />
         </div>
+      </div>
+
+      {/* Active / Deactivated tabs — partition users without changing
+          fetch behavior. Counts come from the un-paginated, un-search-
+          filtered partition so the tab strip always reflects org totals. */}
+      <div className="flex items-center gap-1 border-b border-border">
+        {(["active", "deactivated"] as const).map((tab) => {
+          const count =
+            tab === "active" ? activeUsersAll.length : deactivatedUsersAll.length;
+          const label = tab === "active" ? "Active users" : "Deactivated";
+          const selected = activeUsersTab === tab;
+          return (
+            <button
+              key={tab}
+              type="button"
+              onClick={() => setActiveUsersTab(tab)}
+              className={`px-4 py-2 text-sm font-medium transition-colors border-b-2 -mb-px ${
+                selected
+                  ? "border-kaart-orange text-foreground"
+                  : "border-transparent text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              {label}{" "}
+              <span
+                className={`inline-flex items-center justify-center min-w-[1.5rem] px-1.5 ml-1 rounded-full text-xs ${
+                  selected ? "bg-kaart-orange text-white" : "bg-muted"
+                }`}
+              >
+                {count}
+              </span>
+            </button>
+          );
+        })}
       </div>
 
       {/* Users Table */}

@@ -185,6 +185,10 @@ class UserAPI(MethodView):
             return self.fetch_project_users()
         elif path == "remove_users":
             return self.do_remove_users()
+        elif path == "deactivate_user":
+            return self.deactivate_user()
+        elif path == "reactivate_user":
+            return self.reactivate_user()
         elif path == "modify_users":
             return self.do_modify_users()
         elif path == "first_login_update":
@@ -639,6 +643,7 @@ class UserAPI(MethodView):
                     "mapillary_username": user.mapillary_username,
                     "micropayments_visible": user.micropayments_visible or False,
                     "hourly_rate": user.hourly_rate,
+                    "is_active": bool(getattr(user, "is_active", True)),
                 }
             )
         # Add the list of users to the return_obj dictionary
@@ -1003,6 +1008,60 @@ class UserAPI(MethodView):
             current_app.logger.error(f"Error in sync_org_ids: {e}")
             db.session.rollback()
             return {"message": f"Failed: {str(e)}", "status": 500}
+
+    @requires_admin
+    def deactivate_user(self):
+        """Soft-disable a user without deleting their data.
+
+        Sets is_active=False. The auth gate in `requires_auth` /
+        `requires_admin` (decorators.py) blocks any further requests
+        from this account until an admin reactivates them. All historical
+        data (time entries, contributions, payment totals) stays intact.
+        """
+        user_id = request.json.get("user_id") if request.json else None
+        if not user_id:
+            return {"message": "user_id required", "status": 400}, 400
+
+        target = User.query.filter_by(id=user_id).first()
+        if not target:
+            return {"message": "User not found", "status": 404}, 404
+
+        if target.org_id != g.user.org_id:
+            return {"message": "Cross-org operation rejected", "status": 403}, 403
+
+        target.is_active = False
+        target.save()
+
+        return {
+            "message": "User deactivated",
+            "status": 200,
+            "user_id": target.id,
+            "is_active": False,
+        }, 200
+
+    @requires_admin
+    def reactivate_user(self):
+        """Reverse a deactivation."""
+        user_id = request.json.get("user_id") if request.json else None
+        if not user_id:
+            return {"message": "user_id required", "status": 400}, 400
+
+        target = User.query.filter_by(id=user_id).first()
+        if not target:
+            return {"message": "User not found", "status": 404}, 404
+
+        if target.org_id != g.user.org_id:
+            return {"message": "Cross-org operation rejected", "status": 403}, 403
+
+        target.is_active = True
+        target.save()
+
+        return {
+            "message": "User reactivated",
+            "status": 200,
+            "user_id": target.id,
+            "is_active": True,
+        }, 200
 
     @requires_admin
     def do_remove_users(self):
@@ -1483,6 +1542,7 @@ class UserAPI(MethodView):
                 "is_tracked_only": user.is_tracked_only or False,
                 "micropayments_visible": user.micropayments_visible or False,
                 "hourly_rate": user.hourly_rate,
+                "is_active": bool(getattr(user, "is_active", True)),
                 "joined": user.create_time.isoformat() if user.create_time else None,
                 # Task stats
                 "total_tasks_mapped": _stats["total_tasks_mapped"],

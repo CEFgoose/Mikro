@@ -34,6 +34,9 @@ export interface User {
   mapillary_username?: string;
   micropayments_visible?: boolean;
   hourly_rate?: number | null;
+  /** False = deactivated. Blocked from auth gate; visible in
+   *  admin user list under the "Deactivated" tab. */
+  is_active?: boolean;
 }
 
 export interface UserListItem extends User {
@@ -456,6 +459,7 @@ export interface UserProfileData {
   micropayments_visible?: boolean;
   hourly_rate?: number | null;
   mapillary_username?: string;
+  is_active?: boolean;
   joined: string;
   total_tasks_mapped: number;
   total_tasks_validated: number;
