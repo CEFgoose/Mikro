@@ -61,7 +61,7 @@ import {
 import { RecentActivityCard } from "@/components/admin/RecentActivityCard";
 import { AssignedProjectsTable } from "@/components/admin/AssignedProjectsTable";
 import { NotesButton } from "@/components/widgets/NotesButton";
-import { formatDurationHM, resolveCategoryKey } from "@/lib/timeTracking";
+import { formatDurationHM, resolveCategoryKey, localDayEndIsoUtc, localWeekStartIsoUtc, localMonthStartIsoUtc } from "@/lib/timeTracking";
 import { openChangesetInJosm, zoomToChangeset } from "@/lib/josmRemoteControl";
 
 const MappingHeatmap = dynamic(() => import("@/components/MappingHeatmap"), {
@@ -181,6 +181,16 @@ export default function UserProfilePage() {
   // filteredTotalHours / filteredEntriesCount removed — derived now from
   // filteredEntries via the timeStats useMemo (F6 stats strip).
   const [dateLabel, setDateLabel] = useState("");
+
+  // F6 — Time tab. Fetches its own slice (last 90 days) so it stays
+  // independent of the page's date-preset selector. Activates only
+  // when the admin clicks the Time tab so the Overview path doesn't
+  // pay the cost.
+  const [activeTab, setActiveTab] = useState<"overview" | "time">("overview");
+  const [timeTabEntries, setTimeTabEntries] = useState<TimeEntry[]>([]);
+  const [timeTabLoaded, setTimeTabLoaded] = useState(false);
+  const [timeTabLoading, setTimeTabLoading] = useState(false);
+  const [timeTabPage, setTimeTabPage] = useState(1);
 
   // Date-filtered task stats
   const [periodTaskStats, setPeriodTaskStats] = useState({
@@ -373,6 +383,35 @@ export default function UserProfilePage() {
     loadTaskHistory(start, end);
   }, [userId, datePreset, loadDateStats, loadChangesets, loadActivity, loadTaskHistory]);
 
+  // F6 — Time tab fetches its own 90-day slice on first activation.
+  // Independent of the page-level date preset so the Time tab's stats
+  // (this-week, this-month) are stable regardless of what Overview is
+  // currently scoped to.
+  useEffect(() => {
+    if (!userId || activeTab !== "time" || timeTabLoaded || timeTabLoading) return;
+    setTimeTabLoading(true);
+    const now = new Date();
+    const start = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 90)
+      .toISOString()
+      .slice(0, 10);
+    const end = now.toISOString().slice(0, 10);
+    fetchStats({
+      userId,
+      startDate: dateInputToLocalStartIsoUtc(start),
+      endDate: dateInputToLocalEndIsoUtc(end),
+    })
+      .then((res) => {
+        if (res?.stats?.time_entries) {
+          setTimeTabEntries(res.stats.time_entries);
+        }
+        setTimeTabLoaded(true);
+      })
+      .catch(() => {
+        setTimeTabLoaded(true);
+      })
+      .finally(() => setTimeTabLoading(false));
+  }, [userId, activeTab, timeTabLoaded, timeTabLoading, fetchStats]);
+
   const handleApplyCustom = () => {
     if (customStart && customEnd) {
       const startDT = `${customStart}T${customStartTime}:00`;
@@ -542,6 +581,92 @@ export default function UserProfilePage() {
     );
     return { totalSeconds, count, avgSeconds, longestSeconds };
   }, [filteredEntries]);
+
+  // F6 — Time tab computed values from the 90-day window.
+  // Hours This Week / Month are the calendar-aligned slices (matching
+  // the Sun-Sat / month-to-date semantics from §3.5).
+  // Avg Session is over completed entries in the 90-day window.
+  // Anomalies surface two patterns we can detect from this data alone:
+  //   - active sessions older than 12 hours (likely forgot to clock out)
+  //   - completed sessions over 12 hours long (likely should have ended sooner)
+  const timeTabComputed = useMemo(() => {
+    const completed = timeTabEntries.filter(
+      (e) => e.status === "completed" && (e.durationSeconds ?? 0) > 0
+    );
+    const totalSeconds = completed.reduce(
+      (s, e) => s + (e.durationSeconds ?? 0),
+      0
+    );
+    const avgSessionSeconds = completed.length
+      ? Math.round(totalSeconds / completed.length)
+      : 0;
+
+    const weekStartIso = localWeekStartIsoUtc();
+    const monthStartIso = localMonthStartIsoUtc();
+    const dayEndIso = localDayEndIsoUtc();
+
+    const inWindow = (clockIn: string | null, startIso: string, endIso: string) => {
+      if (!clockIn) return false;
+      return clockIn >= startIso && clockIn < endIso;
+    };
+
+    const hoursThisWeek = completed
+      .filter((e) => inWindow(e.clockIn, weekStartIso, dayEndIso))
+      .reduce((s, e) => s + (e.durationSeconds ?? 0), 0);
+    const hoursThisMonth = completed
+      .filter((e) => inWindow(e.clockIn, monthStartIso, dayEndIso))
+      .reduce((s, e) => s + (e.durationSeconds ?? 0), 0);
+
+    const TWELVE_HOURS = 12 * 3600;
+    const nowMs = Date.now();
+    const anomalies: { entry: TimeEntry; reason: string }[] = [];
+    for (const e of timeTabEntries) {
+      if (e.status === "active" && e.clockIn) {
+        const elapsedSec = Math.floor((nowMs - new Date(e.clockIn).getTime()) / 1000);
+        if (elapsedSec > TWELVE_HOURS) {
+          anomalies.push({
+            entry: e,
+            reason: `Active session running ${formatDurationHM(elapsedSec)} — likely forgot to clock out`,
+          });
+        }
+      } else if (
+        e.status === "completed" &&
+        (e.durationSeconds ?? 0) > TWELVE_HOURS
+      ) {
+        anomalies.push({
+          entry: e,
+          reason: `Completed session of ${formatDurationHM(e.durationSeconds ?? 0)} — unusually long`,
+        });
+      }
+    }
+
+    // Recent entries: chronologically descending by clock_in.
+    const recent = [...timeTabEntries].sort((a, b) => {
+      const ai = a.clockIn ?? "";
+      const bi = b.clockIn ?? "";
+      if (ai === bi) return 0;
+      return ai < bi ? 1 : -1;
+    });
+
+    return {
+      hoursThisWeek,
+      hoursThisMonth,
+      avgSessionSeconds,
+      avgSessionDenom: completed.length,
+      anomalies,
+      recent,
+    };
+  }, [timeTabEntries]);
+
+  const TIME_TAB_PAGE_SIZE = 10;
+  const timeTabPagedRecent = timeTabComputed.recent.slice(
+    (timeTabPage - 1) * TIME_TAB_PAGE_SIZE,
+    timeTabPage * TIME_TAB_PAGE_SIZE
+  );
+  const timeTabTotalPages = Math.max(
+    1,
+    Math.ceil(timeTabComputed.recent.length / TIME_TAB_PAGE_SIZE)
+  );
 
   const countryOptions = useMemo(() => {
     const countries = countriesData?.countries || [];
@@ -846,8 +971,33 @@ export default function UserProfilePage() {
         />
       )}
 
+      {/* F6 — Tab strip. Overview holds everything that was on this
+          page before; Time is the focused per-user view per the
+          F6 acceptance criteria (hours this week/month, avg session,
+          recent entries, anomalies). */}
+      <div className="flex items-center gap-1 border-b border-border">
+        {(["overview", "time"] as const).map((tab) => {
+          const label = tab === "overview" ? "Overview" : "Time";
+          const selected = activeTab === tab;
+          return (
+            <button
+              key={tab}
+              type="button"
+              onClick={() => setActiveTab(tab)}
+              className={`px-4 py-2 text-sm font-medium transition-colors border-b-2 -mb-px ${
+                selected
+                  ? "border-kaart-orange text-foreground"
+                  : "border-transparent text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              {label}
+            </button>
+          );
+        })}
+      </div>
+
       {/* Section 2: All-time Task Stats */}
-      {user && (<>
+      {user && activeTab === "overview" && (<>
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <StatCard label="Tasks Mapped" value={formatNumber(user.total_tasks_mapped)} />
         <StatCard
@@ -1791,9 +1941,169 @@ export default function UserProfilePage() {
       </div>
       </>)}
 
+      {/* F6 — Time tab. Shows ONLY what the meeting acceptance asked for:
+          Hours this week, Hours this month, Avg session, Recent entries
+          (paginated), Anomalies. Independent of the Overview tab's
+          date-preset selector — pulls its own 90-day window. */}
+      {user && activeTab === "time" && (
+        <div className="space-y-6">
+          {timeTabLoading && timeTabEntries.length === 0 ? (
+            <div className="flex items-center gap-2 text-sm text-muted-foreground py-8">
+              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-kaart-orange" />
+              Loading time data…
+            </div>
+          ) : (
+            <>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <StatCard
+                  label="Hours This Week"
+                  value={formatDurationHM(timeTabComputed.hoursThisWeek)}
+                />
+                <StatCard
+                  label="Hours This Month"
+                  value={formatDurationHM(timeTabComputed.hoursThisMonth)}
+                />
+                <StatCard
+                  label="Average Session"
+                  value={
+                    timeTabComputed.avgSessionDenom > 0
+                      ? formatDurationHM(timeTabComputed.avgSessionSeconds)
+                      : "—"
+                  }
+                />
+              </div>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base">
+                    Anomalies
+                    {timeTabComputed.anomalies.length > 0 && (
+                      <span className="ml-2 inline-flex items-center justify-center min-w-[1.5rem] px-1.5 rounded-full text-xs bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200">
+                        {timeTabComputed.anomalies.length}
+                      </span>
+                    )}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {timeTabComputed.anomalies.length === 0 ? (
+                    <p className="text-sm text-muted-foreground italic">
+                      No anomalies detected in the last 90 days.
+                    </p>
+                  ) : (
+                    <ul className="space-y-2">
+                      {timeTabComputed.anomalies.map(({ entry, reason }) => (
+                        <li
+                          key={entry.id}
+                          className="flex items-start gap-3 rounded-md border border-border bg-muted/40 p-3 text-sm"
+                        >
+                          <span className="mt-0.5 inline-flex h-2 w-2 rounded-full bg-red-600 flex-shrink-0" />
+                          <div className="flex-1 min-w-0">
+                            <p className="font-medium">{reason}</p>
+                            <p className="text-xs text-muted-foreground mt-0.5">
+                              {entry.projectName || "—"}
+                              {entry.clockIn
+                                ? ` · clocked in ${new Date(entry.clockIn).toLocaleString("en-US", { month: "short", day: "numeric", year: "numeric", hour: "numeric", minute: "2-digit" })}`
+                                : ""}
+                            </p>
+                          </div>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base">Recent Entries</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {timeTabComputed.recent.length === 0 ? (
+                    <p className="text-sm text-muted-foreground italic">
+                      No time entries in the last 90 days.
+                    </p>
+                  ) : (
+                    <>
+                      <div className="overflow-x-auto">
+                        <table className="w-full text-sm" style={{ minWidth: 500 }}>
+                          <thead className="bg-muted border-b border-border">
+                            <tr>
+                              <th className="px-3 py-2 text-left font-semibold text-muted-foreground">Date</th>
+                              <th className="px-3 py-2 text-left font-semibold text-muted-foreground">Project</th>
+                              <th className="px-3 py-2 text-left font-semibold text-muted-foreground">Category</th>
+                              <th className="px-3 py-2 text-left font-semibold text-muted-foreground">Duration</th>
+                              <th className="px-3 py-2 text-left font-semibold text-muted-foreground">Status</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-border">
+                            {timeTabPagedRecent.map((entry) => (
+                              <tr key={entry.id} className={entry.status === "voided" ? "opacity-50" : ""}>
+                                <td className="px-3 py-2 whitespace-nowrap">
+                                  {entry.clockIn
+                                    ? new Date(entry.clockIn).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })
+                                    : "—"}
+                                </td>
+                                <td className="px-3 py-2">{entry.projectName || "—"}</td>
+                                <td className="px-3 py-2">{entry.category || "—"}</td>
+                                <td className="px-3 py-2 font-mono whitespace-nowrap">
+                                  {formatDurationHM(entry.durationSeconds)}
+                                </td>
+                                <td className="px-3 py-2">
+                                  {entry.status === "completed" ? (
+                                    <span className="text-green-600">Completed</span>
+                                  ) : entry.status === "active" ? (
+                                    <span className="text-yellow-600">Active</span>
+                                  ) : (
+                                    <span className="text-red-500">Voided</span>
+                                  )}
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                      {timeTabComputed.recent.length > TIME_TAB_PAGE_SIZE && (
+                        <div className="flex items-center justify-between mt-3 text-sm text-muted-foreground">
+                          <span>
+                            Showing {(timeTabPage - 1) * TIME_TAB_PAGE_SIZE + 1}–
+                            {Math.min(timeTabPage * TIME_TAB_PAGE_SIZE, timeTabComputed.recent.length)} of{" "}
+                            {timeTabComputed.recent.length}
+                          </span>
+                          <div className="flex gap-2">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              disabled={timeTabPage === 1}
+                              onClick={() => setTimeTabPage((p) => p - 1)}
+                            >
+                              Previous
+                            </Button>
+                            <span className="flex items-center px-2">
+                              Page {timeTabPage} of {timeTabTotalPages}
+                            </span>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              disabled={timeTabPage >= timeTabTotalPages}
+                              onClick={() => setTimeTabPage((p) => p + 1)}
+                            >
+                              Next
+                            </Button>
+                          </div>
+                        </div>
+                      )}
+                    </>
+                  )}
+                </CardContent>
+              </Card>
+            </>
+          )}
+        </div>
+      )}
+
       {/* Assigned Projects — moved to bottom (was a flex chip grid); now a
           sortable/filterable/paginated table per 2026-04 meeting B3 + UI12 */}
-      {user && (
+      {user && activeTab === "overview" && (
         <Card>
           <CardHeader>
             <CardTitle>
