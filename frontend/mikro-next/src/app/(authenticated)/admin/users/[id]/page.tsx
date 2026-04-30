@@ -396,34 +396,59 @@ export default function UserProfilePage() {
     loadTaskHistory(start, end);
   }, [userId, datePreset, loadDateStats, loadChangesets, loadActivity, loadTaskHistory]);
 
-  // F6 — Time tab fetches its own 90-day slice on first activation.
-  // Independent of the page-level date preset so the Time tab's stats
-  // (this-week, this-month) are stable regardless of what Overview is
-  // currently scoped to.
-  useEffect(() => {
-    if (!userId || activeTab !== "time" || timeTabLoaded || timeTabLoading) return;
-    setTimeTabLoading(true);
+  // F6 — Time tab data loader. 90-day slice, independent of the
+  // page-level date preset so the Time tab's stats (this-week,
+  // this-month) are stable regardless of what Overview is scoped to.
+  // Extracted so both the initial lazy-load effect and the
+  // clock-state-changed listener below can share the same fetch.
+  const loadTimeTabData = useCallback(async () => {
+    if (!userId) return;
     const now = new Date();
     const start = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 90)
       .toISOString()
       .slice(0, 10);
     const end = now.toISOString().slice(0, 10);
-    fetchStats({
-      userId,
-      startDate: dateInputToLocalStartIsoUtc(start),
-      endDate: dateInputToLocalEndIsoUtc(end),
-    })
-      .then((res) => {
-        if (res?.stats?.time_entries) {
-          setTimeTabEntries(res.stats.time_entries);
-        }
+    try {
+      const res = await fetchStats({
+        userId,
+        startDate: dateInputToLocalStartIsoUtc(start),
+        endDate: dateInputToLocalEndIsoUtc(end),
+      });
+      if (res?.stats?.time_entries) {
+        setTimeTabEntries(res.stats.time_entries);
+      }
+    } catch {
+      /* error handled by hook */
+    }
+  }, [userId, fetchStats]);
+
+  // Initial lazy-load on first tab activation.
+  useEffect(() => {
+    if (!userId || activeTab !== "time" || timeTabLoaded || timeTabLoading) return;
+    setTimeTabLoading(true);
+    loadTimeTabData()
+      .finally(() => {
         setTimeTabLoaded(true);
-      })
-      .catch(() => {
-        setTimeTabLoaded(true);
-      })
-      .finally(() => setTimeTabLoading(false));
-  }, [userId, activeTab, timeTabLoaded, timeTabLoading, fetchStats]);
+        setTimeTabLoading(false);
+      });
+  }, [userId, activeTab, timeTabLoaded, timeTabLoading, loadTimeTabData]);
+
+  // Auto-refresh when anyone clocks in/out so the Time tab's stats
+  // reflect the just-completed session without a manual page reload.
+  // If the admin is currently on the Time tab → refetch ~500ms later
+  // (lets the backend commit). If they're on a different tab → just
+  // invalidate the cache so their next visit reloads fresh.
+  useEffect(() => {
+    const handler = () => {
+      if (activeTab === "time") {
+        setTimeout(() => loadTimeTabData(), 500);
+      } else {
+        setTimeTabLoaded(false);
+      }
+    };
+    window.addEventListener("clock-state-changed", handler);
+    return () => window.removeEventListener("clock-state-changed", handler);
+  }, [activeTab, loadTimeTabData]);
 
   // Payment tab — lazy-loaded on first activation. Single round-trip
   // returns lifetime totals, recent payments, open requests, and
