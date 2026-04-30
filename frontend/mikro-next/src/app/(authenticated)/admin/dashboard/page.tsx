@@ -220,12 +220,18 @@ function DashboardStats({ teamId, onTeamIdChange, regionCountryId, onRegionCount
 
   return (
     <>
-      {/* Toolbar: Region filter + Team scope selector + Sync button */}
-      <div className="flex items-center justify-end gap-4">
-        <div className="w-56">
+      {/* Toolbar: Region filter + Team scope selector + Sync button.
+          Region + Team share the same Select primitive (consistent
+          look). Sync button aligns to the bottom of the filter row
+          via items-end so its h-9 button visually sits with the
+          h-10 Select buttons (the labels above add ~24px). */}
+      <div className="flex items-end justify-end gap-3">
+        <div className="w-48">
           <RegionFilter value={regionCountryId} onChange={onRegionCountryIdChange} />
         </div>
-        <TeamScopeSelector value={teamId} onChange={onTeamIdChange} />
+        <div className="w-48">
+          <TeamScopeSelector value={teamId} onChange={onTeamIdChange} />
+        </div>
         {syncing && syncProgress && (
           <span className="text-sm text-muted-foreground">{syncProgress}</span>
         )}

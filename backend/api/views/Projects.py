@@ -687,6 +687,8 @@ class ProjectAPI(MethodView):
         filters = req_body.get("filters")
         created_by_me = req_body.get("created_by_me", False)
         country_id = req_body.get("country_id")
+        region_id = req_body.get("region_id")
+        team_id = req_body.get("team_id")
         filtered_user_ids = resolve_filtered_user_ids(filters, g.user.org_id)
 
         # If filters produced a user-id set, restrict to projects that have
@@ -744,10 +746,12 @@ class ProjectAPI(MethodView):
             inactive_projects = [
                 p for p in inactive_projects if p.created_by == g.user.id
             ]
-        # Admin-supplied region filter — when an admin picks a country
-        # from the RegionFilter dropdown, narrow the project list to
-        # projects assigned to that country. Reuses _loc_rows so no new
-        # query. None means "all regions" (no filter).
+        # Admin-supplied standalone filters — Region (geographic),
+        # Country, Team — each narrows the project list independently
+        # via project-direct lookups (ProjectCountry / ProjectTeam).
+        # None means "All …" for that dimension. Filters AND together.
+
+        # Country: reuses _loc_rows (no new query).
         if country_id is not None:
             try:
                 _country_id = int(country_id)
@@ -762,6 +766,55 @@ class ProjectAPI(MethodView):
                 ]
             except (TypeError, ValueError):
                 pass
+
+        # Region (geographic, e.g. Asia): expand to its countries, then
+        # filter by ProjectCountry. One small query for the country
+        # ids; reuses _loc_rows for the project lookup.
+        if region_id is not None:
+            try:
+                _region_id = int(region_id)
+                _region_country_ids = {
+                    c.id for c in (
+                        Country.query
+                        .with_entities(Country.id)
+                        .filter(Country.region_id == _region_id)
+                        .all()
+                    )
+                }
+                _region_project_ids = {
+                    r.project_id for r in _loc_rows
+                    if r.country_id in _region_country_ids
+                }
+                active_projects = [
+                    p for p in active_projects if p.id in _region_project_ids
+                ]
+                inactive_projects = [
+                    p for p in inactive_projects if p.id in _region_project_ids
+                ]
+            except (TypeError, ValueError):
+                pass
+
+        # Team: ProjectTeam lookup. One small query bounded by team
+        # size.
+        if team_id is not None:
+            try:
+                _team_id = int(team_id)
+                _team_project_ids = {
+                    pt.project_id for pt in (
+                        ProjectTeam.query
+                        .filter(ProjectTeam.team_id == _team_id)
+                        .all()
+                    )
+                }
+                active_projects = [
+                    p for p in active_projects if p.id in _team_project_ids
+                ]
+                inactive_projects = [
+                    p for p in inactive_projects if p.id in _team_project_ids
+                ]
+            except (TypeError, ValueError):
+                pass
+
         # Batch-load task stats for all projects (single SQL query instead of N queries)
         _batch_task_stats = get_batch_project_stats_fast(all_project_ids)
 

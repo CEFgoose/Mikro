@@ -584,35 +584,17 @@ class UserAPI(MethodView):
             return_obj["status"] = 304
             return return_obj
 
-        # Support universal filter system
+        # Support universal filter system. The standalone filter
+        # dropdowns on /admin/users write single-element values into
+        # this body (filters.country = [id] etc.); resolve_filtered_user_ids
+        # handles every dimension via the existing pipeline.
         filters = request.json.get("filters") if request.json else None
         filtered_ids = resolve_filtered_user_ids(filters, g.user.org_id) if filters else None
-
-        # Admin-supplied region filter from /admin/users RegionFilter.
-        # When set, narrow the user list to users assigned to that
-        # country via UserCountry. None means "all regions" (current
-        # behavior).
-        country_id = request.json.get("country_id") if request.json else None
-        country_user_ids = None
-        if country_id is not None:
-            try:
-                _country_id = int(country_id)
-                country_user_ids = {
-                    r.user_id for r in (
-                        UserCountry.query
-                        .filter(UserCountry.country_id == _country_id)
-                        .all()
-                    )
-                }
-            except (TypeError, ValueError):
-                country_user_ids = None
 
         # Get all the users from the database that belong to the same organization
         users_query = User.query.filter_by(org_id=g.user.org_id)
         if filtered_ids is not None:
             users_query = users_query.filter(User.id.in_(filtered_ids))
-        if country_user_ids is not None:
-            users_query = users_query.filter(User.id.in_(country_user_ids))
         users_in_org = users_query.all()
 
         # Build country/region lookup caches

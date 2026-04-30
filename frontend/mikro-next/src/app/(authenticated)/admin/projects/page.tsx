@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import {
   Card,
   CardContent,
@@ -25,8 +25,7 @@ import {
   Skeleton,
 } from "@/components/ui";
 import { useToastActions } from "@/components/ui";
-import { FilterBar } from "@/components/filters";
-import { RegionFilter } from "@/components/admin/RegionFilter";
+import { StandaloneFilter } from "@/components/admin/StandaloneFilter";
 import LocationsTab from "@/components/LocationsTab";
 import ProjectTrainingsTab from "@/components/ProjectTrainingsTab";
 import {
@@ -43,7 +42,6 @@ import {
   useUnassignTeamFromProject,
   useSyncProject,
   useCheckSyncStatus,
-  useFilters,
   useFetchFilterOptions,
   useFetchTeams,
   useFetchCountries,
@@ -94,8 +92,7 @@ const defaultFormData: ProjectFormData = {
 
 export default function AdminProjectsPage() {
   const { data: projects, loading, refetch } = useOrgProjects();
-  const { activeFilters, setActiveFilters, filtersBody } = useFilters();
-  const { data: filterOptions, loading: filterOptionsLoading } = useFetchFilterOptions();
+  const { data: filterOptions } = useFetchFilterOptions();
   const { mutate: createProject, loading: creating } = useCreateProject();
   const { mutate: updateProject, loading: updating } = useUpdateProject();
   const { mutate: deleteProject, loading: deleting } = useDeleteProject();
@@ -129,7 +126,10 @@ export default function AdminProjectsPage() {
   const [projectTeams, setProjectTeams] = useState<ProjectTeamItem[]>([]);
   const [editTab, setEditTab] = useState<"settings" | "users" | "teams" | "training" | "locations">("settings");
   const [showMyProjects, setShowMyProjects] = useState(false);
-  const [regionCountryId, setRegionCountryId] = useState<number | null>(null);
+  // Standalone filter dropdowns. Each null = "All …" (no filter).
+  const [filterRegionId, setFilterRegionId] = useState<string | null>(null);
+  const [filterCountryId, setFilterCountryId] = useState<string | null>(null);
+  const [filterTeamId, setFilterTeamId] = useState<string | null>(null);
   const [projectSearch, setProjectSearch] = useState("");
   const [activePageNum, setActivePageNum] = useState(1);
   const [inactivePageNum, setInactivePageNum] = useState(1);
@@ -153,18 +153,30 @@ export default function AdminProjectsPage() {
   useEffect(() => {
     setActivePageNum(1);
     setInactivePageNum(1);
-  }, [projectSearch, filtersBody, showMyProjects, regionCountryId]);
+  }, [projectSearch, showMyProjects, filterRegionId, filterCountryId, filterTeamId]);
 
-  // Re-fetch projects when filters, "my projects" toggle, or region change
+  // Build the request body from current filter state. Used both by
+  // the auto-refetch effect below and by post-mutation refetches
+  // (create / edit / delete / sync) so they all keep the active
+  // filters applied.
+  const buildRefetchBody = useCallback((): Record<string, unknown> => {
+    const body: Record<string, unknown> = {};
+    if (showMyProjects) body.created_by_me = true;
+    if (filterCountryId) body.country_id = Number(filterCountryId);
+    if (filterRegionId) body.region_id = Number(filterRegionId);
+    if (filterTeamId) body.team_id = Number(filterTeamId);
+    return body;
+  }, [showMyProjects, filterCountryId, filterRegionId, filterTeamId]);
+
+  // Re-fetch projects when any filter changes. country_id, region_id,
+  // and team_id are project-direct (look up via ProjectCountry /
+  // ProjectTeam) — see fetch_org_projects in Projects.py.
   useEffect(() => {
     if (refetch) {
-      const body: Record<string, unknown> = {};
-      if (filtersBody) body.filters = filtersBody;
-      if (showMyProjects) body.created_by_me = true;
-      if (regionCountryId != null) body.country_id = regionCountryId;
+      const body = buildRefetchBody();
       refetch(Object.keys(body).length > 0 ? body : {});
     }
-  }, [filtersBody, showMyProjects, regionCountryId]);
+  }, [buildRefetchBody, refetch]);
 
   const activeProjects = projects?.org_active_projects ?? [];
   const inactiveProjects = projects?.org_inactive_projects ?? [];
@@ -281,7 +293,7 @@ export default function AdminProjectsPage() {
       setPreSelectedUserIds(new Set());
       setAddLocationSearch("");
       setAddUserSearch("");
-      refetch(filtersBody ? { filters: filtersBody } : {});
+      refetch(buildRefetchBody());
     } catch (err) {
       const message = err instanceof Error ? err.message : "Failed to create project";
       toast.error(message);
@@ -308,7 +320,7 @@ export default function AdminProjectsPage() {
       toast.success("Project updated successfully");
       setShowEditModal(false);
       setSelectedProject(null);
-      refetch(filtersBody ? { filters: filtersBody } : {});
+      refetch(buildRefetchBody());
     } catch (err) {
       const message = err instanceof Error ? err.message : "Failed to update project";
       toast.error(message);
@@ -323,7 +335,7 @@ export default function AdminProjectsPage() {
       toast.success("Project deleted successfully");
       setShowDeleteModal(false);
       setSelectedProject(null);
-      refetch(filtersBody ? { filters: filtersBody } : {});
+      refetch(buildRefetchBody());
     } catch (err) {
       const message = err instanceof Error ? err.message : "Failed to delete project";
       toast.error(message);
@@ -348,7 +360,7 @@ export default function AdminProjectsPage() {
             clearInterval(poll);
             setSyncingProjectId(null);
             toast.success(status.progress || `${projectName} synced`);
-            refetch(filtersBody ? { filters: filtersBody } : {});
+            refetch(buildRefetchBody());
           } else if (status.sync_status === "failed") {
             clearInterval(poll);
             setSyncingProjectId(null);
@@ -474,7 +486,7 @@ export default function AdminProjectsPage() {
       const result = await purgeProjects({});
       toast.success(`Purged ${result.projects_deleted} projects, ${result.tasks_deleted} tasks, reset ${result.users_reset} users`);
       setShowPurgeModal(false);
-      refetch(filtersBody ? { filters: filtersBody } : {});
+      refetch(buildRefetchBody());
     } catch {
       toast.error("Failed to purge projects");
     }
@@ -860,43 +872,74 @@ export default function AdminProjectsPage() {
         </Card>
       </div>
 
-      {/* Filters */}
-      <div className="flex items-center gap-3">
-        <input
-          type="text"
-          placeholder="Search projects..."
-          className="rounded-md border border-border bg-background px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring w-48"
-          value={projectSearch}
-          onChange={(e) => setProjectSearch(e.target.value)}
-        />
-        <div className="w-56">
-          <RegionFilter value={regionCountryId} onChange={setRegionCountryId} />
-        </div>
-        <div className="flex-1">
-          <FilterBar
-            dimensions={filterOptions?.dimensions ? Object.entries(filterOptions.dimensions).map(([key, values]) => ({
-              key,
-              label: key.charAt(0).toUpperCase() + key.slice(1),
-              options: Array.isArray(values)
-                ? values.map((v) =>
-                    typeof v === 'string'
-                      ? { value: v, label: v }
-                      : { value: String(v.id ?? v.name), label: v.name }
-                  )
-                : [],
-            })) : []}
-            activeFilters={activeFilters}
-            onChange={setActiveFilters}
-            loading={filterOptionsLoading}
+      {/* Filters — each filterable dimension is its own visible
+          dropdown so admins don't have to discover an "Add filter"
+          menu. All default to "All …" (no filter). Project-direct
+          filtering: backend looks up ProjectCountry / ProjectTeam. */}
+      <div className="flex flex-wrap items-end gap-3">
+        <div className="flex flex-col">
+          <label className="mb-1.5 block text-sm font-medium text-foreground">
+            Search
+          </label>
+          <input
+            type="text"
+            placeholder="Search projects..."
+            className="h-10 rounded-lg border border-input bg-background px-3 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring w-48"
+            value={projectSearch}
+            onChange={(e) => setProjectSearch(e.target.value)}
           />
         </div>
-        <Button
-          variant={showMyProjects ? "primary" : "outline"}
-          size="sm"
-          onClick={() => setShowMyProjects(!showMyProjects)}
-        >
-          My Projects
-        </Button>
+        <div className="w-44">
+          <StandaloneFilter
+            label="Region"
+            allLabel="All regions"
+            options={(filterOptions?.dimensions?.region ?? [])
+              .map((v) =>
+                typeof v === "string"
+                  ? { value: v, label: v }
+                  : { value: String(v.id ?? v.name), label: v.name },
+              )}
+            value={filterRegionId}
+            onChange={setFilterRegionId}
+          />
+        </div>
+        <div className="w-44">
+          <StandaloneFilter
+            label="Country"
+            allLabel="All countries"
+            options={(filterOptions?.dimensions?.country ?? [])
+              .map((v) =>
+                typeof v === "string"
+                  ? { value: v, label: v }
+                  : { value: String(v.id ?? v.name), label: v.name },
+              )}
+            value={filterCountryId}
+            onChange={setFilterCountryId}
+          />
+        </div>
+        <div className="w-44">
+          <StandaloneFilter
+            label="Team"
+            allLabel="All teams"
+            options={(filterOptions?.dimensions?.team ?? [])
+              .map((v) =>
+                typeof v === "string"
+                  ? { value: v, label: v }
+                  : { value: String(v.id ?? v.name), label: v.name },
+              )}
+            value={filterTeamId}
+            onChange={setFilterTeamId}
+          />
+        </div>
+        <div className="ml-auto">
+          <Button
+            variant={showMyProjects ? "primary" : "outline"}
+            size="sm"
+            onClick={() => setShowMyProjects(!showMyProjects)}
+          >
+            My Projects
+          </Button>
+        </div>
       </div>
 
       {/* Projects Tabs */}
@@ -1268,7 +1311,7 @@ export default function AdminProjectsPage() {
           setSelectedProject(null);
           setProjectUsers([]);
           setProjectTeams([]);
-          refetch(filtersBody ? { filters: filtersBody } : {});
+          refetch(buildRefetchBody());
         }}
         title="Edit Project"
         description={`Editing ${selectedProject?.name || "project"}`}
@@ -1280,7 +1323,7 @@ export default function AdminProjectsPage() {
               setSelectedProject(null);
               setProjectUsers([]);
               setProjectTeams([]);
-              refetch(filtersBody ? { filters: filtersBody } : {});
+              refetch(buildRefetchBody());
             }}>
               Cancel
             </Button>

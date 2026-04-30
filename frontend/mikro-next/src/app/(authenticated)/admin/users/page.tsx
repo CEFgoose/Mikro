@@ -3,9 +3,8 @@
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle, Button, Modal, useToastActions, Skeleton, TableSkeleton } from "@/components/ui";
-import { FilterBar } from "@/components/filters";
-import { RegionFilter } from "@/components/admin/RegionFilter";
-import { useFilters, useFetchFilterOptions, useFetchCountries } from "@/hooks";
+import { StandaloneFilter } from "@/components/admin/StandaloneFilter";
+import { useFetchFilterOptions, useFetchCountries } from "@/hooks";
 import { formatNumber, formatCurrency, displayRole } from "@/lib/utils";
 import { Val } from "@/components/ui";
 import { User } from "@/types";
@@ -49,11 +48,17 @@ export default function AdminUsersPage() {
   const [isPurging, setIsPurging] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [activeUsersTab, setActiveUsersTab] = useState<"active" | "deactivated">("active");
-  const [regionCountryId, setRegionCountryId] = useState<number | null>(null);
+  // Standalone filter dropdowns — each null = "All …" (no filter).
+  // Each writes a single-element values array into the request's
+  // filters body; resolve_filtered_user_ids handles the rest.
+  const [filterRegionId, setFilterRegionId] = useState<string | null>(null);
+  const [filterCountryId, setFilterCountryId] = useState<string | null>(null);
+  const [filterTeamId, setFilterTeamId] = useState<string | null>(null);
+  const [filterRole, setFilterRole] = useState<string | null>(null);
+  const [filterTimezone, setFilterTimezone] = useState<string | null>(null);
   const ROWS_PER_PAGE = 20;
   const toast = useToastActions();
-  const { activeFilters, setActiveFilters, filtersBody, clearFilters } = useFilters();
-  const { data: filterOptions, loading: filterOptionsLoading } = useFetchFilterOptions();
+  const { data: filterOptions } = useFetchFilterOptions();
   const { data: countriesData } = useFetchCountries();
   const countries = countriesData?.countries ?? [];
 
@@ -134,7 +139,7 @@ export default function AdminUsersPage() {
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [userSearch, filtersBody, activeUsersTab, regionCountryId]);
+  }, [userSearch, activeUsersTab, filterRegionId, filterCountryId, filterTeamId, filterRole, filterTimezone]);
 
   useEffect(() => {
     fetchUsers();
@@ -143,9 +148,13 @@ export default function AdminUsersPage() {
 
   const fetchUsers = async () => {
     try {
-      const body: Record<string, unknown> = {};
-      if (filtersBody) body.filters = filtersBody;
-      if (regionCountryId != null) body.country_id = regionCountryId;
+      const filters: Record<string, string[]> = {};
+      if (filterCountryId) filters.country = [filterCountryId];
+      if (filterRegionId) filters.region = [filterRegionId];
+      if (filterTeamId) filters.team = [filterTeamId];
+      if (filterRole) filters.role = [filterRole];
+      if (filterTimezone) filters.timezone = [filterTimezone];
+      const body = Object.keys(filters).length > 0 ? { filters } : {};
       const response = await fetch("/backend/user/fetch_users", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -165,7 +174,7 @@ export default function AdminUsersPage() {
   useEffect(() => {
     if (!isLoading) fetchUsers();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [filtersBody, regionCountryId]);
+  }, [filterRegionId, filterCountryId, filterTeamId, filterRole, filterTimezone]);
 
   const handleSelectUser = (userId: string) => {
     setSelectedUser(selectedUser === userId ? null : userId);
@@ -459,35 +468,90 @@ export default function AdminUsersPage() {
         </div>
       </div>
 
-      {/* Search + Filters */}
-      <div className="flex items-center gap-3">
-        <input
-          type="text"
-          placeholder="Search users..."
-          className="rounded-md border border-border bg-background px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring w-48"
-          value={userSearch}
-          onChange={(e) => setUserSearch(e.target.value)}
-        />
-        <div className="w-56">
-          <RegionFilter value={regionCountryId} onChange={setRegionCountryId} />
+      {/* Search + Filters — each filterable dimension is its own
+          visible dropdown. All default to "All …" (no filter). */}
+      <div className="flex flex-wrap items-end gap-3">
+        <div className="flex flex-col">
+          <label className="mb-1.5 block text-sm font-medium text-foreground">
+            Search
+          </label>
+          <input
+            type="text"
+            placeholder="Search users..."
+            className="h-10 rounded-lg border border-input bg-background px-3 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring w-48"
+            value={userSearch}
+            onChange={(e) => setUserSearch(e.target.value)}
+          />
         </div>
-        <div className="flex-1">
-      <FilterBar
-        dimensions={filterOptions?.dimensions ? Object.entries(filterOptions.dimensions).map(([key, values]) => ({
-          key,
-          label: key.charAt(0).toUpperCase() + key.slice(1),
-          options: Array.isArray(values)
-            ? values.map((v) =>
-                typeof v === 'string'
+        <div className="w-44">
+          <StandaloneFilter
+            label="Region"
+            allLabel="All regions"
+            options={(filterOptions?.dimensions?.region ?? [])
+              .map((v) =>
+                typeof v === "string"
                   ? { value: v, label: v }
-                  : { value: String(v.id ?? v.name), label: v.name }
-              )
-            : [],
-        })) : []}
-        activeFilters={activeFilters}
-        onChange={setActiveFilters}
-        loading={filterOptionsLoading}
-      />
+                  : { value: String(v.id ?? v.name), label: v.name },
+              )}
+            value={filterRegionId}
+            onChange={setFilterRegionId}
+          />
+        </div>
+        <div className="w-44">
+          <StandaloneFilter
+            label="Country"
+            allLabel="All countries"
+            options={(filterOptions?.dimensions?.country ?? [])
+              .map((v) =>
+                typeof v === "string"
+                  ? { value: v, label: v }
+                  : { value: String(v.id ?? v.name), label: v.name },
+              )}
+            value={filterCountryId}
+            onChange={setFilterCountryId}
+          />
+        </div>
+        <div className="w-44">
+          <StandaloneFilter
+            label="Team"
+            allLabel="All teams"
+            options={(filterOptions?.dimensions?.team ?? [])
+              .map((v) =>
+                typeof v === "string"
+                  ? { value: v, label: v }
+                  : { value: String(v.id ?? v.name), label: v.name },
+              )}
+            value={filterTeamId}
+            onChange={setFilterTeamId}
+          />
+        </div>
+        <div className="w-44">
+          <StandaloneFilter
+            label="Role"
+            allLabel="All roles"
+            options={(filterOptions?.dimensions?.role ?? [])
+              .map((v) =>
+                typeof v === "string"
+                  ? { value: v, label: v.charAt(0).toUpperCase() + v.slice(1) }
+                  : { value: String(v.id ?? v.name), label: v.name },
+              )}
+            value={filterRole}
+            onChange={setFilterRole}
+          />
+        </div>
+        <div className="w-44">
+          <StandaloneFilter
+            label="Timezone"
+            allLabel="All timezones"
+            options={(filterOptions?.dimensions?.timezone ?? [])
+              .map((v) =>
+                typeof v === "string"
+                  ? { value: v, label: v }
+                  : { value: String(v.id ?? v.name), label: v.name },
+              )}
+            value={filterTimezone}
+            onChange={setFilterTimezone}
+          />
         </div>
       </div>
 
