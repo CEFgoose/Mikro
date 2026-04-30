@@ -716,28 +716,8 @@ class ProjectAPI(MethodView):
             ProjectCountry.project_id.in_(all_project_ids)
         ).all() if all_project_ids else []
         _loc_counts = {}
-        _proj_loc_map = {}
         for r in _loc_rows:
             _loc_counts[r.project_id] = _loc_counts.get(r.project_id, 0) + 1
-            _proj_loc_map.setdefault(r.project_id, set()).add(r.country_id)
-
-        # Region/country scoping (F2): an admin assigned to one or more
-        # countries only sees projects matching those countries (or projects
-        # with no country assignments — visible to everyone). An admin with
-        # NO country set falls back to the legacy "see everything" behavior
-        # so unassigned/global admins aren't stranded with an empty list.
-        # F3 (Super Admin vs Team Lead) will replace this fallback with a
-        # role-based decision.
-        admin_country_ids = get_user_country_ids(g.user.id)
-        if admin_country_ids:
-            active_projects = [
-                p for p in active_projects
-                if is_visible_by_location(_proj_loc_map.get(p.id, set()), admin_country_ids)
-            ]
-            inactive_projects = [
-                p for p in inactive_projects
-                if is_visible_by_location(_proj_loc_map.get(p.id, set()), admin_country_ids)
-            ]
 
         # Batch-load training assignment counts for admin display
         _trn_rows = ProjectTraining.query.filter(
@@ -1190,52 +1170,23 @@ class ProjectAPI(MethodView):
             total_contributions_this_month - total_contributions_last_month
         )
 
-        # Region/country scoping (F2): build the set of project ids this
-        # admin is allowed to see. Same rule as fetch_org_projects — an
-        # admin with no country assignments falls back to "see everything"
-        # so unassigned/global admins aren't stranded.
-        admin_country_ids = get_user_country_ids(g.user.id)
-        visible_project_ids = None
-        if admin_country_ids:
-            org_project_ids = [
-                pid for (pid,) in db.session.query(Project.id).filter(
-                    Project.org_id == org_id
-                ).all()
-            ]
-            _pc_rows = ProjectCountry.query.filter(
-                ProjectCountry.project_id.in_(org_project_ids)
-            ).all() if org_project_ids else []
-            _pc_map = {}
-            for r in _pc_rows:
-                _pc_map.setdefault(r.project_id, set()).add(r.country_id)
-            visible_project_ids = [
-                pid for pid in org_project_ids
-                if is_visible_by_location(_pc_map.get(pid, set()), admin_country_ids)
-            ]
-
         # Project counts — single query
-        proj_counts_q = db.session.query(
+        proj_counts = db.session.query(
             func.count(case((Project.status == True, 1))).label("active"),
             func.count(case((Project.status == False, 1))).label("inactive"),
             func.count(case((Project.completed == True, 1))).label("completed"),
-        ).filter(Project.org_id == org_id)
-        if visible_project_ids is not None:
-            proj_counts_q = proj_counts_q.filter(Project.id.in_(visible_project_ids))
-        proj_counts = proj_counts_q.first()
+        ).filter(Project.org_id == org_id).first()
 
         active_projects_count = proj_counts.active or 0
         inactive_projects_count = proj_counts.inactive or 0
         completed_projects_count = proj_counts.completed or 0
 
         # Task counts — single query (simple counts, no split-aware for dashboard summary)
-        task_counts_q = db.session.query(
+        task_counts = db.session.query(
             func.count(case((and_(Task.mapped == True, Task.validated == False, Task.invalidated == False), 1))).label("mapped"),
             func.count(case((and_(Task.mapped == True, Task.validated == True), 1))).label("validated"),
             func.count(case((Task.invalidated == True, 1))).label("invalidated"),
-        ).filter(Task.org_id == org_id)
-        if visible_project_ids is not None:
-            task_counts_q = task_counts_q.filter(Task.project_id.in_(visible_project_ids))
-        task_counts = task_counts_q.first()
+        ).filter(Task.org_id == org_id).first()
 
         mapped_tasks_count = task_counts.mapped or 0
         validated_tasks_count = task_counts.validated or 0
