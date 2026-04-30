@@ -23,8 +23,10 @@ python-dotenv>=1.0.0
 # Server
 gunicorn>=21.0.0
 
-# PDF export
+# PDF export + ASCII transliteration for non-Latin
+# OSM usernames so report exports are readable.
 reportlab>=4.0.0
+Unidecode>=1.3.0
 
 # Utilities
 marshmallow>=3.20.0

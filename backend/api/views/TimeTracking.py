@@ -9,11 +9,17 @@ for contractor time tracking with OSM changeset correlation.
 import csv
 import io
 import logging
+import unicodedata
 from datetime import datetime, timedelta
 
 import requests as http_requests
 from flask.views import MethodView
 from flask import g, request, jsonify, Response
+
+try:
+    from unidecode import unidecode as _unidecode
+except ImportError:
+    _unidecode = None
 
 from ..utils import requires_admin
 from ..utils.tz import org_month_bounds_utc, parse_filter_datetime
@@ -22,6 +28,32 @@ from ..database import TimeEntry, User, Project, Task, TeamUser, CustomTopic, Ho
 from ..filters import resolve_filtered_user_ids
 
 logger = logging.getLogger(__name__)
+
+
+def _ascii_safe(s):
+    """Transliterate a string to printable ASCII for the PDF export.
+
+    Why: reportlab's default fonts (Helvetica/Times) don't ship glyphs
+    for non-Latin scripts; an OSM username like "Łukasz" or one with
+    Cyrillic/CJK characters renders as a row of black boxes (■). Pre-
+    transliterating gives a readable ASCII approximation that's also
+    safe to paste into payment processors that don't accept Unicode.
+
+    Prefers Unidecode (handles Cyrillic / CJK / Arabic / accented
+    Latin etc.); falls back to NFKD + ASCII-encode-ignore if the
+    library isn't installed (handles accented Latin only — the rest
+    drops out).
+    """
+    if s is None:
+        return ""
+    s = str(s)
+    if _unidecode is not None:
+        return _unidecode(s)
+    return (
+        unicodedata.normalize("NFKD", s)
+        .encode("ascii", "ignore")
+        .decode("ascii")
+    )
 
 VALID_CATEGORIES = {
     "editing", "validating", "training", "checklist",
@@ -1400,7 +1432,15 @@ class TimeTrackingAPI(MethodView):
             for key, _label, fn in active:
                 val = pdf_value(key, fn, user, project, entry)
                 if key in PDF_WRAPPED_COLS:
-                    row.append(Paragraph(xml_escape(str(val)), cell_style))
+                    # Transliterate to ASCII so non-Latin OSM usernames
+                    # / user names render readably instead of as a row
+                    # of black boxes (Helvetica lacks the glyphs).
+                    row.append(
+                        Paragraph(
+                            xml_escape(_ascii_safe(val)),
+                            cell_style,
+                        )
+                    )
                 else:
                     row.append(str(val))
             table_data.append(row)
