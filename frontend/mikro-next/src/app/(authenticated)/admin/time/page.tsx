@@ -17,8 +17,7 @@ import {
   Val,
 } from "@/components/ui";
 import { useToastActions } from "@/components/ui";
-import { FilterBar } from "@/components/filters";
-import { useFilters } from "@/hooks";
+import { StandaloneFilter } from "@/components/admin/StandaloneFilter";
 import {
   useAdminTimeHistory,
   useAdminActiveSessions,
@@ -43,7 +42,6 @@ import {
   dateInputToLocalEndIsoUtc,
 } from "@/lib/timeTracking";
 import type { TimeEntry } from "@/types";
-import { TimeManagementFilterSummary } from "@/components/admin/TimeManagementFilterSummary";
 import { NotesButton } from "@/components/widgets/NotesButton";
 import { PendingAdjustmentsStrip } from "@/components/admin/PendingAdjustmentsStrip";
 import { sortProjectsAlphabetical } from "@/lib/sortProjects";
@@ -237,13 +235,18 @@ const PAGE_SIZE = 20;
 export default function AdminTimePage() {
   const toast = useToastActions();
 
-  // Filters
+  // Filters — date preset / custom dates / search / category at the top,
+  // then the same per-dimension dropdowns the projects + users pages use.
   const [datePreset, setDatePreset] = useState<DatePreset>("this_month");
   const [customStart, setCustomStart] = useState("");
   const [customEnd, setCustomEnd] = useState("");
   const [category, setCategory] = useState<string>("All");
   const [userSearch, setUserSearch] = useState("");
-  const { activeFilters, setActiveFilters, filtersBody, clearFilters } = useFilters();
+  const [filterRegionId, setFilterRegionId] = useState<string | null>(null);
+  const [filterCountryId, setFilterCountryId] = useState<string | null>(null);
+  const [filterTeamId, setFilterTeamId] = useState<string | null>(null);
+  const [filterRole, setFilterRole] = useState<string | null>(null);
+  const [filterTimezone, setFilterTimezone] = useState<string | null>(null);
 
   // Sorting
   const [sortKey, setSortKey] = useState<string>("clockIn");
@@ -327,7 +330,10 @@ export default function AdminTimePage() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // Build filter body and refetch when filters change
+  // Build filter body and refetch when filters change. Each standalone
+  // dropdown writes a single-element values array into `filters` so the
+  // backend's resolve_filtered_user_ids handles every dimension via the
+  // existing pipeline.
   const fetchWithFilters = useCallback(() => {
     const { startDate, endDate } = getDateRange(datePreset, {
       start: customStart,
@@ -338,11 +344,28 @@ export default function AdminTimePage() {
     if (endDate) body.endDate = endDate;
     const categoryKey = resolveCategoryKey(category);
     if (categoryKey) body.category = categoryKey;
-    if (filtersBody) body.filters = filtersBody;
+    const filters: Record<string, string[]> = {};
+    if (filterCountryId) filters.country = [filterCountryId];
+    if (filterRegionId) filters.region = [filterRegionId];
+    if (filterTeamId) filters.team = [filterTeamId];
+    if (filterRole) filters.role = [filterRole];
+    if (filterTimezone) filters.timezone = [filterTimezone];
+    if (Object.keys(filters).length > 0) body.filters = filters;
     body.limit = 500;
     body.offset = 0;
     refetchHistory(body).catch(() => {});
-  }, [datePreset, customStart, customEnd, category, filtersBody, refetchHistory]);
+  }, [
+    datePreset,
+    customStart,
+    customEnd,
+    category,
+    filterCountryId,
+    filterRegionId,
+    filterTeamId,
+    filterRole,
+    filterTimezone,
+    refetchHistory,
+  ]);
 
   useEffect(() => {
     fetchWithFilters();
@@ -364,7 +387,18 @@ export default function AdminTimePage() {
   // Reset page when filters change
   useEffect(() => {
     setPage(0);
-  }, [datePreset, customStart, customEnd, category, filtersBody, userSearch]);
+  }, [
+    datePreset,
+    customStart,
+    customEnd,
+    category,
+    filterRegionId,
+    filterCountryId,
+    filterTeamId,
+    filterRole,
+    filterTimezone,
+    userSearch,
+  ]);
 
   // Live duration ticker for active sessions
   useEffect(() => {
@@ -649,12 +683,18 @@ export default function AdminTimePage() {
     });
     const omitColumns: string[] = [];
     if (hideOsmUsername) omitColumns.push("osm_username");
+    const filters: Record<string, string[]> = {};
+    if (filterCountryId) filters.country = [filterCountryId];
+    if (filterRegionId) filters.region = [filterRegionId];
+    if (filterTeamId) filters.team = [filterTeamId];
+    if (filterRole) filters.role = [filterRole];
+    if (filterTimezone) filters.timezone = [filterTimezone];
     try {
       await exportEntries({
         startDate: startDate ?? undefined,
         endDate: endDate ?? undefined,
         category: resolveCategoryKey(category) ?? undefined,
-        filters: filtersBody,
+        filters: Object.keys(filters).length > 0 ? filters : undefined,
         format,
         omit_columns: omitColumns.length ? omitColumns : undefined,
       });
@@ -706,14 +746,13 @@ export default function AdminTimePage() {
       {/* Filter Panel — hoisted above stat cards per UI8 (2026-04 meeting).
           Wrapped in a Card so it reads as a visual unit, not a floating row. */}
       <Card className="p-4">
-        <div
-          style={{
-            display: "flex",
-            gap: 16,
-            alignItems: "center",
-            flexWrap: "wrap",
-          }}
-        >
+        <div className="flex flex-col gap-4">
+          {/* Row 1 — date scope. Preset buttons (with resolved range
+              suffixes), Custom inputs when active, and a caption
+              spelling out the exact date window the active preset
+              implies. Mirrors the layout pattern used on
+              /admin/projects so the two pages feel consistent. */}
+          <div className="flex flex-wrap items-center gap-3">
           {/* Date preset button group. Each preset's resolved date
               range is appended to its label so admins can verify
               the semantics at a glance ("Last Month (Mar 1 – 31,
@@ -798,64 +837,107 @@ export default function AdminTimePage() {
             );
           })()}
 
-          {/* User search */}
-          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <input
-              type="text"
-              placeholder="Search user..."
-              className="rounded-md border border-border bg-background px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring w-44"
-              value={userSearch}
-              onChange={(e) => setUserSearch(e.target.value)}
-            />
           </div>
 
-          <FilterBar
-            dimensions={
-              filterOptions?.dimensions
-                ? Object.entries(filterOptions.dimensions).map(
-                    ([key, values]) => ({
-                      key,
-                      label: key.charAt(0).toUpperCase() + key.slice(1),
-                      options: Array.isArray(values)
-                        ? values.map((v) =>
-                            typeof v === "string"
-                              ? { value: v, label: v }
-                              : {
-                                  value: String(
-                                    v.id ?? v.value ?? v.name
-                                  ),
-                                  label: v.name,
-                                }
-                          )
-                        : [],
-                    })
-                  )
-                : []
-            }
-            activeFilters={activeFilters}
-            onChange={setActiveFilters}
-            loading={filterOptionsLoading}
-          />
+          {/* Row 2 — dimension filters. Mirrors the per-dimension
+              dropdown pattern from /admin/projects: each filterable
+              dimension is its own visible dropdown defaulting to
+              "All …" so admins don't have to discover an Add-filter
+              menu. Search + Category sit on the same row so all
+              non-date filters are in one place. Export anchors right. */}
+          <div className="flex flex-wrap items-end gap-3">
+            <div className="flex flex-col">
+              <label className="mb-1.5 block text-sm font-medium text-foreground">
+                Search
+              </label>
+              <input
+                type="text"
+                placeholder="Search user..."
+                className="h-10 rounded-lg border border-input bg-background px-3 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring w-44"
+                value={userSearch}
+                onChange={(e) => setUserSearch(e.target.value)}
+              />
+            </div>
+            <div className="w-44">
+              <StandaloneFilter
+                label="Region"
+                allLabel="All regions"
+                options={(filterOptions?.dimensions?.region ?? []).map((v) =>
+                  typeof v === "string"
+                    ? { value: v, label: v }
+                    : { value: String(v.id ?? v.name), label: v.name },
+                )}
+                value={filterRegionId}
+                onChange={setFilterRegionId}
+              />
+            </div>
+            <div className="w-44">
+              <StandaloneFilter
+                label="Country"
+                allLabel="All countries"
+                options={(filterOptions?.dimensions?.country ?? []).map((v) =>
+                  typeof v === "string"
+                    ? { value: v, label: v }
+                    : { value: String(v.id ?? v.name), label: v.name },
+                )}
+                value={filterCountryId}
+                onChange={setFilterCountryId}
+              />
+            </div>
+            <div className="w-44">
+              <StandaloneFilter
+                label="Team"
+                allLabel="All teams"
+                options={(filterOptions?.dimensions?.team ?? []).map((v) =>
+                  typeof v === "string"
+                    ? { value: v, label: v }
+                    : { value: String(v.id ?? v.name), label: v.name },
+                )}
+                value={filterTeamId}
+                onChange={setFilterTeamId}
+              />
+            </div>
+            <div className="w-44">
+              <StandaloneFilter
+                label="Role"
+                allLabel="All roles"
+                options={(filterOptions?.dimensions?.role ?? []).map((v) =>
+                  typeof v === "string"
+                    ? { value: v, label: v.charAt(0).toUpperCase() + v.slice(1) }
+                    : { value: String(v.id ?? v.name), label: v.name },
+                )}
+                value={filterRole}
+                onChange={setFilterRole}
+              />
+            </div>
+            <div className="w-44">
+              <StandaloneFilter
+                label="Timezone"
+                allLabel="All timezones"
+                options={(filterOptions?.dimensions?.timezone ?? []).map((v) =>
+                  typeof v === "string"
+                    ? { value: v, label: v }
+                    : { value: String(v.id ?? v.name), label: v.name },
+                )}
+                value={filterTimezone}
+                onChange={setFilterTimezone}
+              />
+            </div>
+            <div className="w-44">
+              <StandaloneFilter
+                label="Category"
+                allLabel="All categories"
+                options={CATEGORIES.filter((c) => c !== "All").map((c) => ({
+                  value: c,
+                  label: c,
+                }))}
+                value={category === "All" ? null : category}
+                onChange={(v) => setCategory(v ?? "All")}
+              />
+            </div>
 
-          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <label className="text-sm font-medium text-muted-foreground">
-              Category:
-            </label>
-            <select
-              className="rounded-md border border-border bg-background px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-              value={category}
-              onChange={(e) => setCategory(e.target.value)}
-            >
-              {CATEGORIES.map((cat) => (
-                <option key={cat} value={cat}>
-                  {cat}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          {/* Export dropdown — stays in the filter Card, right-aligned */}
-          <div ref={exportRef} className="relative" style={{ marginLeft: "auto" }}>
+            {/* Export anchors right */}
+            <div ref={exportRef} className="relative ml-auto">
             <Button
               variant="outline"
               size="sm"
@@ -915,6 +997,7 @@ export default function AdminTimePage() {
                 </div>
               </div>
             )}
+            </div>
           </div>
         </div>
       </Card>
@@ -926,41 +1009,6 @@ export default function AdminTimePage() {
           the page's date filter — a request from last month never hides
           behind the default "this month" preset. Empty state renders nothing. */}
       <PendingAdjustmentsStrip onEdit={handleOpenEdit} />
-
-      {/* Active-filter summary strip — renders only when at least one filter
-          is active, so the page stays clean when nothing is scoped. */}
-      <TimeManagementFilterSummary
-        dateLabel={formatDateRangeLabel(datePreset, customStart, customEnd)}
-        onClearDate={() => {
-          setDatePreset("all_time");
-          setCustomStart("");
-          setCustomEnd("");
-        }}
-        userSearch={userSearch}
-        onClearUserSearch={() => setUserSearch("")}
-        category={category}
-        onClearCategory={() => setCategory("All")}
-        activeFilters={activeFilters}
-        onRemoveFilter={(key, value) =>
-          setActiveFilters((prev) =>
-            prev
-              .map((f) =>
-                f.key === key
-                  ? { ...f, values: f.values.filter((v) => v !== value) }
-                  : f
-              )
-              .filter((f) => f.values.length > 0)
-          )
-        }
-        onClearAll={() => {
-          setDatePreset("all_time");
-          setCustomStart("");
-          setCustomEnd("");
-          setUserSearch("");
-          setCategory("All");
-          clearFilters();
-        }}
-      />
 
       {/* Stat Cards */}
       <div
