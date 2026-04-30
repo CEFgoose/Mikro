@@ -224,3 +224,105 @@ export function dateInputToLocalEndIsoUtc(input: string | null | undefined): str
   if (!y || !m || !d) return null;
   return new Date(y, m - 1, d + 1).toISOString();
 }
+
+// ─── Date-range formatting (admin date-preset captions) ─────────────
+//
+// SSOT for rendering a human-readable "Apr 26 – May 2, 2026" string
+// from any pair of dates. Used by /admin/time, /admin/reports, and
+// /admin/reports/weekly so admins can verify at a glance what range
+// a preset like "Last month" actually covers.
+//
+// Smart abbreviations:
+//   - same day:       "Apr 30, 2026"
+//   - same month:     "Apr 1 – 30, 2026"
+//   - same year:      "Apr 26 – May 2, 2026"
+//   - cross-year:     "Dec 26, 2025 – Jan 2, 2026"
+
+/**
+ * Convert various date-ish inputs to a Date in the viewer's local
+ * timezone. Accepts:
+ *   - Date objects
+ *   - ISO 8601 strings (UTC instants from the local* helpers above)
+ *   - "YYYY-MM-DD" strings (raw <input type="date"> values)
+ * Returns null for null/undefined/empty/invalid inputs.
+ *
+ * For ISO instants and Date objects we preserve the moment in time and
+ * the consumer's locale rendering will format it correctly. For
+ * "YYYY-MM-DD" we anchor to local midnight so the day stamp doesn't
+ * drift across timezones.
+ */
+function toLocalDate(input: Date | string | null | undefined): Date | null {
+  if (input == null || input === "") return null;
+  if (input instanceof Date) {
+    return Number.isNaN(input.getTime()) ? null : input;
+  }
+  const s = String(input);
+  // "YYYY-MM-DD" without a time component → anchor to local midnight.
+  if (/^\d{4}-\d{2}-\d{2}$/.test(s)) {
+    const [y, m, d] = s.split("-").map(Number);
+    return new Date(y, m - 1, d);
+  }
+  const d = new Date(s);
+  return Number.isNaN(d.getTime()) ? null : d;
+}
+
+/**
+ * For "exclusive upper bound" inputs (the convention this file uses for
+ * end-of-week / end-of-month — they point at midnight of the day AFTER
+ * the last included day), subtract one calendar day so the displayed
+ * range matches what the user thinks of as "Apr 26 – May 2" instead of
+ * "Apr 26 – May 3".
+ */
+function decrementDay(d: Date): Date {
+  return new Date(d.getFullYear(), d.getMonth(), d.getDate() - 1);
+}
+
+interface FormatRangeOptions {
+  /** Treat `end` as an exclusive upper bound (subtract one day for display). */
+  endExclusive?: boolean;
+  /** Returned when start or end is null/empty. Default "All time". */
+  emptyLabel?: string;
+}
+
+/**
+ * Format a date range as a short human-readable string with smart
+ * collapsing. Returns `emptyLabel` when either end is null.
+ *
+ * Examples (today = 2026-04-30 in en-US locale):
+ *   formatDateRangeShort("2026-04-30", "2026-04-30")              → "Apr 30, 2026"
+ *   formatDateRangeShort("2026-04-01", "2026-04-30")              → "Apr 1 – 30, 2026"
+ *   formatDateRangeShort("2026-04-26", "2026-05-02")              → "Apr 26 – May 2, 2026"
+ *   formatDateRangeShort("2025-12-26", "2026-01-02")              → "Dec 26, 2025 – Jan 2, 2026"
+ *   formatDateRangeShort(weekStartIsoUtc, weekEndIsoUtc, {endExclusive: true})
+ *     where end is the next Sunday → previous Saturday is shown.
+ */
+export function formatDateRangeShort(
+  start: Date | string | null | undefined,
+  end: Date | string | null | undefined,
+  opts: FormatRangeOptions = {},
+): string {
+  const startD = toLocalDate(start);
+  let endD = toLocalDate(end);
+  if (!startD || !endD) return opts.emptyLabel ?? "All time";
+  if (opts.endExclusive) endD = decrementDay(endD);
+
+  const sameYear = startD.getFullYear() === endD.getFullYear();
+  const sameMonth = sameYear && startD.getMonth() === endD.getMonth();
+  const sameDay = sameMonth && startD.getDate() === endD.getDate();
+
+  const monthShort = (d: Date) =>
+    d.toLocaleDateString("en-US", { month: "short" });
+  const day = (d: Date) => String(d.getDate());
+  const year = (d: Date) => String(d.getFullYear());
+
+  if (sameDay) {
+    return `${monthShort(startD)} ${day(startD)}, ${year(startD)}`;
+  }
+  if (sameMonth) {
+    return `${monthShort(startD)} ${day(startD)} – ${day(endD)}, ${year(startD)}`;
+  }
+  if (sameYear) {
+    return `${monthShort(startD)} ${day(startD)} – ${monthShort(endD)} ${day(endD)}, ${year(startD)}`;
+  }
+  return `${monthShort(startD)} ${day(startD)}, ${year(startD)} – ${monthShort(endD)} ${day(endD)}, ${year(endD)}`;
+}

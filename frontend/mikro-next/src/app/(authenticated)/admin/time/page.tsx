@@ -53,6 +53,7 @@ import {
   categoryLabel,
   CATEGORY_LABELS,
   CATEGORY_FILTER_LABELS,
+  formatDateRangeShort,
 } from "@/lib/timeTracking";
 
 // --- Date range presets ---
@@ -713,22 +714,47 @@ export default function AdminTimePage() {
             flexWrap: "wrap",
           }}
         >
-          {/* Date preset button group — matches /admin/reports pattern */}
+          {/* Date preset button group. Each preset's resolved date
+              range is appended to its label so admins can verify
+              the semantics at a glance ("Last Month (Mar 1 – 31,
+              2026)"). Active range also shown as a caption below
+              the filter row. */}
           <div className="flex items-center gap-2">
-            {DATE_PRESET_ORDER.map((preset) => (
-              <button
-                key={preset}
-                type="button"
-                onClick={() => setDatePreset(preset)}
-                className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
-                  datePreset === preset
-                    ? "bg-kaart-orange text-white"
-                    : "bg-muted text-muted-foreground hover:bg-muted/80"
-                }`}
-              >
-                {DATE_PRESET_LABELS[preset]}
-              </button>
-            ))}
+            {DATE_PRESET_ORDER.map((preset) => {
+              const { startDate, endDate } = getDateRange(preset, {
+                start: customStart,
+                end: customEnd,
+              });
+              const range = formatDateRangeShort(startDate, endDate, {
+                endExclusive: true,
+                emptyLabel: "",
+              });
+              return (
+                <button
+                  key={preset}
+                  type="button"
+                  onClick={() => setDatePreset(preset)}
+                  className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                    datePreset === preset
+                      ? "bg-kaart-orange text-white"
+                      : "bg-muted text-muted-foreground hover:bg-muted/80"
+                  }`}
+                >
+                  {DATE_PRESET_LABELS[preset]}
+                  {range && (
+                    <span
+                      className={`ml-1.5 text-xs font-normal ${
+                        datePreset === preset
+                          ? "text-white/80"
+                          : "text-muted-foreground/70"
+                      }`}
+                    >
+                      ({range})
+                    </span>
+                  )}
+                </button>
+              );
+            })}
           </div>
 
           {datePreset === "custom" && (
@@ -750,6 +776,27 @@ export default function AdminTimePage() {
               />
             </div>
           )}
+
+          {/* Resolved-range caption — explicit, unambiguous statement
+              of the exact date window the active preset implies, so an
+              admin reconciling payroll never has to second-guess what
+              "Last Month" means today. Hides when there is no filter. */}
+          {(() => {
+            const { startDate, endDate } = getDateRange(datePreset, {
+              start: customStart,
+              end: customEnd,
+            });
+            const range = formatDateRangeShort(startDate, endDate, {
+              endExclusive: true,
+              emptyLabel: "",
+            });
+            if (!range) return null;
+            return (
+              <div className="basis-full text-xs text-muted-foreground">
+                Showing data from <span className="font-medium text-foreground">{range}</span>
+              </div>
+            );
+          })()}
 
           {/* User search */}
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>

@@ -25,6 +25,7 @@ import {
 import {
   dateInputToLocalStartIsoUtc,
   dateInputToLocalEndIsoUtc,
+  formatDateRangeShort,
 } from "@/lib/timeTracking";
 import type {
   TimekeepingStatsResponse,
@@ -1150,6 +1151,21 @@ export default function WeeklyReportBuilderPage() {
               {tkLoading || elemLoading ? "Fetching..." : "Refresh Data"}
             </button>
           </div>
+          {/* Resolved-range caption — explicit statement of the date
+              window the report covers. Mirrors the caption on
+              /admin/time and /admin/reports for consistency. */}
+          {(() => {
+            const range = formatDateRangeShort(startDate, endDate, {
+              emptyLabel: "",
+            });
+            if (!range) return null;
+            return (
+              <div className="text-xs text-muted-foreground">
+                Report covers{" "}
+                <span className="font-medium text-foreground">{range}</span>
+              </div>
+            );
+          })()}
           {/* Compare to last report toggle */}
           {prevDraft && (
             <div className="flex items-center gap-2 pt-1 border-t border-border">

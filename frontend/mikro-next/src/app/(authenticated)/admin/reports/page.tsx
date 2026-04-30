@@ -38,6 +38,7 @@ import { useFilters } from "@/hooks";
 import {
   dateInputToLocalStartIsoUtc,
   dateInputToLocalEndIsoUtc,
+  formatDateRangeShort,
 } from "@/lib/timeTracking";
 import { FilterBar } from "@/components/filters";
 import type {
@@ -652,22 +653,49 @@ export default function AdminReportsPage() {
       <Card>
         <CardContent className="p-4">
           <div className="flex flex-wrap items-center gap-4">
-            {/* Date range picker */}
+            {/* Date range picker. Each preset's resolved date window
+                is appended to its label so admins can verify the
+                semantics at a glance ("Monthly (Apr 1 – 30, 2026)").
+                Active range is also shown as a caption row below. */}
             <div className="flex items-center gap-2">
               {(["daily", "weekly", "monthly", "custom"] as const).map(
-                (preset) => (
-                  <button
-                    key={preset}
-                    onClick={() => setDatePreset(preset)}
-                    className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
-                      datePreset === preset
-                        ? "bg-kaart-orange text-white"
-                        : "bg-muted text-muted-foreground hover:bg-muted/80"
-                    }`}
-                  >
-                    {preset.charAt(0).toUpperCase() + preset.slice(1)}
-                  </button>
-                )
+                (preset) => {
+                  let range = "";
+                  if (preset === "custom") {
+                    range = formatDateRangeShort(customStart, customEnd, {
+                      emptyLabel: "",
+                    });
+                  } else {
+                    const r = getDateRange(preset);
+                    range = formatDateRangeShort(r.start, r.end, {
+                      emptyLabel: "",
+                    });
+                  }
+                  return (
+                    <button
+                      key={preset}
+                      onClick={() => setDatePreset(preset)}
+                      className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                        datePreset === preset
+                          ? "bg-kaart-orange text-white"
+                          : "bg-muted text-muted-foreground hover:bg-muted/80"
+                      }`}
+                    >
+                      {preset.charAt(0).toUpperCase() + preset.slice(1)}
+                      {range && (
+                        <span
+                          className={`ml-1.5 text-xs font-normal ${
+                            datePreset === preset
+                              ? "text-white/80"
+                              : "text-muted-foreground/70"
+                          }`}
+                        >
+                          ({range})
+                        </span>
+                      )}
+                    </button>
+                  );
+                }
               )}
             </div>
 
@@ -688,6 +716,25 @@ export default function AdminReportsPage() {
                 />
               </div>
             )}
+
+            {/* Resolved-range caption — explicit statement of the date
+                window the active preset implies. */}
+            {(() => {
+              const r =
+                datePreset === "custom"
+                  ? { start: customStart, end: customEnd }
+                  : getDateRange(datePreset);
+              const range = formatDateRangeShort(r.start, r.end, {
+                emptyLabel: "",
+              });
+              if (!range) return null;
+              return (
+                <div className="basis-full text-xs text-muted-foreground">
+                  Showing data from{" "}
+                  <span className="font-medium text-foreground">{range}</span>
+                </div>
+              );
+            })()}
 
             {/* Compare toggle */}
             <div className="flex items-center gap-2">
