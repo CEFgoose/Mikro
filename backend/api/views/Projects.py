@@ -686,6 +686,7 @@ class ProjectAPI(MethodView):
         req_body = request.json if request.json else {}
         filters = req_body.get("filters")
         created_by_me = req_body.get("created_by_me", False)
+        country_id = req_body.get("country_id")
         filtered_user_ids = resolve_filtered_user_ids(filters, g.user.org_id)
 
         # If filters produced a user-id set, restrict to projects that have
@@ -743,6 +744,24 @@ class ProjectAPI(MethodView):
             inactive_projects = [
                 p for p in inactive_projects if p.created_by == g.user.id
             ]
+        # Admin-supplied region filter — when an admin picks a country
+        # from the RegionFilter dropdown, narrow the project list to
+        # projects assigned to that country. Reuses _loc_rows so no new
+        # query. None means "all regions" (no filter).
+        if country_id is not None:
+            try:
+                _country_id = int(country_id)
+                _country_project_ids = {
+                    r.project_id for r in _loc_rows if r.country_id == _country_id
+                }
+                active_projects = [
+                    p for p in active_projects if p.id in _country_project_ids
+                ]
+                inactive_projects = [
+                    p for p in inactive_projects if p.id in _country_project_ids
+                ]
+            except (TypeError, ValueError):
+                pass
         # Batch-load task stats for all projects (single SQL query instead of N queries)
         _batch_task_stats = get_batch_project_stats_fast(all_project_ids)
 
@@ -1129,6 +1148,36 @@ class ProjectAPI(MethodView):
             return {"message": "User not found", "status": 304}
         org_id = g.user.org_id
 
+        # Admin-supplied region filter from the dashboard's RegionFilter
+        # dropdown. None means "all regions" (current behavior). When
+        # set, project + task counts narrow to projects assigned to
+        # that country.
+        req_body = request.json if request.json else {}
+        country_id = req_body.get("country_id")
+        visible_project_ids = None
+        if country_id is not None:
+            try:
+                _country_id = int(country_id)
+                visible_project_ids = [
+                    r.project_id for r in (
+                        ProjectCountry.query
+                        .filter(ProjectCountry.country_id == _country_id)
+                        .all()
+                    )
+                ]
+                # Also bound to org. ProjectCountry rows reference org's
+                # projects; intersect with org's project ids to be safe.
+                org_project_ids = {
+                    p.id for p in
+                    Project.query.with_entities(Project.id)
+                    .filter(Project.org_id == org_id).all()
+                }
+                visible_project_ids = [
+                    pid for pid in visible_project_ids if pid in org_project_ids
+                ]
+            except (TypeError, ValueError):
+                visible_project_ids = None
+
         # Weekly contributions (already SQL-based)
         end_date = datetime.now()
         start_date = end_date - timedelta(days=30)
@@ -1171,22 +1220,28 @@ class ProjectAPI(MethodView):
         )
 
         # Project counts — single query
-        proj_counts = db.session.query(
+        proj_counts_q = db.session.query(
             func.count(case((Project.status == True, 1))).label("active"),
             func.count(case((Project.status == False, 1))).label("inactive"),
             func.count(case((Project.completed == True, 1))).label("completed"),
-        ).filter(Project.org_id == org_id).first()
+        ).filter(Project.org_id == org_id)
+        if visible_project_ids is not None:
+            proj_counts_q = proj_counts_q.filter(Project.id.in_(visible_project_ids))
+        proj_counts = proj_counts_q.first()
 
         active_projects_count = proj_counts.active or 0
         inactive_projects_count = proj_counts.inactive or 0
         completed_projects_count = proj_counts.completed or 0
 
         # Task counts — single query (simple counts, no split-aware for dashboard summary)
-        task_counts = db.session.query(
+        task_counts_q = db.session.query(
             func.count(case((and_(Task.mapped == True, Task.validated == False, Task.invalidated == False), 1))).label("mapped"),
             func.count(case((and_(Task.mapped == True, Task.validated == True), 1))).label("validated"),
             func.count(case((Task.invalidated == True, 1))).label("invalidated"),
-        ).filter(Task.org_id == org_id).first()
+        ).filter(Task.org_id == org_id)
+        if visible_project_ids is not None:
+            task_counts_q = task_counts_q.filter(Task.project_id.in_(visible_project_ids))
+        task_counts = task_counts_q.first()
 
         mapped_tasks_count = task_counts.mapped or 0
         validated_tasks_count = task_counts.validated or 0

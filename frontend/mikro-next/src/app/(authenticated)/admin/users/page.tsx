@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle, Button, Modal, useToastActions, Skeleton, TableSkeleton } from "@/components/ui";
 import { FilterBar } from "@/components/filters";
+import { RegionFilter } from "@/components/admin/RegionFilter";
 import { useFilters, useFetchFilterOptions, useFetchCountries } from "@/hooks";
 import { formatNumber, formatCurrency, displayRole } from "@/lib/utils";
 import { Val } from "@/components/ui";
@@ -48,6 +49,7 @@ export default function AdminUsersPage() {
   const [isPurging, setIsPurging] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [activeUsersTab, setActiveUsersTab] = useState<"active" | "deactivated">("active");
+  const [regionCountryId, setRegionCountryId] = useState<number | null>(null);
   const ROWS_PER_PAGE = 20;
   const toast = useToastActions();
   const { activeFilters, setActiveFilters, filtersBody, clearFilters } = useFilters();
@@ -132,18 +134,22 @@ export default function AdminUsersPage() {
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [userSearch, filtersBody, activeUsersTab]);
+  }, [userSearch, filtersBody, activeUsersTab, regionCountryId]);
 
   useEffect(() => {
     fetchUsers();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const fetchUsers = async () => {
     try {
+      const body: Record<string, unknown> = {};
+      if (filtersBody) body.filters = filtersBody;
+      if (regionCountryId != null) body.country_id = regionCountryId;
       const response = await fetch("/backend/user/fetch_users", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(filtersBody ? { filters: filtersBody } : {}),
+        body: JSON.stringify(body),
       });
       if (response.ok) {
         const data = await response.json();
@@ -158,7 +164,8 @@ export default function AdminUsersPage() {
 
   useEffect(() => {
     if (!isLoading) fetchUsers();
-  }, [filtersBody]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filtersBody, regionCountryId]);
 
   const handleSelectUser = (userId: string) => {
     setSelectedUser(selectedUser === userId ? null : userId);
@@ -461,6 +468,9 @@ export default function AdminUsersPage() {
           value={userSearch}
           onChange={(e) => setUserSearch(e.target.value)}
         />
+        <div className="w-56">
+          <RegionFilter value={regionCountryId} onChange={setRegionCountryId} />
+        </div>
         <div className="flex-1">
       <FilterBar
         dimensions={filterOptions?.dimensions ? Object.entries(filterOptions.dimensions).map(([key, values]) => ({

@@ -26,6 +26,7 @@ import {
 } from "@/components/ui";
 import { useToastActions } from "@/components/ui";
 import { FilterBar } from "@/components/filters";
+import { RegionFilter } from "@/components/admin/RegionFilter";
 import LocationsTab from "@/components/LocationsTab";
 import ProjectTrainingsTab from "@/components/ProjectTrainingsTab";
 import {
@@ -128,6 +129,7 @@ export default function AdminProjectsPage() {
   const [projectTeams, setProjectTeams] = useState<ProjectTeamItem[]>([]);
   const [editTab, setEditTab] = useState<"settings" | "users" | "teams" | "training" | "locations">("settings");
   const [showMyProjects, setShowMyProjects] = useState(false);
+  const [regionCountryId, setRegionCountryId] = useState<number | null>(null);
   const [projectSearch, setProjectSearch] = useState("");
   const [activePageNum, setActivePageNum] = useState(1);
   const [inactivePageNum, setInactivePageNum] = useState(1);
@@ -151,17 +153,18 @@ export default function AdminProjectsPage() {
   useEffect(() => {
     setActivePageNum(1);
     setInactivePageNum(1);
-  }, [projectSearch, filtersBody, showMyProjects]);
+  }, [projectSearch, filtersBody, showMyProjects, regionCountryId]);
 
-  // Re-fetch projects when filters or "my projects" toggle change
+  // Re-fetch projects when filters, "my projects" toggle, or region change
   useEffect(() => {
     if (refetch) {
       const body: Record<string, unknown> = {};
       if (filtersBody) body.filters = filtersBody;
       if (showMyProjects) body.created_by_me = true;
+      if (regionCountryId != null) body.country_id = regionCountryId;
       refetch(Object.keys(body).length > 0 ? body : {});
     }
-  }, [filtersBody, showMyProjects]);
+  }, [filtersBody, showMyProjects, regionCountryId]);
 
   const activeProjects = projects?.org_active_projects ?? [];
   const inactiveProjects = projects?.org_inactive_projects ?? [];
@@ -866,6 +869,9 @@ export default function AdminProjectsPage() {
           value={projectSearch}
           onChange={(e) => setProjectSearch(e.target.value)}
         />
+        <div className="w-56">
+          <RegionFilter value={regionCountryId} onChange={setRegionCountryId} />
+        </div>
         <div className="flex-1">
           <FilterBar
             dimensions={filterOptions?.dimensions ? Object.entries(filterOptions.dimensions).map(([key, values]) => ({

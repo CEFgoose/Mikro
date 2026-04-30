@@ -7,6 +7,7 @@ import { TimeTrackingWidget } from "@/components/widgets/TimeTrackingWidget";
 import { AdminTimeManagement } from "@/components/widgets/AdminTimeManagement";
 import { DashboardStatCard } from "@/components/admin/DashboardStatCard";
 import { TeamScopeSelector } from "@/components/admin/TeamScopeSelector";
+import { RegionFilter } from "@/components/admin/RegionFilter";
 import { formatNumber, formatCurrency } from "@/lib/utils";
 import Link from "next/link";
 
@@ -26,9 +27,13 @@ interface DashboardStatsProps {
   teamId: number | null;
   /** Setter for the team scope; rendered inside the toolbar near Sync All Tasks. */
   onTeamIdChange: (teamId: number | null) => void;
+  /** Selected region (country id), null = all regions. */
+  regionCountryId: number | null;
+  /** Setter for the region scope. */
+  onRegionCountryIdChange: (id: number | null) => void;
 }
 
-function DashboardStats({ teamId, onTeamIdChange }: DashboardStatsProps) {
+function DashboardStats({ teamId, onTeamIdChange, regionCountryId, onRegionCountryIdChange }: DashboardStatsProps) {
   const { data: stats, loading: statsLoading, error: statsError, refetch: refetchStats } = useAdminDashboardStats();
   const { data: transactions, loading: transactionsLoading } = useOrgTransactions();
   const { data: users, loading: usersLoading } = useUsersList();
@@ -42,6 +47,13 @@ function DashboardStats({ teamId, onTeamIdChange }: DashboardStatsProps) {
     refetchTimeHistory(teamId ? { teamId } : undefined).catch(() => {});
     refetchActiveSessions(teamId ? { teamId } : undefined).catch(() => {});
   }, [teamId, refetchTimeHistory, refetchActiveSessions]);
+
+  // Region filter — refetch stats when admin picks a country. Project
+  // and task counts narrow to that region. Payment totals stay
+  // org-wide (user-scoped, not project-scoped).
+  useEffect(() => {
+    refetchStats(regionCountryId != null ? { country_id: regionCountryId } : undefined).catch(() => {});
+  }, [regionCountryId, refetchStats]);
   const { mutate: purgeTaskStats, loading: purging } = usePurgeTaskStats();
   const { mutate: syncAllTasks } = useAdminSyncAllTasks();
   const { mutate: checkSyncStatus } = useCheckSyncStatus();
@@ -208,8 +220,11 @@ function DashboardStats({ teamId, onTeamIdChange }: DashboardStatsProps) {
 
   return (
     <>
-      {/* Toolbar: Team scope selector + Sync button */}
+      {/* Toolbar: Region filter + Team scope selector + Sync button */}
       <div className="flex items-center justify-end gap-4">
+        <div className="w-56">
+          <RegionFilter value={regionCountryId} onChange={onRegionCountryIdChange} />
+        </div>
         <TeamScopeSelector value={teamId} onChange={onTeamIdChange} />
         {syncing && syncProgress && (
           <span className="text-sm text-muted-foreground">{syncProgress}</span>
@@ -617,6 +632,7 @@ export default function AdminDashboard() {
   // Team scope persists across reloads via localStorage. Hydration
   // happens AFTER first render so SSR doesn't try to read window.
   const [teamId, setTeamId] = useState<number | null>(null);
+  const [regionCountryId, setRegionCountryId] = useState<number | null>(null);
   useEffect(() => {
     try {
       const raw = localStorage.getItem(TEAM_SCOPE_STORAGE_KEY);
@@ -669,7 +685,12 @@ export default function AdminDashboard() {
 
       {/* Lower sections — deferred */}
       {showStats ? (
-        <DashboardStats teamId={teamId} onTeamIdChange={handleTeamIdChange} />
+        <DashboardStats
+          teamId={teamId}
+          onTeamIdChange={handleTeamIdChange}
+          regionCountryId={regionCountryId}
+          onRegionCountryIdChange={setRegionCountryId}
+        />
       ) : (
         <div className="space-y-6">
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
