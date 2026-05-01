@@ -215,7 +215,8 @@ export default function UserProfilePage() {
     validation_earnings: 0,
   });
 
-  // Changeset state
+  // Changeset state — date-filtered, drives the analysis section below
+  // the tab strip. Independent of the Recent Activity card's snapshot.
   const [changesets, setChangesets] = useState<Changeset[]>([]);
   const [changesetSummary, setChangesetSummary] =
     useState<ChangesetSummary | null>(null);
@@ -224,6 +225,16 @@ export default function UserProfilePage() {
   >({});
   const [changesetsLoading, setChangesetsLoading] = useState(false);
   const [changesetsError, setChangesetsError] = useState<string | null>(null);
+
+  // Recent Activity card — its own dedicated 180-day-window changeset
+  // fetch, decoupled from the page's date filter so the top-of-page
+  // snapshot is always meaningful regardless of what the buried date
+  // picker is set to (or which day of the month it is).
+  const [recentChangeset, setRecentChangeset] = useState<Changeset | null>(null);
+  const [recentChangesetLoading, setRecentChangesetLoading] = useState(false);
+  const [recentChangesetMessage, setRecentChangesetMessage] = useState<
+    string | null
+  >(null);
 
   // Activity chart state
   const [activityData, setActivityData] = useState<ActivityDataPoint[]>([]);
@@ -318,6 +329,44 @@ export default function UserProfilePage() {
     [userId, fetchStats]
   );
 
+  // Recent Activity card's dedicated changeset fetch. 180-day window,
+  // single fast pass (no per-changeset OSM detail calls — the card only
+  // needs id + createdAt + changesCount). Backend already returns
+  // changesets sorted newest-first by createdAt, so [0] is the right
+  // pick. Independent of the page's date-filter selector.
+  const loadRecentChangeset = useCallback(
+    async (uid: string) => {
+      setRecentChangesetLoading(true);
+      setRecentChangesetMessage(null);
+      const now = new Date();
+      const start = new Date(
+        now.getFullYear(),
+        now.getMonth(),
+        now.getDate() - 180,
+      )
+        .toISOString()
+        .slice(0, 10);
+      const end = now.toISOString().slice(0, 10);
+      try {
+        const res = await fetchChangesets({ userId: uid, startDate: start, endDate: end });
+        setRecentChangeset(res?.changesets?.[0] ?? null);
+        // Backend's status-200 responses can carry an explanatory
+        // `message` even when changesets are empty (e.g. "No OSM
+        // username set for this user"). Surface it verbatim so admins
+        // can tell apart "no OSM linked" from "no recent activity".
+        if (res?.message && !res.changesets?.length) {
+          setRecentChangesetMessage(res.message);
+        }
+      } catch {
+        setRecentChangeset(null);
+        setRecentChangesetMessage("Couldn't reach OSM API");
+      } finally {
+        setRecentChangesetLoading(false);
+      }
+    },
+    [fetchChangesets],
+  );
+
   const loadChangesets = useCallback(
     async (startDate: string, endDate: string) => {
       setChangesetsLoading(true);
@@ -395,6 +444,14 @@ export default function UserProfilePage() {
     loadActivity(start, end);
     loadTaskHistory(start, end);
   }, [userId, datePreset, loadDateStats, loadChangesets, loadActivity, loadTaskHistory]);
+
+  // Recent Activity card's snapshot fetch. Fires once when userId
+  // becomes available — does NOT depend on datePreset, so changing
+  // the buried date filter never affects the top-of-page snapshot.
+  useEffect(() => {
+    if (!userId) return;
+    loadRecentChangeset(userId);
+  }, [userId, loadRecentChangeset]);
 
   // F6 — Time tab data loader. 90-day slice, independent of the
   // page-level date preset so the Time tab's stats (this-week,
@@ -1020,11 +1077,16 @@ export default function UserProfilePage() {
         </CardContent>
       </Card>
 
-      {/* Recent Activity — top-of-page snapshot (added 2026-04 per UI meeting UI11) */}
+      {/* Recent Activity — top-of-page snapshot (added 2026-04 per UI meeting UI11).
+          Pulls its own 180-day-window changeset via loadRecentChangeset so it
+          stays meaningful no matter what the buried Date-Filtered Analysis picker
+          is set to (or which day of the month it is). */}
       {user && (
         <RecentActivityCard
           user={user}
-          recentChangeset={changesets[0] ?? null}
+          recentChangeset={recentChangeset}
+          recentChangesetLoading={recentChangesetLoading}
+          recentChangesetMessage={recentChangesetMessage}
         />
       )}
 

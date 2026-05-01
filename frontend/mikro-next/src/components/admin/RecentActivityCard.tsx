@@ -31,9 +31,20 @@ function formatDuration(seconds: number | null | undefined): string {
 interface Props {
   user: UserProfileData;
   recentChangeset?: Changeset | null;
+  /** True while the dedicated "most recent changeset" fetch is in flight. */
+  recentChangesetLoading?: boolean;
+  /** Backend-supplied note when there is no changeset to render — surfaced
+   *  verbatim so admins can tell "no OSM username linked" apart from
+   *  "couldn't reach OSM" apart from "no recent activity". */
+  recentChangesetMessage?: string | null;
 }
 
-export function RecentActivityCard({ user, recentChangeset }: Props) {
+export function RecentActivityCard({
+  user,
+  recentChangeset,
+  recentChangesetLoading,
+  recentChangesetMessage,
+}: Props) {
   const entries = user.time_entries ?? [];
   const activeEntry = entries.find((e) => e.status === "active") ?? null;
   const mostRecentEntry = entries[0] ?? null;
@@ -146,7 +157,9 @@ export function RecentActivityCard({ user, recentChangeset }: Props) {
             <p className="text-xs font-medium text-muted-foreground uppercase mb-1">
               Most recent changeset
             </p>
-            {recentChangeset ? (
+            {recentChangesetLoading && !recentChangeset ? (
+              <p className="text-sm text-muted-foreground italic">Loading…</p>
+            ) : recentChangeset ? (
               <>
                 <a
                   href={`https://www.openstreetmap.org/changeset/${recentChangeset.id}`}
@@ -163,8 +176,10 @@ export function RecentActivityCard({ user, recentChangeset }: Props) {
                   )}
                 </p>
               </>
+            ) : recentChangesetMessage ? (
+              <p className="text-sm text-muted-foreground">{recentChangesetMessage}</p>
             ) : (
-              <p className="text-sm text-muted-foreground">—</p>
+              <p className="text-sm text-muted-foreground">No recent OSM activity</p>
             )}
           </div>
         </div>
