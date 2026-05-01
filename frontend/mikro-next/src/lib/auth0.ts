@@ -63,6 +63,16 @@ export const auth0 = new Auth0Client({
     if (session && !orgId) {
       return NextResponse.redirect(new URL("/no-org", baseUrl));
     }
+    // Interim multi-tenant safety rail: until the per-org User row work
+    // lands (see .claude/external-org-onboarding-plan.md), Mikro's data
+    // model can't isolate orgs at the DB layer. So we politely reject
+    // any login from an Auth0 Org other than the configured Kaart org.
+    // When AUTH0_ORG_ID is unset locally, this check is a no-op so dev
+    // setups don't get locked out.
+    const allowedOrgId = process.env.AUTH0_ORG_ID;
+    if (session && allowedOrgId && orgId !== allowedOrgId) {
+      return NextResponse.redirect(new URL("/wrong-org", baseUrl));
+    }
     return NextResponse.redirect(new URL(ctx.returnTo ?? "/", baseUrl));
   },
 });
