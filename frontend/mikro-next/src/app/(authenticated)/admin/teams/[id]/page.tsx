@@ -112,11 +112,16 @@ export default function AdminTeamProfilePage() {
                 <p className="text-muted-foreground mt-1">{team.description}</p>
               )}
               <div className="flex items-center gap-3 text-sm text-muted-foreground mt-2 flex-wrap">
-                {team.lead_name && (
+                {(team.lead_names && team.lead_names.length > 0) ? (
+                  <span>
+                    {team.lead_names.length === 1 ? "Lead" : "Leads"}:{" "}
+                    <span className="font-medium text-foreground">{team.lead_names.join(", ")}</span>
+                  </span>
+                ) : team.lead_name ? (
                   <span>
                     Lead: <span className="font-medium text-foreground">{team.lead_name}</span>
                   </span>
-                )}
+                ) : null}
                 <span>
                   Members: <span className="font-medium text-foreground">{team.member_count}</span>
                 </span>

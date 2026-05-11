@@ -1230,7 +1230,9 @@ export default function AdminProjectsPage() {
                             <Badge variant="secondary">{team.member_count}</Badge>
                           </TableCell>
                           <TableCell className="text-muted-foreground">
-                            {team.lead_name || "None"}
+                            {team.lead_names && team.lead_names.length > 0
+                              ? team.lead_names.join(", ")
+                              : team.lead_name || "None"}
                           </TableCell>
                           <TableCell className="text-right">
                             <Button
@@ -1564,7 +1566,9 @@ export default function AdminProjectsPage() {
                           <Badge variant="secondary">{team.member_count}</Badge>
                         </TableCell>
                         <TableCell className="text-muted-foreground">
-                          {team.lead_name || "None"}
+                          {team.lead_names && team.lead_names.length > 0
+                            ? team.lead_names.join(", ")
+                            : team.lead_name || "None"}
                         </TableCell>
                         <TableCell className="text-center">
                           <Badge variant={team.assigned === "Assigned" ? "success" : "secondary"}>

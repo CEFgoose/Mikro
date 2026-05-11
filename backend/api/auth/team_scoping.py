@@ -4,12 +4,15 @@ Team-admin scoping policy — single source of truth.
 Which teams does a `team_admin` manage? Which users are inside those
 teams? Can this team_admin act on this team / user?
 
-V1 rule: a `team_admin` manages every team where `Team.lead_id == user.id`.
+A `team_admin` manages every team where they have a row in the
+`team_leads` association table. (Earlier in F3 V1 this was the single
+`Team.lead_id` pointer; the V2 migration added `team_leads` to support
+multiple leads per team. `Team.lead_id` is kept as a denormalized
+display field but is NOT the gating source of truth.)
 
-The lookup is intentionally hidden behind helpers so a future migration
-to multi-lead-per-team (a separate `TeamLead` association table) is a
-one-function change. Do NOT add `Team.lead_id == ...` checks anywhere
-else in the codebase — call `managed_team_ids_for()` instead.
+All gating goes through `managed_team_ids_for()`. Do NOT add
+`Team.lead_id == ...` or `TeamLead.user_id == ...` checks elsewhere —
+call this helper.
 
 These helpers fail closed: a None viewer, a missing target, or a
 cross-org access attempt all return False / [] / set().
@@ -17,7 +20,7 @@ cross-org access attempt all return False / [] / set().
 
 from typing import Iterable
 
-from ..database import Team, TeamUser, User
+from ..database import Team, TeamLead, TeamUser, User
 
 
 def managed_team_ids_for(viewer) -> list[int]:
@@ -29,11 +32,16 @@ def managed_team_ids_for(viewer) -> list[int]:
     """
     if viewer is None or getattr(viewer, "id", None) is None:
         return []
-    rows = Team.query.filter_by(
-        lead_id=viewer.id, org_id=viewer.org_id
-    ).all()
-    # Soft-deleted teams excluded — Team uses ModelWithSoftDeleteAndCRUD,
-    # whose default query already filters deleted_date IS NULL.
+    # Join through Team for cross-org safety: a viewer must only see
+    # leadership rows for teams in their own org, even if the team_leads
+    # row pointed somewhere else through a pathological data state.
+    # Soft-deleted teams are excluded by Team's default query filter.
+    rows = (
+        Team.query.join(TeamLead, TeamLead.team_id == Team.id)
+        .filter(TeamLead.user_id == viewer.id)
+        .filter(Team.org_id == viewer.org_id)
+        .all()
+    )
     return [t.id for t in rows]
 
 

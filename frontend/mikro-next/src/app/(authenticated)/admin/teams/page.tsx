@@ -21,6 +21,7 @@ import {
   TableCell,
   Skeleton,
 } from "@/components/ui";
+import { MultiSelect } from "@/components/ui/MultiSelect";
 import { useToastActions } from "@/components/ui";
 import { FilterBar } from "@/components/filters";
 import { TeamAdminEmptyState } from "@/components/admin/TeamAdminEmptyState";
@@ -102,7 +103,7 @@ export default function AdminTeamsPage() {
   // Form state
   const [formName, setFormName] = useState("");
   const [formDescription, setFormDescription] = useState("");
-  const [formLeadId, setFormLeadId] = useState("");
+  const [formLeadIds, setFormLeadIds] = useState<string[]>([]);
 
   // Re-fetch teams when server-side filters change
   useEffect(() => {
@@ -119,19 +120,16 @@ export default function AdminTeamsPage() {
   );
 
   const orgUsers = usersData?.users ?? [];
-  const leadOptions = [
-    { value: "", label: "No Lead" },
-    ...orgUsers.map((u) => ({
-      value: u.id,
-      label: `${u.name || u.email}`,
-    })),
-  ];
+  const leadOptions = orgUsers.map((u) => ({
+    value: u.id,
+    label: u.name || u.email,
+  }));
 
   // Create handlers
   const openCreateModal = () => {
     setFormName("");
     setFormDescription("");
-    setFormLeadId("");
+    setFormLeadIds([]);
     setShowCreateModal(true);
   };
 
@@ -144,7 +142,7 @@ export default function AdminTeamsPage() {
       await createTeam({
         teamName: formName.trim(),
         teamDescription: formDescription.trim() || null,
-        leadId: formLeadId || null,
+        leadIds: formLeadIds,
       });
       toast.success("Team created");
       setShowCreateModal(false);
@@ -160,7 +158,7 @@ export default function AdminTeamsPage() {
     setEditingTeam(team);
     setFormName(team.name);
     setFormDescription(team.description ?? "");
-    setFormLeadId(team.lead_id ?? "");
+    setFormLeadIds(team.lead_ids ?? (team.lead_id ? [team.lead_id] : []));
   };
 
   const handleUpdate = async () => {
@@ -174,7 +172,7 @@ export default function AdminTeamsPage() {
         teamId: editingTeam.id,
         teamName: formName.trim(),
         teamDescription: formDescription.trim() || null,
-        leadId: formLeadId || null,
+        leadIds: formLeadIds,
       });
       toast.success("Team updated");
       setEditingTeam(null);
@@ -380,7 +378,7 @@ export default function AdminTeamsPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              <Val>{formatNumber(teams.filter((t) => t.lead_id).length)}</Val>
+              <Val>{formatNumber(teams.filter((t) => (t.lead_ids?.length ?? (t.lead_id ? 1 : 0)) > 0).length)}</Val>
             </div>
           </CardContent>
         </Card>
@@ -455,9 +453,11 @@ export default function AdminTeamsPage() {
                           {team.description || "—"}
                         </TableCell>
                         <TableCell>
-                          {team.lead_name || (
-                            <span className="text-muted-foreground">None</span>
-                          )}
+                          {team.lead_names && team.lead_names.length > 0
+                            ? team.lead_names.join(", ")
+                            : team.lead_name || (
+                                <span className="text-muted-foreground">None</span>
+                              )}
                         </TableCell>
                         <TableCell className="text-center">
                           <Button
@@ -591,11 +591,12 @@ export default function AdminTeamsPage() {
               onChange={(e) => setFormDescription(e.target.value)}
             />
           </div>
-          <Select
-            label="Team Lead"
-            value={formLeadId}
-            onChange={(value) => setFormLeadId(value)}
+          <MultiSelect
+            label="Team Leads"
+            value={formLeadIds}
+            onChange={setFormLeadIds}
             options={leadOptions}
+            placeholder="Select one or more leads"
           />
         </div>
       </Modal>
@@ -634,11 +635,12 @@ export default function AdminTeamsPage() {
               onChange={(e) => setFormDescription(e.target.value)}
             />
           </div>
-          <Select
-            label="Team Lead"
-            value={formLeadId}
-            onChange={(value) => setFormLeadId(value)}
+          <MultiSelect
+            label="Team Leads"
+            value={formLeadIds}
+            onChange={setFormLeadIds}
             options={leadOptions}
+            placeholder="Select one or more leads"
           />
         </div>
       </Modal>

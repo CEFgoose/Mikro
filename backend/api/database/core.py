@@ -628,6 +628,31 @@ class TeamUser(CRUDMixin, SurrogatePK, db.Model):
     )
 
 
+class TeamLead(CRUDMixin, SurrogatePK, db.Model):
+    """Association table — users who lead (act as team_admin for) a team.
+
+    Replaces the single ``Team.lead_id`` pointer for the team-admin scoping
+    check. ``Team.lead_id`` is retained as a denormalized "primary lead"
+    pointer used only for legacy display; all gating goes through this
+    table via ``managed_team_ids_for()``.
+    """
+
+    __tablename__ = "team_leads"
+
+    team_id = db.Column(
+        db.Integer,
+        db.ForeignKey("teams.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    user_id = db.Column(db.String(255), nullable=False, index=True)
+    created_at = db.Column(db.DateTime, default=func.now(), nullable=False)
+
+    __table_args__ = (
+        db.UniqueConstraint("team_id", "user_id", name="uq_team_leads_team_user"),
+    )
+
+
 class ProjectTeam(CRUDMixin, SurrogatePK, db.Model):
     """Association between teams and projects."""
 

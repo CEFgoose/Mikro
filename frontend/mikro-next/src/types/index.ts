@@ -630,12 +630,25 @@ export interface UserPaymentSummaryResponse {
 }
 
 // Team types
+export interface TeamLeadSummary {
+  id: string;
+  name: string;
+  first_name: string;
+  last_name: string;
+}
+
 export interface Team {
   id: number;
   name: string;
   description: string | null;
+  /** Legacy "primary lead" pointer — first item in lead_ids. */
   lead_id: string | null;
+  /** Legacy "primary lead" display name — first item in lead_names. */
   lead_name: string | null;
+  /** All leads of this team (V2 multi-lead). */
+  lead_ids: string[];
+  lead_names: string[];
+  leads?: TeamLeadSummary[];
   member_count: number;
   created_at: string;
 }
@@ -663,6 +676,7 @@ export interface ProjectTeamItem {
   name: string;
   member_count: number;
   lead_name: string | null;
+  lead_names?: string[];
   assigned: string;
 }
 
@@ -743,6 +757,9 @@ export interface TeamProfileData {
     description: string | null;
     lead_id: string | null;
     lead_name: string | null;
+    lead_ids: string[];
+    lead_names: string[];
+    leads?: TeamLeadSummary[];
     member_count: number;
     created_at: string;
   };
@@ -771,6 +788,7 @@ export interface UserTeamsResponse {
     name: string;
     description: string | null;
     lead_name: string | null;
+    lead_names?: string[];
     member_count: number;
   }>;
   status: number;

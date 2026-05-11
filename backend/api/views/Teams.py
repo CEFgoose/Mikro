@@ -14,9 +14,94 @@ from ..auth import (
     managed_team_ids_for,
     team_admin_can_access_team,
 )
-from ..database import Team, TeamUser, User, ProjectTeam, ProjectUser, Project, TeamTraining, Training, TeamChecklist, Checklist, Task
+from ..database import Team, TeamUser, TeamLead, User, ProjectTeam, ProjectUser, Project, TeamTraining, Training, TeamChecklist, Checklist, Task
+from ..database.common import db
 from ..filters import resolve_filtered_user_ids
 from ..stats import get_batch_user_task_stats, get_batch_user_payment_balances
+
+
+def _build_team_leads(team_ids):
+    """Return ``{team_id: [{id, name, first_name, last_name}, ...]}``.
+
+    One row per (team, lead) pair, ordered by TeamLead.created_at so the
+    "first" lead is stable. Empty dict for empty input.
+    """
+    ids = [t for t in (team_ids or []) if t is not None]
+    if not ids:
+        return {}
+    rows = (
+        db.session.query(TeamLead.team_id, User)
+        .join(User, User.id == TeamLead.user_id)
+        .filter(TeamLead.team_id.in_(ids))
+        .order_by(TeamLead.created_at.asc(), TeamLead.user_id.asc())
+        .all()
+    )
+    out = {}
+    for team_id, u in rows:
+        name = f"{u.first_name or ''} {u.last_name or ''}".strip() or u.email
+        out.setdefault(team_id, []).append({
+            "id": u.id,
+            "name": name,
+            "first_name": u.first_name or "",
+            "last_name": u.last_name or "",
+        })
+    return out
+
+
+def _team_lead_fields(leads):
+    """Build the standard lead-related response fields from a list of leads.
+
+    Returns a dict with both the legacy singular fields (``lead_id`` /
+    ``lead_name`` / ``lead_first_name`` / ``lead_last_name``, populated
+    from the first lead) and the new array fields (``lead_ids`` /
+    ``lead_names`` / ``leads``).
+    """
+    primary = leads[0] if leads else None
+    return {
+        "lead_id": primary["id"] if primary else None,
+        "lead_name": primary["name"] if primary else None,
+        "lead_first_name": primary["first_name"] if primary else "",
+        "lead_last_name": primary["last_name"] if primary else "",
+        "lead_ids": [l["id"] for l in leads],
+        "lead_names": [l["name"] for l in leads],
+        "leads": leads,
+    }
+
+
+def _set_team_leads(team, user_ids):
+    """Replace ``team``'s leads with the given ``user_ids`` (in order).
+
+    Drops existing TeamLead rows and inserts new ones. Also syncs
+    ``team.lead_id`` to the first user_id (or ``None``) so legacy
+    consumers of the denormalized pointer stay correct.
+    """
+    user_ids = [uid for uid in (user_ids or []) if uid]
+    existing = TeamLead.query.filter_by(team_id=team.id).all()
+    for tl in existing:
+        tl.delete(soft=False)
+    for uid in user_ids:
+        TeamLead.create(team_id=team.id, user_id=uid)
+    team.update(lead_id=user_ids[0] if user_ids else None)
+
+
+def _extract_lead_ids_from_request(req_json):
+    """Read leads from a create/update request payload.
+
+    Accepts the new ``leadIds: [...]`` form OR falls back to the legacy
+    singular ``leadId``. Returns a list (possibly empty).
+    ``leadIds`` absent AND ``leadId`` absent → returns ``None`` so the
+    caller can distinguish "leads not in this payload" from "leads
+    explicitly cleared to empty".
+    """
+    if "leadIds" in req_json:
+        raw = req_json.get("leadIds") or []
+        if not isinstance(raw, list):
+            raw = [raw]
+        return [str(x) for x in raw if x]
+    if "leadId" in req_json:
+        legacy = req_json.get("leadId")
+        return [str(legacy)] if legacy else []
+    return None
 
 
 class TeamAPI(MethodView):
@@ -97,24 +182,15 @@ class TeamAPI(MethodView):
             }
             org_teams = [t for t in org_teams if t.id in matching_team_ids]
 
+        leads_map = _build_team_leads([t.id for t in org_teams])
         teams = []
         for team in org_teams:
             member_count = TeamUser.query.filter_by(team_id=team.id).count()
-
-            lead_name = None
-            if team.lead_id:
-                lead_user = User.query.get(team.lead_id)
-                if lead_user:
-                    lead_name = f"{lead_user.first_name or ''} {lead_user.last_name or ''}".strip() or lead_user.email
-
             teams.append({
                 "id": team.id,
                 "name": team.name,
                 "description": team.description,
-                "lead_id": team.lead_id,
-                "lead_name": lead_name,
-                "lead_first_name": (lead_user.first_name or "") if team.lead_id and lead_user else "",
-                "lead_last_name": (lead_user.last_name or "") if team.lead_id and lead_user else "",
+                **_team_lead_fields(leads_map.get(team.id, [])),
                 "member_count": member_count,
                 "created_at": team.created_at.isoformat() if team.created_at else None,
             })
@@ -132,22 +208,24 @@ class TeamAPI(MethodView):
             return {"message": "teamName required", "status": 400}
 
         team_description = request.json.get("teamDescription")
-        lead_id = request.json.get("leadId")
+        lead_ids_input = _extract_lead_ids_from_request(request.json) or []
 
         team = Team.create(
             name=team_name,
             description=team_description,
             org_id=g.user.org_id,
-            lead_id=lead_id,
+            lead_id=None,  # _set_team_leads will sync this
         )
+        _set_team_leads(team, lead_ids_input)
 
+        leads_map = _build_team_leads([team.id])
         return {
             "message": "Team created",
             "team": {
                 "id": team.id,
                 "name": team.name,
                 "description": team.description,
-                "lead_id": team.lead_id,
+                **_team_lead_fields(leads_map.get(team.id, [])),
             },
             "status": 200,
         }
@@ -178,14 +256,17 @@ class TeamAPI(MethodView):
             updates["name"] = request.json["teamName"]
         if "teamDescription" in request.json:
             updates["description"] = request.json["teamDescription"]
-        if "leadId" in request.json:
-            # Only Org Admin / super_admin can change the team lead.
+
+        lead_ids_input = _extract_lead_ids_from_request(request.json)
+        if lead_ids_input is not None:
+            # Only Org Admin / super_admin can change team leads.
             if not is_org_admin_or_above(g.user):
-                return {"message": "Only Org Admin can change team lead", "status": 403}
-            updates["lead_id"] = request.json["leadId"]
+                return {"message": "Only Org Admin can change team leads", "status": 403}
 
         if updates:
             team.update(**updates)
+        if lead_ids_input is not None:
+            _set_team_leads(team, lead_ids_input)
 
         return {"message": "Team updated", "status": 200}
 
@@ -352,22 +433,17 @@ class TeamAPI(MethodView):
             for pt in ProjectTeam.query.filter_by(project_id=project_id).all()
         }
 
+        leads_map = _build_team_leads([t.id for t in org_teams])
         teams = []
         for team in org_teams:
             member_count = TeamUser.query.filter_by(team_id=team.id).count()
-            lead_name = None
-            if team.lead_id:
-                lead_user = User.query.get(team.lead_id)
-                if lead_user:
-                    lead_name = (
-                        f"{lead_user.first_name or ''} {lead_user.last_name or ''}".strip()
-                        or lead_user.email
-                    )
+            leads = leads_map.get(team.id, [])
             teams.append({
                 "id": team.id,
                 "name": team.name,
                 "member_count": member_count,
-                "lead_name": lead_name,
+                "lead_name": leads[0]["name"] if leads else None,
+                "lead_names": [l["name"] for l in leads],
                 "assigned": "Assigned" if team.id in assigned_team_ids else "Not Assigned",
             })
 
@@ -662,12 +738,7 @@ class TeamAPI(MethodView):
         if not is_org_admin_or_above(g.user) and not team_admin_can_access_team(g.user, team_id):
             return {"message": "Not in your managed teams", "status": 403}
 
-        # Get lead name
-        lead_name = None
-        if team.lead_id:
-            lead_user = User.query.get(team.lead_id)
-            if lead_user:
-                lead_name = f"{lead_user.first_name or ''} {lead_user.last_name or ''}".strip() or lead_user.email
+        team_leads = _build_team_leads([team.id]).get(team.id, [])
 
         # Get all team members
         team_user_rows = TeamUser.query.filter_by(team_id=team_id).all()
@@ -791,8 +862,7 @@ class TeamAPI(MethodView):
                 "id": team.id,
                 "name": team.name,
                 "description": team.description,
-                "lead_id": team.lead_id,
-                "lead_name": lead_name,
+                **_team_lead_fields(team_leads),
                 "member_count": len(member_ids),
                 "created_at": team.created_at.isoformat() if team.created_at else None,
             },
@@ -811,22 +881,23 @@ class TeamAPI(MethodView):
             return {"message": "Missing user info", "status": 304}
 
         team_user_rows = TeamUser.query.filter_by(user_id=g.user.id).all()
-        teams = []
+        visible_teams = []
         for tu in team_user_rows:
             team = Team.query.get(tu.team_id)
-            if not team or team.org_id != g.user.org_id:
-                continue
+            if team and team.org_id == g.user.org_id:
+                visible_teams.append(team)
+
+        leads_map = _build_team_leads([t.id for t in visible_teams])
+        teams = []
+        for team in visible_teams:
             member_count = TeamUser.query.filter_by(team_id=team.id).count()
-            lead_name = None
-            if team.lead_id:
-                lead_user = User.query.get(team.lead_id)
-                if lead_user:
-                    lead_name = f"{lead_user.first_name or ''} {lead_user.last_name or ''}".strip() or lead_user.email
+            leads = leads_map.get(team.id, [])
             teams.append({
                 "id": team.id,
                 "name": team.name,
                 "description": team.description,
-                "lead_name": lead_name,
+                "lead_name": leads[0]["name"] if leads else None,
+                "lead_names": [l["name"] for l in leads],
                 "member_count": member_count,
             })
 
@@ -839,7 +910,7 @@ class TeamAPI(MethodView):
         Used by the frontend to power team_admin scoped UIs (selector
         dropdowns, empty-state detection, dashboard scoping).
 
-        - team_admin: returns teams where they are `Team.lead_id`.
+        - team_admin: returns teams where they hold a `team_leads` row.
         - Org Admin / super_admin: returns ALL teams in their org
           (so org-wide admin tools that reuse this endpoint just work).
         Empty list is a valid response — the zero-team team_admin
@@ -856,23 +927,15 @@ class TeamAPI(MethodView):
                 return {"teams": [], "status": 200}
             org_teams = Team.query.filter(Team.id.in_(managed_ids)).all()
 
+        leads_map = _build_team_leads([t.id for t in org_teams])
         teams = []
         for team in org_teams:
             member_count = TeamUser.query.filter_by(team_id=team.id).count()
-            lead_name = None
-            if team.lead_id:
-                lead_user = User.query.get(team.lead_id)
-                if lead_user:
-                    lead_name = (
-                        f"{lead_user.first_name or ''} {lead_user.last_name or ''}".strip()
-                        or lead_user.email
-                    )
             teams.append({
                 "id": team.id,
                 "name": team.name,
                 "description": team.description,
-                "lead_id": team.lead_id,
-                "lead_name": lead_name,
+                **_team_lead_fields(leads_map.get(team.id, [])),
                 "member_count": member_count,
             })
 
@@ -899,12 +962,7 @@ class TeamAPI(MethodView):
         if not membership:
             return {"message": "You are not a member of this team", "status": 403}
 
-        # Get lead name
-        lead_name = None
-        if team.lead_id:
-            lead_user = User.query.get(team.lead_id)
-            if lead_user:
-                lead_name = f"{lead_user.first_name or ''} {lead_user.last_name or ''}".strip() or lead_user.email
+        team_leads = _build_team_leads([team.id]).get(team.id, [])
 
         # Get all team members
         team_user_rows = TeamUser.query.filter_by(team_id=team_id).all()
@@ -999,8 +1057,7 @@ class TeamAPI(MethodView):
                 "id": team.id,
                 "name": team.name,
                 "description": team.description,
-                "lead_id": team.lead_id,
-                "lead_name": lead_name,
+                **_team_lead_fields(team_leads),
                 "member_count": len(member_ids),
                 "created_at": team.created_at.isoformat() if team.created_at else None,
             },

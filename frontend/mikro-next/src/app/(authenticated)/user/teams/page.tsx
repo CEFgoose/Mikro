@@ -80,7 +80,9 @@ export default function UserTeamsPage() {
                       <Val>{team.description}</Val>
                     </td>
                     <td className="px-6 py-4 text-foreground">
-                      {team.lead_name || <span className="text-muted-foreground">None</span>}
+                      {team.lead_names && team.lead_names.length > 0
+                        ? team.lead_names.join(", ")
+                        : team.lead_name || <span className="text-muted-foreground">None</span>}
                     </td>
                     <td className="px-6 py-4 text-center text-foreground"><Val>{formatNumber(team.member_count)}</Val></td>
                   </tr>
