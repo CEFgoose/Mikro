@@ -1,29 +1,43 @@
 """Add team_leads association table for multi-lead-per-team support.
 
-Revision ID: b0c1d2e3f4a5
+Revision ID: 9768b4bdbd62
 Revises: ac9d0e1f2b3c
-Create Date: 2026-05-11
+Create Date: 2026-05-08
 
-Adds a `team_leads (team_id, user_id)` association table so a single team
-can have multiple leads. Backfills from the existing `teams.lead_id`
-pointer. The `lead_id` column on `teams` stays in place as a denormalized
-"primary lead" for display/backward-compat — `managed_team_ids_for()`
-queries this new table.
+This file's revision matches the value already in prod's
+``alembic_version`` (so ``flask db upgrade`` sees nothing to do on
+prod). An earlier session of this work landed on prod but the
+companion migration file never made it into the repo — recreating it
+here under the same revision restores a valid chain without requiring
+a manual stamp.
 
-Additive only — no destructive change to the `teams` table.
+upgrade() is idempotent: if ``team_leads`` already exists (which it
+does on prod), it skips the CREATE and the backfill. Fresh dev DBs
+get the table created and backfilled from ``teams.lead_id`` as
+expected.
+
+Additive only — no destructive change to the ``teams`` table.
 """
 from alembic import op
 import sqlalchemy as sa
+from sqlalchemy.engine.reflection import Inspector
 
 
 # revision identifiers, used by Alembic.
-revision = "b0c1d2e3f4a5"
+revision = "9768b4bdbd62"
 down_revision = "ac9d0e1f2b3c"
 branch_labels = None
 depends_on = None
 
 
 def upgrade():
+    bind = op.get_bind()
+    inspector = Inspector.from_engine(bind)
+    if "team_leads" in inspector.get_table_names():
+        # Prod already has this table from the earlier (uncommitted) run
+        # of this migration. Nothing to do.
+        return
+
     op.create_table(
         "team_leads",
         sa.Column("id", sa.Integer(), autoincrement=True, primary_key=True),
@@ -47,9 +61,6 @@ def upgrade():
     op.create_index("ix_team_leads_team_id", "team_leads", ["team_id"])
     op.create_index("ix_team_leads_user_id", "team_leads", ["user_id"])
 
-    # Backfill: every team that has a lead_id today gets one row in the
-    # new association table. Idempotent given the unique constraint —
-    # safe to re-run on partially-populated databases.
     op.execute(
         """
         INSERT INTO team_leads (team_id, user_id, created_at)
@@ -61,6 +72,10 @@ def upgrade():
 
 
 def downgrade():
+    bind = op.get_bind()
+    inspector = Inspector.from_engine(bind)
+    if "team_leads" not in inspector.get_table_names():
+        return
     op.drop_index("ix_team_leads_user_id", table_name="team_leads")
     op.drop_index("ix_team_leads_team_id", table_name="team_leads")
     op.drop_table("team_leads")
