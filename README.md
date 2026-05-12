@@ -26,7 +26,7 @@ Once Tabula Rasa is up and running, the engineer in question should immediately 
 
 Typically we use Virtualenv to set up our virtual environment for development.
 
-cd into the base directory and run `virtaulenv venv` (this assumes you want to name your virtual environment `venv`) to create a new virtual environment
+cd into the base directory and run `virtualenv venv` (this assumes you want to name your virtual environment `venv`) to create a new virtual environment
 
 Run `source venv/bin/activate` to activate the virtual environment. substitute `venv` for the name of your virtual environment if you named it something other than `venv`
 
@@ -51,30 +51,6 @@ Make sure virtual environment activated.
 run the following command to install all of the python library requirements:
 `pip3 install -r requirements.txt`
 
-### Dev SSO Startup:
-
-Tabula Rasa requires use of the Kaart Single Sign On service (SSO) for the login process, and can be set up to work with either a dev clone of the SSO running locally, or with the live SSO itself at `my.kaart.com`
-
-However, Setting up a dev version of the Kaart SSO can be challenging, and if the engineer in question does not need to modify the SSO, there is no real need to make them take the time to clone & set up a copy of the SSO, when they can use a test user account through the Live SSO instead
-
-With that in mind, Tabula Rasa is set up to work with the live SSO API by default `my.kaart.com` using an engineering test account.
-
-See the section `Setting up a local SSO instance` for detailed instructions on how to setup a dev copy of the SSO and change the environment variables in Tabula Rasa accordingly.
-
-To start a local SSO instance:
-
-CD into the `server` folder
-
-Activate the virtual environment:
-`source venv/bin/activate`
-
-Run command:
-`flask run -p 5001 --reload`
-
-- By convention we run the SSO in a dev environment on port 5001 so as not to conflict with other apps running locally, i.e Viewer(5002),Tabula Rasa(5003), Mikro(5004) and Gem(5000)
-
-- The reload flag will restart flask if any changes are made to the API code base, recommended if work on the SSO is needed
-
 ### Dev Backend Startup:
 
 Make sure your virtual environment is activated
@@ -89,58 +65,5 @@ run command `flask run -p 5004 --reload`
 
 - See the `Changing Project Variables` section on how to change all of the project environment & port settings when you are ready to start modifying Tabula Rasa for you new project.
 
-### DevFrontend Startup:
 
-Make sure your node version and all of the required node packages are up to date.
 
-run command:
-`open -n -a /Applications/Google\ Chrome.app/Contents/MacOS/Google\ Chrome --args --user-data-dir="/tmp/chrome_dev_test" --disable-web-security`
--This opens a chrome browser in CORS unprotected mode for development (This allows us to use the `dev.` header on our local url which prevents all of the cross-origin problems caused by working in a local dev environment)
-
-cd into the `frontend/mikro` folder
-
-run command:
-`DANGEROUSLY_DISABLE_HOST_CHECK=true yarn start`
-
--The `DANGEROUSLY_DISABLE_HOST_CHECK` portion of the command allows us to use the `dev.` url flag mentioned previously
-
--This will compile & start the front end client in the chrome browser on port 3000, if that port is taken node will suggest another.
-(The frontend port changing doesn't require any changes to the codebase so we don't have a convention for what apps client run where, just let node suggest an open port)
-
---IMPORTANT
--In the URL bar, add the `dev.` header to the beginning of the url, i.e. `dev.localhost:3000`
--As mentioned before, this is to prevent cross-origin issues related to the dev environment
-
-### Commiting Changes to Production
-
-This documentation assumes that you have successfully pushed your changes to Mikro to GitLab, the build has failed on the Kubernetes portion, and you have an SSH key to the mikro.kaart.com server.
-
-Get the hash for the version you are trying to push into production from the Docker step of the build process. It will be in the format master-###### you’ll need this later.
-
-SSH into the server: ssh mikro.kaart.com
-
-cd dev->geocache->deployment->kubernetes->client
-
-Tip:
-To see the dev folder, you’ll need to be in the home directory of the server, which sometimes requires doing cd.. a couple of times
-
-vim deployment.yaml
-
-Paste in the new hash where it has the same format as before (master-######)
-
-Repeat this step for kubernetes->server
-
-Tip:
-Shift-A for end of current line
-Paste in new hash
-
-esc -> :wq to write and quit
-
-Go back to the kubernetes folder
-
-microk8s.kubectl apply -f client -f server -n production
-
-microk8s.kubectl get pods -o wide -A -w
-
-Tip:
-This will show you the services terminating and being running again, but doesn’t necessarily mean you did everything right. The best way to know is to wait and see if your changes appear on the live version and if GitLab points to your version as the master.
