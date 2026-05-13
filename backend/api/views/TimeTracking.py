@@ -1718,9 +1718,12 @@ class TimeTrackingAPI(MethodView):
 
         return jsonify({"status": 200, "year": year, "contractors": result})
 
-    @requires_admin
+    @requires_team_admin_or_above
     def admin_set_hourly_rate(self):
-        """Set or update an hourly rate for a user."""
+        """Set or update an hourly rate for a user.
+
+        team_admin can only set rates for users on their managed teams.
+        """
         data = request.get_json(silent=True) or {}
         user_id = data.get("userId")
         hourly_rate = data.get("hourlyRate")
@@ -1731,6 +1734,13 @@ class TimeTrackingAPI(MethodView):
         user = User.query.get(user_id)
         if not user or user.org_id != g.user.org_id:
             return jsonify({"message": "User not found", "status": 404}), 404
+
+        if not is_org_admin_or_above(g.user):
+            if not team_admin_can_access_user(g.user, user_id):
+                return jsonify({
+                    "message": "User not on a team you manage",
+                    "status": 403,
+                }), 403
 
         # Allow setting to None to remove hourly contractor status
         if hourly_rate is not None:

@@ -683,8 +683,14 @@ class UserAPI(MethodView):
         # Return the final response
         return return_obj
 
-    @requires_admin
+    @requires_team_admin_or_above
     def fetch_project_users(self):
+        """List org users with assignment state for a project.
+
+        Open to all admin tiers — team_admin needs to see the org user
+        list to pick who to assign to a project. The actual assignment
+        endpoint enforces the managed-team scope rule separately.
+        """
         # Initialize an empty dictionary for returning the response
         return_obj = {}
         # Check if the user is not found in the context
@@ -1208,8 +1214,16 @@ class UserAPI(MethodView):
         else:
             return {"message": "User entry not found", "status": 400}
 
-    @requires_admin
+    @requires_team_admin_or_above
     def do_modify_users(self):
+        """Edit a user's profile fields.
+
+        Open to all admin tiers. Scope rules:
+        - team_admin can only edit users on teams they manage
+        - team_admin CANNOT change a user's role (Org Admin power)
+        - only super_admin can grant the super_admin role (existing
+          rule preserved)
+        """
         # Initialize the return object
         return_obj = {}
         # Get the user ID from the request JSON
@@ -1223,12 +1237,32 @@ class UserAPI(MethodView):
         user = User.query.filter_by(id=user_id).first()
         if not user:
             return {"message": "User Entry not found "}, 400
+        # Cross-org safety
+        if user.org_id != g.user.org_id:
+            return {"message": "Cross-org operation rejected", "status": 403}
+
+        # team_admin scope: can only modify users on their managed teams.
+        if not is_org_admin_or_above(g.user):
+            if user.id != g.user.id and not team_admin_can_access_user(
+                g.user, user.id
+            ):
+                return {
+                    "message": "User not on a team you manage",
+                    "status": 403,
+                }
 
         updates = {}
 
         # Handle role update
         new_role = request.json.get("role")
         if new_role:
+            # team_admin cannot change roles. Only Org Admin / super_admin
+            # may; super_admin specifically required for granting super_admin.
+            if not is_org_admin_or_above(g.user):
+                return {
+                    "message": "Only Org Admin or above can change a user's role",
+                    "status": 403,
+                }
             if new_role == "super_admin" and g.user.role != "super_admin":
                 return {
                     "message": "Only a super_admin can grant the super_admin role",
@@ -1303,9 +1337,14 @@ class UserAPI(MethodView):
         return_obj["status"] = 200
         return return_obj
 
-    # # ADMIN ONLY ROUTE - ASSIGN CURRENT SELECTED USER TO CURRENT SELECTED TEAM # noqa: E501
-    @requires_admin
+    # Toggle a user's assignment to a project (assign if not already, unassign if already).
+    @requires_team_admin_or_above
     def assign_user(self):
+        """Toggle a user's project assignment.
+
+        team_admin can only toggle assignments for users on their
+        managed teams.
+        """
         # Initialize response dictionary
         response = {}
         # Extract project_id from request body
@@ -1322,6 +1361,12 @@ class UserAPI(MethodView):
             response["message"] = "User_id required"
             response["status"] = 400
             return response
+        # team_admin scope: only managed-team members are assignable here.
+        if not is_org_admin_or_above(g.user):
+            if not team_admin_can_access_user(g.user, user_id):
+                response["message"] = "User not on a team you manage"
+                response["status"] = 403
+                return response
         # Check if relation between user and project already exists
         user_relation = ProjectUser.query.filter_by(
             project_id=project_id, user_id=user_id

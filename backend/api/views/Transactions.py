@@ -542,9 +542,13 @@ class TransactionAPI(MethodView):
             "status": 200,
         }
 
-    @requires_admin
+    @requires_team_admin_or_above
     def archive_transaction(self):
-        """Archive a payment record (soft delete) so it can be retrieved later."""
+        """Archive a payment record (soft delete) so it can be retrieved later.
+
+        team_admin can only archive transactions for users on their
+        managed teams.
+        """
         if not g.user:
             return {"message": "User not found", "status": 304}
 
@@ -564,6 +568,18 @@ class TransactionAPI(MethodView):
         if not target:
             return {"message": f"{transaction_type} {transaction_id} not found", "status": 400}
 
+        # Cross-org safety
+        if getattr(target, "org_id", None) and target.org_id != g.user.org_id:
+            return {"message": "Cross-org operation rejected", "status": 403}
+
+        # team_admin scope: target must belong to a managed-team member.
+        if not is_org_admin_or_above(g.user):
+            if not team_admin_can_access_user(g.user, target.user_id):
+                return {
+                    "message": "Transaction belongs to a user outside your managed teams",
+                    "status": 403,
+                }
+
         # Soft delete (sets deleted_date)
         target.delete(soft=True)
 
@@ -572,9 +588,13 @@ class TransactionAPI(MethodView):
             "status": 200,
         }
 
-    @requires_admin
+    @requires_team_admin_or_above
     def fetch_archived_transactions(self):
-        """Fetch archived (soft-deleted) transactions."""
+        """Fetch archived (soft-deleted) transactions.
+
+        team_admin sees only transactions for users on their managed
+        teams.
+        """
         if not g.user:
             return {"message": "User not found", "status": 304}
 
@@ -587,6 +607,17 @@ class TransactionAPI(MethodView):
             pay for pay in Payments.query.with_deleted().filter_by(org_id=g.user.org_id).all()
             if pay.deleted_date is not None
         ]
+
+        # team_admin scope: narrow to managed-team-member user_ids.
+        if not is_org_admin_or_above(g.user):
+            from ..auth import team_member_ids_for
+            managed_user_ids = team_member_ids_for(managed_team_ids_for(g.user))
+            archived_requests = [
+                r for r in archived_requests if r.user_id in managed_user_ids
+            ]
+            archived_payments = [
+                p for p in archived_payments if p.user_id in managed_user_ids
+            ]
 
         requests_list = [
             {
