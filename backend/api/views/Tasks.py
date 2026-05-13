@@ -771,9 +771,15 @@ class TaskAPI(MethodView):
             "status": 200,
         }
 
-    @requires_admin
+    @requires_team_admin_or_above
     def sync_project(self):
-        """Queue a background sync for a single project."""
+        """Queue a background sync for a single project.
+
+        Open to all admin tiers — team_admin owners need to be able to
+        kick a per-project sync (the "Sync" row action on /admin/projects)
+        without bouncing off an Org Admin. Cross-org safety stays via the
+        ``org_id=g.user.org_id`` filter on the project lookup below.
+        """
         if not g.user:
             return {"message": "User not found", "status": 304}
 
