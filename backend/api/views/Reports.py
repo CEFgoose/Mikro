@@ -1099,7 +1099,7 @@ class ReportsAPI(MethodView):
             },
         }
 
-    @requires_admin
+    @requires_team_admin_or_above
     def fetch_element_analysis(self):
         """Fetch cached element analysis data for the org."""
         if not g.user:
@@ -1166,7 +1166,7 @@ class ReportsAPI(MethodView):
             "lastUpdated": last_updated.isoformat() + "Z" if last_updated else None,
         }
 
-    @requires_admin
+    @requires_team_admin_or_above
     def queue_element_analysis(self):
         """Queue a background element analysis job."""
         if not g.user:
@@ -1200,7 +1200,7 @@ class ReportsAPI(MethodView):
             "job_id": new_job.id,
         }
 
-    @requires_admin
+    @requires_team_admin_or_above
     def check_element_analysis_status(self):
         """Check status of the latest element analysis job."""
         if not g.user:

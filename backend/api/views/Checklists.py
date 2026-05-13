@@ -11,12 +11,14 @@ from flask.views import MethodView
 from flask import g, request
 
 from ..utils import requires_admin, requires_team_admin_or_above
+from ..auth import managed_team_ids_for, is_org_admin_or_above
 from ..filters import get_user_country_ids, is_visible_by_location
 from ..database import (
     Checklist,
     ChecklistCountry,
     ChecklistItem,
     ChecklistComment,
+    TeamChecklist,
     UserChecklist,
     UserChecklistItem,
     User,
@@ -73,8 +75,15 @@ class ChecklistAPI(MethodView):
             "message": "Only /project/{fetch_users,fetch_user_projects} is permitted with GET",  # noqa: E501
         }, 405
 
-    @requires_admin
+    @requires_team_admin_or_above
     def create_checklist(self):
+        """Create a checklist.
+
+        Open to all admin tiers. team_admin callers MUST supply
+        ``team_ids`` (a list of managed team IDs); the new checklist
+        is auto-assigned to those teams. Org Admin / super_admin may
+        supply ``team_ids`` for the same auto-assign or omit it.
+        """
         response = {}
         # Check if user is authenticated
         if not g:
@@ -100,6 +109,29 @@ class ChecklistAPI(MethodView):
         for arg in required_args:
             if not request.json.get(arg):
                 return {"message": f"{arg} required", "status": 400}
+
+        # team_admin scope: require team_ids; every entry must be in
+        # the caller's managed set. Org admins and above bypass.
+        team_ids = request.json.get("team_ids") or []
+        if not is_org_admin_or_above(g.user):
+            managed = set(managed_team_ids_for(g.user))
+            if not managed:
+                return {
+                    "message": "You manage no teams; cannot create a checklist",
+                    "status": 403,
+                }
+            if not team_ids:
+                return {
+                    "message": "team_ids required (must be in your managed teams)",
+                    "status": 400,
+                }
+            invalid = [t for t in team_ids if t not in managed]
+            if invalid:
+                return {
+                    "message": f"Teams not in your managed set: {invalid}",
+                    "status": 403,
+                }
+
         name = "%s (%s)" % (
             g.user.first_name.capitalize(),
             g.user.osm_username,
@@ -123,6 +155,11 @@ class ChecklistAPI(MethodView):
                 item_action=item["action"],
                 item_link=item["link"],
             )
+
+        # Auto-assign to any team_ids supplied (required for team_admin,
+        # optional for org_admin / super_admin)
+        for tid in team_ids:
+            TeamChecklist.create(checklist_id=new_checklist.id, team_id=tid)
 
         # If a user was specified, assign them to this checklist
         if assign_user_id:
@@ -163,8 +200,13 @@ class ChecklistAPI(MethodView):
         response["status"] = 200
         return response
 
-    @requires_admin
+    @requires_team_admin_or_above
     def update_list_items(self):
+        """Edit the list items inside a checklist.
+
+        team_admin can only edit checklists currently assigned to at
+        least one of their managed teams.
+        """
         response = {}
         target_user_checklists_ids = []
         # Check if user is authenticated
@@ -177,6 +219,22 @@ class ChecklistAPI(MethodView):
         list_items = request.json.get("list_items")
         delete_list_items = request.json.get("delete_list_items")
         target_checklist = Checklist.query.filter_by(id=int(checklist_id)).first()
+        if not target_checklist:
+            response["message"] = "Checklist %s not found" % (checklist_id)
+            response["status"] = 400
+            return response
+        if target_checklist.org_id != g.user.org_id:
+            return {"message": "Cross-org operation rejected", "status": 403}
+        if not is_org_admin_or_above(g.user):
+            managed = set(managed_team_ids_for(g.user))
+            if not managed or not TeamChecklist.query.filter(
+                TeamChecklist.checklist_id == target_checklist.id,
+                TeamChecklist.team_id.in_(managed),
+            ).first():
+                return {
+                    "message": "Checklist not assigned to one of your managed teams",
+                    "status": 403,
+                }
         target_user_checklists = [
             checklist
             for checklist in UserChecklist.query.filter_by(
@@ -184,10 +242,6 @@ class ChecklistAPI(MethodView):
             ).all()
             if checklist.checklist_id == checklist_id
         ]
-        if not target_checklist:
-            response["message"] = "Checklist %s not found" % (checklist_id)
-            response["status"] = 400
-            return response
         if delete_list_items is not None:
             for delete_item in delete_list_items:
                 target_delete_item = ChecklistItem.query.filter_by(
@@ -268,8 +322,13 @@ class ChecklistAPI(MethodView):
         response["status"] = 200
         return response
 
-    @requires_admin
+    @requires_team_admin_or_above
     def update_checklist(self):
+        """Update checklist metadata.
+
+        team_admin can only update checklists currently assigned to at
+        least one of their managed teams.
+        """
         response = {}
         # Check if user is authenticated
         if not g:
@@ -291,14 +350,26 @@ class ChecklistAPI(MethodView):
         else:
             active_status = True
         target_checklist = Checklist.query.filter_by(id=int(checklist_id)).first()
-        target_user_checklists = UserChecklist.query.filter_by(
-            checklist_id=target_checklist.id
-        ).all()
         if not target_checklist:
             response["updated"] = False
             response["message"] = "Checklist %s not found" % (checklist_id)
             response["status"] = 400
             return response
+        if target_checklist.org_id != g.user.org_id:
+            return {"message": "Cross-org operation rejected", "status": 403}
+        if not is_org_admin_or_above(g.user):
+            managed = set(managed_team_ids_for(g.user))
+            if not managed or not TeamChecklist.query.filter(
+                TeamChecklist.checklist_id == target_checklist.id,
+                TeamChecklist.team_id.in_(managed),
+            ).first():
+                return {
+                    "message": "Checklist not assigned to one of your managed teams",
+                    "status": 403,
+                }
+        target_user_checklists = UserChecklist.query.filter_by(
+            checklist_id=target_checklist.id
+        ).all()
         if checklist_name == "" or checklist_name is None:
             checklist_name = target_checklist.name
         if checklist_desc == "" or checklist_desc is None:

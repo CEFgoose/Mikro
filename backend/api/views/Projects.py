@@ -18,6 +18,7 @@ from ..utils import requires_admin, requires_team_admin_or_above
 from ..auth import (
     is_org_admin_or_above,
     managed_team_ids_for,
+    team_admin_can_access_user,
 )
 from ..filters import resolve_filtered_user_ids, get_user_country_ids, is_visible_by_location
 from ..stats import count_tasks_split_aware, get_project_stats, get_project_stats_from_tasks, get_batch_project_stats, get_user_task_stats, get_user_payment_balances, get_batch_project_stats_fast
@@ -504,7 +505,7 @@ class ProjectAPI(MethodView):
             response["status"] = 200
             return response
 
-    @requires_admin
+    @requires_team_admin_or_above
     def calculate_budget(self):
         """Calculate projected budget for a TM4 or MapRoulette project."""
         if not hasattr(g, "user") or not g.user:
@@ -1785,7 +1786,7 @@ class ProjectAPI(MethodView):
             "status": 200,
         }
 
-    @requires_admin
+    @requires_team_admin_or_above
     def assign_user_project(self):
         # Check if user is authenticated
         if not g:
@@ -1796,6 +1797,11 @@ class ProjectAPI(MethodView):
             return {"message": "user_id required", "status": 400}
         if not project_id:
             return {"message": "project_id required", "status": 400}
+        # team_admin can only assign their own managed-team members to
+        # projects. Org Admin / super_admin bypass this check.
+        if not is_org_admin_or_above(g.user):
+            if not team_admin_can_access_user(g.user, user_id):
+                return {"message": "User not on a team you manage", "status": 403}
         target_project = Project.query.filter_by(id=project_id).first()
         if target_project.total_editors == target_project.max_editors:
             return {"message": "Editor limit reached", "status": 400}
@@ -1812,7 +1818,7 @@ class ProjectAPI(MethodView):
             "status": 200,
         }
 
-    @requires_admin
+    @requires_team_admin_or_above
     def unassign_user_project(self):
         # Check if user is authenticated
         if not g:
@@ -1823,6 +1829,11 @@ class ProjectAPI(MethodView):
             return {"message": "user_id required", "status": 400}
         if not project_id:
             return {"message": "project_id required", "status": 400}
+        # team_admin can only unassign their own managed-team members
+        # from projects. Org Admin / super_admin bypass this check.
+        if not is_org_admin_or_above(g.user):
+            if not team_admin_can_access_user(g.user, user_id):
+                return {"message": "User not on a team you manage", "status": 403}
         target_relation = ProjectUser.query.filter_by(
             project_id=project_id, user_id=user_id
         ).first()
@@ -2213,7 +2224,7 @@ class ProjectAPI(MethodView):
             "status": 200,
         }
 
-    @requires_admin
+    @requires_team_admin_or_above
     def fetch_project_trainings(self):
         """Fetch trainings assigned to a project and all available trainings."""
         if not g.user:
@@ -2254,7 +2265,7 @@ class ProjectAPI(MethodView):
             "status": 200,
         }
 
-    @requires_admin
+    @requires_team_admin_or_above
     def assign_project_training(self):
         """Assign a training to a project."""
         if not g.user:
@@ -2293,7 +2304,7 @@ class ProjectAPI(MethodView):
 
         return {"message": "Training assigned", "status": 200}
 
-    @requires_admin
+    @requires_team_admin_or_above
     def unassign_project_training(self):
         """Remove a training from a project."""
         if not g.user:

@@ -9,7 +9,7 @@ from flask.views import MethodView
 from flask import g, request
 
 from ..utils import requires_admin, requires_team_admin_or_above
-from ..auth import managed_team_ids_for
+from ..auth import managed_team_ids_for, is_org_admin_or_above
 from ..filters import get_user_country_ids, is_visible_by_location
 from ..database import (
     Training,
@@ -75,8 +75,16 @@ class TrainingAPI(MethodView):
             "message": "Only /project/{fetch_users,fetch_user_projects} is permitted with GET",  # noqa: E501
         }, 405
 
-    @requires_admin
+    @requires_team_admin_or_above
     def create_training(self):
+        """Create a training module.
+
+        Open to all admin tiers. A team_admin caller MUST supply
+        ``team_ids`` — a list of teams from their managed set to
+        auto-assign the new training to. Org Admin / super_admin may
+        also supply ``team_ids`` (optional) for the same auto-assign;
+        if they don't, the training is unassigned at creation.
+        """
         required_args = [
             "title",
             "questions",
@@ -94,6 +102,29 @@ class TrainingAPI(MethodView):
                 "status": 400,
             }
             return response, 400
+
+        # Team-admin scope: require team_ids; every entry must be in
+        # the caller's managed set. Org admins and above bypass.
+        team_ids = request.json.get("team_ids") or []
+        if not is_org_admin_or_above(g.user):
+            managed = set(managed_team_ids_for(g.user))
+            if not managed:
+                return {
+                    "message": "You manage no teams; cannot create a training",
+                    "status": 403,
+                }
+            if not team_ids:
+                return {
+                    "message": "team_ids required (must be in your managed teams)",
+                    "status": 400,
+                }
+            invalid = [t for t in team_ids if t not in managed]
+            if invalid:
+                return {
+                    "message": f"Teams not in your managed set: {invalid}",
+                    "status": 403,
+                }
+
         questions = request.json["questions"]
         try:
             # Build created_by from current user
@@ -111,7 +142,15 @@ class TrainingAPI(MethodView):
                 created_by=creator_name,
             )
             _create_training_questions(new_training.id, questions)
-            response = {"message": "New Training Created", "status": 200}
+            # Auto-assign to any team_ids supplied (required for team_admin,
+            # optional for org_admin / super_admin)
+            for tid in team_ids:
+                TeamTraining.create(training_id=new_training.id, team_id=tid)
+            response = {
+                "message": "New Training Created",
+                "training_id": new_training.id,
+                "status": 200,
+            }
             return response, 200
         except Exception as e:
             response = {
@@ -196,9 +235,14 @@ class TrainingAPI(MethodView):
             "status": 200,
         }
 
-    @requires_admin
+    @requires_team_admin_or_above
     def update_training(self):
-        """Update training metadata (title, url, points, difficulty)."""
+        """Update training metadata (title, url, points, difficulty).
+
+        team_admin can update only trainings currently assigned to at
+        least one of their managed teams. Org Admin / super_admin
+        bypass that check.
+        """
         if not g:
             return {"message": "User not found", "status": 304}
 
@@ -212,6 +256,17 @@ class TrainingAPI(MethodView):
         if not target_training:
             return {"message": f"Training {training_id} not found", "status": 404}
 
+        if not is_org_admin_or_above(g.user):
+            managed = set(managed_team_ids_for(g.user))
+            if not managed or not TeamTraining.query.filter(
+                TeamTraining.training_id == training_id,
+                TeamTraining.team_id.in_(managed),
+            ).first():
+                return {
+                    "message": "Training not assigned to one of your managed teams",
+                    "status": 403,
+                }
+
         # Update only the fields that are provided
         if request.json.get("title"):
             target_training.update(title=request.json.get("title"))
@@ -224,8 +279,13 @@ class TrainingAPI(MethodView):
 
         return {"message": "Training updated", "status": 200}
 
-    @requires_admin
+    @requires_team_admin_or_above
     def modify_training(self):
+        """Full update of a training (metadata + questions).
+
+        team_admin can modify only trainings currently assigned to at
+        least one of their managed teams.
+        """
         # Check if user is authenticated
         if not g:
             return {"message": "User not found", "status": 304}
@@ -255,6 +315,19 @@ class TrainingAPI(MethodView):
                 "message": f"Training {training_id} not found",
                 "status": 400,
             }
+        if target_training.org_id != g.user.org_id:
+            return {"message": "Cross-org operation rejected", "status": 403}
+
+        if not is_org_admin_or_above(g.user):
+            managed = set(managed_team_ids_for(g.user))
+            if not managed or not TeamTraining.query.filter(
+                TeamTraining.training_id == training_id,
+                TeamTraining.team_id.in_(managed),
+            ).first():
+                return {
+                    "message": "Training not assigned to one of your managed teams",
+                    "status": 403,
+                }
         target_training.update(
             title=request.json.get("title"),
             point_value=request.json.get("point_value"),

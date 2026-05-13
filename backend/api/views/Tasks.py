@@ -13,7 +13,11 @@ from flask.views import MethodView
 from flask import g, request, current_app
 
 from ..utils import requires_admin, requires_team_admin_or_above
-from ..auth import managed_team_ids_for
+from ..auth import (
+    managed_team_ids_for,
+    is_org_admin_or_above,
+    team_admin_can_access_user,
+)
 from .MapRoulette import MapRouletteSync
 from ..database import (
     Project,
@@ -861,9 +865,13 @@ class TaskAPI(MethodView):
             "status": 200,
         }
 
-    @requires_admin
+    @requires_team_admin_or_above
     def sync_user_projects(self):
-        """Sync all projects a user is assigned to (direct + team)."""
+        """Sync all projects a user is assigned to (direct + team).
+
+        Org Admin / super_admin can sync for any user in their org.
+        team_admin can only sync for users on their managed teams.
+        """
         user_id = (request.json or {}).get("user_id")
         if not user_id:
             return {"message": "user_id required", "status": 400}
@@ -871,6 +879,10 @@ class TaskAPI(MethodView):
         user = User.query.get(user_id)
         if not user or user.org_id != g.user.org_id:
             return {"message": "User not found", "status": 404}
+
+        if not is_org_admin_or_above(g.user):
+            if not team_admin_can_access_user(g.user, user_id):
+                return {"message": "User not on a team you manage", "status": 403}
 
         # Direct project assignments
         direct_ids = {
@@ -1025,12 +1037,12 @@ class TaskAPI(MethodView):
             "status": 200,
         }
 
-    @requires_admin
+    @requires_team_admin_or_above
     def update_task(self):
-        """
-        Manually update a task's validation status.
+        """Manually update a task's validation status.
 
-        Admin-only endpoint for handling external validations.
+        Open to all admin tiers. Cross-org safety is enforced by the
+        task lookup below filtering on the user's org_id.
         """
         if not g.user:
             return {"message": "User not found", "status": 304}
