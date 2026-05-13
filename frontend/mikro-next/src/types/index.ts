@@ -1035,7 +1035,7 @@ export interface ChangesetHeatmapResponse {
 
 export interface ElementAnalysisCategory {
   title: string;
-  data: Array<{ week: string; deleted: number; added: number; modified: number }>;
+  data: Array<{ day: string; deleted: number; added: number; modified: number }>;
 }
 
 export interface ElementAnalysisResponse {

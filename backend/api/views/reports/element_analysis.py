@@ -56,15 +56,15 @@ def get_element_analysis(org_id, start_date, end_date):
     """Queries ElementAnalysisCache and returns category data. No Flask context required."""
     rows = ElementAnalysisCache.query.filter(
         ElementAnalysisCache.org_id == org_id,
-        ElementAnalysisCache.week >= start_date,
-        ElementAnalysisCache.week <= end_date,
+        ElementAnalysisCache.day >= start_date,
+        ElementAnalysisCache.day <= end_date,
     ).all()
 
     cat_data = {}
     last_updated = None
     for row in rows:
-        cat_data.setdefault(row.category, {})[row.week] = {
-            "week": f"{row.week.month}/{row.week.day}",
+        cat_data.setdefault(row.category, {})[row.day] = {
+            "day": row.day.strftime("%Y-%m-%d"),
             "added": row.added,
             "modified": row.modified,
             "deleted": row.deleted,

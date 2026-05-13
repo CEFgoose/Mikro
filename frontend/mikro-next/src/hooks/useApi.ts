@@ -442,7 +442,7 @@ export function useFetchElementAnalysis() {
     status: number;
     categories: Array<{
       title: string;
-      data: Array<{ week: string; deleted: number; added: number; modified: number }>;
+      data: Array<{ day: string; deleted: number; added: number; modified: number }>;
     }>;
     lastUpdated: string | null;
   }>("/reports/fetch_element_analysis");

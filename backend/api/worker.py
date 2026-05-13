@@ -479,17 +479,16 @@ def run_element_analysis_job(app, job):
                     cs_id, created_at_str, local_counts = future.result()
                     processed += 1
 
-                    # Determine week for this changeset
+                    # Determine day for this changeset
                     try:
                         cs_date = datetime.fromisoformat(
                             created_at_str.replace("Z", "+00:00")
                         ).date()
                     except (ValueError, AttributeError):
                         cs_date = today
-                    week = _get_week_start(cs_date)
 
                     for cat, counts in local_counts.items():
-                        key = (week, cat)
+                        key = (cs_date, cat)
                         if key not in category_counts:
                             category_counts[key] = {"added": 0, "modified": 0, "deleted": 0}
                         category_counts[key]["added"] += counts["added"]
@@ -510,10 +509,10 @@ def run_element_analysis_job(app, job):
         ElementAnalysisCache.query.filter_by(org_id=org_id).delete()
 
         now = datetime.now(timezone.utc)
-        for (week, category), counts in category_counts.items():
+        for (day, category), counts in category_counts.items():
             cache_row = ElementAnalysisCache(
                 org_id=org_id,
-                week=week,
+                day=day,
                 category=category,
                 added=counts["added"],
                 modified=counts["modified"],
@@ -528,7 +527,7 @@ def run_element_analysis_job(app, job):
         job.completed_at = datetime.now(timezone.utc)
         job.progress = (
             f"Done: {total_changesets} changesets, "
-            f"{len(category_counts)} category/week combos cached"
+            f"{len(category_counts)} category/day combos cached"
         )
         db.session.commit()
 
