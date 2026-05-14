@@ -1,7 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
-import { MiniActivityChart } from "./MiniActivityChart";
+import { ElementActivityChart } from "./ElementActivityChart";
 import { formatDateTime } from "./reportUtils";
 import type { ElementAnalysisCategory } from "@/types";
 
@@ -26,10 +25,6 @@ export function ElementActivitySection({
   setShowRefreshModal,
   onStartAnalysis,
 }: ElementActivitySectionProps) {
-
-    useEffect(() => {
-      console.log("Element categories updated:", elementCategories);
-    }, [elementCategories]);
 
   return (
     <div>
@@ -74,11 +69,7 @@ export function ElementActivitySection({
           <span className="text-sm text-muted-foreground">Loading cached data...</span>
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          {elementCategories.map((chart) => (
-            <MiniActivityChart key={chart.title} title={chart.title} data={chart.data} />
-          ))}
-        </div>
+        <ElementActivityChart categories={elementCategories} />
       )}
 
       {showRefreshModal && (

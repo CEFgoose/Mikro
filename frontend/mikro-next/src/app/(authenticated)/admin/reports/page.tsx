@@ -39,6 +39,7 @@ import { ElementActivitySection } from "./_components/ElementActivitySection";
 import { TeamActivityCard } from "./_components/TeamActivityCard";
 import { TaskHoursByCategoryCard } from "./_components/TaskHoursByCategoryCard";
 import { CommunityOutreachCard } from "./_components/CommunityOutreachCard";
+import { ExportDropdown } from "./_components/ExportDropdown";
 
 function localDateStr(d: Date): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
@@ -101,6 +102,7 @@ export default function AdminReportsPage() {
   const [elementProgress, setElementProgress] = useState<string | null>(null);
   const [showRefreshModal, setShowRefreshModal] = useState(false);
   const elementPollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const reportContentRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     return () => {
@@ -330,8 +332,15 @@ export default function AdminReportsPage() {
               )}
             </div>
 
-            {/* Universal FilterBar */}
-            <div className="ml-auto">
+            {/* Universal FilterBar + Export */}
+            <div className="ml-auto flex items-center gap-2">
+              <ExportDropdown
+                contentRef={reportContentRef}
+                timekeepingData={timekeepingData}
+                editingData={editingData}
+                elementCategories={elementCategories}
+                dateRange={`${customStart} to ${customEnd}`}
+              />
               <FilterBar
                 dimensions={
                   filterOptions?.dimensions
@@ -359,6 +368,9 @@ export default function AdminReportsPage() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Report content captured for PDF export */}
+      <div ref={reportContentRef}>
 
       {/* KPI Summary */}
       <div className="flex flex-row gap-2">
@@ -471,6 +483,8 @@ export default function AdminReportsPage() {
           />
         </div>
       ) : null}
+
+      </div>{/* end reportContentRef */}
     </div>
   );
 }

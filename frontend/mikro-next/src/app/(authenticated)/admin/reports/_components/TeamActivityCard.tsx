@@ -30,7 +30,7 @@ export function TeamActivityCard({ data, granularity, setGranularity }: TeamActi
   const dataKey = granularity === "daily" ? "day" : "week";
 
   return (
-    <Card>
+    <Card data-chart-export="Team Activity">
       <CardHeader className="pb-0 flex flex-row items-center justify-between">
         <div className="flex items-center gap-2">
           <CardTitle className="text-base">

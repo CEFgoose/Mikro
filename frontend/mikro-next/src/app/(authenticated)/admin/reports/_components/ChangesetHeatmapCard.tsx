@@ -25,7 +25,7 @@ export function ChangesetHeatmapCard({
   heatmapSummary,
 }: ChangesetHeatmapCardProps) {
   return (
-    <Card>
+    <Card data-chart-export="Changeset Heatmap">
       <CardHeader className="pb-0">
         <div className="flex items-center justify-between">
           <CardTitle className="text-base">Map of changeset centroids</CardTitle>

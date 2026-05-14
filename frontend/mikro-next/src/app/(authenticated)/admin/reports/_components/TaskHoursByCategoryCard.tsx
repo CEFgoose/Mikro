@@ -28,7 +28,7 @@ export function TaskHoursByCategoryCard({ data, granularity }: TaskHoursByCatego
   const dataKey = granularity === "daily" ? "day" : "week";
 
   return (
-    <Card>
+    <Card data-chart-export="Task Hours by Category">
       <CardHeader className="pb-0 flex flex-row items-center justify-between">
         <CardTitle className="text-base">
           {granularity === "daily" ? "Daily" : "Weekly"} Task Hours by Category

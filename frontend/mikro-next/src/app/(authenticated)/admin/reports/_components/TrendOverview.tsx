@@ -57,7 +57,7 @@ export default function TrendOverview({
       : null;
 
   return (
-    <Card className="flex-1">
+    <Card className="flex-1" data-chart-export={title}>
       <CardContent className="p-4">
         <div className="flex items-start justify-between mb-1">
           <p className="text-sm font-medium text-muted-foreground">{title}</p>
