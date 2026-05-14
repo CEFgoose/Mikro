@@ -45,23 +45,18 @@ function localDateStr(d: Date): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
 
-function lastWeekRange() {
+function prevMonthRange() {
   const today = new Date();
-  const lastSunday = new Date(today);
-  lastSunday.setDate(today.getDate() - today.getDay() - 7);
-  const lastSaturday = new Date(lastSunday);
-  lastSaturday.setDate(lastSunday.getDate() + 6);
-  return { start: localDateStr(lastSunday), end: localDateStr(lastSaturday) };
+  const start = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+  const end = new Date(today.getFullYear(), today.getMonth(), 0);
+  return { start: localDateStr(start), end: localDateStr(end) };
 }
 
-function prevWeekRange() {
-  const { start } = lastWeekRange();
-  const lastSunday = new Date(start + "T00:00:00");
-  const prevSat = new Date(lastSunday);
-  prevSat.setDate(lastSunday.getDate() - 1);
-  const prevSun = new Date(prevSat);
-  prevSun.setDate(prevSat.getDate() - 6);
-  return { start: localDateStr(prevSun), end: localDateStr(prevSat) };
+function twoMonthsAgoRange() {
+  const today = new Date();
+  const start = new Date(today.getFullYear(), today.getMonth() - 2, 1);
+  const end = new Date(today.getFullYear(), today.getMonth() - 1, 0);
+  return { start: localDateStr(start), end: localDateStr(end) };
 }
 
 export default function AdminReportsPage() {
@@ -70,11 +65,11 @@ export default function AdminReportsPage() {
   const isTeamAdmin = viewerRole === "team_admin";
 
   // ── Shared UI state ──────────────────────────────────────────
-  const [customStart, setCustomStart] = useState(() => lastWeekRange().start);
-  const [customEnd, setCustomEnd] = useState(() => lastWeekRange().end);
+  const [customStart, setCustomStart] = useState(() => prevMonthRange().start);
+  const [customEnd, setCustomEnd] = useState(() => prevMonthRange().end);
   const [compareEnabled, setCompareEnabled] = useState(true);
-  const [compareStart, setCompareStart] = useState(() => prevWeekRange().start);
-  const [compareEnd, setCompareEnd] = useState(() => prevWeekRange().end);
+  const [compareStart, setCompareStart] = useState(() => twoMonthsAgoRange().start);
+  const [compareEnd, setCompareEnd] = useState(() => twoMonthsAgoRange().end);
   const [snapshotTime, setSnapshotTime] = useState<string | null>(null);
   const [timekeepingGranularity, setTimekeepingGranularity] = useState<"weekly" | "daily">("weekly");
 
