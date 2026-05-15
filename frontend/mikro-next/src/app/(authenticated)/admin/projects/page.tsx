@@ -86,9 +86,10 @@ const defaultFormData: ProjectFormData = {
   validation_rate: "0.05",
   max_editors: "5",
   max_validators: "3",
-  // Private by default — only assigned users + teams see the project
-  // until an admin explicitly opts in to publicity.
-  visibility: false,
+  // Visible + active by default so a freshly created project is never
+  // born hidden (the creator could not find it otherwise). Admin can
+  // still untick before saving.
+  visibility: true,
   difficulty: "Medium",
   status: true,
   payments_enabled: true,
@@ -851,6 +852,15 @@ export default function AdminProjectsPage() {
           <Button onClick={() => setShowAddModal(true)}>Add Project</Button>
         )}
       </div>
+
+      {isTeamAdmin && (
+        <div className="rounded-md border border-blue-200 bg-blue-50 dark:border-blue-900/50 dark:bg-blue-950/30 px-4 py-3 text-sm text-blue-900 dark:text-blue-200">
+          You're seeing <strong>every project you created</strong> plus{" "}
+          <strong>every project on a team you lead</strong>. New projects are
+          active and visible by default. Tip: assign a new project to one of
+          your teams so your mappers can see it too.
+        </div>
+      )}
 
       {/* Stats Cards */}
       <div className="grid gap-4 md:grid-cols-4">

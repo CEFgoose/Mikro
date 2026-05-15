@@ -250,7 +250,11 @@ class ProjectAPI(MethodView):
         validation_rate = float(request.json.get("validation_rate"))
         max_editors = request.json.get("max_editors")
         max_validators = request.json.get("max_validators")
-        visibility = request.json.get("visibility")
+        # New projects are visible by default — only hidden if the admin
+        # explicitly sends visibility=false. Prevents born-invisible
+        # projects that the creator then can't find.
+        _vis = request.json.get("visibility")
+        visibility = True if _vis is None else bool(_vis)
 
         # Extract project ID from URL
         m = re.match(r"^.*\/([0-9]+)$", url)
@@ -344,7 +348,9 @@ class ProjectAPI(MethodView):
         validation_rate = float(request.json.get("validation_rate"))
         max_editors = request.json.get("max_editors")
         max_validators = request.json.get("max_validators")
-        visibility = request.json.get("visibility")
+        # New projects are visible by default (see TM4 path note above).
+        _vis = request.json.get("visibility")
+        visibility = True if _vis is None else bool(_vis)
 
         challenge_id = self._extract_mr_challenge_id(url)
         if not challenge_id:
@@ -707,30 +713,21 @@ class ProjectAPI(MethodView):
         team_id = req_body.get("team_id")
         filtered_user_ids = resolve_filtered_user_ids(filters, g.user.org_id)
 
-        # team_admin: narrow to projects joined to managed teams via ProjectTeam
+        # team_admin visible set = projects on ANY team they lead UNION
+        # projects they created. Never early-return on "no teams" or "no
+        # team projects" — a team_admin must always see what they created
+        # even with zero team assignments. The created_by floor is applied
+        # at the filter step below (not pre-computed here) so it survives
+        # regardless of managed-team state.
         team_admin_project_ids = None
         if g.user.role == "team_admin":
             managed = managed_team_ids_for(g.user)
-            if not managed:
-                return {
-                    "org_active_projects": [],
-                    "org_inactive_projects": [],
-                    "message": "Projects found",
-                    "status": 200,
-                }
             team_admin_project_ids = {
                 pt.project_id
                 for pt in ProjectTeam.query.filter(
                     ProjectTeam.team_id.in_(managed)
                 ).all()
-            }
-            if not team_admin_project_ids:
-                return {
-                    "org_active_projects": [],
-                    "org_inactive_projects": [],
-                    "message": "Projects found",
-                    "status": 200,
-                }
+            } if managed else set()
 
         # If filters produced a user-id set, restrict to projects that have
         # at least one assigned user in that set via the ProjectUser table.
@@ -754,13 +751,19 @@ class ProjectAPI(MethodView):
             org_id=g.user.org_id, status=False
         ).all()
 
-        # team_admin: narrow to projects joined to managed teams
+        # team_admin: keep projects on a team they lead OR projects they
+        # created (the created_by floor — nothing blocks a team_admin from
+        # seeing their own project even if it's on no team).
         if team_admin_project_ids is not None:
             active_projects = [
-                p for p in active_projects if p.id in team_admin_project_ids
+                p for p in active_projects
+                if p.id in team_admin_project_ids
+                or p.created_by == g.user.id
             ]
             inactive_projects = [
-                p for p in inactive_projects if p.id in team_admin_project_ids
+                p for p in inactive_projects
+                if p.id in team_admin_project_ids
+                or p.created_by == g.user.id
             ]
 
         # Batch-load location assignment counts for admin display
@@ -1285,29 +1288,23 @@ class ProjectAPI(MethodView):
         # Intersects with any country/region filter.
         if g.user.role == "team_admin":
             managed = managed_team_ids_for(g.user)
-            if not managed:
-                # zero-team team_admin: empty result
-                return {
-                    "month_contribution_change": 0,
-                    "total_contributions_for_month": 0,
-                    "weekly_contributions_array": [],
-                    "active_projects": 0,
-                    "inactive_projects": 0,
-                    "completed_projects": 0,
-                    "mapped_tasks": 0,
-                    "validated_tasks": 0,
-                    "invalidated_tasks": 0,
-                    "payable_total": 0,
-                    "requests_total": 0,
-                    "payouts_total": 0,
-                    "message": "Stats Fetched",
-                    "status": 200,
-                }
+            # Visible = projects on a team they lead UNION projects they
+            # created. No early-return on zero teams — created projects
+            # must still count (consistent with the project list).
             ta_project_ids = {
                 pt.project_id
                 for pt in ProjectTeam.query.filter(
                     ProjectTeam.team_id.in_(managed)
                 ).all()
+            } if managed else set()
+            ta_project_ids |= {
+                pid
+                for (pid,) in Project.query.with_entities(Project.id)
+                .filter(
+                    Project.org_id == org_id,
+                    Project.created_by == g.user.id,
+                )
+                .all()
             }
             if visible_project_ids is not None:
                 visible_project_ids = [
@@ -1661,17 +1658,44 @@ class ProjectAPI(MethodView):
             for r in ProjectUser.query.filter_by(user_id=g.user.id).all()
         }
 
+        # team_admin floor: projects on a team they lead, plus projects
+        # they created, are visible on the personal/clock-in list too —
+        # EXEMPT from the project_users gate AND the location filter so a
+        # team_admin's own/led work is never hidden (guarantees #1/#2).
+        # Regular `user` role gets an empty set here → unchanged behavior.
+        ta_extra_ids = set()
+        if g.user.role == "team_admin":
+            managed = managed_team_ids_for(g.user)
+            if managed:
+                ta_extra_ids |= {
+                    pt.project_id
+                    for pt in ProjectTeam.query.filter(
+                        ProjectTeam.team_id.in_(managed)
+                    ).all()
+                }
+            ta_extra_ids |= {
+                pid
+                for (pid,) in Project.query.with_entities(Project.id)
+                .filter(
+                    Project.org_id == g.user.org_id,
+                    Project.created_by == g.user.id,
+                )
+                .all()
+            }
+
         active_projects = Project.query.filter(
             Project.org_id == g.user.org_id,
             Project.status == True,
         ).all()
 
-        # Only include projects the user is assigned to
+        # Visible = personally assigned OR (team_admin) led/created
         active_projects = [
-            p for p in active_projects if p.id in assigned_project_ids
+            p for p in active_projects
+            if p.id in assigned_project_ids or p.id in ta_extra_ids
         ]
 
-        # Location visibility filter
+        # Location visibility filter — ta_extra_ids bypass it (a team_admin's
+        # own/led projects must never be hidden by a country mismatch).
         user_cids = get_user_country_ids(g.user.id)
         all_pc = ProjectCountry.query.filter(
             ProjectCountry.project_id.in_([p.id for p in active_projects])
@@ -1681,7 +1705,8 @@ class ProjectAPI(MethodView):
             proj_loc_map.setdefault(r.project_id, set()).add(r.country_id)
         active_projects = [
             p for p in active_projects
-            if is_visible_by_location(proj_loc_map.get(p.id, set()), user_cids)
+            if p.id in ta_extra_ids
+            or is_visible_by_location(proj_loc_map.get(p.id, set()), user_cids)
         ]
 
         # Per-project "last worked on" timestamps for THIS user (F1).
