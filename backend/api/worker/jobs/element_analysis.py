@@ -69,6 +69,7 @@ def run_element_analysis_job(app, job):
     Fetches OsmChange XML for all org mappers' changesets, classifies elements
     by OSM tags, and caches weekly aggregates by category.
     """
+    from sqlalchemy import func
     from ...database import db, Task, ElementAnalysisCache
 
     try:
@@ -78,10 +79,30 @@ def run_element_analysis_job(app, job):
         db.session.commit()
 
         org_id = job.org_id
-
         today = date.today()
-        week_start = _get_week_start(today)
-        analysis_start = week_start - timedelta(weeks=3)  # 4 weeks total
+
+        # Use the newest cached date as the cursor so we only fetch new days.
+        # On first run (no cache) fall back to the default 4-week window.
+        last_cached = (
+            db.session.query(func.max(ElementAnalysisCache.day))
+            .filter(ElementAnalysisCache.org_id == org_id)
+            .scalar()
+        )
+
+        if last_cached:
+            analysis_start = last_cached + timedelta(days=1)
+        else:
+            week_start = _get_week_start(today)
+            analysis_start = week_start - timedelta(weeks=3)
+
+        if analysis_start >= today:
+            job.status = "completed"
+            job.completed_at = datetime.now(timezone.utc)
+            job.progress = f"Cache already current through {last_cached}"
+            db.session.commit()
+            logger.info(f"Element analysis job {job.id}: cache already current, nothing to fetch")
+            return
+
         start_str = analysis_start.isoformat()
         end_str = today.isoformat()
 
@@ -90,7 +111,6 @@ def run_element_analysis_job(app, job):
             .filter(
                 Task.org_id == org_id,
                 Task.mapped == True,
-                Task.date_mapped >= datetime.combine(analysis_start, datetime.min.time()),
                 Task.mapped_by != None,
             )
             .distinct()
@@ -113,30 +133,46 @@ def run_element_analysis_job(app, job):
         all_changeset_ids = {}  # {changeset_id: (username, created_at)}
 
         def _fetch_user_changesets(username):
+            # OSM caps at 100 per request with no offset parameter.
+            # Paginate cursor-style: use the oldest changeset's created_at
+            # as the new end time until a page returns fewer than 100.
             osm_url = "https://api.openstreetmap.org/api/0.6/changesets"
-            params = {
-                "display_name": username,
-                "time": f"{start_str},{end_str}",
-                "closed": "true",
-            }
-            try:
-                resp = requests.get(osm_url, params=params, timeout=30)
-                if not resp.ok:
-                    return username, []
-            except requests.RequestException:
-                return username, []
-
-            try:
-                root = ET.fromstring(resp.text)
-            except ET.ParseError:
-                return username, []
-
             changesets = []
-            for cs in root.findall("changeset"):
-                cs_id = cs.get("id")
-                created = cs.get("created_at", "")
-                if cs_id:
-                    changesets.append((cs_id, created))
+            page_end = end_str
+
+            while True:
+                params = {
+                    "display_name": username,
+                    "time": f"{start_str},{page_end}",
+                    "closed": "true",
+                }
+                try:
+                    resp = requests.get(osm_url, params=params, timeout=30)
+                    if not resp.ok:
+                        break
+                except requests.RequestException:
+                    break
+
+                try:
+                    root = ET.fromstring(resp.text)
+                except ET.ParseError:
+                    break
+
+                page = []
+                for cs in root.findall("changeset"):
+                    cs_id = cs.get("id")
+                    created = cs.get("created_at", "")
+                    if cs_id:
+                        page.append((cs_id, created))
+
+                changesets.extend(page)
+
+                if len(page) < 100:
+                    break
+
+                oldest_created = min(created for _, created in page if created)
+                page_end = oldest_created
+
             return username, changesets
 
         with ThreadPoolExecutor(max_workers=5) as executor:
@@ -237,7 +273,14 @@ def run_element_analysis_job(app, job):
         job.progress = "Writing cache..."
         db.session.commit()
 
-        ElementAnalysisCache.query.filter_by(org_id=org_id).delete()
+        # Delete only the specific dates we're about to write so a retry
+        # is idempotent without touching historical rows.
+        dates_to_write = {day for day, _ in category_counts}
+        if dates_to_write:
+            ElementAnalysisCache.query.filter(
+                ElementAnalysisCache.org_id == org_id,
+                ElementAnalysisCache.day.in_(dates_to_write),
+            ).delete(synchronize_session=False)
 
         now = datetime.now(timezone.utc)
         for (day, category), counts in category_counts.items():
