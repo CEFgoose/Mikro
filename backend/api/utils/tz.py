@@ -62,6 +62,30 @@ def parse_filter_datetime(value):
             return None, False
 
 
+def parse_date_range(start_value, end_value):
+    """Parse start/end values into an inclusive (start_date, end_date) pair
+    of date objects. Handles both input forms:
+
+      - Plain date strings ("YYYY-MM-DD"): used as-is, inclusive on both ends.
+      - ISO UTC datetime strings (from dateInputToLocalStart/EndIsoUtc): the
+        end value is the exclusive next-day midnight, so 1 day is subtracted
+        to recover the user's intended inclusive end date.
+
+    Returns (start_date, end_date) or (None, None) if either value is invalid.
+    Use this for any endpoint that queries a Date column.
+    Use apply_date_range_filter for DateTime/timestamp columns.
+    """
+    start_dt, _ = parse_filter_datetime(start_value)
+    end_dt, end_is_date_only = parse_filter_datetime(end_value)
+    if start_dt is None or end_dt is None:
+        return None, None
+    start_date = start_dt.date()
+    end_date = end_dt.date()
+    if not end_is_date_only:
+        end_date = end_date - timedelta(days=1)
+    return start_date, end_date
+
+
 def apply_date_range_filter(conditions, column, start_value, end_value):
     """Append start/end conditions against `column` to `conditions` list.
 
