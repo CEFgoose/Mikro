@@ -1,7 +1,7 @@
 from flask import g, request
 
 from ...database import db, ElementAnalysisCache, SyncJob
-from ...utils.tz import parse_filter_datetime
+from ...utils.tz import parse_date_range
 
 
 # ---------------------------------------------------------------------------
@@ -18,14 +18,11 @@ def fetch_element_analysis():
     if not start_date_str or not end_date_str:
         return {"message": "startDate and endDate required", "status": 400}
 
-    # ElementAnalysisCache.week is a stored date (week start), so we
-    # want pure .date() bounds here, not a TZ-aware instant.
-    start_dt, _ = parse_filter_datetime(start_date_str)
-    end_dt, _ = parse_filter_datetime(end_date_str)
-    if start_dt is None or end_dt is None:
+    start_date, end_date = parse_date_range(start_date_str, end_date_str)
+    if start_date is None or end_date is None:
         return {"message": "Invalid startDate or endDate", "status": 400}
 
-    return get_element_analysis(g.user.org_id, start_dt.date(), end_dt.date())
+    return get_element_analysis(g.user.org_id, start_date, end_date)
 
 
 def queue_element_analysis():

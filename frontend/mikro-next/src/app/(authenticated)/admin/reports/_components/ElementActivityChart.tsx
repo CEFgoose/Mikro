@@ -15,7 +15,13 @@ function weekStart(day: string): string {
   const d = new Date(day + "T00:00:00");
   const diff = -d.getDay(); // roll back to Sunday (getDay() === 0 stays put)
   d.setDate(d.getDate() + diff);
-  return d.toISOString().slice(0, 10);
+  // Use local date parts — toISOString() converts to UTC and shifts the date
+  // backward by 1 day for UTC+ users.
+  return [
+    d.getFullYear(),
+    String(d.getMonth() + 1).padStart(2, "0"),
+    String(d.getDate()).padStart(2, "0"),
+  ].join("-");
 }
 
 type ChartEntry = { date: string; added: number; modified: number; deleted: number };
