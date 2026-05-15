@@ -93,7 +93,7 @@ def run_element_analysis_job(app, job):
             analysis_start = last_cached + timedelta(days=1)
         else:
             week_start = _get_week_start(today)
-            analysis_start = week_start - timedelta(weeks=3)
+            analysis_start = week_start - timedelta(weeks=1)
 
         if analysis_start >= today:
             job.status = "completed"
