@@ -146,7 +146,7 @@ def _get_tasks_over_time(org_id, source, start_date, end_date, osm_usernames):
     def _weekly(date_col, user_col, flag_col):
         q = (
             db.session.query(
-                func.date_trunc("week", date_col).label("week"),
+                (func.date_trunc("week", date_col + timedelta(days=1)) - timedelta(days=1)).label("week"),
                 func.count().label("count"),
             )
             .filter(
@@ -178,7 +178,7 @@ def _get_tasks_over_time(org_id, source, start_date, end_date, osm_usernames):
 def _get_mr_status_over_time(org_id, start_date, end_date, osm_usernames):
     q = (
         db.session.query(
-            func.date_trunc("week", Task.date_mapped).label("week"),
+            (func.date_trunc("week", Task.date_mapped + timedelta(days=1)) - timedelta(days=1)).label("week"),
             Task.mr_status,
             func.count().label("count"),
         )

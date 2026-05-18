@@ -165,7 +165,7 @@ def _get_weekly_activity(org_id, start_date, end_date, member_ids):
     f = _build_filter(org_id, start_date, end_date, member_ids)
     rows = (
         db.session.query(
-            func.date_trunc("week", TimeEntry.clock_in).label("week"),
+            (func.date_trunc("week", TimeEntry.clock_in + timedelta(days=1)) - timedelta(days=1)).label("week"),
             func.sum(TimeEntry.duration_seconds).label("seconds"),
             func.sum(TimeEntry.changeset_count).label("changesets"),
             func.sum(TimeEntry.changes_count).label("changes"),
@@ -296,7 +296,7 @@ def _get_weekly_category_hours(org_id, start_date, end_date, member_ids):
     f = _build_filter(org_id, start_date, end_date, member_ids)
     rows = (
         db.session.query(
-            func.date_trunc("week", TimeEntry.clock_in).label("week"),
+            (func.date_trunc("week", TimeEntry.clock_in + timedelta(days=1)) - timedelta(days=1)).label("week"),
             TimeEntry.category,
             func.sum(TimeEntry.duration_seconds).label("seconds"),
         )
