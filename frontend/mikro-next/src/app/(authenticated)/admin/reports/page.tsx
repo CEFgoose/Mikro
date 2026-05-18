@@ -43,17 +43,27 @@ function localDateStr(d: Date): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
 
-function prevMonthRange() {
+function prevWeekRange() {
   const today = new Date();
-  const start = new Date(today.getFullYear(), today.getMonth() - 1, 1);
-  const end = new Date(today.getFullYear(), today.getMonth(), 0);
-  return { start: localDateStr(start), end: localDateStr(end) };
+  const dow = today.getDay(); // 0=Sun ... 6=Sat
+  const daysToLastSat = dow === 6 ? 7 : dow + 1;
+  const lastSat = new Date(today);
+  lastSat.setDate(today.getDate() - daysToLastSat);
+  const prevSun = new Date(lastSat);
+  prevSun.setDate(lastSat.getDate() - 6);
+  return { start: localDateStr(prevSun), end: localDateStr(lastSat) };
 }
 
-function twoMonthsAgoRange() {
+function twoWeeksAgoRange() {
   const today = new Date();
-  const start = new Date(today.getFullYear(), today.getMonth() - 2, 1);
-  const end = new Date(today.getFullYear(), today.getMonth() - 1, 0);
+  const dow = today.getDay();
+  const daysToLastSat = dow === 6 ? 7 : dow + 1;
+  const lastSat = new Date(today);
+  lastSat.setDate(today.getDate() - daysToLastSat);
+  const end = new Date(lastSat);
+  end.setDate(lastSat.getDate() - 7);
+  const start = new Date(end);
+  start.setDate(end.getDate() - 6);
   return { start: localDateStr(start), end: localDateStr(end) };
 }
 
@@ -63,11 +73,17 @@ export default function AdminReportsPage() {
   const isTeamAdmin = viewerRole === "team_admin";
 
   // ── Shared UI state ──────────────────────────────────────────
-  const [customStart, setCustomStart] = useState(() => prevMonthRange().start);
-  const [customEnd, setCustomEnd] = useState(() => prevMonthRange().end);
+  // Committed dates drive fetches; draft dates are edited in inputs and applied on button click.
+  const [customStart, setCustomStart] = useState(() => prevWeekRange().start);
+  const [customEnd, setCustomEnd] = useState(() => prevWeekRange().end);
   const [compareEnabled, setCompareEnabled] = useState(true);
-  const [compareStart, setCompareStart] = useState(() => twoMonthsAgoRange().start);
-  const [compareEnd, setCompareEnd] = useState(() => twoMonthsAgoRange().end);
+  const [compareStart, setCompareStart] = useState(() => twoWeeksAgoRange().start);
+  const [compareEnd, setCompareEnd] = useState(() => twoWeeksAgoRange().end);
+
+  const [draftStart, setDraftStart] = useState(customStart);
+  const [draftEnd, setDraftEnd] = useState(customEnd);
+  const [draftCompareStart, setDraftCompareStart] = useState(compareStart);
+  const [draftCompareEnd, setDraftCompareEnd] = useState(compareEnd);
   const [timekeepingGranularity, setTimekeepingGranularity] = useState<"weekly" | "daily">("weekly");
 
   // ── Tab data state ───────────────────────────────────────────
@@ -282,15 +298,15 @@ export default function AdminReportsPage() {
             <div className="flex items-center gap-2">
               <input
                 type="date"
-                value={customStart}
-                onChange={(e) => setCustomStart(e.target.value)}
+                value={draftStart}
+                onChange={(e) => setDraftStart(e.target.value)}
                 className="px-3 py-1.5 border border-input rounded-lg text-sm"
               />
               <span className="text-sm text-muted-foreground">to</span>
               <input
                 type="date"
-                value={customEnd}
-                onChange={(e) => setCustomEnd(e.target.value)}
+                value={draftEnd}
+                onChange={(e) => setDraftEnd(e.target.value)}
                 className="px-3 py-1.5 border border-input rounded-lg text-sm"
               />
             </div>
@@ -327,20 +343,33 @@ export default function AdminReportsPage() {
                 <>
                   <input
                     type="date"
-                    value={compareStart}
-                    onChange={(e) => setCompareStart(e.target.value)}
+                    value={draftCompareStart}
+                    onChange={(e) => setDraftCompareStart(e.target.value)}
                     className="px-3 py-1.5 border border-input rounded-lg text-sm"
                   />
                   <span className="text-sm text-muted-foreground">to</span>
                   <input
                     type="date"
-                    value={compareEnd}
-                    onChange={(e) => setCompareEnd(e.target.value)}
+                    value={draftCompareEnd}
+                    onChange={(e) => setDraftCompareEnd(e.target.value)}
                     className="px-3 py-1.5 border border-input rounded-lg text-sm"
                   />
                 </>
               )}
             </div>
+
+            {/* Update Dates */}
+            <button
+              onClick={() => {
+                setCustomStart(draftStart);
+                setCustomEnd(draftEnd);
+                setCompareStart(draftCompareStart);
+                setCompareEnd(draftCompareEnd);
+              }}
+              className="px-3 py-1.5 rounded-lg text-sm font-medium bg-kaart-orange text-white hover:bg-kaart-orange/90 transition-colors"
+            >
+              Update Dates
+            </button>
 
             {/* Universal FilterBar + Export */}
             <div className="ml-auto flex items-center gap-2">
