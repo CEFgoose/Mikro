@@ -74,6 +74,10 @@ export function ContributorDetailDrawer({
     })
       .then((res) => setDetail(res))
       .catch(() => toast.error("Failed to load contributor detail"));
+    // `toast` is intentionally excluded from the deps: useToastActions()
+    // returns a fresh object literal every render, so including it would
+    // refire this effect (and refetch contributor detail) on every render.
+    // `fetchContributor` is also non-stable for the same reason.
   }, [row?.user_id, cycleStart, cycleEnd]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleAddAdjustment = async () => {
