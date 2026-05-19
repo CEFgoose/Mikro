@@ -13,7 +13,7 @@ import {
   useToastActions,
   Val,
 } from "@/components/ui";
-import { formatCurrency, formatNumber } from "@/lib/utils";
+import { formatCurrency, formatNumber, type FormattedValue } from "@/lib/utils";
 import {
   useFetchPaymentCycle,
   useFetchPaymentCycleKpis,
@@ -1047,7 +1047,10 @@ export default function AdminPaymentsV2Page() {
 
 interface KpiCardProps {
   label: string;
-  value: string | null;
+  // Accepts FormattedValue from formatCurrency/formatNumber, a literal
+  // string (mock cards), or null while loading. Mirrors how Val/StatCard
+  // type their `value`/`children` props after the lib/utils refactor.
+  value: FormattedValue | string | null;
   subtitle: string;
   mock?: boolean;
   /** Native hover tooltip (e.g. "what we still need from Logan"). */
@@ -1068,6 +1071,10 @@ function KpiCard({ label, value, subtitle, mock, tooltip, trend }: KpiCardProps)
         : "text-muted-foreground bg-muted/50";
   const trendArrow =
     trend?.dir === "up" ? "↑" : trend?.dir === "down" ? "↓" : "→";
+  // Extract plain text for the native tooltip + the mock render path.
+  // <Val> already handles both shapes for the live path.
+  const valueText =
+    value == null ? undefined : typeof value === "string" ? value : value.text;
   return (
     <Card className={mock ? "opacity-95" : ""} title={tooltip}>
       <CardHeader className="pb-1">
@@ -1076,10 +1083,10 @@ function KpiCard({ label, value, subtitle, mock, tooltip, trend }: KpiCardProps)
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-1">
-        <div className="text-lg font-bold tabular-nums truncate" title={value ?? undefined}>
+        <div className="text-lg font-bold tabular-nums truncate" title={valueText}>
           {value !== null ? (
             mock ? (
-              value
+              valueText
             ) : (
               <Val>{value}</Val>
             )
