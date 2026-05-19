@@ -987,6 +987,32 @@ class ElementAnalysisCache(CRUDMixin, db.Model):
         return f"<ElementAnalysisCache org={self.org_id} day={self.day} cat={self.category}>"
 
 
+class ChangesetAdiff(CRUDMixin, db.Model):
+    """Per-changeset raw adiff XML from osmcha.
+
+    Stores the full XML blob so it can be reprocessed with any future logic
+    without re-fetching from osmcha.
+    """
+
+    __tablename__ = "changeset_adiffs"
+
+    id = Column(BigInteger, primary_key=True, autoincrement=True)
+    org_id = Column(String(255), nullable=False, index=True)
+    changeset_id = Column(BigInteger, nullable=False)
+    created_at = Column(DateTime(timezone=True), nullable=False, index=True)  # when the changeset occurred (UTC)
+    user_id = Column(String(255), nullable=True, index=True)
+    team_id = Column(db.Integer, nullable=True, index=True)
+    osm_user = Column(String(255), nullable=True)
+    adiff_xml = Column(db.Text, nullable=True)  # raw osmcha adiff XML; null when no diff exists
+
+    __table_args__ = (
+        db.UniqueConstraint("org_id", "changeset_id", name="uq_changeset_adiff_org"),
+    )
+
+    def __repr__(self):
+        return f"<ChangesetAdiff org={self.org_id} cs={self.changeset_id}>"
+
+
 class Punk(ModelWithSoftDeleteAndCRUD, SurrogatePK):
     """Watchlist entry for a problematic OSM editor."""
 

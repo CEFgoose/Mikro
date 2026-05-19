@@ -30,9 +30,7 @@ import {
 import type {
   TimekeepingStatsResponse,
   ElementAnalysisCategory,
-  ProjectsResponse,
   WeeklyReportDraft,
-  TeamsResponse,
   CommunityEntry,
 } from "@/types";
 import {
@@ -407,12 +405,10 @@ export default function WeeklyReportBuilderPage() {
     }
 
     try {
-      const elemResult = await fetchElements({ startDate: startIso, endDate: endIso });
-      if (elemResult && "categories" in elemResult) {
-        setElementCategories(
-          (elemResult as unknown as { categories: ElementAnalysisCategory[] }).categories || []
-        );
-      }
+      const elemParams: Record<string, unknown> = { startDate: startIso, endDate: endIso };
+      if (selectedTeamId) elemParams.teamIds = [selectedTeamId];
+      const elemResult = await fetchElements(elemParams);
+      setElementCategories(elemResult?.categories ?? []);
       setElemFetched(true);
     } catch {
       setElemFetched(true);
@@ -767,11 +763,6 @@ export default function WeeklyReportBuilderPage() {
       case "element_analysis":
         return (
           <div>
-            {selectedTeamId && (
-              <p className="text-xs text-blue-600 mb-2">
-                Note: Element analysis is org-wide and cannot be filtered by team
-              </p>
-            )}
             {elemLoading && !elemFetched ? (
               <div className="flex items-center justify-center h-32">
                 <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-kaart-orange" />

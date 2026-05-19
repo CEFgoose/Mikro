@@ -86,7 +86,7 @@ def poll_for_jobs(app):
                     f"for org {job.org_id}"
                 )
                 if job.job_type == "element_analysis":
-                    run_element_analysis_job(app, job)
+                    run_element_analysis_job(job)
                 elif job.job_type == "project_sync":
                     run_project_sync_job(app, job)
                 elif job.job_type == "mr_metadata_backfill":
@@ -252,7 +252,7 @@ def main():
         time.sleep(5)
         poll_for_jobs(app)
 
-        # Nightly element analysis auto-scheduling (midnight MST = 07:00 UTC)
+        # Nightly auto-scheduling at midnight MST (07:00 UTC).
         now_utc = datetime.now(timezone.utc)
         mst_hour = (now_utc.hour - 7) % 24
         today_date = now_utc.date()
