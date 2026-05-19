@@ -1189,7 +1189,9 @@ export default function AdminUsersPage() {
       {/* Dev Tools — Org Admin / Super Admin only. Team Admins lack
           the broad-user-purge permission server-side anyway, but
           hiding it here keeps the UI honest. */}
-      {canImportOrPurge && (
+      {/* Dev/purge tools hidden per management request 2026-05-19 —
+          restore by removing the `false &&` guard below. */}
+      {false && canImportOrPurge && (
         <Card className="border-2 border-dashed border-yellow-500">
           <CardHeader>
             <CardTitle className="text-yellow-700">Dev Tools</CardTitle>

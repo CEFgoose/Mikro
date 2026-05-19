@@ -700,7 +700,9 @@ export default function AdminRegionsPage() {
         isLoading={purging}
       />
 
-      {/* Dev Tools Section */}
+      {/* Dev/purge tools hidden per management request 2026-05-19 —
+          restore by removing the `false && (` / `)}` guard. */}
+      {false && (
       <Card className="mt-8 border-dashed border-yellow-500">
         <CardHeader className="pb-2">
           <CardTitle className="text-sm font-medium text-yellow-600">Dev Tools (Remove before production)</CardTitle>
@@ -715,6 +717,7 @@ export default function AdminRegionsPage() {
           </Button>
         </CardContent>
       </Card>
+      )}
     </div>
   );
 }

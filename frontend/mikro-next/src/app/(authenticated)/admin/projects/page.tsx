@@ -1648,7 +1648,9 @@ export default function AdminProjectsPage() {
       />
 
       {/* Dev Tools Section — Org Admin / Super Admin only. */}
-      {canCreateOrDelete && (
+      {/* Dev/purge tools hidden per management request 2026-05-19 —
+          restore by removing the `false &&` guard below. */}
+      {false && canCreateOrDelete && (
         <Card className="mt-8 border-dashed border-yellow-500">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-yellow-600">Dev Tools (Remove before production)</CardTitle>

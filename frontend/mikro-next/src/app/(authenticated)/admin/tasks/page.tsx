@@ -220,7 +220,9 @@ export default function AdminTasksPage() {
         </div>
       </Modal>
 
-      {/* Dev Tools */}
+      {/* Dev/purge tools hidden per management request 2026-05-19 —
+          restore by removing the `false && (` / `)}` guard. */}
+      {false && (
       <Card className="border-2 border-dashed border-yellow-500">
         <CardHeader>
           <CardTitle className="text-yellow-700">Dev Tools</CardTitle>
@@ -239,6 +241,7 @@ export default function AdminTasksPage() {
           </p>
         </CardContent>
       </Card>
+      )}
     </div>
   );
 }

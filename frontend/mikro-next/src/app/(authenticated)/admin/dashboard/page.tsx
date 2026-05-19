@@ -580,7 +580,9 @@ function DashboardStats({ teamId, onTeamIdChange, regionCountryId, onRegionCount
       {/* DEV ONLY: Danger Zone — Org Admin / Super Admin only.
           Hidden for team_admin since the purge endpoint is gated
           server-side and the button would 403. */}
-      {canPurge && (
+      {/* Dev/purge tools hidden per management request 2026-05-19 —
+          restore by removing the `false &&` guard below. */}
+      {false && canPurge && (
       <Card className="border-2 border-dashed border-yellow-400 bg-yellow-50/50 mt-8 relative">
         <div className="absolute top-2 right-2 z-10">
           <span className="bg-yellow-400 text-yellow-900 text-xs font-bold px-2 py-1 rounded uppercase tracking-wider">Dev Only</span>
@@ -657,7 +659,8 @@ function DashboardStats({ teamId, onTeamIdChange, regionCountryId, onRegionCount
 }
 
 // --- Main page component ---
-// Only the time section loads here; everything else is deferred to DashboardStats.
+// The time section renders eagerly; the heavier stats are deferred to
+// DashboardStats. Visual order: stats first, time section at the bottom.
 
 const TEAM_SCOPE_STORAGE_KEY = "mikro.dashboard.teamScope";
 
@@ -749,19 +752,9 @@ export default function AdminDashboard() {
         )}
       </div>
 
-      {/* Time Tracking — loads first */}
-      <div className="grid gap-4 lg:grid-cols-4">
-        <div className="lg:col-span-1">
-          <TimeTrackingWidget
-            projects={projects?.org_active_projects?.map((p: { id: number; name: string; short_name?: string; last_worked_on?: string | null }) => ({ id: p.id, name: p.name, short_name: p.short_name, last_worked_on: p.last_worked_on ?? null })) ?? []}
-          />
-        </div>
-        <div className="lg:col-span-3">
-          <AdminTimeManagement teamId={teamId} />
-        </div>
-      </div>
-
-      {/* Lower sections — deferred */}
+      {/* Stat cards — first thing visible after the title. Deferred
+          one animation frame so the page paints before the heavier
+          stats render. */}
       {showStats ? (
         <DashboardStats
           teamId={teamId}
@@ -786,6 +779,19 @@ export default function AdminDashboard() {
           </div>
         </div>
       )}
+
+      {/* Time Tracking — bottom-most row of the page. Moved below the
+          stat cards so the stats are the first thing the admin sees. */}
+      <div className="grid gap-4 lg:grid-cols-4">
+        <div className="lg:col-span-1">
+          <TimeTrackingWidget
+            projects={projects?.org_active_projects?.map((p: { id: number; name: string; short_name?: string; last_worked_on?: string | null }) => ({ id: p.id, name: p.name, short_name: p.short_name, last_worked_on: p.last_worked_on ?? null })) ?? []}
+          />
+        </div>
+        <div className="lg:col-span-3">
+          <AdminTimeManagement teamId={teamId} />
+        </div>
+      </div>
     </div>
   );
 }
