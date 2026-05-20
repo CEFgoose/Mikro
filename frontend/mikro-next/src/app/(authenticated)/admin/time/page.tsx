@@ -14,6 +14,9 @@ import {
   TableCell,
   Skeleton,
   Modal,
+  Tabs,
+  TabsList,
+  TabsTrigger,
   Val,
 } from "@/components/ui";
 import { useToastActions } from "@/components/ui";
@@ -44,6 +47,8 @@ import {
   dateInputToLocalEndIsoUtc,
 } from "@/lib/timeTracking";
 import type { TimeEntry } from "@/types";
+import { useSearchParams, useRouter, usePathname } from "next/navigation";
+import { AdminTimeCategoriesView } from "./_categories";
 import { NotesButton } from "@/components/widgets/NotesButton";
 import { PendingAdjustmentsStrip } from "@/components/admin/PendingAdjustmentsStrip";
 import { sortProjectsAlphabetical } from "@/lib/sortProjects";
@@ -236,6 +241,28 @@ const PAGE_SIZE = 20;
 
 export default function AdminTimePage() {
   const toast = useToastActions();
+
+  // Tab state for the page-level Sessions / Categories split. Synced to
+  // ?tab= in the URL so refreshes and shared links land on the same tab.
+  // The "Categories" tab renders the AdminTimeCategoriesView component
+  // imported from ./_categories (was previously its own route at
+  // /admin/time-categories, now folded in here).
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const pathname = usePathname();
+  const activeTab: "sessions" | "categories" =
+    searchParams?.get("tab") === "categories" ? "categories" : "sessions";
+  const setActiveTab = (next: string) => {
+    // Push instead of replace so back/forward navigates between tabs.
+    const params = new URLSearchParams(searchParams?.toString() ?? "");
+    if (next === "sessions") {
+      params.delete("tab");
+    } else {
+      params.set("tab", next);
+    }
+    const qs = params.toString();
+    router.push(qs ? `${pathname}?${qs}` : pathname);
+  };
 
   // Filters — date preset / custom dates / search / category at the top,
   // then the same per-dimension dropdowns the projects + users pages use.
@@ -762,10 +789,28 @@ export default function AdminTimePage() {
           </p>
         </div>
 
-        <Button variant="outline" size="sm" onClick={handleOpenAddEntry}>
-          + Add Entry
-        </Button>
+        {activeTab === "sessions" && (
+          <Button variant="outline" size="sm" onClick={handleOpenAddEntry}>
+            + Add Entry
+          </Button>
+        )}
       </div>
+
+      {/* Sessions vs Categories tab strip — synced to ?tab= in the URL
+          so refreshes and shared links land on the same tab. The
+          Categories tab renders AdminTimeCategoriesView (./_categories);
+          everything else (sessions, history, exports) stays inline. */}
+      <Tabs defaultValue="sessions" value={activeTab} onValueChange={setActiveTab}>
+        <TabsList>
+          <TabsTrigger value="sessions">Sessions</TabsTrigger>
+          <TabsTrigger value="categories">Categories</TabsTrigger>
+        </TabsList>
+      </Tabs>
+
+      {activeTab === "categories" ? (
+        <AdminTimeCategoriesView />
+      ) : (
+        <>
 
       {/* Filter Panel — hoisted above stat cards per UI8 (2026-04 meeting).
           Wrapped in a Card so it reads as a visual unit, not a floating row. */}
@@ -1706,6 +1751,8 @@ export default function AdminTimePage() {
           </div>
         </div>
       </Modal>
+        </>
+      )}
     </div>
   );
 }
